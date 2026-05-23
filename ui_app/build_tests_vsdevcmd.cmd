@@ -781,7 +781,7 @@ exit /b 0
 
 :focused_test_fractal_catalog_authority
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\tests\test_fractal_catalog_authority.cpp ^
+  .\src\json_min.cpp .\src\function_descriptor.cpp .\tests\test_fractal_catalog_authority.cpp ^
   /Fe:"%TESTROOT%\test_fractal_catalog_authority.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_fractal_catalog_authority.exe" || exit /b 1

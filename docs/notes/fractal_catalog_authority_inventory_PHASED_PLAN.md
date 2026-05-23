@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed - Slice A catalog authority inventory validated; Slice B default-routing consumption remains deferred.
+Closed - Slice A catalog authority inventory and sample-probe capability repair validated; Slice B default-routing consumption remains deferred.
 
 ## Phase Checklist
 
@@ -13,6 +13,7 @@ Closed - Slice A catalog authority inventory validated; Slice B default-routing 
 - [x] Phase 4 - prove current defaults, selector ids, schema visibility, descriptor export, and animation applicability remain behavior-compatible.
 - [x] Phase 5 - hostile-audit the new catalog for future-fractal extensibility, missing-row failure behavior, and accidental renderer/schema drift.
 - [x] Phase 6 - validate focused native/catalog rails, checkpoint, receipts, push, and clean-tree closeout.
+- [x] Phase 7 - hostile-review repair: make sample/probe capability truthful against the shipped `fractal.sample` support surface, revalidate, checkpoint, and push.
 
 ## Explicit User Asks
 
@@ -84,7 +85,8 @@ RED and implementation proof:
 - GREEN: `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_capability_green --log artifacts/logs/fractal_catalog_capability_green.log --out-json artifacts/validation/fractal_catalog_capability_green.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_catalog_authority` passed after adding explicit UI/capability flags.
 
 Final focused rails run green in this slice:
-- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_catalog_authority --log artifacts/logs/fractal_catalog_final_catalog_authority.log --out-json artifacts/validation/fractal_catalog_final_catalog_authority.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_catalog_authority`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_sample_probe_capability_green2 --log artifacts/logs/fractal_catalog_sample_probe_capability_green2.log --out-json artifacts/validation/fractal_catalog_sample_probe_capability_green2.json --heartbeat-seconds 30 --timeout-seconds 240 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_catalog_authority`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_catalog_authority --log artifacts/logs/fractal_catalog_final_catalog_authority.log --out-json artifacts/validation/fractal_catalog_final_catalog_authority.json --heartbeat-seconds 30 --timeout-seconds 240 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_catalog_authority`
 - `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_types --log artifacts/logs/fractal_catalog_final_types.log --out-json artifacts/validation/fractal_catalog_final_types.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_types`
 - `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_derived_fields --log artifacts/logs/fractal_catalog_final_derived_fields.log --out-json artifacts/validation/fractal_catalog_final_derived_fields.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_derived_fields`
 - `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_family_rules --log artifacts/logs/fractal_catalog_final_family_rules.log --out-json artifacts/validation/fractal_catalog_final_family_rules.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_family_rules`
@@ -113,6 +115,7 @@ Validation and hygiene rails run green:
 - [done] Pass 1 - audit the initial catalog model for duplicated authority and missing fields.
 - [done] Pass 2 - audit behavior-preservation proof against current default and selector surfaces.
 - [done] Pass 3 - clean re-read the repaired state after audit findings were fixed.
+- [done] Pass 4 - repaired sample/probe capability truth and re-audited before Slice B starts.
 
 ## Audit Findings
 
@@ -121,6 +124,7 @@ Validation and hygiene rails run green:
 - [fixed] Finding 3: The first hardened catalog duplicated the perturbation eligibility predicate locally. Fixed by consuming `SupportsPerturbationReferenceOrbit(...)` from the existing perturbation seam directly.
 - [fixed] Finding 4: The first receipt attempt showed the contract listed bare native/pytest commands with no parseable contract-proof evidence. Fixed by requiring the logged command rails that produce artifacts.
 - [clean] Pass 3: Diff review and forbidden-scope grep found no renderer, FPS pacing, capture, Color Pipeline, new-fractal, or perturbation implementation drift in this slice.
+- [fixed] Finding 5: Follow-up hostile review found `FractalCatalogCapabilityFlag::sample_probe` was set for every catalog row even though `fractal.sample` currently filters unsupported lanes such as `counterfactual_pair`, `projection_and_flow`, `explaino_counterfactual_pair`, and `generic_equation_pack`. Fixed by moving the probe support predicate into `fractal_catalog.h`, making `function_descriptor.cpp` consume the catalog flag, and extending `test_fractal_catalog_authority` to prove unsupported lanes do not advertise sample/probe capability.
 
 ## Notes
 

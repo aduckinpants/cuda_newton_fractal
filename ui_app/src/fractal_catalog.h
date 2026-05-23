@@ -100,8 +100,60 @@ inline constexpr uint32_t FractalCatalogCapabilityFlagMask(FractalCatalogCapabil
     return static_cast<uint32_t>(flag);
 }
 
+inline constexpr bool FractalCatalogSupportsSampleProbe(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::newton:
+    case FractalType::nova:
+    case FractalType::mandelbrot:
+    case FractalType::julia:
+    case FractalType::burning_ship:
+    case FractalType::multibrot:
+    case FractalType::phoenix:
+    case FractalType::explaino:
+    case FractalType::explaino_all:
+    case FractalType::explaino_y:
+    case FractalType::explaino_fp:
+    case FractalType::explaino_nova:
+    case FractalType::explaino_halley:
+    case FractalType::explaino_dual:
+    case FractalType::explaino_mult:
+    case FractalType::explaino_phoenix:
+    case FractalType::explaino_transcendental:
+    case FractalType::explaino_inertial:
+    case FractalType::explaino_julia:
+    case FractalType::explaino_rational:
+    case FractalType::multicorn:
+    case FractalType::halley:
+    case FractalType::collatz:
+    case FractalType::explaino_collatz:
+    case FractalType::explaino_collatz_direct:
+    case FractalType::mcmullen:
+    case FractalType::lambda_map:
+    case FractalType::explaino_lambda:
+    case FractalType::explaino_rational_escape:
+    case FractalType::spider:
+    case FractalType::celtic_mandelbrot:
+    case FractalType::perpendicular_burning_ship:
+    case FractalType::explaino_joy:
+    case FractalType::explaino_fold:
+    case FractalType::explaino_bell:
+    case FractalType::explaino_ripple:
+    case FractalType::explaino_splice:
+    case FractalType::explaino_vortex:
+    case FractalType::explaino_tension:
+    case FractalType::explaino_balance_void:
+    case FractalType::explaino_projection_and_flow:
+    case FractalType::magnet:
+        return true;
+    default:
+        return false;
+    }
+}
+
 inline constexpr uint32_t FractalCatalogCapabilityFlagsFor(FractalType fractalType) {
-    return FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::sample_probe) |
+    return (FractalCatalogSupportsSampleProbe(fractalType)
+                ? FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::sample_probe)
+                : 0u) |
         FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::schema_control_surface) |
         FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::param_animation_surface) |
         FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::color_pipeline_frame_coloring) |

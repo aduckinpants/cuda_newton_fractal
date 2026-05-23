@@ -1,5 +1,6 @@
 #include "function_descriptor.h"
 #include "enum_id_utils.h"
+#include "fractal_catalog.h"
 #include "fractal_family_rules.h"
 
 #include <cctype>
@@ -18,24 +19,10 @@ constexpr EngineFunctionRegistration kRegisteredEngineFunctions[] = {
     {"generic.sample", EngineFunctionExecutionKind::generic_sampler, &BuildGenericSamplerDescriptorFromRegistry},
 };
 
-constexpr FractalType kSupportedNonExplainoProbeFractalTypes[] = {
-    FractalType::newton,
-    FractalType::nova,
-    FractalType::mandelbrot,
-    FractalType::julia,
-    FractalType::burning_ship,
-    FractalType::multibrot,
-    FractalType::phoenix,
-    FractalType::multicorn,
-    FractalType::halley,
-    FractalType::collatz,
-    FractalType::mcmullen,
-    FractalType::lambda_map,
-    FractalType::magnet,
-    FractalType::spider,
-    FractalType::celtic_mandelbrot,
-    FractalType::perpendicular_burning_ship,
-};
+bool IsSupportedProbeFractalType(FractalType fractalType) {
+    const FractalCatalogEntry* entry = FindFractalCatalogEntry(fractalType);
+    return entry && HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::sample_probe);
+}
 
 std::string TrimAscii(const std::string& value) {
     size_t start = 0;
@@ -47,44 +34,6 @@ std::string TrimAscii(const std::string& value) {
         --end;
     }
     return value.substr(start, end - start);
-}
-
-bool IsSupportedProbeFractalType(FractalType fractalType) {
-    switch (fractalType) {
-    case FractalType::explaino:
-    case FractalType::explaino_all:
-    case FractalType::explaino_y:
-    case FractalType::explaino_fp:
-    case FractalType::explaino_nova:
-    case FractalType::explaino_halley:
-    case FractalType::explaino_dual:
-    case FractalType::explaino_fold:
-    case FractalType::explaino_joy:
-    case FractalType::explaino_bell:
-    case FractalType::explaino_mult:
-    case FractalType::explaino_phoenix:
-    case FractalType::explaino_balance_void:
-    case FractalType::explaino_transcendental:
-    case FractalType::explaino_inertial:
-    case FractalType::explaino_julia:
-    case FractalType::explaino_rational:
-    case FractalType::explaino_ripple:
-    case FractalType::explaino_splice:
-    case FractalType::explaino_vortex:
-    case FractalType::explaino_tension:
-    case FractalType::explaino_collatz:
-    case FractalType::explaino_collatz_direct:
-    case FractalType::explaino_lambda:
-    case FractalType::explaino_rational_escape:
-    case FractalType::explaino_projection_and_flow:
-        return true;
-    default:
-        break;
-    }
-    for (FractalType candidate : kSupportedNonExplainoProbeFractalTypes) {
-        if (fractalType == candidate) return true;
-    }
-    return false;
 }
 
 std::vector<std::string> SplitCsvValues(const std::string& text) {

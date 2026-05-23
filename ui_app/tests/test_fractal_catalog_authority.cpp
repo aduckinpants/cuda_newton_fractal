@@ -2,6 +2,7 @@
 
 #include "../src/enum_id_utils.h"
 #include "../src/fractal_family_rules.h"
+#include "../src/fractal_probe_runner.h"
 #include "../src/perturbation_reference_orbit.h"
 
 #include <cstddef>
@@ -56,8 +57,6 @@ int main() {
             "Catalog rows must not duplicate FractalType values");
         Check(seenIds.insert(std::string(entry.selector_id)).second,
             "Catalog rows must not duplicate selector ids");
-        Check(HasFractalCatalogCapabilityFlag(entry, FractalCatalogCapabilityFlag::sample_probe),
-            "Catalog rows must declare sample/probe capability explicitly");
         Check(HasFractalCatalogCapabilityFlag(entry, FractalCatalogCapabilityFlag::schema_control_surface),
             "Catalog rows must declare schema/control-surface capability explicitly");
         Check(HasFractalCatalogCapabilityFlag(entry, FractalCatalogCapabilityFlag::param_animation_surface),
@@ -78,6 +77,9 @@ int main() {
             "Catalog selector id must match enum_id_utils");
         Check(FindFractalCatalogEntryById(pair.id) == entry,
             "Catalog id lookup must resolve to the same row as type lookup");
+        Check(HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::sample_probe) ==
+                IsProbeSamplingImplementedForFractalTypeId(pair.id),
+            "Catalog sample/probe capability must mirror the shipped fractal.sample support surface");
 
         Check(HasFractalCatalogRuntimeFlag(*entry, FractalCatalogRuntimeFlag::escape_time) == IsEscapeTimeFamily(pair.value),
             "Catalog escape-time flag must mirror current family rules");
@@ -117,6 +119,17 @@ int main() {
             "Generic equation pack should have a distinct catalog family");
         Check(generic->formula_growth_surface == FractalCatalogFormulaGrowthSurface::generic_equation_pack,
             "Generic equation pack should keep its generic-pack formula growth surface");
+    }
+
+    for (FractalType unsupportedProbeType : {
+            FractalType::counterfactual_pair,
+            FractalType::explaino_counterfactual_pair,
+            FractalType::projection_and_flow,
+            FractalType::generic_equation_pack,
+        }) {
+        const FractalCatalogEntry* entry = FindFractalCatalogEntry(unsupportedProbeType);
+        Check(entry && !HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::sample_probe),
+            "Unsupported fractal.sample lanes must not advertise sample/probe catalog capability");
     }
 
     const FractalCatalogEntry* mandelbrot = FindFractalCatalogEntry(FractalType::mandelbrot);
