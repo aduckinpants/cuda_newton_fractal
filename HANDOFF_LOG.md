@@ -164,3 +164,4 @@
 - `ck:b2f3d530` 2026-05-23 05:10 UTC — session-start | branch=codex/pfc-branch-dead-explaino-controls | head=b462dc8 | status=dirty | profile=runtime | intent=parameter functionality campaign slice 6 branch-dead Explaino controls
 - `ck:b2f3d530` 2026-05-23 06:05 UTC | score 5 — PFC Step 6 branch-dead Explaino controls: repaired Explaino Nova warp/damping visibility and runtime authority; focused/full native and no-mouse runtime proof green; pending checkpoint/receipts/holder integration.
 - `ck:b2f3d530` 2026-05-23 06:05 UTC | score 5 — PFC Step 6 branch-dead Explaino controls closed: Explaino Nova warp/damping restored with native, full-helper, no-mouse runtime, descriptor, code-quality, contract, plan-sync, and hostile-audit proof.
+- `ck:b2f3d530` 2026-05-23 06:07 UTC | score 5 — PFC holder integrated Step 6 at 32dd3e9; next implementation branch is codex/pfc-explaino-collatz-direct.
