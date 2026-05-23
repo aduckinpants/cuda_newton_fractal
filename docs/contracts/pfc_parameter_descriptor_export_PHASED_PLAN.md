@@ -11,7 +11,7 @@
 
 ## Current Phase
 
-Phase 1 is active: descriptor/export implementation is landed and under validation. Remaining work is contract/sync/hostile validators, checkpoint receipts, push, sprint-holder integration, and clean-tree proof.
+Phase 1 is closed: descriptor/export implementation, validation, feature-branch push, sprint-holder integration, receipts, and clean-tree closeout have been completed for this slice.
 
 ## Phase Checklist
 
@@ -28,7 +28,7 @@ Phase 1 is active: descriptor/export implementation is landed and under validati
 - [x] Publish runtime and run no-mouse CLI descriptor proof.
 - [x] Run full native helper suite.
 - [x] Hostile audit the diff and repair any real findings.
-- [ ] Checkpoint, write validation and contract-proof receipts, push branch, integrate back to sprint holder, and verify clean tree.
+- [x] Checkpoint, write validation and contract-proof receipts, push branch, integrate back to sprint holder, and verify clean tree.
 
 ## Owner Seams
 
@@ -60,7 +60,7 @@ Phase 1 is active: descriptor/export implementation is landed and under validati
 - No-mouse runtime CLI proof: `py -3.14 -m pytest tests/test_fractal_parameter_surface_descriptor_cli.py -q --junitxml artifacts/pytest/pfc_descriptor_runtime.junit.xml` passed.
 - Full native helper suite: `py -3.14 tools/viewer_host_run_logged_command.py --label pfc_descriptor_full_native --log artifacts/logs/pfc_descriptor_full_native.log --out-json artifacts/validation/pfc_descriptor_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd` passed.
 - Code quality: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_parameter_descriptor_export_code_quality.json` passed baseline with score 96/100.
-- Validation pending: contract validation, plan sync, hostile audit validation, checkpoint, receipts, push, sprint-holder integration, and clean-tree proof.
+- Closeout witness: checkpoint commit `2880f95`, validation and contract-proof receipts written for `2880f95f75e145cb778fc257adeda1fca2db5fa8`, feature branch `codex/pfc-parameter-descriptor-export` pushed, and sprint holder `codex/parameter-functionality-campaign` fast-forwarded and pushed.
 
 ## Hostile Audit
 
@@ -70,7 +70,7 @@ Phase 1 is active: descriptor/export implementation is landed and under validati
 - Owner-specific fixed-family controls stay off `explaino_all`; registry Explaino axes intentionally remain additive on `explaino_all` and their explicit owner lanes.
 - The descriptor is consumable through the published runtime CLI without opening the viewer and without mouse automation.
 - Color Pipeline, capture finding, FPS pacing, equation-pack, perturbation, generated-editor, and renderer behavior were not changed by this slice.
-- Closeout is not complete yet: receipts, push, sprint-holder integration, clean tree, and stale-plan review are still pending in the phase checklist.
+- Closeout completed for this slice; remaining parameter-functionality campaign steps after descriptor export stay outside this slice.
 
 ## Audit Passes
 
