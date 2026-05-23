@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "pfc_param_verification_review",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_param_verification_review_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "KNOWN_ISSUES.md",
+    "spec_intake",
+    "HANDOFF_LOG.md",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "tools",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "run another hostile review and parameter verification pass",
+    "verify current descriptor/schema/runtime parameter surfaces",
+    "keep proof no-mouse and repo-grounded"
+  ],
+  "forbidden_operator_prompts": [
+    "add new fractal feature work as part of review",
+    "change Color Pipeline behavior",
+    "change capture finding or FPS pacing behavior",
+    "use OS mouse automation or physical cursor tests",
+    "claim all parameter controls are verified from prior receipts only"
+  ],
+  "required_defaults": {
+    "posture": "distrust_prior_closeout_and_verify_current_head",
+    "runtime_proof": "in_process_no_mouse",
+    "scope": "review_and_narrow_repair_only_if_proven"
+  },
+  "forbidden_defaults": {
+    "feature_expansion": "forbidden",
+    "physical_mouse": "forbidden",
+    "prior_receipt_only": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_param_verification_review.contract.json --out-json artifacts/validation/pfc_param_verification_review_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_param_verification_review_PHASED_PLAN.md --out-json artifacts/validation/pfc_param_verification_review_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_param_verification_review_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_param_verification_descriptor_native --log artifacts/logs/pfc_param_verification_descriptor_native.log --out-json artifacts/validation/pfc_param_verification_descriptor_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_parameter_surface_descriptor",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_param_verification_schema --log artifacts/logs/pfc_param_verification_schema.log --out-json artifacts/validation/pfc_param_verification_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_param_verification_runtime_publish --log artifacts/logs/pfc_param_verification_runtime_publish.log --out-json artifacts/validation/pfc_param_verification_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_param_verification_runtime_pytest --log artifacts/logs/pfc_param_verification_runtime_pytest.log --out-json artifacts/validation/pfc_param_verification_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 1800 -- py -3.14 -m pytest tests/test_fractal_parameter_surface_descriptor_cli.py tests/test_fractal_runtime_parameter_functionality.py tests/test_fractal_runtime_multibrot_exponent.py tests/test_fractal_runtime_branch_dead_explaino_controls.py tests/test_fractal_runtime_explaino_julia_authority.py tests/test_fractal_runtime_generated_internal_editors.py -q --junitxml artifacts/pytest/pfc_param_verification_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_param_verification_diff_check --log artifacts/logs/pfc_param_verification_diff_check.log --out-json artifacts/validation/pfc_param_verification_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The parameter verification review contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_param_verification_review_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The parameter verification hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_param_verification_review_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

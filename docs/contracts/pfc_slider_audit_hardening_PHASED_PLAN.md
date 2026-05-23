@@ -11,7 +11,7 @@
 
 ## Current Phase
 
-Phase 6 is closed for implementation and validation on `codex/pfc-slider-audit-hardening`. The remaining workflow action is checkpoint/receipt/push handling outside this plan text.
+Closed: `codex/pfc-slider-audit-hardening` landed at `64b53b3`, validation and contract-proof receipts were written, the feature branch was pushed, and the campaign holder was fast-forwarded to the same head.
 
 ## Phase Checklist
 
@@ -71,7 +71,7 @@ Phase 6 is closed for implementation and validation on `codex/pfc-slider-audit-h
 - Did I preserve Explaino-all registry-axis behavior and owner-lane boundaries? Yes: no schema axis ownership changed; descriptor tests continue to assert owner-only controls do not leak to `explaino_all` while common/root-authority surfaces remain explicitly classified.
 - Did I avoid Color Pipeline, capture, FPS, equation-pack, perturbation, and broad engine drift? Yes: changed files are descriptor/report/harness/tests/docs/contract only; shared Color Pipeline rails stayed green.
 - Did I sync stale docs without claiming deferred future work is complete? Yes: Phoenix and spec status were updated; the old all-fractal inventory is explicitly marked historical, while perturbation/equation-pack/preset-library work remains future.
-- Did I close with validation, receipts, push, and clean tree? Validation is complete; receipts, push, and clean-tree proof are workflow actions after checkpoint.
+- Did I close with validation, receipts, push, and clean tree? Yes: commit `64b53b3` has validation and contract-proof receipts, `codex/pfc-slider-audit-hardening` and `codex/parameter-functionality-campaign` were pushed, and the tree was clean afterward.
 
 ## Audit Passes
 

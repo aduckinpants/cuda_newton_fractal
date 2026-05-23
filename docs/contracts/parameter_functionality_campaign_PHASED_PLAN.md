@@ -11,7 +11,7 @@
 
 ## Current Phase
 
-Sprint holder is integrated through Step 9 generated/internal editors at `5a53caf`. No follow-up branch is selected in this campaign plan.
+Sprint holder is integrated through Step 9 generated/internal editors and the follow-up slider-audit hardening at `64b53b3`. No follow-up branch is selected in this campaign plan.
 
 ## Phase Checklist
 
@@ -30,7 +30,7 @@ Sprint holder is integrated through Step 9 generated/internal editors at `5a53ca
 - Feature branches are created from the sprint holder when their slice begins.
 - Each feature branch gets its own plan, contract, focused tests, hostile audit, commit, receipts, push, clean-tree closeout, and merge back into the sprint holder.
 - The sprint holder is the integration branch for this campaign only. It is not a license to combine unrelated feature work.
-- Step 9 is integrated; the holder branch is ready for a fresh branch-per-feature decision when the next campaign item is selected.
+- Step 9 and the slider-audit hardening follow-up are integrated; the holder branch is ready for a fresh branch-per-feature decision when the next campaign item is selected.
 
 ## Campaign Steps Through Step 9
 
@@ -72,10 +72,10 @@ Sprint holder is integrated through Step 9 generated/internal editors at `5a53ca
 
 ## Holder State After Step 9
 
-- Campaign branch contains the Step 9 feature commit `5a53caf`.
+- Campaign branch contains the Step 9 feature commit `5a53caf` and the slider-audit hardening follow-up `64b53b3`.
 - `codex/pfc-generated-internal-editors` was created, validated, receipt-backed, pushed, and fast-forwarded into the holder.
 - Step 9 used explicit override-mode authority for generated/internal editors; raw array dumping was not added as a user-facing control model.
-- Future work should start from a fresh branch-per-feature decision instead of extending this closed Step 9 slice.
+- Future work should start from a fresh branch-per-feature decision instead of extending the closed Step 9 or slider-audit hardening slices.
 
 ## Proof Ledger
 
@@ -95,6 +95,7 @@ Sprint holder is integrated through Step 9 generated/internal editors at `5a53ca
 - Integrated through Step 8: `1cfb299` closed `pfc_explaino_julia_authority`; `explaino_julia` now has explicit seeded/custom constant authority, owner-only custom controls, native sample/schema/state/descriptor proof, full native helper proof, runtime publish, no-mouse published-runtime proof, hostile audit, validation receipt, and contract-proof receipt.
 - Integrated Step 8 follow-up: `40faf61` closed `pfc_explaino_seed_responsiveness_repair`; `explaino_julia` now defaults seed-driven warp active, custom constants remain authoritative, Explaino warp-start paths consume full combined Seed through `ExplainoCombinedSeedToWarpSeed`, the legacy fractional `LogisticAreaUToSeed` contract remains covered, and focused native/runtime/full-native rails passed.
 - Integrated through Step 9: `5a53caf` closed `pfc_generated_internal_editors`; `explaino_root_authority` defaults to generated, custom root count/coordinate controls are authority-gated, coefficient editors are custom-predicate-gated, saved state/capture/runtime walk export the authority, `SampleFractalPoints` remains covered, Explaino-Julia Seed runtime proof was rerun, and full native plus no-mouse published-runtime proof passed.
+- Integrated slider-audit hardening: `64b53b3` closed `pfc_slider_audit_hardening`; the descriptor now enumerates default and authority-gated parameter surfaces, generated-to-custom root editor proof starts from generated state, and stale parameter docs were synced.
 
 ## Hostile Audit
 
@@ -103,7 +104,7 @@ Sprint holder is integrated through Step 9 generated/internal editors at `5a53ca
 - Did I keep this setup to documentation/branch setup instead of feature implementation? Yes; diff scope is the handoff breadcrumb plus this plan and contract.
 - Did I avoid pre-creating inactive feature branches? Yes; `git branch --list "codex/pfc-*"` returned no branches.
 - Did I preserve Batch 1 as the baseline instead of reopening it? Yes; no Batch 1 implementation files or contracts were edited.
-- Did I keep the holder plan current after integrated feature slices? Yes; it now records Step 9 as integrated at `5a53caf` and leaves no active next feature branch selected.
+- Did I keep the holder plan current after integrated feature slices? Yes; it now records Step 9 and slider-audit hardening as integrated through `64b53b3` and leaves no active next feature branch selected.
 
 ## Audit Passes
 

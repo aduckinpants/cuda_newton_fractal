@@ -126,7 +126,7 @@ The perturbation reference-orbit path is implemented only for `Mandelbrot` and `
 
 Phoenix now exposes `phoenix_p_real` and `phoenix_p_imag` as runtime-backed controls and the no-mouse parameter proof campaign covers the visible control path. Future work may still add named Phoenix presets, but the old "single hardcoded p" control-surface bug is closed.
 
-**Files:** `ui/fractal_binding_surface_v1.ui_schema.json`, `ui_app/src/fractal_sample_device.inl`, `tests/test_fractal_runtime_parameter_controls.py`
+**Files:** `ui/fractal_binding_surface_v1.ui_schema.json`, `ui_app/src/fractal_sample_device.inl`, `tests/test_fractal_runtime_parameter_functionality.py`
 
 ---
 

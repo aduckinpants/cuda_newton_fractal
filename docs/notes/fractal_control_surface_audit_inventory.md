@@ -278,16 +278,17 @@ Validation:
 
 ### Slice 3 - Collatz Exploration Controls
 
-Opportunity:
+Status: implemented in the parameter functionality campaign. Standalone `collatz` now exposes `collatz_transition_strength`, and the direct Explaino Collatz lane reuses that owner-lane control without promoting it to `explaino_all`.
 
-- Standalone `collatz` currently uses fixed constants inside its step function.
-- No Collatz-specific numeric controls are exposed.
+Historical opportunity:
 
-Recommended shape:
+- Standalone `collatz` used fixed constants inside its step function at the original scan point.
+- No Collatz-specific numeric controls were exposed at that time.
 
-- First decide whether the current lane should remain canonical/fixed or become exploratory.
-- If exploratory, expose only one or two stable parameters first, with conservative ranges.
-- If canonical, document it as fixed-formula and keep it out of missing-slider lists.
+Resolved shape:
+
+- The first shipped exploration knob is `collatz_transition_strength` with conservative bounds and default-preserving behavior.
+- Further Collatz coefficient work remains future product design, not an unresolved basic-control exposure bug.
 
 Why this is low-to-medium hanging:
 

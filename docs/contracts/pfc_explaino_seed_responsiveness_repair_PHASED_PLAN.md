@@ -9,7 +9,7 @@
 
 ## Current Phase
 
-Closed: seed responsiveness repair landed at `40faf61`, was integrated into holder at `56dea4b`, and Step 9 remains next from `codex/parameter-functionality-campaign`.
+Closed: seed responsiveness repair landed at `40faf61` and was integrated into the holder before Step 9. The campaign later closed Step 9 and slider-audit hardening; do not resume from this plan as the next campaign step.
 
 ## Phase Checklist
 
