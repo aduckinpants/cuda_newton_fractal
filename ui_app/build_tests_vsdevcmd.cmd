@@ -63,6 +63,11 @@ if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_render
 if /I "%FOCUSED_TEST%"=="test_fractal_sample_kernel" goto focused_test_fractal_sample_kernel
 if /I "%FOCUSED_TEST%"=="test_safe_mode_schema" goto focused_test_safe_mode_schema
 if /I "%FOCUSED_TEST%"=="test_fractal_parameter_surface_descriptor" goto focused_test_fractal_parameter_surface_descriptor
+if /I "%FOCUSED_TEST%"=="test_fractal_catalog_authority" goto focused_test_fractal_catalog_authority
+if /I "%FOCUSED_TEST%"=="test_fractal_types" goto focused_test_fractal_types
+if /I "%FOCUSED_TEST%"=="test_fractal_derived_fields" goto focused_test_fractal_derived_fields
+if /I "%FOCUSED_TEST%"=="test_fractal_family_rules" goto focused_test_fractal_family_rules
+if /I "%FOCUSED_TEST%"=="test_schema_binding" goto focused_test_schema_binding
 if /I "%FOCUSED_TEST%"=="test_explaino_counterfactual_repair" goto focused_test_explaino_counterfactual_repair
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" goto focused_test_generic_equation_pack_workbench_ui
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_live" goto focused_test_generic_equation_pack_live
@@ -772,6 +777,48 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /Fe:"%TESTROOT%\test_fractal_parameter_surface_descriptor.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_fractal_parameter_surface_descriptor.exe" || exit /b 1
+exit /b 0
+
+:focused_test_fractal_catalog_authority
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_fractal_catalog_authority.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_catalog_authority.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_catalog_authority.exe" || exit /b 1
+exit /b 0
+
+:focused_test_fractal_types
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_fractal_types.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_types.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_types.exe" || exit /b 1
+exit /b 0
+
+:focused_test_fractal_derived_fields
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_fractal_derived_fields.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_derived_fields.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_derived_fields.exe" || exit /b 1
+exit /b 0
+
+:focused_test_fractal_family_rules
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_fractal_family_rules.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_family_rules.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_family_rules.exe" || exit /b 1
+exit /b 0
+
+:focused_test_schema_binding
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_schema_binding.cpp ^
+  /Fe:"%TESTROOT%\test_schema_binding.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_schema_binding.exe" || exit /b 1
 exit /b 0
 
 :full_test_run

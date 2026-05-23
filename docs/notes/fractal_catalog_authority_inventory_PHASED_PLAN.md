@@ -2,24 +2,24 @@
 
 ## Current Phase
 
-Phase 0 - ready to start from `master`; this implementation slice is planned but not yet opened.
+Closed - Slice A catalog authority inventory validated; Slice B default-routing consumption remains deferred.
 
 ## Phase Checklist
 
-- [ ] Phase 0 - create a fresh branch from `master`, run bootstrap, lock this plan/contract, and record the starting repo state.
-- [ ] Phase 1 - inspect current enum, selector, schema, default, descriptor, family-rule, animation-applicability, and validation seams.
-- [ ] Phase 2 - add RED coverage proving every current `FractalType` must have one catalog metadata row with required fields.
-- [ ] Phase 3 - implement the typed catalog authority without changing current default behavior.
-- [ ] Phase 4 - prove current defaults, selector ids, schema visibility, descriptor export, and animation applicability remain behavior-compatible.
-- [ ] Phase 5 - hostile-audit the new catalog for future-fractal extensibility, missing-row failure behavior, and accidental renderer/schema drift.
-- [ ] Phase 6 - validate focused native/catalog rails, checkpoint, receipts, push, and clean-tree closeout.
+- [x] Phase 0 - create a fresh branch from `master`, run bootstrap, lock this plan/contract, and record the starting repo state.
+- [x] Phase 1 - inspect current enum, selector, schema, default, descriptor, family-rule, animation-applicability, and validation seams.
+- [x] Phase 2 - add RED coverage proving every current `FractalType` must have one catalog metadata row with required fields.
+- [x] Phase 3 - implement the typed catalog authority without changing current default behavior.
+- [x] Phase 4 - prove current defaults, selector ids, schema visibility, descriptor export, and animation applicability remain behavior-compatible.
+- [x] Phase 5 - hostile-audit the new catalog for future-fractal extensibility, missing-row failure behavior, and accidental renderer/schema drift.
+- [x] Phase 6 - validate focused native/catalog rails, checkpoint, receipts, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
-- [open] Make engine simplification and selector-default authority the next major foundation before perturbation expansion.
-- [open] Ensure this work makes future supported fractal additions easier, not harder.
-- [open] Avoid creating another scattered hand-edited path that future fractals must step through.
-- [open] Do not start perturbation zoom, new fractal formulas, Color Pipeline changes, FPS pacing, or capture work in this slice.
+- [done] Make engine simplification and selector-default authority the next major foundation before perturbation expansion.
+- [done] Ensure this work makes future supported fractal additions easier, not harder.
+- [done] Avoid creating another scattered hand-edited path that future fractals must step through.
+- [done] Do not start perturbation zoom, new fractal formulas, Color Pipeline changes, FPS pacing, or capture work in this slice.
 
 ## Scope
 
@@ -63,51 +63,64 @@ Minimum row shape for this slice:
 - family/subfamily
 - default view policy owner
 - default parameter policy owner
-- runtime class flags: escape-time, basin/root-coloring, generic-equation-pack, generated/internal-root authority, perturbation-eligible
-- UI/capability flags: has visible controls, supports no-mouse set-value proof, supports animation applicability, supports smooth escape, supports Color Pipeline frame coloring
-- future-growth flag: whether a new supported 2D formula can be added by formula implementation plus catalog row, or requires a separate substrate contract
+- runtime class flags: escape-time, basin/root-coloring, Explaino family, perturbation-eligible
+- UI/capability flags: sample/probe, schema/control-surface, animation applicability, smooth-escape coloring, Color Pipeline frame coloring, generic equation pack, root/basin coloring
+- future-growth surface: native 2D formula, native composite formula, or generic equation pack
 
 ## RED Targets
 
-- Adding a `FractalType` enum value without a catalog row fails a native test.
-- Adding a catalog row without selector/string/schema/descriptor coverage fails a native or CLI test.
-- Current default presets remain field-compatible for representative families.
-- Existing explicit selector identity remains unchanged.
-- Current `explaino_all` registry/common-axis behavior is not changed.
-- Perturbation eligibility remains truthful: current support is Mandelbrot/Julia only unless a later perturbation slice proves more.
+- Adding a `FractalType` enum value without a catalog row fails `test_fractal_catalog_authority` through catalog count and enum-id coverage.
+- Adding a catalog row without selector/id coverage fails `test_fractal_catalog_authority` through enum-id reverse lookup and duplicate checks.
+- Current default presets remain field-compatible through `test_fractal_types` and `test_fractal_derived_fields`.
+- Existing explicit selector identity remains unchanged through the existing family-rule/schema rails.
+- Current `explaino_all` registry/common-axis behavior is not changed through `test_fractal_family_rules`.
+- Perturbation eligibility remains truthful: current support is Mandelbrot/Julia only, cross-checked against `SupportsPerturbationReferenceOrbit(...)`.
 
 ## Proof Ledger
 
-Planned proof only; no implementation proof exists yet.
+RED and implementation proof:
+- RED: `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_red --log artifacts/logs/fractal_catalog_red.log --out-json artifacts/validation/fractal_catalog_red.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_catalog_authority` failed on missing `../src/fractal_catalog.h`.
+- GREEN: `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_green --log artifacts/logs/fractal_catalog_green.log --out-json artifacts/validation/fractal_catalog_green.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_catalog_authority` passed after adding the typed catalog.
+- GREEN: `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_capability_green --log artifacts/logs/fractal_catalog_capability_green.log --out-json artifacts/validation/fractal_catalog_capability_green.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_catalog_authority` passed after adding explicit UI/capability flags.
 
-Expected focused rails:
-- `ui_app/build_tests_vsdevcmd.cmd test_fractal_types`
-- `ui_app/build_tests_vsdevcmd.cmd test_fractal_derived_fields`
-- `ui_app/build_tests_vsdevcmd.cmd test_fractal_family_rules`
-- `ui_app/build_tests_vsdevcmd.cmd test_fractal_parameter_surface_descriptor`
-- `ui_app/build_tests_vsdevcmd.cmd test_schema_binding`
-- `py -3.14 -m pytest tests/test_fractal_parameter_surface_descriptor_cli.py -q`
-- contract validation, plan sync, hostile audit, code-quality baseline, and diff hygiene
+Final focused rails run green in this slice:
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_catalog_authority --log artifacts/logs/fractal_catalog_final_catalog_authority.log --out-json artifacts/validation/fractal_catalog_final_catalog_authority.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_catalog_authority`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_types --log artifacts/logs/fractal_catalog_final_types.log --out-json artifacts/validation/fractal_catalog_final_types.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_types`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_derived_fields --log artifacts/logs/fractal_catalog_final_derived_fields.log --out-json artifacts/validation/fractal_catalog_final_derived_fields.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_derived_fields`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_family_rules --log artifacts/logs/fractal_catalog_final_family_rules.log --out-json artifacts/validation/fractal_catalog_final_family_rules.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_family_rules`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_parameter_surface_descriptor --log artifacts/logs/fractal_catalog_final_parameter_surface_descriptor.log --out-json artifacts/validation/fractal_catalog_final_parameter_surface_descriptor.json --heartbeat-seconds 30 --timeout-seconds 240 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_parameter_surface_descriptor`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_schema_binding --log artifacts/logs/fractal_catalog_final_schema_binding.log --out-json artifacts/validation/fractal_catalog_final_schema_binding.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_schema_binding`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_final_descriptor_cli_pytest --log artifacts/logs/fractal_catalog_final_descriptor_cli_pytest.log --out-json artifacts/validation/fractal_catalog_final_descriptor_cli_pytest.json --heartbeat-seconds 30 --timeout-seconds 180 -- py -3.14 -m pytest tests/test_fractal_parameter_surface_descriptor_cli.py -q`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_full_native --log artifacts/logs/fractal_catalog_full_native.log --out-json artifacts/validation/fractal_catalog_full_native.json --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app/build_tests_vsdevcmd.cmd`
+
+Validation and hygiene rails run green:
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_contract_validation --log artifacts/logs/fractal_catalog_contract_validation.log --out-json artifacts/validation/fractal_catalog_contract_validation_command.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_catalog_authority_inventory.contract.json --out-json artifacts/validation/fractal_catalog_authority_inventory_contract.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_plan_sync_check --log artifacts/logs/fractal_catalog_plan_sync_check.log --out-json artifacts/validation/fractal_catalog_plan_sync_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_code_quality --log artifacts/logs/fractal_catalog_code_quality.log --out-json artifacts/validation/fractal_catalog_code_quality_command.json --heartbeat-seconds 30 --timeout-seconds 180 -- py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/fractal_catalog_authority_inventory_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_authority_inventory_diff_check --log artifacts/logs/fractal_catalog_authority_inventory_diff_check.log --out-json artifacts/validation/fractal_catalog_authority_inventory_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Hostile Audit
 
-- Status: pending
-- Did I actually make new fractal additions simpler, or just create another table that must be manually duplicated elsewhere?
-- Did every current `FractalType` get exactly one truthful catalog row?
-- Did selector identity, schema visibility, descriptor export, and defaults stay behavior-compatible?
-- Did the catalog fail closed when a row is missing or incomplete?
-- Did I accidentally start Slice B, perturbation zoom, color tuning, camera/dive, or new fractal implementation?
+- Status: complete
+- Did I actually make new fractal additions simpler, or just create another table that must be manually duplicated elsewhere? Current answer: Slice A creates the fail-closed row authority; Slice B must still consume it from default-routing surfaces before the larger simplification campaign is complete.
+- Did every current `FractalType` get exactly one truthful catalog row? Current answer: yes by focused native proof.
+- Did selector identity, schema visibility, descriptor export, and defaults stay behavior-compatible? Current answer: final focused rails are green on the repaired state.
+- Did the catalog fail closed when a row is missing or incomplete? Current answer: yes for enum/catalog/id/capability coverage in `test_fractal_catalog_authority`.
+- Did I accidentally start Slice B, perturbation zoom, color tuning, camera/dive, or new fractal implementation? Current answer: no; this diff adds catalog/test/harness only.
 
 ## Audit Passes
 
-- [open] Pass 1 - audit the initial catalog model for duplicated authority and missing fields.
-- [open] Pass 2 - audit behavior-preservation proof against current default and selector surfaces.
-- [open] Pass 3 - clean re-read the repaired state after any audit finding is fixed.
+- [done] Pass 1 - audit the initial catalog model for duplicated authority and missing fields.
+- [done] Pass 2 - audit behavior-preservation proof against current default and selector surfaces.
+- [done] Pass 3 - clean re-read the repaired state after audit findings were fixed.
 
 ## Audit Findings
 
-- [open] No findings yet; this slice is not started.
+- [fixed] Finding 1: The original contract named a multi-target focused native command, but `ui_app/build_tests_vsdevcmd.cmd` only consumed `%~1` and lacked focused dispatch entries for most named rails. Fixed by adding focused targets and revising the contract to list runnable rails explicitly.
+- [fixed] Finding 2: The first catalog implementation had runtime flags but did not explicitly carry UI/capability metadata required by this plan. Fixed with `FractalCatalogCapabilityFlag`, `capability_flags`, and focused tests for sample/probe, schema/control-surface, animation applicability, smooth-escape coloring, Color Pipeline frame coloring, and generic-pack ownership.
+- [fixed] Finding 3: The first hardened catalog duplicated the perturbation eligibility predicate locally. Fixed by consuming `SupportsPerturbationReferenceOrbit(...)` from the existing perturbation seam directly.
+- [clean] Pass 3: Diff review and forbidden-scope grep found no renderer, FPS pacing, capture, Color Pipeline, new-fractal, or perturbation implementation drift in this slice.
 
 ## Notes
 
-The target outcome is not abstraction for its own sake. The target is a fail-closed, low-friction path where a supported 2D fractal addition starts with formula implementation plus one catalog row, and tests identify the remaining required seams.
+The target outcome is not abstraction for its own sake. The target is a fail-closed, low-friction path where a supported 2D fractal addition starts with formula implementation plus one catalog row, and tests identify the remaining required seams. Slice B still needs to consume this catalog from default-routing surfaces before the selector/default authority simplification is complete.
