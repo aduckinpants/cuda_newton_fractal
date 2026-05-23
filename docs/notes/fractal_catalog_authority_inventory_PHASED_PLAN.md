@@ -97,7 +97,7 @@ Validation and hygiene rails run green:
 - `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_contract_validation --log artifacts/logs/fractal_catalog_contract_validation.log --out-json artifacts/validation/fractal_catalog_contract_validation_command.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_catalog_authority_inventory.contract.json --out-json artifacts/validation/fractal_catalog_authority_inventory_contract.json`
 - `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_plan_sync_check --log artifacts/logs/fractal_catalog_plan_sync_check.log --out-json artifacts/validation/fractal_catalog_plan_sync_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
 - `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_code_quality --log artifacts/logs/fractal_catalog_code_quality.log --out-json artifacts/validation/fractal_catalog_code_quality_command.json --heartbeat-seconds 30 --timeout-seconds 180 -- py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/fractal_catalog_authority_inventory_code_quality.json`
-- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_authority_inventory_diff_check --log artifacts/logs/fractal_catalog_authority_inventory_diff_check.log --out-json artifacts/validation/fractal_catalog_authority_inventory_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_post_full_diff_check --log artifacts/logs/fractal_catalog_post_full_diff_check.log --out-json artifacts/validation/fractal_catalog_post_full_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Hostile Audit
 
@@ -119,6 +119,7 @@ Validation and hygiene rails run green:
 - [fixed] Finding 1: The original contract named a multi-target focused native command, but `ui_app/build_tests_vsdevcmd.cmd` only consumed `%~1` and lacked focused dispatch entries for most named rails. Fixed by adding focused targets and revising the contract to list runnable rails explicitly.
 - [fixed] Finding 2: The first catalog implementation had runtime flags but did not explicitly carry UI/capability metadata required by this plan. Fixed with `FractalCatalogCapabilityFlag`, `capability_flags`, and focused tests for sample/probe, schema/control-surface, animation applicability, smooth-escape coloring, Color Pipeline frame coloring, and generic-pack ownership.
 - [fixed] Finding 3: The first hardened catalog duplicated the perturbation eligibility predicate locally. Fixed by consuming `SupportsPerturbationReferenceOrbit(...)` from the existing perturbation seam directly.
+- [fixed] Finding 4: The first receipt attempt showed the contract listed bare native/pytest commands with no parseable contract-proof evidence. Fixed by requiring the logged command rails that produce artifacts.
 - [clean] Pass 3: Diff review and forbidden-scope grep found no renderer, FPS pacing, capture, Color Pipeline, new-fractal, or perturbation implementation drift in this slice.
 
 ## Notes
