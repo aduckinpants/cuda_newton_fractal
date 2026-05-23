@@ -11,7 +11,7 @@
 
 ## Current Phase
 
-Sprint holder is integrated through Step 9 generated/internal editors at `5a53caf`. No next implementation slice is selected in this campaign plan.
+Sprint holder is integrated through Step 9 generated/internal editors at `5a53caf`. No follow-up branch is selected in this campaign plan.
 
 ## Phase Checklist
 
