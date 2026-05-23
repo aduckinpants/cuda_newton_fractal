@@ -24,6 +24,7 @@
 #include "enum_id_utils.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
+#include "fractal_parameter_surface_descriptor.h"
 #include "fractal_probe_runner.h"
 #include "function_descriptor.h"
 #include "json_min.h"
@@ -1076,6 +1077,38 @@ int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
 
     std::string emitError;
     if (!EmitProbeResponse(catalogJson, toStdout, jsonPath, &emitError)) {
+        std::fprintf(stderr, "%s\n", emitError.c_str());
+        return 1;
+    }
+    return 0;
+}
+
+int RunDescribeParameterSurfaceMode(bool toStdout, const std::string& jsonPath,
+    const std::vector<std::string>& schemaCandidates) {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    LensSettings lens{};
+    BindingContext bind;
+    bind.view = &view;
+    bind.params = &params;
+    bind.render = &render;
+    bind.lens = &lens;
+
+    SchemaLoadResult schemaResult = LoadAndValidateViewerSchema(schemaCandidates, bind, false);
+    if (schemaResult.fatal_error) {
+        if (!schemaResult.warning.empty()) {
+            std::fprintf(stderr, "%s\n", schemaResult.warning.c_str());
+        }
+        return 1;
+    }
+    if (!schemaResult.warning.empty()) {
+        std::fprintf(stderr, "%s\n", schemaResult.warning.c_str());
+    }
+
+    const std::string descriptorJson = SerializeFractalParameterSurfaceDescriptorJson(schemaResult.schema);
+    std::string emitError;
+    if (!EmitProbeResponse(descriptorJson, toStdout, jsonPath, &emitError)) {
         std::fprintf(stderr, "%s\n", emitError.c_str());
         return 1;
     }

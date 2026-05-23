@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "contract_id": "pfc_parameter_descriptor_export",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_parameter_descriptor_export_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui_app",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "start from codex/parameter-functionality-campaign after fixed-family fold/mix is integrated",
+    "add a reusable deterministic parameter surface descriptor/export guardrail",
+    "derive descriptor rows from checked-in schema and binding authority",
+    "use runtime CLI proof without opening the viewer or using mouse automation"
+  ],
+  "forbidden_operator_prompts": [
+    "change fractal formulas or add new fractal behavior",
+    "change Color Pipeline, capture finding, FPS pacing, equation-pack viewport integration, perturbation zoom, generated editors, or renderer architecture",
+    "hardcode a Python subset as descriptor authority",
+    "use OS mouse automation or physical cursor tests"
+  ],
+  "required_defaults": {
+    "descriptor_export": "required_schema_cpp_derived",
+    "runtime_cli_export": "required_no_mouse",
+    "owner_lane_boundary": "required",
+    "explaino_all_leakage": "forbidden"
+  },
+  "forbidden_defaults": {
+    "test_only_descriptor": "forbidden_as_closeout",
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden",
+    "feature_behavior_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_parameter_descriptor_export.contract.json --out-json artifacts/validation/pfc_parameter_descriptor_export_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_parameter_descriptor_export_PHASED_PLAN.md --out-json artifacts/validation/pfc_parameter_descriptor_export_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_parameter_descriptor_export_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_descriptor_native --log artifacts/logs/pfc_descriptor_native.log --out-json artifacts/validation/pfc_descriptor_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_parameter_surface_descriptor",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_descriptor_schema --log artifacts/logs/pfc_descriptor_schema.log --out-json artifacts/validation/pfc_descriptor_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_descriptor_full_native --log artifacts/logs/pfc_descriptor_full_native.log --out-json artifacts/validation/pfc_descriptor_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_descriptor_runtime_publish --log artifacts/logs/pfc_descriptor_runtime_publish.log --out-json artifacts/validation/pfc_descriptor_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_parameter_surface_descriptor_cli.py -q --junitxml artifacts/pytest/pfc_descriptor_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The parameter descriptor export contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_parameter_descriptor_export_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The parameter descriptor export hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_parameter_descriptor_export_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

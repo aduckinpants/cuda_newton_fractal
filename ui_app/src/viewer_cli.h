@@ -17,6 +17,7 @@ struct ViewerCliArgs {
     bool capture_diagnostic_only = false;
     bool capture_finding_only = false;
     bool describe_functions = false;
+    bool describe_parameter_surface = false;
     bool describe_explaino_axis_registry = false;
 
     // Sample mode
@@ -35,6 +36,10 @@ struct ViewerCliArgs {
     // Describe-functions
     bool have_describe_functions_json = false;
     std::string describe_functions_json_path;
+
+    // Describe parameter surface
+    bool have_describe_parameter_surface_json = false;
+    std::string describe_parameter_surface_json_path;
 
     // Describe Explaino-axis registry
     bool have_describe_explaino_axis_registry_json = false;
@@ -152,6 +157,7 @@ struct ViewerCliArgs {
 
 inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
+    const bool describeParameterSurface = cli.describe_parameter_surface || cli.have_describe_parameter_surface_json;
     const bool describeExplainoAxisRegistry = cli.describe_explaino_axis_registry || cli.have_describe_explaino_axis_registry_json;
     const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
@@ -161,7 +167,8 @@ inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
     if (colorPipelineHeadlessProof && !(cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
-    if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || describeExplainoAxisRegistry)) return false;
+    if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || describeParameterSurface || describeExplainoAxisRegistry)) return false;
+    if (describeParameterSurface && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || describeExplainoAxisRegistry || flashlightProbe || runtimeWalk || runtimeWalkViewer || cli.any_sample_mode_arg)) return false;
     if (describeExplainoAxisRegistry && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || flashlightProbe || runtimeWalk || runtimeWalkViewer || cli.any_sample_mode_arg)) return false;
     if (flashlightProbe && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || describeExplainoAxisRegistry)) return false;
     if (runtimeWalk && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || describeExplainoAxisRegistry || flashlightProbe || runtimeWalkViewer)) return false;

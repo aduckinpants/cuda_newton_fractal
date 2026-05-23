@@ -1390,12 +1390,13 @@ static int RunSampleSessionMode(const ViewerCliArgs& cli, const std::string& exe
 static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::string& exePath,
                                        const std::string& exeDir) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
+    const bool describeParameterSurface = cli.describe_parameter_surface || cli.have_describe_parameter_surface_json;
     const bool describeExplainoAxisRegistry = cli.describe_explaino_axis_registry || cli.have_describe_explaino_axis_registry_json;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
-            describeExplainoAxisRegistry ||
+            describeParameterSurface || describeExplainoAxisRegistry ||
             exploreRecommend || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer ||
             cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
             std::fprintf(stderr, "--sample-session is mutually exclusive with other headless verbs\n");
@@ -1405,15 +1406,15 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     }
 
     if (cli.any_sample_mode_arg) {
-        if (exploreRecommend || describeExplainoAxisRegistry || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
-            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend, --describe-explaino-axis-registry, --flashlight-probe, runtime-walk headless, and runtime-walk viewer load verbs\n");
+        if (exploreRecommend || describeParameterSurface || describeExplainoAxisRegistry || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
+            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend, --describe-parameter-surface, --describe-explaino-axis-registry, --flashlight-probe, runtime-walk headless, and runtime-walk viewer load verbs\n");
             return 1;
         }
         return RunSampleMode(BuildViewerCliSampleModeArgs(cli), exePath);
     }
 
     if (cli.describe_functions || cli.have_describe_functions_json) {
-        if (exploreRecommend || describeExplainoAxisRegistry ||
+        if (exploreRecommend || describeParameterSurface || describeExplainoAxisRegistry ||
                 cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
                 cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
             std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
@@ -1421,6 +1422,18 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
         }
         return RunDescribeFunctionsMode(cli.describe_functions,
             cli.have_describe_functions_json ? cli.describe_functions_json_path : std::string(),
+            BuildViewerSchemaCandidates(exeDir));
+    }
+
+    if (describeParameterSurface) {
+        if (exploreRecommend || describeExplainoAxisRegistry ||
+                cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
+                cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
+            std::fprintf(stderr, "--describe-parameter-surface is mutually exclusive with other headless verbs\n");
+            return 1;
+        }
+        return RunDescribeParameterSurfaceMode(cli.describe_parameter_surface,
+            cli.have_describe_parameter_surface_json ? cli.describe_parameter_surface_json_path : std::string(),
             BuildViewerSchemaCandidates(exeDir));
     }
 

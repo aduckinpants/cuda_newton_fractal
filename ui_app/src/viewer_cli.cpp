@@ -435,6 +435,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     out->capture_diagnostic_only = HasArg(args, "--capture-diagnostic");
     out->capture_finding_only = HasArg(args, "--capture-finding");
     out->describe_functions = HasArg(args, "--describe-functions");
+    out->describe_parameter_surface = HasArg(args, "--describe-parameter-surface");
     out->describe_explaino_axis_registry = HasArg(args, "--describe-explaino-axis-registry");
     out->explore_recommend = HasArg(args, "--explore-recommend");
 
@@ -454,6 +455,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
 
     // Describe-functions JSON
     if (!TryStr(args, "--describe-functions-json", &out->have_describe_functions_json, &out->describe_functions_json_path)) return 1;
+    if (!TryStr(args, "--describe-parameter-surface-json", &out->have_describe_parameter_surface_json, &out->describe_parameter_surface_json_path)) return 1;
     if (!TryStr(args, "--describe-explaino-axis-registry-json", &out->have_describe_explaino_axis_registry_json, &out->describe_explaino_axis_registry_json_path)) return 1;
     if (!TryStr(args, "--explore-recommend-json", &out->have_explore_recommend_json, &out->explore_recommend_json_path)) return 1;
     if (!TryParseFlashlightArgs(args, out)) return 1;
