@@ -173,3 +173,4 @@
 - `ck:160ff1c0` 2026-05-23 07:57 UTC | score 96 — Removed stale closeout wording from the closed PFC Step 7 plan after the post-closeout stale-plan grep found it.
 - `ck:c342fa74` 2026-05-23 08:01 UTC — session-start | branch=codex/pfc-explaino-julia-authority | head=e784817 | status=dirty | profile=runtime | intent=parameter functionality campaign slice 8 Explaino Julia authority mode
 - `ck:c342fa74` 2026-05-23 09:07 UTC | score 96 — Closed PFC Step 8 Explaino Julia authority mode: seeded/custom mode, owner-only custom constants, native/runtime no-mouse proof, full native retry green after stale safe-mode duplicate assertion fix.
+- `ck:c342fa74` 2026-05-23 09:09 UTC | score 96 — Integrated PFC Step 8 into the campaign holder and advanced holder plan to Step 9 generated/internal editors.
