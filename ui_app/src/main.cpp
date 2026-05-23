@@ -1517,6 +1517,7 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
 
 struct ViewerUiAutomationCommandState {
     std::int64_t last_sequence = -1;
+    ViewerUiAutomationEnumCommandReport enum_report;
 };
 
 static bool ReadUiAutomationJsonFile(const std::string& path, json_min::Value* outValue) {
@@ -1736,6 +1737,7 @@ static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
     }
 
     bool armedCommand = false;
+    commandState.enum_report = {};
     if (const json_min::Value* loadState = commandRoot.get("load_state_json")) {
         if (loadState->is_string() && !loadState->as_string().empty()) {
             std::string loadError;
@@ -1770,9 +1772,15 @@ static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
                 commandBind.params = &params;
                 commandBind.render = &render;
                 commandBind.lens = &lens;
+                commandState.enum_report.requested_enum_path = path;
+                commandState.enum_report.requested_enum_id = id;
                 if (commandBind.SetEnumId(path, id)) {
+                    commandState.enum_report.enum_consumed = true;
                     ApplyFractalTypeAndPolyCoherence(view, params, dirty, lastFractalType, lastPolyKind);
                     dirty = true;
+                    armedCommand = true;
+                } else {
+                    commandState.enum_report.enum_error = std::string("schema enum edit rejected: ") + path + "=" + id;
                     armedCommand = true;
                 }
             }
@@ -2957,6 +2965,7 @@ static void RunViewerFrame(
             stats,
             renderPacing,
             frameProbe,
+            uiAutomationCommandState.enum_report,
             uiAutomationCommandState.last_sequence);
     }
 }

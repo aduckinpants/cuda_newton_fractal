@@ -35,6 +35,12 @@ def _require_frame_hash(payload: dict[str, object]) -> str:
     return frame_hash
 
 
+def _payload_has_control(payload: dict[str, object], control_id: str) -> bool:
+    controls = payload.get("controls")
+    assert isinstance(controls, list), payload
+    return any(isinstance(control, dict) and control.get("control_id") == control_id for control in controls)
+
+
 def test_explaino_custom_root_editor_changes_live_output_no_mouse(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("viewer automation is Windows-only")
@@ -42,14 +48,9 @@ def test_explaino_custom_root_editor_changes_live_output_no_mouse(tmp_path: Path
     exe_path = active_runtime_exe()
     state = _capture_state(exe_path, "explaino")
     state["params"]["max_iter"] = 180
-    state["params"]["explaino_root_authority"] = "custom"
-    state["params"]["explaino_root_count"] = 4
-    state["params"]["explaino_roots"] = [
-        {"x": 1.20, "y": 0.10},
-        {"x": 0.10, "y": 1.20},
-        {"x": -1.15, "y": -0.05},
-        {"x": 0.05, "y": -0.85},
-    ]
+    state["params"]["explaino_root_authority"] = "generated"
+    state["params"]["explaino_root_count"] = 0
+    state["params"]["explaino_roots"] = []
     state_path = write_state_bundle(tmp_path / "generated_internal_editors", state)
 
     with runtime_automation_lock(timeout_seconds=20.0):
@@ -60,18 +61,32 @@ def test_explaino_custom_root_editor_changes_live_output_no_mouse(tmp_path: Path
             command_path=tmp_path / "generated_internal_editors_command.json",
         ) as viewer:
             baseline = viewer.wait_for_report(timeout_seconds=20.0)
-            baseline_hash = _require_frame_hash(baseline)
+            _require_frame_hash(baseline)
             assert baseline.get("current_fractal_type") == "explaino"
 
             viewer.wait_for_control("fractal_control.explaino_root_authority.primary", timeout_seconds=20.0)
-
             root_x_control = "fractal_control.explaino_root_0_x.primary"
+            assert not _payload_has_control(baseline, root_x_control)
+
+            authority_edited = viewer.set_enum_id(
+                "fractal.params.explaino_root_authority",
+                "custom",
+                expected_fractal_type="explaino",
+                timeout_seconds=20.0,
+            )
+            authority_hash = _require_frame_hash(authority_edited)
+            assert authority_edited.get("current_fractal_type") == "explaino"
+            assert authority_edited.get("enum_consumed") is True
+            assert authority_edited.get("requested_enum_path") == "fractal.params.explaino_root_authority"
+            assert authority_edited.get("requested_enum_id") == "custom"
+            assert _payload_has_control(authority_edited, root_x_control)
+
             viewer.wait_for_control(root_x_control, timeout_seconds=20.0)
             root_x_edited = viewer.set_control_value(root_x_control, 1.65, timeout_seconds=20.0)
             root_x_hash = _require_frame_hash(root_x_edited)
             assert root_x_edited.get("current_fractal_type") == "explaino"
             assert root_x_edited.get("set_value_consumed") is True
-            assert root_x_hash != baseline_hash
+            assert root_x_hash != authority_hash
 
             root_count_control = "fractal_control.explaino_custom_root_count.primary"
             viewer.wait_for_control(root_count_control, timeout_seconds=20.0)

@@ -1,12 +1,14 @@
 #include "fractal_parameter_surface_descriptor.h"
 
 #include "enum_id_utils.h"
+#include "fractal_family_rules.h"
 #include "schema_binding.h"
 
 #include <cstddef>
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -45,8 +47,63 @@ BindingContext MakeDescriptorBindingContext(
     return ctx;
 }
 
-BindingContext MakeDescriptorBindingContextForFractal(
+bool IsPolynomialEditorFractalType(FractalType fractalType) {
+    return fractalType == FractalType::newton ||
+        fractalType == FractalType::nova ||
+        fractalType == FractalType::halley;
+}
+
+bool IsDescriptorExplainoRootEditorFractalType(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::explaino_julia:
+    case FractalType::explaino_lambda:
+    case FractalType::explaino_rational_escape:
+    case FractalType::explaino_collatz_direct:
+    case FractalType::explaino_counterfactual_pair:
+    case FractalType::explaino_projection_and_flow:
+        return false;
+    default:
+        return IsExplainoFamily(fractalType);
+    }
+}
+
+enum class DescriptorSurfaceKind {
+    default_state,
+    poly_custom,
+    explaino_roots_custom,
+    explaino_julia_custom,
+};
+
+struct DescriptorSurfaceSpec {
+    const char* id;
+    DescriptorSurfaceKind kind;
+    bool default_visible;
+};
+
+constexpr DescriptorSurfaceSpec kDescriptorSurfaceSpecs[] = {
+    {"default", DescriptorSurfaceKind::default_state, true},
+    {"poly_custom", DescriptorSurfaceKind::poly_custom, false},
+    {"explaino_roots_custom", DescriptorSurfaceKind::explaino_roots_custom, false},
+    {"explaino_julia_custom", DescriptorSurfaceKind::explaino_julia_custom, false},
+};
+
+bool DescriptorSurfaceApplies(FractalType fractalType, DescriptorSurfaceKind kind) {
+    switch (kind) {
+    case DescriptorSurfaceKind::default_state:
+        return true;
+    case DescriptorSurfaceKind::poly_custom:
+        return IsPolynomialEditorFractalType(fractalType);
+    case DescriptorSurfaceKind::explaino_roots_custom:
+        return IsDescriptorExplainoRootEditorFractalType(fractalType);
+    case DescriptorSurfaceKind::explaino_julia_custom:
+        return fractalType == FractalType::explaino_julia;
+    }
+    return false;
+}
+
+BindingContext MakeDescriptorBindingContextForSurface(
     FractalType fractalType,
+    DescriptorSurfaceKind surfaceKind,
     ViewState& view,
     KernelParams& params,
     RenderSettings& render,
@@ -56,9 +113,17 @@ BindingContext MakeDescriptorBindingContextForFractal(
     render = RenderSettings{};
     lens = LensSettings{};
     view.fractal_type = fractalType;
-    if (fractalType == FractalType::explaino_julia) {
+
+    if (surfaceKind == DescriptorSurfaceKind::poly_custom) {
+        params.poly_kind = PolyKind::custom;
+    } else if (surfaceKind == DescriptorSurfaceKind::explaino_roots_custom) {
+        params.explaino_root_authority = ExplainoRootAuthority::custom;
+        params.explaino_root_count = 4;
+        params.poly_kind = PolyKind::custom;
+    } else if (surfaceKind == DescriptorSurfaceKind::explaino_julia_custom) {
         params.explaino_julia_constant_mode = ExplainoJuliaConstantMode::custom;
     }
+
     return MakeDescriptorBindingContext(view, params, render, lens);
 }
 
@@ -273,13 +338,24 @@ std::string CandidateValueForControl(const UISchemaControl& control) {
     return ss.str();
 }
 
+bool ControlAlreadyDescribed(const std::vector<std::string>& describedControlIds, const std::string& controlId) {
+    for (const std::string& described : describedControlIds) {
+        if (described == controlId) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void WriteControlDescriptor(
     std::ostream& out,
     const char* laneId,
     const UISchemaControl& control,
     const std::string& runtimeBindingKind,
     bool bindingResolves,
-    bool animatable) {
+    bool animatable,
+    const char* visibilitySurfaceId,
+    bool defaultVisible) {
     out << "{";
     out << "\"control_id\": ";
     WriteJsonString(out, control.id);
@@ -302,6 +378,9 @@ void WriteControlDescriptor(
     WriteJsonString(out, StateIoKeyForBindingPath(control.binding.path));
     out << ", \"has_validation_range\": " << (HasValidationRange(control) ? "true" : "false");
     out << ", \"animatable\": " << (animatable ? "true" : "false");
+    out << ", \"visibility_surface_id\": ";
+    WriteJsonString(out, visibilitySurfaceId ? visibilitySurfaceId : "");
+    out << ", \"default_visible\": " << (defaultVisible ? "true" : "false");
     out << "}";
 }
 
@@ -312,7 +391,9 @@ std::string SerializeFractalParameterSurfaceDescriptorJson(const UISchema& schem
 
     std::ostringstream out;
     int fractalCount = 0;
+    int surfaceCount = 0;
     int visibleFamilyControlCells = 0;
+    int defaultVisibleFamilyControlCells = 0;
 
     out << "{\n";
     out << "  \"version\": 1,\n";
@@ -320,17 +401,6 @@ std::string SerializeFractalParameterSurfaceDescriptorJson(const UISchema& schem
 
     bool firstLane = true;
     for (const auto& lane : enum_id_utils::kFractalTypeIds) {
-        ViewState view{};
-        KernelParams params{};
-        RenderSettings render{};
-        LensSettings lens{};
-        BindingContext ctx = MakeDescriptorBindingContextForFractal(
-            lane.value,
-            view,
-            params,
-            render,
-            lens);
-
         if (!firstLane) {
             out << ",\n";
         }
@@ -342,32 +412,59 @@ std::string SerializeFractalParameterSurfaceDescriptorJson(const UISchema& schem
         out << ", \"controls\": [";
 
         bool firstControl = true;
-        for (const UISchemaPanel& panel : schema.panels) {
-            for (const UISchemaControl& control : panel.controls) {
-                if (!control.has_binding ||
-                    control.binding.kind != "param" ||
-                    !IsFamilySurfaceBindingPath(control.binding.path) ||
-                    !ControlVisibleForContext(control, ctx)) {
-                    continue;
-                }
+        std::vector<std::string> describedControlIds;
+        for (const DescriptorSurfaceSpec& surface : kDescriptorSurfaceSpecs) {
+            if (!DescriptorSurfaceApplies(lane.value, surface.kind)) {
+                continue;
+            }
+            ++surfaceCount;
 
-                std::string runtimeBindingKind;
-                const bool bindingResolves = BindingResolvesAsKind(control, ctx, &runtimeBindingKind);
-                const bool animatable = ControlIsAnimatableForContext(control, animTarget, ctx);
-                ++visibleFamilyControlCells;
+            ViewState view{};
+            KernelParams params{};
+            RenderSettings render{};
+            LensSettings lens{};
+            BindingContext ctx = MakeDescriptorBindingContextForSurface(
+                lane.value,
+                surface.kind,
+                view,
+                params,
+                render,
+                lens);
 
-                if (!firstControl) {
-                    out << ",";
+            for (const UISchemaPanel& panel : schema.panels) {
+                for (const UISchemaControl& control : panel.controls) {
+                    if (!control.has_binding ||
+                        control.binding.kind != "param" ||
+                        !IsFamilySurfaceBindingPath(control.binding.path) ||
+                        ControlAlreadyDescribed(describedControlIds, control.id) ||
+                        !ControlVisibleForContext(control, ctx)) {
+                        continue;
+                    }
+
+                    std::string runtimeBindingKind;
+                    const bool bindingResolves = BindingResolvesAsKind(control, ctx, &runtimeBindingKind);
+                    const bool animatable = ControlIsAnimatableForContext(control, animTarget, ctx);
+                    describedControlIds.push_back(control.id);
+                    ++visibleFamilyControlCells;
+                    if (surface.default_visible) {
+                        ++defaultVisibleFamilyControlCells;
+                    }
+
+                    if (!firstControl) {
+                        out << ",";
+                    }
+                    firstControl = false;
+                    out << "\n        ";
+                    WriteControlDescriptor(
+                        out,
+                        lane.id,
+                        control,
+                        runtimeBindingKind,
+                        bindingResolves,
+                        animatable,
+                        surface.id,
+                        surface.default_visible);
                 }
-                firstControl = false;
-                out << "\n        ";
-                WriteControlDescriptor(
-                    out,
-                    lane.id,
-                    control,
-                    runtimeBindingKind,
-                    bindingResolves,
-                    animatable);
             }
         }
 
@@ -379,6 +476,8 @@ std::string SerializeFractalParameterSurfaceDescriptorJson(const UISchema& schem
 
     out << "\n  ],\n";
     out << "  \"fractal_count\": " << fractalCount << ",\n";
+    out << "  \"surface_count\": " << surfaceCount << ",\n";
+    out << "  \"default_visible_family_control_cells\": " << defaultVisibleFamilyControlCells << ",\n";
     out << "  \"visible_family_control_cells\": " << visibleFamilyControlCells << "\n";
     out << "}\n";
     return out.str();

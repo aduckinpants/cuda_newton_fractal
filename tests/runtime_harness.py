@@ -500,6 +500,11 @@ class PersistentRuntimeViewerAutomation:
             if payload is not None:
                 last_payload = payload
                 if payload.get("ui_automation_command_sequence") == self.sequence:
+                    assert payload.get("requested_enum_path") == path, payload
+                    assert payload.get("requested_enum_id") == enum_id, payload
+                    enum_error = payload.get("enum_error")
+                    assert not enum_error, f"enum automation failed for {path}={enum_id}: {enum_error}"
+                    assert payload.get("enum_consumed") is True, payload
                     if expected_fractal_type is None or payload.get("current_fractal_type") == expected_fractal_type:
                         if payload.get("rendered_frame_ready") is True:
                             return payload

@@ -189,6 +189,7 @@ void WriteColorPipelineUiAutomationReport(
     const RenderStats& stats,
     const ViewerRenderPacingDecision& renderPacing,
     const ViewerUiAutomationFrameProbe& frameProbe,
+    const ViewerUiAutomationEnumCommandReport& enumCommandReport,
     std::int64_t uiAutomationCommandSequence) {
     if (reportPath.empty() || !hwnd) {
         return;
@@ -226,6 +227,28 @@ void WriteColorPipelineUiAutomationReport(
     const char* currentFractalTypeId = enum_id_utils::LookupEnumId(view.fractal_type, enum_id_utils::kFractalTypeIds);
     out << "  \"current_fractal_type\": ";
     WriteAutomationReportString(out, currentFractalTypeId ? currentFractalTypeId : "");
+    out << ",\n";
+    out << "  \"requested_enum_path\": ";
+    if (enumCommandReport.requested_enum_path.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, enumCommandReport.requested_enum_path);
+    }
+    out << ",\n";
+    out << "  \"requested_enum_id\": ";
+    if (enumCommandReport.requested_enum_id.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, enumCommandReport.requested_enum_id);
+    }
+    out << ",\n";
+    out << "  \"enum_consumed\": " << (enumCommandReport.enum_consumed ? "true" : "false") << ",\n";
+    out << "  \"enum_error\": ";
+    if (enumCommandReport.enum_error.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, enumCommandReport.enum_error);
+    }
     out << ",\n";
     out << "  \"equation_pack_workbench\": {\n";
     const GenericEquationPackWorkbenchAutomationReport emptyEquationPackReport;

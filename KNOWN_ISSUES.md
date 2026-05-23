@@ -119,14 +119,14 @@ The perturbation reference-orbit path is implemented only for `Mandelbrot` and `
 
 ---
 
-## P2 — Phoenix parameterization is one-shot
+## ~~P2 — Phoenix parameterization is one-shot~~ RESOLVED
 
-**Status:** open
-**Area:** presets
+**Status:** resolved (parameter functionality campaign)
+**Area:** presets / schema / runtime proof
 
-Phoenix has a single hardcoded `p = 0.5667 + 0i`. The canonical Phoenix fractal family has interesting structure at many different `p` values. A proper treatment would expose `p` as a UI slider (already bound to schema) and include 2-3 named presets.
+Phoenix now exposes `phoenix_p_real` and `phoenix_p_imag` as runtime-backed controls and the no-mouse parameter proof campaign covers the visible control path. Future work may still add named Phoenix presets, but the old "single hardcoded p" control-surface bug is closed.
 
-**File:** `ui_app/src/fractal_derived_fields.cpp`
+**Files:** `ui/fractal_binding_surface_v1.ui_schema.json`, `ui_app/src/fractal_sample_device.inl`, `tests/test_fractal_runtime_parameter_controls.py`
 
 ---
 

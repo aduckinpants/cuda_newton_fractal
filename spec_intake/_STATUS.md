@@ -1,6 +1,6 @@
 # Spec Intake — Status Index
 
-Last updated: 2026-04-13
+Last updated: 2026-05-23
 
 ## Implemented
 
@@ -9,9 +9,9 @@ These specs are fully landed on the branch with tests, schema bindings, and prob
 | Spec | Summary | Key Commits |
 |------|---------|-------------|
 | ExplainoFamilyExpansion_V1 | explaino_nova, explaino_dual, explaino_lambda, explaino_rational_escape + ripple, splice, vortex, tension | multiple |
-| NonIntegerMultibrot_V1 | multibrot_power_float with [2,12] domain | landed 2026-04-06 |
+| NonIntegerMultibrot_V1 | multibrot real exponent accepts `[0.01,32]` with normal UI range `[0.01,12]`, plus `multibrot_power_imag` complex exponent support `[-4,4]` | QoL multibrot exponent slice |
 | NovaFractal_V1 | Nova escape-time contract (coloring bug fixed) | Nova repair slice |
-| PhoenixFractal_V1 | Phoenix with single preset (p=0.5667) | early branch |
+| PhoenixFractal_V1 | Phoenix with runtime-backed `phoenix_p_real` / `phoenix_p_imag` controls; named preset library remains future polish | parameter functionality campaign |
 | TranscendentalNewtonPresets_V1 | sin, exp-1, cosh Newton presets | early branch |
 | FractalCatalog_WaveTwo | Lambda, Explaino-Lambda, Explaino-Rational-Escape | wave-two commits |
 | FractalTypeDropdown_and_MultiFractalKernel | Multi-fractal kernel routing + grouped selector | schema extraction |
@@ -22,7 +22,7 @@ These specs are fully landed on the branch with tests, schema bindings, and prob
 | ExplainoSidecarMutationReplay | Persisted sidecar mutation history plus deterministic ordered headless parameter replay from loaded `state.json`; future frame-delta/live replay proof is deferred | multiple |
 | HeadlessExplorationAdvisor | Explaino-only `--explore-recommend-json` report mode that emits a deterministic next-best-observation artifact from the existing sidecar intelligence seams | advisor slice |
 | LambdaQuadraticConjugacy_DesignNote | Lambda kept as FractalType::lambda_map (reserved word) | Lambda commits |
-| CommonFractalCatalog_Deferred_2026-04-06 | Wave 1: Spider, Celtic MB, Perpendicular BS | common-fractal wave |
+| CommonFractalCatalog_Deferred_2026-04-06 | Wave 1 plus exposed exploration controls: Spider feedback, Collatz transition strength, and fold/mix controls for Burning Ship, Celtic Mandelbrot, and Perpendicular Burning Ship | parameter functionality campaign |
 | No_Implicit_Fallback_General_Directive | Fail-fast for unknown bindings/enums/params | adopted throughout |
 
 ## Deferred — Future Fractal Toolkit Branch

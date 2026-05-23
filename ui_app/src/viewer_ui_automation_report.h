@@ -41,6 +41,13 @@ struct ViewerUiAutomationRenderPacingProbe {
     int pacing_render_height = 0;
 };
 
+struct ViewerUiAutomationEnumCommandReport {
+    std::string requested_enum_path;
+    std::string requested_enum_id;
+    bool enum_consumed = false;
+    std::string enum_error;
+};
+
 std::string JsonEscapeAutomationReportString(const std::string& value);
 void WriteAutomationReportString(std::ostream& out, const std::string& value);
 ViewerUiAutomationFrameProbe BuildViewerUiAutomationFrameProbe(
@@ -68,4 +75,5 @@ void WriteColorPipelineUiAutomationReport(
     const RenderStats& stats,
     const ViewerRenderPacingDecision& renderPacing,
     const ViewerUiAutomationFrameProbe& frameProbe,
+    const ViewerUiAutomationEnumCommandReport& enumCommandReport,
     std::int64_t uiAutomationCommandSequence);

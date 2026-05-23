@@ -4,7 +4,13 @@ Date: 2026-05-19
 Slice: documentation-only research inventory before RED UI/UX harness work
 Start branch/head: `codex/fractal-control-surface-audit-docs` / `c774128`
 
-This document is an inventory, not a repair. It records the current control surface for every defined fractal, the static missing-control suspects, and the UI/UX proof gaps that should become RED tests before product work starts.
+This document began as an inventory, not a repair. It records the control surface observed at the 2026-05-19 scan point, the static missing-control suspects, and the UI/UX proof gaps that were intended to become RED tests before product work started.
+
+## Current Status Note (2026-05-23)
+
+This file is now historical scan context unless a section explicitly says it was updated after the parameter functionality campaign. Do not use the early static-suspect list or the first all-fractal table as current product truth by themselves. Current authority for the campaign lives in `docs/contracts/parameter_functionality_campaign_PHASED_PLAN.md`, the per-slice contracts, and the checked-in descriptor/runtime proofs.
+
+Landed since the original scan: standalone Julia constants, Nova `poly_c4`, Multibrot real/complex exponent expansion, Phoenix `p` controls, Spider feedback, Collatz transition strength, fixed-family fold/mix controls, McMullen direct custom controls, Explaino rational-escape denominator power, Explaino Julia custom constants, and generated/internal editor proof hardening. Remaining larger projects such as perturbation zoom, equation-pack viewport integration, and preset libraries are still separate future work.
 
 ## Scope Boundary
 
@@ -50,9 +56,9 @@ Current direct no-mouse rendered-frame proof is narrow compared with the schema 
 
 Everything else listed as visible below needs generated RED coverage before any repair claim. Some controls have headless or unit coverage, but this slice is about the UI/UX harness proving visible controls actually drive the product surface.
 
-## Static Missing-Control Suspects
+## Historical Static Missing-Control Suspects
 
-These are not all proven bugs. They are the first places where current code suggests meaningful runtime parameters are not fully user-exposed.
+These were not all proven bugs at the scan point. Several entries below have since been repaired or reclassified; retain this list as provenance for why the later campaign slices existed, not as a current open-bug list.
 
 1. `julia`: standalone Julia hard-codes `c = -0.7 + 0.27015i` in `InitEscapeTimeDirectState(...)`. There is no visible `julia_c_real` / `julia_c_imag` control.
 2. `nova`: `poly_kind` exposes `z4_minus_1` and `custom`, and the Nova runtime evaluates all five polynomial coefficients, but the schema exposes only `poly_c0` through `poly_c3` on `nova`; `poly_c4` is visible on `newton,halley` only. If Nova is meant to support quartic/custom polynomials, this is a real missing-control suspect.
@@ -64,6 +70,8 @@ These are not all proven bugs. They are the first places where current code sugg
 8. Generated/internal surfaces should not be treated as missing sliders by default: `explaino_root_count`, `explaino_roots[4]`, `poly_coeffs_b[5]`, and Color Pipeline stack internals are generated or editor-specific authority surfaces unless a later design intentionally exposes direct editors.
 
 ## Every Defined Fractal
+
+Historical table from the 2026-05-19 scan. Rows below intentionally preserve original findings; later campaign sections and contracts supersede them where they name repaired controls.
 
 | Fractal | Visible numeric controls | Visible non-numeric family controls | Missing-control/static suspect | Current proof classification | First RED UI/UX harness target |
 |---|---|---|---|---|---|
