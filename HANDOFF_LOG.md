@@ -169,3 +169,4 @@
 - `ck:160ff1c0` 2026-05-23 06:22 UTC — session-start | branch=codex/pfc-explaino-collatz-direct | head=6ff4ef9 | status=dirty | profile=runtime | intent=parameter functionality campaign slice 7 Explaino Collatz direct variant
 - `ck:160ff1c0` 2026-05-23 07:52 UTC | score 96 — Closed PFC Step 7: added explaino_collatz_direct as an additive direct Collatz escape-time Explaino selector, preserved existing explaino_collatz Newton lane, kept collatz_transition_strength off explaino_all, and validated final native/runtime proof.
 - `ck:160ff1c0` 2026-05-23 07:53 UTC | score 96 — Repaired PFC Step 7 receipt gate by removing an invalid focused target from the checked-in contract after receipt proof caught it; contract, plan sync, and hostile audit revalidated.
+- `ck:160ff1c0` 2026-05-23 07:55 UTC | score 96 — Integrated PFC Step 7 into the campaign holder and updated the holder plan so Step 8, codex/pfc-explaino-julia-authority, is the next slice.

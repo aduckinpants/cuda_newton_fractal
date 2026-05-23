@@ -11,7 +11,7 @@
 
 ## Current Phase
 
-Sprint holder is integrated through Step 6 at `32dd3e9`. The next implementation slice is Step 7, `codex/pfc-explaino-collatz-direct`.
+Sprint holder is integrated through Step 7 at `3d214c3`. The next implementation slice is Step 8, `codex/pfc-explaino-julia-authority`.
 
 ## Phase Checklist
 
@@ -30,7 +30,7 @@ Sprint holder is integrated through Step 6 at `32dd3e9`. The next implementation
 - Feature branches are created from the sprint holder when their slice begins.
 - Each feature branch gets its own plan, contract, focused tests, hostile audit, commit, receipts, push, clean-tree closeout, and merge back into the sprint holder.
 - The sprint holder is the integration branch for this campaign only. It is not a license to combine unrelated feature work.
-- The next feature branch to start after the current integrated holder is `codex/pfc-explaino-collatz-direct`.
+- The next feature branch to start after the current integrated holder is `codex/pfc-explaino-julia-authority`.
 
 ## Campaign Steps Through Step 9
 
@@ -40,8 +40,8 @@ Sprint holder is integrated through Step 6 at `32dd3e9`. The next implementation
 4. [closed] `codex/pfc-parameter-descriptor-export`: add a deterministic parameter surface descriptor/export guardrail so future slider audits compare schema, binding, validation, state IO, runtime params, and animation applicability from one machine-readable surface.
 5. [closed] `codex/pfc-explaino-y-epsilon`: revisited `explaino_y::epsilon`; current proof shows live sensitivity on the tuned native sample surface and a preview-stable no-mouse published runtime surface.
 6. [closed] `codex/pfc-branch-dead-explaino-controls`: repaired `explaino_nova` warp/damping as authoritative visible controls and kept ambiguous branch-dead Explaino rows classified/deferred instead of re-exposing inert sliders.
-7. [next] `codex/pfc-explaino-collatz-direct`: add an Explaino Collatz direct variant only after standalone Collatz control behavior is proven, with explicit selector identity and no umbrella ownership confusion.
-8. `codex/pfc-explaino-julia-authority`: design and implement Explaino Julia direct constants behind an explicit seeded/custom authority mode instead of silently repurposing current defaults.
+7. [closed] `codex/pfc-explaino-collatz-direct`: added `explaino_collatz_direct` as an additive direct Collatz escape-time Explaino selector, preserved the existing Newton-style `explaino_collatz`, kept `collatz_transition_strength` off `explaino_all`, and closed with final native/runtime proof.
+8. [next] `codex/pfc-explaino-julia-authority`: design and implement Explaino Julia direct constants behind an explicit seeded/custom authority mode instead of silently repurposing current defaults.
 9. `codex/pfc-generated-internal-editors`: expose generated/internal editor authority through a safe override-mode UI, not raw array dumping, and prove saved-state compatibility plus runtime authority.
 
 ## Deferred Beyond Step 9
@@ -73,10 +73,10 @@ Sprint holder is integrated through Step 6 at `32dd3e9`. The next implementation
 ## Next Slice Entry Criteria
 
 - Campaign branch pushed and clean at the integrated holder head.
-- Active Step 6 contract closed with receipts.
-- New feature branch to create from `codex/parameter-functionality-campaign`: `codex/pfc-explaino-collatz-direct`.
-- New checked-in Step 7 plan and contract must be created before code mutation.
-- Step 7 must preserve standalone Collatz behavior and Explaino-all registry/common-axis behavior while adding only the explicitly bounded Explaino Collatz direct variant.
+- Active Step 7 contract closed with receipts.
+- New feature branch to create from `codex/parameter-functionality-campaign`: `codex/pfc-explaino-julia-authority`.
+- New checked-in Step 8 plan and contract must be created before code mutation.
+- Step 8 must introduce Explaino Julia direct constants behind an explicit seeded/custom authority mode without silently repurposing current defaults.
 
 ## Proof Ledger
 
@@ -92,6 +92,7 @@ Sprint holder is integrated through Step 6 at `32dd3e9`. The next implementation
 - Hostile-audit validation: `artifacts/validation/parameter_functionality_campaign_hostile_audit.json`.
 - Integrated through Step 5: `5b6950c` closed `pfc_explaino_y_epsilon` with native viewport-mapped sample proof and preview-stable no-mouse runtime proof.
 - Integrated through Step 6: `32dd3e9` closed `pfc_branch_dead_explaino_controls`; `explaino_nova` now exposes and consumes `explaino_warp_strength` and `explaino_damping`, the native/full-helper/published-runtime proof is green, and ambiguous branch-dead rows remain classified/deferred.
+- Integrated through Step 7: `3d214c3` closed `pfc_explaino_collatz_direct`; the new direct selector is additive, `collatz_transition_strength` remains owner-scoped to `collatz` plus `explaino_collatz_direct`, the existing `explaino_collatz` Newton lane is preserved, and final full-native plus no-mouse runtime/catalog proof is green.
 
 ## Hostile Audit
 
@@ -100,7 +101,7 @@ Sprint holder is integrated through Step 6 at `32dd3e9`. The next implementation
 - Did I keep this setup to documentation/branch setup instead of feature implementation? Yes; diff scope is the handoff breadcrumb plus this plan and contract.
 - Did I avoid pre-creating inactive feature branches? Yes; `git branch --list "codex/pfc-*"` returned no branches.
 - Did I preserve Batch 1 as the baseline instead of reopening it? Yes; no Batch 1 implementation files or contracts were edited.
-- Did I keep the holder plan current after integrated feature slices? Yes; it now names Step 7 as the next implementation branch and records Step 6 as closed at `32dd3e9`.
+- Did I keep the holder plan current after integrated feature slices? Yes; it now names Step 8 as the next implementation branch and records Step 7 as closed at `3d214c3`.
 
 ## Audit Passes
 
