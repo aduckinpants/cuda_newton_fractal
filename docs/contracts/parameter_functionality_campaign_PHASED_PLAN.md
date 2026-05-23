@@ -11,7 +11,7 @@
 
 ## Current Phase
 
-Sprint holder is integrated through the Step 8 seed-responsiveness follow-up at `40faf61`. The next implementation slice is Step 9, `codex/pfc-generated-internal-editors`.
+Sprint holder is integrated through Step 9 generated/internal editors at `5a53caf`. No next implementation slice is selected in this campaign plan.
 
 ## Phase Checklist
 
@@ -30,7 +30,7 @@ Sprint holder is integrated through the Step 8 seed-responsiveness follow-up at 
 - Feature branches are created from the sprint holder when their slice begins.
 - Each feature branch gets its own plan, contract, focused tests, hostile audit, commit, receipts, push, clean-tree closeout, and merge back into the sprint holder.
 - The sprint holder is the integration branch for this campaign only. It is not a license to combine unrelated feature work.
-- The next feature branch to start after the current integrated holder is `codex/pfc-generated-internal-editors`.
+- Step 9 is integrated; the holder branch is ready for a fresh branch-per-feature decision when the next campaign item is selected.
 
 ## Campaign Steps Through Step 9
 
@@ -42,7 +42,7 @@ Sprint holder is integrated through the Step 8 seed-responsiveness follow-up at 
 6. [closed] `codex/pfc-branch-dead-explaino-controls`: repaired `explaino_nova` warp/damping as authoritative visible controls and kept ambiguous branch-dead Explaino rows classified/deferred instead of re-exposing inert sliders.
 7. [closed] `codex/pfc-explaino-collatz-direct`: added `explaino_collatz_direct` as an additive direct Collatz escape-time Explaino selector, preserved the existing Newton-style `explaino_collatz`, kept `collatz_transition_strength` off `explaino_all`, and closed with final native/runtime proof.
 8. [closed] `codex/pfc-explaino-julia-authority`: added explicit seeded/custom authority for `explaino_julia` constants, kept owner-specific controls off `explaino_all`, preserved standalone `julia`, and closed with native/full-helper/no-mouse published-runtime proof. Follow-up `codex/pfc-explaino-seed-responsiveness-repair` closed at `40faf61` restored the visible Seed control as authoritative on `explaino_julia` and repaired full combined-Seed routing for Explaino warp-start paths.
-9. [next] `codex/pfc-generated-internal-editors`: expose generated/internal editor authority through a safe override-mode UI, not raw array dumping, and prove saved-state compatibility plus runtime authority.
+9. [closed] `codex/pfc-generated-internal-editors`: added explicit generated/custom Explaino root authority, gated generated/internal editors behind safe override predicates, preserved generated defaults and Explaino-Julia Seed responsiveness, and closed with native, full-helper, published-runtime no-mouse, hostile-audit, receipt, and push proof.
 
 ## Deferred Beyond Step 9
 
@@ -70,13 +70,12 @@ Sprint holder is integrated through the Step 8 seed-responsiveness follow-up at 
 - Owner-specific controls must not be added to `explaino_all` unless the slice explicitly proves they are registry/common-axis controls.
 - Color Pipeline, capture finding, and FPS pacing must not regress when shared schema or automation harness paths are touched.
 
-## Next Slice Entry Criteria
+## Holder State After Step 9
 
-- Campaign branch pushed and clean at the integrated holder head.
-- Active Step 8 and seed-responsiveness follow-up contracts closed with receipts.
-- New feature branch to create from `codex/parameter-functionality-campaign`: `codex/pfc-generated-internal-editors`.
-- New checked-in Step 9 plan and contract must be created before code mutation.
-- Step 9 must use explicit override-mode authority for generated/internal editors; raw array dumping is not an acceptable user-facing control model.
+- Campaign branch contains the Step 9 feature commit `5a53caf`.
+- `codex/pfc-generated-internal-editors` was created, validated, receipt-backed, pushed, and fast-forwarded into the holder.
+- Step 9 used explicit override-mode authority for generated/internal editors; raw array dumping was not added as a user-facing control model.
+- Future work should start from a fresh branch-per-feature decision instead of extending this closed Step 9 slice.
 
 ## Proof Ledger
 
@@ -95,6 +94,7 @@ Sprint holder is integrated through the Step 8 seed-responsiveness follow-up at 
 - Integrated through Step 7: `3d214c3` closed `pfc_explaino_collatz_direct`; the new direct selector is additive, `collatz_transition_strength` remains owner-scoped to `collatz` plus `explaino_collatz_direct`, the existing `explaino_collatz` Newton lane is preserved, and final full-native plus no-mouse runtime/catalog proof is green.
 - Integrated through Step 8: `1cfb299` closed `pfc_explaino_julia_authority`; `explaino_julia` now has explicit seeded/custom constant authority, owner-only custom controls, native sample/schema/state/descriptor proof, full native helper proof, runtime publish, no-mouse published-runtime proof, hostile audit, validation receipt, and contract-proof receipt.
 - Integrated Step 8 follow-up: `40faf61` closed `pfc_explaino_seed_responsiveness_repair`; `explaino_julia` now defaults seed-driven warp active, custom constants remain authoritative, Explaino warp-start paths consume full combined Seed through `ExplainoCombinedSeedToWarpSeed`, the legacy fractional `LogisticAreaUToSeed` contract remains covered, and focused native/runtime/full-native rails passed.
+- Integrated through Step 9: `5a53caf` closed `pfc_generated_internal_editors`; `explaino_root_authority` defaults to generated, custom root count/coordinate controls are authority-gated, coefficient editors are custom-predicate-gated, saved state/capture/runtime walk export the authority, `SampleFractalPoints` remains covered, Explaino-Julia Seed runtime proof was rerun, and full native plus no-mouse published-runtime proof passed.
 
 ## Hostile Audit
 
@@ -103,7 +103,7 @@ Sprint holder is integrated through the Step 8 seed-responsiveness follow-up at 
 - Did I keep this setup to documentation/branch setup instead of feature implementation? Yes; diff scope is the handoff breadcrumb plus this plan and contract.
 - Did I avoid pre-creating inactive feature branches? Yes; `git branch --list "codex/pfc-*"` returned no branches.
 - Did I preserve Batch 1 as the baseline instead of reopening it? Yes; no Batch 1 implementation files or contracts were edited.
-- Did I keep the holder plan current after integrated feature slices? Yes; it now names Step 9 as the next implementation branch and records the Step 8 seed-responsiveness follow-up as integrated at `40faf61`.
+- Did I keep the holder plan current after integrated feature slices? Yes; it now records Step 9 as integrated at `5a53caf` and leaves no active next feature branch selected.
 
 ## Audit Passes
 
