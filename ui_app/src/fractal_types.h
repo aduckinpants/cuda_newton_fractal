@@ -200,6 +200,11 @@ enum class ExplainoJuliaConstantMode : int {
     custom = 1,
 };
 
+enum class ExplainoRootAuthority : int {
+    generated = 0,
+    custom = 1,
+};
+
 enum class FractalType : int {
     newton = 0,
     nova = 1,
@@ -459,6 +464,7 @@ struct KernelParams {
     float explaino_mix{0.5f};
     float explaino_warp_strength{0.0f};
     float explaino_root_spread{0.5f};
+    ExplainoRootAuthority explaino_root_authority{ExplainoRootAuthority::generated};
     float explaino_damping{1.0f};
     float explaino_cluster_radius{0.0f};
     int explaino_root_count{0};

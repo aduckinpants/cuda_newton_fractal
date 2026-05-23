@@ -72,6 +72,11 @@ inline constexpr EnumIdPair<ExplainoJuliaConstantMode> kExplainoJuliaConstantMod
     {ExplainoJuliaConstantMode::custom, "custom"},
 };
 
+inline constexpr EnumIdPair<ExplainoRootAuthority> kExplainoRootAuthorityIds[] = {
+    {ExplainoRootAuthority::generated, "generated"},
+    {ExplainoRootAuthority::custom, "custom"},
+};
+
 inline constexpr EnumIdPair<ColoringMode> kColoringModeIds[] = {
     {ColoringMode::root_basin, "root_basin"},
     {ColoringMode::iteration_count, "iteration_count"},
@@ -241,6 +246,14 @@ inline const char* ExplainoJuliaConstantModeId(ExplainoJuliaConstantMode value) 
 
 inline bool TryParseExplainoJuliaConstantModeId(std::string_view id, ExplainoJuliaConstantMode* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kExplainoJuliaConstantModeIds, outValue);
+}
+
+inline const char* ExplainoRootAuthorityId(ExplainoRootAuthority value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kExplainoRootAuthorityIds);
+}
+
+inline bool TryParseExplainoRootAuthorityId(std::string_view id, ExplainoRootAuthority* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kExplainoRootAuthorityIds, outValue);
 }
 
 inline const char* ColoringModeId(ColoringMode value) {

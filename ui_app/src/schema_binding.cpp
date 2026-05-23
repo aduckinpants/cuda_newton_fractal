@@ -37,6 +37,66 @@ bool IsMcMullenDirectParamPath(const std::string& path) {
            path == "fractal.params.mcmullen_lambda";
 }
 
+
+bool IsExplainoRootEditorFractalType(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::explaino_julia:
+    case FractalType::explaino_lambda:
+    case FractalType::explaino_rational_escape:
+    case FractalType::explaino_collatz_direct:
+    case FractalType::explaino_counterfactual_pair:
+    case FractalType::explaino_projection_and_flow:
+        return false;
+    default:
+        return IsExplainoFamily(fractalType);
+    }
+}
+
+void SeedDefaultCustomExplainoRoots(KernelParams& params) {
+    bool allZero = true;
+    for (const Float2& root : params.explaino_roots) {
+        allZero = allZero && root.x == 0.0f && root.y == 0.0f;
+    }
+    if (!allZero) return;
+    params.explaino_roots[0] = {1.0f, 0.0f};
+    params.explaino_roots[1] = {0.0f, 1.0f};
+    params.explaino_roots[2] = {-1.0f, 0.0f};
+    params.explaino_roots[3] = {0.0f, -1.0f};
+}
+
+bool BindExplainoRootCoordinate(KernelParams& params, const std::string& path, float** outPtr) {
+    if (path == "fractal.params.explaino_roots.0.x") { *outPtr = &params.explaino_roots[0].x; return true; }
+    if (path == "fractal.params.explaino_roots.0.y") { *outPtr = &params.explaino_roots[0].y; return true; }
+    if (path == "fractal.params.explaino_roots.1.x") { *outPtr = &params.explaino_roots[1].x; return true; }
+    if (path == "fractal.params.explaino_roots.1.y") { *outPtr = &params.explaino_roots[1].y; return true; }
+    if (path == "fractal.params.explaino_roots.2.x") { *outPtr = &params.explaino_roots[2].x; return true; }
+    if (path == "fractal.params.explaino_roots.2.y") { *outPtr = &params.explaino_roots[2].y; return true; }
+    if (path == "fractal.params.explaino_roots.3.x") { *outPtr = &params.explaino_roots[3].x; return true; }
+    if (path == "fractal.params.explaino_roots.3.y") { *outPtr = &params.explaino_roots[3].y; return true; }
+    return false;
+}
+
+bool SetExplainoRootAuthority(BindingContext* ctx, const std::string& id) {
+    if (!ctx || !ctx->params) return false;
+    ExplainoRootAuthority authority{};
+    if (!TryParseExplainoRootAuthorityId(id, &authority)) return false;
+    ctx->params->explaino_root_authority = authority;
+    if (authority == ExplainoRootAuthority::generated) {
+        ctx->params->explaino_root_count = 0;
+        for (Float2& root : ctx->params->explaino_roots) {
+            root = {0.0f, 0.0f};
+        }
+        return true;
+    }
+    if (ctx->view && !IsExplainoRootEditorFractalType(ctx->view->fractal_type)) {
+        return false;
+    }
+    ctx->params->poly_kind = PolyKind::custom;
+    ctx->params->explaino_root_count = ctx->params->explaino_root_count == 3 ? 3 : 4;
+    SeedDefaultCustomExplainoRoots(*ctx->params);
+    return true;
+}
+
 void MarkMcMullenDirectEdit(BindingContext& ctx, const std::string& path) {
     if (ctx.params && IsMcMullenDirectParamPath(path)) {
         ctx.params->mcmullen_preset = McMullenPreset::custom;
@@ -809,6 +869,9 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.explaino_julia_constant_mode") {
         return EnumIdOrEmpty(ExplainoJuliaConstantModeId(params->explaino_julia_constant_mode));
     }
+    if (params && path == "fractal.params.explaino_root_authority") {
+        return EnumIdOrEmpty(ExplainoRootAuthorityId(params->explaino_root_authority));
+    }
     if (params && path == "fractal.params.coloring_mode") {
         return EnumIdOrEmpty(ColoringModeId(params->coloring_mode));
     }
@@ -869,6 +932,9 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     if (params && path == "fractal.params.explaino_julia_constant_mode") {
         return ParseAndAssignEnumId(id, &params->explaino_julia_constant_mode, TryParseExplainoJuliaConstantModeId);
     }
+    if (params && path == "fractal.params.explaino_root_authority") {
+        return SetExplainoRootAuthority(this, id);
+    }
     if (params && path == "fractal.params.coloring_mode") {
         return SetColoringMode(this, id);
     }
@@ -908,6 +974,20 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
             params->explaino_julia_constant_mode == ExplainoJuliaConstantMode::custom;
         return true;
     }
+    if (path == "fractal.params.explaino_custom_roots_active") {
+        out = view && params &&
+            IsExplainoRootEditorFractalType(view->fractal_type) &&
+            params->explaino_root_authority == ExplainoRootAuthority::custom;
+        return true;
+    }
+    if (path == "fractal.params.poly_coefficients_custom_active") {
+        out = view && params &&
+            (view->fractal_type == FractalType::newton ||
+             view->fractal_type == FractalType::nova ||
+             view->fractal_type == FractalType::halley) &&
+            params->poly_kind == PolyKind::custom;
+        return true;
+    }
     bool* ptr = nullptr;
     BindingContext* self = const_cast<BindingContext*>(this);
     if (!self->BindBool(path, &ptr) || !ptr) return false;
@@ -928,6 +1008,13 @@ bool BindingContext::GetIntValue(const std::string& path, int& out) const {
 }
 
 bool BindingContext::SetIntValue(const std::string& path, int value) {
+    if (params && path == "fractal.params.explaino_root_count") {
+        if (value != 3 && value != 4) return false;
+        params->explaino_root_count = value;
+        params->explaino_root_authority = ExplainoRootAuthority::custom;
+        params->poly_kind = PolyKind::custom;
+        return true;
+    }
     if (render && IsResolutionLongEdgePath(path)) {
         return ApplyResolutionLongEdge(*render, value);
     }
@@ -1097,6 +1184,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }
         if (path == "fractal.params.poly_coeffs.3") { *outPtr = &params->poly_coeffs[3]; return true; }
         if (path == "fractal.params.poly_coeffs.4") { *outPtr = &params->poly_coeffs[4]; return true; }
+        if (BindExplainoRootCoordinate(*params, path, outPtr)) return true;
     }
     if (render) {
         if (path == "fractal.render.preview_target_fps") { *outPtr = &render->preview_target_fps; return true; }
@@ -1117,6 +1205,7 @@ bool BindingContext::BindInt(const std::string& path, int** outPtr) {
         if (path == "fractal.params.max_iter") { *outPtr = &params->max_iter; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power; return true; }
         if (path == "fractal.params.explaino_rational_escape_denominator_power") { *outPtr = &params->explaino_rational_escape_denominator_power; return true; }
+        if (path == "fractal.params.explaino_root_count") { *outPtr = &params->explaino_root_count; return true; }
         if (path == "fractal.params.mcmullen_m") { *outPtr = &params->mcmullen_m; return true; }
         if (path == "fractal.params.mcmullen_n") { *outPtr = &params->mcmullen_n; return true; }
     }

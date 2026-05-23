@@ -692,6 +692,36 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::explaino;
+        params.coloring_mode = ColoringMode::joy_basins;
+        params.explaino_root_authority = ExplainoRootAuthority::custom;
+        params.explaino_root_count = 4;
+        params.explaino_roots[0] = {1.0f, 0.0f};
+        params.explaino_roots[1] = {0.0f, 1.0f};
+        params.explaino_roots[2] = {-1.0f, 0.0f};
+        params.explaino_roots[3] = {0.0f, -1.0f};
+        if (!ValidateFractalRuntimeState(view, params, &error)) {
+            std::cerr << "Expected custom Explaino root authority to accept finite 4-root state, got: " << error << "\n";
+            return 1;
+        }
+        params.explaino_root_count = 2;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "custom Explaino root authority requires explaino_root_count 3 or 4") {
+            std::cerr << "Expected custom Explaino root authority to reject invalid root count\n";
+            return 1;
+        }
+        params.explaino_root_count = 4;
+        params.explaino_roots[2].x = std::numeric_limits<float>::quiet_NaN();
+        if (ValidateFractalRuntimeState(view, params, &error) || error != "custom Explaino roots must be finite") {
+            std::cerr << "Expected custom Explaino root authority to reject non-finite root coordinates\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_fractal_runtime_validation: all passed\n";
     return 0;
 }

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "contract_id": "pfc_generated_internal_editors",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_generated_internal_editors_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "Step 9 generated/internal editors",
+    "safe override-mode authority, not raw array dumping",
+    "preserve generated defaults and use no-mouse runtime proof"
+  ],
+  "forbidden_operator_prompts": [
+    "start equation-pack viewport integration",
+    "start perturbation zoom",
+    "change Color Pipeline, capture finding, or FPS pacing behavior",
+    "expose raw generated arrays without explicit custom authority",
+    "use OS mouse automation or physical cursor tests"
+  ],
+  "required_defaults": {
+    "explaino_root_authority": "generated",
+    "poly_coeff_editor_visibility": "custom mode only",
+    "runtime_or_public_path_proof": "required",
+    "physical_mouse": "forbidden"
+  },
+  "forbidden_defaults": {
+    "raw_array_dumping": "forbidden",
+    "generated_behavior_change_without_custom_mode": "forbidden",
+    "proxy_only_proof": "forbidden",
+    "unrelated_feature_work": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_generated_internal_editors.contract.json --out-json artifacts/validation/pfc_generated_internal_editors_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_generated_internal_editors_PHASED_PLAN.md --out-json artifacts/validation/pfc_generated_internal_editors_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_generated_internal_editors_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_generated_internal_editors_schema --log artifacts/logs/pfc_generated_internal_editors_schema.log --out-json artifacts/validation/pfc_generated_internal_editors_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_generated_internal_editors_runtime_validation --log artifacts/logs/pfc_generated_internal_editors_runtime_validation.log --out-json artifacts/validation/pfc_generated_internal_editors_runtime_validation.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_explaino_counterfactual_repair",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_generated_internal_editors_sample --log artifacts/logs/pfc_generated_internal_editors_sample.log --out-json artifacts/validation/pfc_generated_internal_editors_sample.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_generated_internal_editors_runtime_publish --log artifacts/logs/pfc_generated_internal_editors_runtime_publish.log --out-json artifacts/validation/pfc_generated_internal_editors_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_generated_internal_editors_runtime_pytest --log artifacts/logs/pfc_generated_internal_editors_runtime_pytest.log --out-json artifacts/validation/pfc_generated_internal_editors_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 -m pytest tests/test_fractal_runtime_generated_internal_editors.py -q --junitxml artifacts/pytest/pfc_generated_internal_editors_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_generated_internal_editors_full_native --log artifacts/logs/pfc_generated_internal_editors_full_native.log --out-json artifacts/validation/pfc_generated_internal_editors_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_generated_internal_editors_diff_check --log artifacts/logs/pfc_generated_internal_editors_diff_check.log --out-json artifacts/validation/pfc_generated_internal_editors_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The generated/internal editors contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_generated_internal_editors_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The generated/internal editors hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_generated_internal_editors_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

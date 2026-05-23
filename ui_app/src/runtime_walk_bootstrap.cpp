@@ -668,6 +668,7 @@ std::string BuildSynthesizedStateJson(const ViewState& view, const KernelParams&
     js << "    \"explaino_mix\": " << static_cast<double>(params.explaino_mix) << ",\n";
     js << "    \"explaino_warp_strength\": " << static_cast<double>(params.explaino_warp_strength) << ",\n";
     js << "    \"explaino_root_spread\": " << static_cast<double>(params.explaino_root_spread) << ",\n";
+    js << "    \"explaino_root_authority\": \"" << ExplainoRootAuthorityId(params.explaino_root_authority) << "\",\n";
     js << "    \"explaino_root_count\": " << params.explaino_root_count << ",\n";
     js << "    \"poly_coeffs\": [";
     for (int i = 0; i < 5; ++i) {

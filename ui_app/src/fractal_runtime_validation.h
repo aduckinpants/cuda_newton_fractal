@@ -251,6 +251,19 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
         if (!std::isfinite(params.explaino_seed) || !std::isfinite(params.explaino_seed_b)) {
             return FailFractalRuntimeValidation("explaino_seed and explaino_seed_b must be finite", outError);
         }
+        if (params.explaino_root_authority == ExplainoRootAuthority::custom) {
+            if (params.explaino_root_count != 3 && params.explaino_root_count != 4) {
+                return FailFractalRuntimeValidation(
+                    "custom Explaino root authority requires explaino_root_count 3 or 4",
+                    outError);
+            }
+            for (int rootIndex = 0; rootIndex < params.explaino_root_count; ++rootIndex) {
+                if (!std::isfinite(params.explaino_roots[rootIndex].x) ||
+                    !std::isfinite(params.explaino_roots[rootIndex].y)) {
+                    return FailFractalRuntimeValidation("custom Explaino roots must be finite", outError);
+                }
+            }
+        }
         if (!std::isfinite(params.explaino_mix) || params.explaino_mix < 0.0f || params.explaino_mix > 1.0f) {
             return FailFractalRuntimeValidation("explaino_mix must be finite and in [0,1]", outError);
         }

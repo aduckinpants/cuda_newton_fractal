@@ -115,6 +115,24 @@ bool SameFractalSampleResult(const FractalSampleResult& lhs, const FractalSample
         std::fabs(lhs.far_field_delta - rhs.far_field_delta) < 1.0e-6f;
 }
 
+void SetDegree4PolynomialCoefficientsFromRootsForTest(const Float2 roots[4], float coeffs[5]) {
+    const float r0x = roots[0].x, r0y = roots[0].y;
+    const float r1x = roots[1].x, r1y = roots[1].y;
+    const float r2x = roots[2].x, r2y = roots[2].y;
+    const float r3x = roots[3].x, r3y = roots[3].y;
+
+    const float s01x = r0x + r1x, s01y = r0y + r1y;
+    const float p01x = r0x * r1x - r0y * r1y, p01y = r0x * r1y + r0y * r1x;
+    const float s23x = r2x + r3x, s23y = r2y + r3y;
+    const float p23x = r2x * r3x - r2y * r3y, p23y = r2x * r3y + r2y * r3x;
+
+    coeffs[4] = 1.0f;
+    coeffs[3] = -(s01x + s23x);
+    coeffs[2] = p01x + (s01x * s23x - s01y * s23y) + p23x;
+    coeffs[1] = -(p01x * s23x - p01y * s23y + s01x * p23x - s01y * p23y);
+    coeffs[0] = p01x * p23x - p01y * p23y;
+}
+
 void SyncProjectionAndFlowRootFamilyPresetLocal(KernelParams& params) {
     switch (params.projection_and_flow_root_family) {
     case ProjectionAndFlowRootFamily::cubic_unit_roots:
@@ -1013,6 +1031,92 @@ void TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults() 
     }
 }
 
+void TestExplainoCustomRootAuthorityAffectsSamplesAndPreservesGeneratedDefaults() {
+    constexpr int N = 49;
+    Double2 coords[N];
+    int next = 0;
+    for (int yi = -3; yi <= 3; ++yi) {
+        for (int xi = -3; xi <= 3; ++xi) {
+            coords[next++] = MakeDouble2(0.28 * static_cast<double>(xi), 0.28 * static_cast<double>(yi));
+        }
+    }
+
+    RenderSettings render{};
+    ViewState generatedView{};
+    ViewState explicitGeneratedView{};
+    ViewState customView{};
+    ViewState movedCustomView{};
+    KernelParams generatedParams{};
+    KernelParams explicitGeneratedParams{};
+    KernelParams customParams{};
+    KernelParams movedCustomParams{};
+    MakeDefaults(FractalType::explaino, generatedView, generatedParams, render);
+    MakeDefaults(FractalType::explaino, explicitGeneratedView, explicitGeneratedParams, render);
+    MakeDefaults(FractalType::explaino, customView, customParams, render);
+    MakeDefaults(FractalType::explaino, movedCustomView, movedCustomParams, render);
+
+    generatedParams.max_iter = 96;
+    explicitGeneratedParams.max_iter = 96;
+    customParams.max_iter = 96;
+    movedCustomParams.max_iter = 96;
+    generatedView.explaino_phase = 0.35f;
+    explicitGeneratedView.explaino_phase = 0.35f;
+    customView.explaino_phase = 0.35f;
+    movedCustomView.explaino_phase = 0.35f;
+    generatedParams.explaino_warp_strength = 0.15f;
+    explicitGeneratedParams.explaino_warp_strength = 0.15f;
+    customParams.explaino_warp_strength = 0.15f;
+    movedCustomParams.explaino_warp_strength = 0.15f;
+
+    explicitGeneratedParams.explaino_root_authority = ExplainoRootAuthority::generated;
+
+    const auto configureCustomRoots = [](KernelParams& params, float root0x) {
+        params.poly_kind = PolyKind::custom;
+        params.explaino_root_authority = ExplainoRootAuthority::custom;
+        params.explaino_root_count = 4;
+        params.explaino_roots[0] = {root0x, 0.10f};
+        params.explaino_roots[1] = {0.10f, 1.20f};
+        params.explaino_roots[2] = {-1.15f, -0.05f};
+        params.explaino_roots[3] = {0.05f, -0.85f};
+        SetDegree4PolynomialCoefficientsFromRootsForTest(params.explaino_roots, params.poly_coeffs);
+        for (float& coeff : params.poly_coeffs_b) coeff = 0.0f;
+    };
+    configureCustomRoots(customParams, 1.20f);
+    configureCustomRoots(movedCustomParams, 1.65f);
+
+    FractalSampleResult generatedResults[N]{};
+    FractalSampleResult explicitGeneratedResults[N]{};
+    FractalSampleResult customResults[N]{};
+    FractalSampleResult movedCustomResults[N]{};
+    const char* error = nullptr;
+    CHECK("explaino generated-root sample ok",
+        SampleFractalPoints(coords, N, generatedView, generatedParams, render, generatedResults, &error));
+    CHECK("explaino explicit generated-root sample ok",
+        SampleFractalPoints(coords, N, explicitGeneratedView, explicitGeneratedParams, render, explicitGeneratedResults, &error));
+    CHECK("explaino custom-root sample ok",
+        SampleFractalPoints(coords, N, customView, customParams, render, customResults, &error));
+    CHECK("explaino moved custom-root sample ok",
+        SampleFractalPoints(coords, N, movedCustomView, movedCustomParams, render, movedCustomResults, &error));
+
+    bool generatedParity = true;
+    bool customDiffersFromGenerated = false;
+    bool movedCustomDiffers = false;
+    for (int i = 0; i < N; ++i) {
+        if (!SameFractalSampleResult(generatedResults[i], explicitGeneratedResults[i])) {
+            generatedParity = false;
+        }
+        if (!SameFractalSampleResult(generatedResults[i], customResults[i])) {
+            customDiffersFromGenerated = true;
+        }
+        if (!SameFractalSampleResult(customResults[i], movedCustomResults[i])) {
+            movedCustomDiffers = true;
+        }
+    }
+    CHECK("explicit generated root authority preserves generated samples", generatedParity);
+    CHECK("custom Explaino root authority changes SampleFractalPoints results", customDiffersFromGenerated);
+    CHECK("custom Explaino root coordinates change SampleFractalPoints results", movedCustomDiffers);
+}
+
 void TestExplainoJuliaAuthorityModeAffectsSamplesAndPreservesSeededDefaults() {
     constexpr int N = 49;
     Double2 coords[N];
@@ -1566,6 +1670,7 @@ int main() {
     TestExplainoLambdaPhaseStrengthControlsWarpedMap();
     TestExplainoNovaWarpAndDampingAffectSamplesAndPreserveDefaults();
     TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults();
+    TestExplainoCustomRootAuthorityAffectsSamplesAndPreservesGeneratedDefaults();
     TestExplainoJuliaAuthorityModeAffectsSamplesAndPreservesSeededDefaults();
     TestExplainoJuliaSeedAffectsCustomAuthoritySamplesThroughVisibleSeedSurface();
     TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults();

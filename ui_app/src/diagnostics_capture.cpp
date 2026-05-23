@@ -166,6 +166,11 @@ const char* CaptureExplainoJuliaConstantModeId(ExplainoJuliaConstantMode mode) {
     return (id && id[0] != '\0') ? id : "unknown";
 }
 
+const char* CaptureExplainoRootAuthorityId(ExplainoRootAuthority authority) {
+    const char* id = ::ExplainoRootAuthorityId(authority);
+    return (id && id[0] != '\0') ? id : "generated";
+}
+
 const char* CaptureCounterfactualPairRootFamilyId(CounterfactualPairRootFamily rootFamily) {
     const char* id = ::CounterfactualPairRootFamilyId(rootFamily);
     return (id && id[0] != '\0') ? id : "unknown";
@@ -639,6 +644,7 @@ std::string BuildStateJson(
     js << "    \"explaino_mix\": " << static_cast<double>(params.explaino_mix) << ",\n";
     js << "    \"explaino_warp_strength\": " << static_cast<double>(params.explaino_warp_strength) << ",\n";
     js << "    \"explaino_root_spread\": " << static_cast<double>(params.explaino_root_spread) << ",\n";
+    js << "    \"explaino_root_authority\": \"" << CaptureExplainoRootAuthorityId(params.explaino_root_authority) << "\",\n";
     js << "    \"explaino_damping\": " << static_cast<double>(params.explaino_damping) << ",\n";
     const int persistedExplainoRootCount = params.explaino_root_count < 0
         ? 0

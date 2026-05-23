@@ -824,26 +824,11 @@ bool ValidateVisibleControlMatrix() {
         {"explaino_julia_constant_mode", FractalType::explaino_julia, "fractal.params.explaino_julia_constant_mode", "enum"},
         {"epsilon", FractalType::newton, "fractal.params.epsilon", "float"},
         {"poly_kind", FractalType::newton, "fractal.params.poly_kind", "enum"},
-        {"poly_c0", FractalType::newton, "fractal.params.poly_coeffs.0", "float"},
-        {"poly_c1", FractalType::newton, "fractal.params.poly_coeffs.1", "float"},
-        {"poly_c2", FractalType::newton, "fractal.params.poly_coeffs.2", "float"},
-        {"poly_c3", FractalType::newton, "fractal.params.poly_coeffs.3", "float"},
-        {"poly_c4", FractalType::newton, "fractal.params.poly_coeffs.4", "float"},
         {"epsilon", FractalType::halley, "fractal.params.epsilon", "float"},
         {"poly_kind", FractalType::halley, "fractal.params.poly_kind", "enum"},
-        {"poly_c0", FractalType::halley, "fractal.params.poly_coeffs.0", "float"},
-        {"poly_c1", FractalType::halley, "fractal.params.poly_coeffs.1", "float"},
-        {"poly_c2", FractalType::halley, "fractal.params.poly_coeffs.2", "float"},
-        {"poly_c3", FractalType::halley, "fractal.params.poly_coeffs.3", "float"},
-        {"poly_c4", FractalType::halley, "fractal.params.poly_coeffs.4", "float"},
         {"epsilon", FractalType::nova, "fractal.params.epsilon", "float"},
         {"nova_alpha", FractalType::nova, "fractal.params.nova_alpha", "float"},
         {"poly_kind", FractalType::nova, "fractal.params.poly_kind", "enum"},
-        {"poly_c0", FractalType::nova, "fractal.params.poly_coeffs.0", "float"},
-        {"poly_c1", FractalType::nova, "fractal.params.poly_coeffs.1", "float"},
-        {"poly_c2", FractalType::nova, "fractal.params.poly_coeffs.2", "float"},
-        {"poly_c3", FractalType::nova, "fractal.params.poly_coeffs.3", "float"},
-        {"poly_c4", FractalType::nova, "fractal.params.poly_coeffs.4", "float"},
         {"phoenix_p_real", FractalType::phoenix, "fractal.params.phoenix_p_real", "float"},
         {"phoenix_p_imag", FractalType::phoenix, "fractal.params.phoenix_p_imag", "float"},
         {"lambda_real", FractalType::lambda_map, "fractal.params.lambda_real", "float"},
@@ -1175,6 +1160,50 @@ int main() {
             std::cerr << "Expected Projection-and-Flow root family enum round-trip to start at cubic_unit_roots\n";
             return 1;
         }
+        if (ctx.GetEnumId("fractal.params.explaino_root_authority") != "generated") {
+            std::cerr << "Expected Explaino root authority to default to generated mode\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.explaino_root_authority", "custom") ||
+            ctx.GetEnumId("fractal.params.explaino_root_authority") != "custom" ||
+            params.explaino_root_count != 4) {
+            std::cerr << "Expected Explaino root authority custom mode to create a bounded editable root set\n";
+            return 1;
+        }
+        float* explainoRoot0X = nullptr;
+        float* explainoRoot0Y = nullptr;
+        if (!ctx.BindFloat("fractal.params.explaino_roots.0.x", &explainoRoot0X) ||
+            !ctx.BindFloat("fractal.params.explaino_roots.0.y", &explainoRoot0Y) ||
+            explainoRoot0X != &params.explaino_roots[0].x ||
+            explainoRoot0Y != &params.explaino_roots[0].y) {
+            std::cerr << "Expected safe Explaino root editor controls to bind to bounded root coordinate fields\n";
+            return 1;
+        }
+        bool customRootsActive = false;
+        if (!ctx.GetBoolValue("fractal.params.explaino_custom_roots_active", customRootsActive) || !customRootsActive) {
+            std::cerr << "Expected custom root visibility predicate to activate in custom root authority mode\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.explaino_root_authority", "generated") ||
+            ctx.GetEnumId("fractal.params.explaino_root_authority") != "generated" ||
+            params.explaino_root_count != 0 ||
+            !ctx.GetBoolValue("fractal.params.explaino_custom_roots_active", customRootsActive) || customRootsActive) {
+            std::cerr << "Expected generated root authority to hide custom roots and clear explicit root count\n";
+            return 1;
+        }
+        view.fractal_type = FractalType::newton;
+        params.poly_kind = PolyKind::z3_minus_1;
+        bool customPolyActive = true;
+        if (!ctx.GetBoolValue("fractal.params.poly_coefficients_custom_active", customPolyActive) || customPolyActive) {
+            std::cerr << "Expected polynomial coefficient editor predicate to stay false for preset polynomial modes\n";
+            return 1;
+        }
+        params.poly_kind = PolyKind::custom;
+        if (!ctx.GetBoolValue("fractal.params.poly_coefficients_custom_active", customPolyActive) || !customPolyActive) {
+            std::cerr << "Expected polynomial coefficient editor predicate to activate only for custom polynomial mode\n";
+            return 1;
+        }
+        view.fractal_type = FractalType::explaino;
         if (ctx.GetEnumId("fractal.view.fractal_type") != "explaino") {
             std::cerr << "Expected fractal type enum round-trip to start at explaino\n";
             return 1;

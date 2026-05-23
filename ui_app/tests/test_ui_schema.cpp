@@ -211,6 +211,7 @@ inline constexpr const char* kKnownExplainoAllVisibleBindingPaths[] = {
     "fractal.actions.next_seed",
     "fractal.params.explaino_warp_strength",
     "fractal.params.explaino_root_spread",
+    "fractal.params.explaino_root_authority",
     "fractal.view.explaino_phase_strength",
     "fractal.params.explaino_damping",
     "fractal.view.explaino_phase",
@@ -353,6 +354,65 @@ bool ValidateCounterfactualPairControlSurface(const UISchema& schema) {
     return true;
 }
 
+bool ValidateGeneratedInternalEditorSurface(const UISchema& schema) {
+    const UISchemaPanel* fractalPanel = FindPanelById(schema, "fractal");
+    if (!fractalPanel) {
+        std::cerr << "Main schema missing fractal panel for generated/internal editor validation\n";
+        return false;
+    }
+
+    const UISchemaControl* polyC0 = FindControlById(*fractalPanel, "poly_c0");
+    const UISchemaControl* polyC4 = FindControlById(*fractalPanel, "poly_c4");
+    if (!polyC0 || !polyC4) {
+        std::cerr << "Main schema missing polynomial coefficient editor controls\n";
+        return false;
+    }
+    if (!polyC0->has_visible_if || polyC0->visible_if.path != "fractal.params.poly_coefficients_custom_active" ||
+        polyC0->visible_if.op != "eq" || polyC0->visible_if.value != "true" ||
+        !polyC4->has_visible_if || polyC4->visible_if.path != "fractal.params.poly_coefficients_custom_active" ||
+        polyC4->visible_if.op != "eq" || polyC4->visible_if.value != "true") {
+        std::cerr << "Polynomial coefficient editors must be gated behind explicit custom polynomial authority\n";
+        return false;
+    }
+
+    const UISchemaControl* rootAuthority = FindControlById(*fractalPanel, "explaino_root_authority");
+    const UISchemaControl* rootCount = FindControlById(*fractalPanel, "explaino_custom_root_count");
+    const UISchemaControl* root0x = FindControlById(*fractalPanel, "explaino_root_0_x");
+    const UISchemaControl* root0y = FindControlById(*fractalPanel, "explaino_root_0_y");
+    if (!rootAuthority || !rootCount || !root0x || !root0y) {
+        std::cerr << "Main schema missing safe Explaino custom-root editor controls\n";
+        return false;
+    }
+    bool hasGenerated = false;
+    bool hasCustom = false;
+    for (const UISchemaOption& option : rootAuthority->options) {
+        hasGenerated = hasGenerated || option.id == "generated";
+        hasCustom = hasCustom || option.id == "custom";
+    }
+    if (rootAuthority->type != "combo" || !rootAuthority->has_binding ||
+        rootAuthority->binding.path != "fractal.params.explaino_root_authority" ||
+        !rootAuthority->has_default || !rootAuthority->def.is_string() || rootAuthority->def.as_string() != "generated" ||
+        !hasGenerated || !hasCustom || !VisibleIfIncludesFractalType(*rootAuthority, "explaino") ||
+        !VisibleIfIncludesFractalType(*rootAuthority, "explaino_all")) {
+        std::cerr << "Explaino root authority must be an explicit generated/custom owner-lane control\n";
+        return false;
+    }
+    const auto rootCustomVisible = [](const UISchemaControl* control) {
+        return control && control->has_visible_if &&
+            control->visible_if.path == "fractal.params.explaino_custom_roots_active" &&
+            control->visible_if.op == "eq" && control->visible_if.value == "true";
+    };
+    if (!rootCustomVisible(rootCount) || !rootCustomVisible(root0x) || !rootCustomVisible(root0y)) {
+        std::cerr << "Explaino custom root fields must be hidden unless custom root authority is active\n";
+        return false;
+    }
+    if (!root0x->has_binding || root0x->binding.path != "fractal.params.explaino_roots.0.x" ||
+        !root0y->has_binding || root0y->binding.path != "fractal.params.explaino_roots.0.y") {
+        std::cerr << "Explaino root coordinate controls must bind to bounded root coordinate paths\n";
+        return false;
+    }
+    return true;
+}
 bool ValidateProjectionAndFlowControlSurface(const UISchema& schema) {
     const UISchemaPanel* fractalPanel = FindPanelById(schema, "fractal");
     if (!fractalPanel) {
@@ -745,6 +805,9 @@ int main() {
         if (!ValidateProjectionAndFlowControlSurface(result.schema)) {
             return 1;
         }
+        if (!ValidateGeneratedInternalEditorSurface(result.schema)) {
+            return 1;
+        }
 
         for (const auto& panel : result.schema.panels) {
             for (const auto& ctrl : panel.controls) {
@@ -969,9 +1032,9 @@ int main() {
                 }
                 if (ctrl.id == "poly_c4" && ctrl.has_binding &&
                     ctrl.binding.path == "fractal.params.poly_coeffs.4" &&
-                    VisibleIfIncludesFractalType(ctrl, "newton") &&
-                    VisibleIfIncludesFractalType(ctrl, "nova") &&
-                    VisibleIfIncludesFractalType(ctrl, "halley")) {
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
+                    ctrl.visible_if.path == "fractal.params.poly_coefficients_custom_active" &&
+                    ctrl.visible_if.value == "true") {
                     foundNovaPolyC4Visible = true;
                 }
                 if (ctrl.id == "explaino_phase" && ctrl.has_ui_min && ctrl.ui_min == -6.283185307179586 &&
@@ -1317,7 +1380,7 @@ int main() {
             return 1;
         }
         if (!foundNovaPolyC4Visible) {
-            std::cerr << "Did not find Nova-visible poly_c4 owner control in schema\n";
+            std::cerr << "Did not find custom-authority gated poly_c4 owner control in schema\n";
             return 1;
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||

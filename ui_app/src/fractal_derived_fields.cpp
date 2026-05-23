@@ -388,6 +388,7 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     params.explaino_mix = 0.5f;
     params.explaino_warp_strength = 0.0f;
     params.explaino_cluster_radius = 0.0f;
+    params.explaino_root_authority = ExplainoRootAuthority::generated;
     params.explaino_root_count = 0;
     ApplyExplainoCouplingRegistryDefaults(fractalType, params);
     ApplyExplainoAxisRegistryDefaults(fractalType, params);
@@ -758,6 +759,24 @@ static void ClearPolynomialCoefficients(float coeffs[5]) {
     }
 }
 
+static bool IsExplainoRootEditorFractalType(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::explaino_julia:
+    case FractalType::explaino_lambda:
+    case FractalType::explaino_rational_escape:
+    case FractalType::explaino_collatz_direct:
+    case FractalType::explaino_counterfactual_pair:
+    case FractalType::explaino_projection_and_flow:
+        return false;
+    default:
+        return IsExplainoFamily(fractalType);
+    }
+}
+
+static int ClampExplainoCustomRootCount(int rootCount) {
+    return rootCount == 3 ? 3 : 4;
+}
+
 static bool IsExplainoComposedVariantType(FractalType fractalType) {
     switch (fractalType) {
     case FractalType::explaino_all:
@@ -778,6 +797,7 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     }
 
     if (!UsesExplainoCustomPolynomialAuthority(view.fractal_type)) {
+        params.explaino_root_authority = ExplainoRootAuthority::generated;
         params.explaino_root_count = 0;
         ClearPolynomialCoefficients(params.poly_coeffs_b);
         SyncProjectionAndFlowRootFamilyPreset(params);
@@ -785,6 +805,21 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
         return;
     }
 
+    if (params.explaino_root_authority == ExplainoRootAuthority::custom &&
+        IsExplainoRootEditorFractalType(view.fractal_type)) {
+        params.poly_kind = PolyKind::custom;
+        params.explaino_root_count = ClampExplainoCustomRootCount(params.explaino_root_count);
+        if (params.explaino_root_count == 3) {
+            SetDegree3PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
+        } else {
+            SetDegree4PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
+        }
+        ClearPolynomialCoefficients(params.poly_coeffs_b);
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    params.explaino_root_authority = ExplainoRootAuthority::generated;
     params.poly_kind = PolyKind::custom;
     params.explaino_root_count = 4;
 

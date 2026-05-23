@@ -1249,6 +1249,50 @@ int main() {
         }
     }
 
+    // Explicit custom root authority must survive derived-field refresh.
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino;
+        ApplyFractalPresetDefaults(view, params, nullptr);
+        UpdateExplainoPolynomial(view, params, nullptr);
+        const Float2 generatedRoot0 = params.explaino_roots[0];
+
+        params.explaino_root_authority = ExplainoRootAuthority::custom;
+        params.explaino_root_count = 4;
+        params.explaino_roots[0] = {1.25f, 0.10f};
+        params.explaino_roots[1] = {-0.35f, 1.10f};
+        params.explaino_roots[2] = {-1.15f, -0.25f};
+        params.explaino_roots[3] = {0.20f, -1.05f};
+        UpdateExplainoPolynomial(view, params, nullptr);
+
+        if (params.explaino_root_authority != ExplainoRootAuthority::custom ||
+            params.explaino_root_count != 4 ||
+            !NearlyEqual(params.explaino_roots[0].x, 1.25f) ||
+            !NearlyEqual(params.explaino_roots[1].y, 1.10f) ||
+            params.poly_kind != PolyKind::custom ||
+            !NearlyEqual(params.poly_coeffs[4], 1.0f)) {
+            std::cerr << "Custom Explaino root authority should preserve editable roots and derive a custom quartic\n";
+            return 1;
+        }
+
+        params.explaino_seed = 8.0;
+        UpdateExplainoPolynomial(view, params, nullptr);
+        if (!NearlyEqual(params.explaino_roots[0].x, 1.25f) || !NearlyEqual(params.explaino_roots[1].y, 1.10f)) {
+            std::cerr << "Seed refresh should not overwrite custom Explaino roots while custom authority is active\n";
+            return 1;
+        }
+
+        params.explaino_root_authority = ExplainoRootAuthority::generated;
+        UpdateExplainoPolynomial(view, params, nullptr);
+        if (params.explaino_root_authority != ExplainoRootAuthority::generated ||
+            (NearlyEqual(params.explaino_roots[0].x, 1.25f) && NearlyEqual(params.explaino_roots[0].y, 0.10f)) ||
+            (NearlyEqual(params.explaino_roots[0].x, generatedRoot0.x) && NearlyEqual(params.explaino_roots[0].y, generatedRoot0.y))) {
+            std::cerr << "Generated Explaino root authority should resume seed-driven root generation\n";
+            return 1;
+        }
+    }
+
     // Explaino-Halley must get preset defaults (custom poly, basin coloring)
     {
         ViewState view{};

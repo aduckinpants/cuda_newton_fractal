@@ -1956,6 +1956,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double explainoMix = nextParams.explaino_mix;
     double explainoWarpStrength = 0.0;
     double explainoRootSpread = nextParams.explaino_root_spread;
+    ExplainoRootAuthority explainoRootAuthority = nextParams.explaino_root_authority;
     double explainoDamping = nextParams.explaino_damping;
     int explainoRootCount = 0;
     double joyCoupling = nextParams.joy_coupling;
@@ -2018,6 +2019,17 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetOptionalNumber(*paramsObject, "magnet_seed_imag", &magnetSeedImag, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "magnet_relaxation", &magnetRelaxation, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "magnet_bailout", &magnetBailout, nullptr, outError)) return false;
+        if (const json_min::Value* rootAuthorityValue = paramsObject->get("explaino_root_authority")) {
+            if (!rootAuthorityValue->is_string()) {
+                if (outError) *outError = "Invalid explaino_root_authority field";
+                return false;
+            }
+            const std::string rootAuthorityId = rootAuthorityValue->as_string();
+            if (!TryParseExplainoRootAuthorityId(rootAuthorityId, &explainoRootAuthority)) {
+                if (outError) *outError = "Unknown explaino_root_authority: " + rootAuthorityId;
+                return false;
+            }
+        }
     }
     if (!GetOptionalNumber(*paramsObject, "counterfactual_pair_offset_x", &counterfactualPairOffsetX, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "counterfactual_pair_offset_y", &counterfactualPairOffsetY, nullptr, outError)) return false;
@@ -2201,6 +2213,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_mix = static_cast<float>(explainoMix);
     nextParams.explaino_warp_strength = static_cast<float>(explainoWarpStrength);
     nextParams.explaino_root_spread = static_cast<float>(explainoRootSpread);
+    nextParams.explaino_root_authority = explainoRootAuthority;
     nextParams.explaino_damping = static_cast<float>(explainoDamping);
     nextParams.explaino_root_count = explainoRootCount;
     for (Float2& root : nextParams.explaino_roots) {
@@ -2208,6 +2221,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     }
     if (!ParseOptionalExplainoRoots(*paramsObject, nextParams.explaino_root_count, &nextParams, nullptr, outError)) return false;
     if (!UsesExplainoCustomPolynomialAuthority(nextView.fractal_type)) {
+        nextParams.explaino_root_authority = ExplainoRootAuthority::generated;
         nextParams.explaino_root_count = 0;
         for (Float2& root : nextParams.explaino_roots) {
             root = {0.0f, 0.0f};
