@@ -15,7 +15,7 @@ This table is the current backlog order after reconciling the older deferred not
 |------|-------------|------------|--------|-------------------|
 | 1 | Backlog truth refresh | Low | High trust | This docs-only slice reconciles stale planning text. |
 | 2 | Diagnostics capture output paths | Low | Medium | Add timestamped or explicit `--out-dir` bundles so captures stop overwriting `runtime/diagnostics/last`. |
-| 3 | Lens SDF control truth | Low/Medium | Medium | Classify `lens.downsample` as real, hidden, or removed with focused proof. |
+| 3 | Lens SDF control truth + SDF field substrate seed | Low/Medium | Medium/High | First make `lens.downsample` truthful, then extract a reusable SDF field interface; see `docs/notes/sdf_field_pack_near_term_TODO.md`. |
 | 4 | Categorized selector + view presets | Medium | High | Organize the growing catalog and add per-fractal view preset choices before more catalog growth. |
 | 5 | Camera/dive behavior | Medium | High | Make auto-dive dt-aware and implement at least one real behavior mode instead of flat zoom stubs. |
 | 6 | Smooth-escape/color tuning | Medium | Medium/High | Per-family color tuning and interior treatment, without reopening Color Pipeline architecture broadly. |
@@ -130,7 +130,7 @@ Timing rule:
 
 ## 5. Lens SDF Follow-Ups
 
-Status: deferred, low-to-medium difficulty cleanup.
+Status: deferred, low-to-medium difficulty cleanup with a new near-term substrate plan.
 
 Why paused:
 - Family-aware lens mask semantics are fixed for basin vs escape-time families.
@@ -139,9 +139,14 @@ Why paused:
 Deferred follow-ups:
 - Visually verify Lens SDF output on Phoenix, Mandelbrot, and Explaino-Lambda or replace that with deterministic render/hash proof if possible.
 - Decide whether `lens.downsample` is a real render-path control. If not, hide/remove it until it has behavior.
+- Treat Lens SDF as the first mask-derived SDF field producer, not as the place to embed authored SDF packs.
+- After the control-truth cleanup, extract a reusable SDF field interface so Lens overlay, probes, Color Pipeline, capture, authored SDF packs, and later SDF-native lanes can consume the same field shape.
+- Use `docs/notes/sdf_field_pack_near_term_TODO.md` as the detailed implementation sequencing surface.
 
 Resume constraints:
 - Do not mix this with organized selector/common-fractal implementation unless the selector slice directly surfaces stale Lens controls.
+- Do not merge Salticid's analytic SDF operator pack wholesale into this repo. Port only bounded, reviewed pieces when a slice explicitly needs them.
+- Keep mask-derived Lens SDF and authored analytic SDF pack authority separate; they meet at the field interface.
 
 ## 6. CUDA-Resident sample_fn + Optimization Staging + Reflexive Sidecar
 

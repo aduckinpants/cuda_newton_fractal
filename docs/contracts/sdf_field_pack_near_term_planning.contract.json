@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_pack_near_term_planning",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_field_pack_near_term_planning_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_field_pack_near_term_planning_PHASED_PLAN.md",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "docs/notes/lens_sdf_report_then_modernization_PHASED_PLAN.md",
+    "docs/contracts/sdf_field_pack_near_term_planning.contract.json",
+    "DEFERRED_THREADS.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "document SDF composition / field-pack near-term TODO work",
+    "slot it against current Lens SDF, Generic Equation Pack, Color Pipeline, and Salticid SDF surfaces",
+    "keep this as planning only"
+  ],
+  "forbidden_operator_prompts": [
+    "change product code or tests",
+    "change schema, renderer, runtime harness, or Color Pipeline behavior",
+    "add an SDF fractal subtype",
+    "claim SDF field-pack implementation is shipped",
+    "edit salticid-cuda from this repo"
+  ],
+  "required_defaults": {
+    "scope": "documentation_only",
+    "posture": "repo_truth_over_chat_memory",
+    "implementation_status": "planned_not_shipped"
+  },
+  "forbidden_defaults": {
+    "product_mutation": "forbidden",
+    "runtime_publish": "not_required_for_docs_only",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_pack_near_term_planning.contract.json --out-json artifacts/validation/sdf_field_pack_near_term_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_pack_near_term_planning_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_pack_near_term_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_pack_near_term_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_pack_near_term_diff_check --log artifacts/logs/sdf_field_pack_near_term_diff_check.log --out-json artifacts/validation/sdf_field_pack_near_term_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field-pack planning contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_pack_near_term_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF field-pack planning hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_pack_near_term_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 - Build the decision-complete implementation plan from the completed Phase 1 and Phase 2 reports
+Complete - decision-complete near-term implementation planning moved into the SDF field-pack TODO.
 
 ## Phase Checklist
 
 - [x] Phase 1 - Gather evidence artifacts, preserve the earlier modernization seed, and write the detailed Phase 1 technical report
 - [x] Phase 2 - Hostile-review the Phase 1 docs, repair continuity drift, and write the Phase 2 planning report
-- [ ] Phase 3 - Build the decision-complete implementation plan from the completed Phase 1 and Phase 2 reports
+- [x] Phase 3 - Build the decision-complete implementation plan from the completed Phase 1 and Phase 2 reports
 
 ## Notes
 
@@ -31,5 +31,7 @@ Phase 3 - Build the decision-complete implementation plan from the completed Pha
   - sidecar/"flashlight" call-path extract
   - focused lens/family/sample validation log
   - fresh precision-tier benchmark CSV/log/summary
-- Expected next step:
-  - convert the Phase 1 technical report plus the Phase 2 planning report into a final decision-complete implementation plan
+- Phase 3 deliverable:
+  - `docs/notes/sdf_field_pack_near_term_TODO.md`
+- Current next step:
+  - open a bounded implementation slice from the TODO, starting with Lens SDF truth cleanup before authored SDF packs or SDF-native fractal lanes
