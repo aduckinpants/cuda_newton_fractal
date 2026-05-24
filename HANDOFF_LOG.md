@@ -221,3 +221,4 @@
 - `ck:15952aea` 2026-05-24 14:54 UTC — session-start | branch=codex/smooth-escape-interior-tone | head=bdfa342 | status=dirty | profile=runtime | intent=smooth-escape interior tone
 - `ck:15952aea` 2026-05-24 15:17 UTC | score 5 — Smooth-escape interior-tone repair closed: non-escaped smooth_escape now uses programmable color path, iteration-count/band black interiors preserved, runtime inventory high-black cases cleared.
 - `ck:15952aea` 2026-05-24 15:19 UTC | score 5 — Smooth-escape interior-tone receipt gate repaired: contract now requires parseable logged native evidence for the focused color rail.
+- `ck:15952aea` 2026-05-24 15:21 UTC | score 5 — Post-closeout stale-plan gate repaired: smooth-escape interior-tone plan now states the slice is checkpointed, receipted, pushed, and merged instead of ready for closeout.
