@@ -20,6 +20,14 @@ struct TestComplex {
     float y;
 };
 
+struct InteriorToneSample {
+    FractalType fractal_type;
+    const char* label;
+    int iteration;
+    int max_iter;
+    TestComplex z;
+};
+
 bool Equals(TestColor left, TestColor right) {
     return left.x == right.x && left.y == right.y && left.z == right.z && left.w == right.w;
 }
@@ -33,6 +41,14 @@ float ColorLuma(TestColor color) {
     return 0.299f * static_cast<float>(color.x) +
         0.587f * static_cast<float>(color.y) +
         0.114f * static_cast<float>(color.z);
+}
+
+bool IsYellowDominant(TestColor color) {
+    return color.x > 150 && color.y > 130 && color.z < 90;
+}
+
+bool IsForcedBlack(TestColor color) {
+    return Equals(color, TestColor{0, 0, 0, 255});
 }
 
 TestColor ApplyGlowHighlight(TestColor color, float glow) {
@@ -155,6 +171,62 @@ int main() {
         params);
     if (Equals(smoothInteriorBase, smoothInteriorScaled)) {
         std::cerr << "Smooth-escape interiors should react to the live smooth-escape scale owner field\n";
+        return 1;
+    }
+
+    params.color_smooth_escape_scale = 1.0f;
+    params.color_smooth_escape_interior_strength = 0.2f;
+    const InteriorToneSample interiorToneSamples[] = {
+        {FractalType::mandelbrot, "Mandelbrot", 514, 514, {0.0f, 0.0f}},
+        {FractalType::multibrot, "Multibrot", 514, 514, {0.0f, 0.0f}},
+        {FractalType::burning_ship, "Burning Ship", 514, 514, {0.0f, 0.0f}},
+        {FractalType::celtic_mandelbrot, "Celtic Mandelbrot", 514, 514, {0.0f, 0.0f}},
+        {FractalType::perpendicular_burning_ship, "Perpendicular Burning Ship", 514, 514, {0.0f, 0.0f}},
+    };
+    for (const InteriorToneSample& sample : interiorToneSamples) {
+        const TestColor interior = MakeEscapeTimeBaseColor<TestColor>(
+            sample.fractal_type,
+            ColoringMode::smooth_escape,
+            false,
+            sample.iteration,
+            sample.max_iter,
+            sample.z,
+            params);
+        if (IsForcedBlack(interior)) {
+            std::cerr << sample.label << " default smooth-escape interior should not regress to forced black\n";
+            return 1;
+        }
+        if (IsYellowDominant(interior)) {
+            std::cerr << sample.label << " default smooth-escape interior should not be a yellow-dominant filled-set tone\n";
+            return 1;
+        }
+    }
+
+    KernelParams interiorToneControlParams = params;
+    interiorToneControlParams.color_smooth_escape_interior_strength = 0.0f;
+    const TestColor mutedInterior = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::multibrot,
+        ColoringMode::smooth_escape,
+        false,
+        514,
+        514,
+        TestComplex{0.0f, 0.0f},
+        interiorToneControlParams);
+    interiorToneControlParams.color_smooth_escape_interior_strength = 1.0f;
+    const TestColor fullInterior = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::multibrot,
+        ColoringMode::smooth_escape,
+        false,
+        514,
+        514,
+        TestComplex{0.0f, 0.0f},
+        interiorToneControlParams);
+    if (Equals(mutedInterior, fullInterior)) {
+        std::cerr << "Smooth-escape interior strength should provide explicit user authority over colored interiors\n";
+        return 1;
+    }
+    if (IsYellowDominant(mutedInterior)) {
+        std::cerr << "Smooth-escape interior strength at zero should hold a muted non-yellow interior anchor\n";
         return 1;
     }
 

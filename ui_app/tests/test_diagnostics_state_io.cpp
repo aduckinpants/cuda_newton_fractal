@@ -960,6 +960,38 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "smooth_escape_interior_strength_state.json";
+        WriteMinimalStateWithExtraParams(
+            statePath,
+            "    \"color_smooth_escape_interior_strength\": 0.42");
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected smooth-escape interior strength state to load: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.color_smooth_escape_interior_strength, 0.42f, 1.0e-6)) {
+            std::cerr << "Expected smooth-escape interior strength to round-trip through diagnostics state loading\n";
+            return 1;
+        }
+
+        const fs::path legacyStatePath = tempRoot / "smooth_escape_interior_strength_legacy_state.json";
+        WriteMinimalStateWithExtraParams(legacyStatePath, "");
+        KernelParams legacyParams{};
+        if (!LoadDiagnosticsStateFile(legacyStatePath.string(), &view, &legacyParams, &render, &error)) {
+            std::cerr << "Expected legacy state without smooth-escape interior strength to load: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(legacyParams.color_smooth_escape_interior_strength, 0.2f, 1.0e-6)) {
+            std::cerr << "Expected legacy states to default smooth-escape interior strength cleanly\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "bad_sample_tier_state.json";
         WriteMinimalStateWithExtraParams(statePath, "", "    \"sample_tier\": \"warp_speed\"");
         std::string error;

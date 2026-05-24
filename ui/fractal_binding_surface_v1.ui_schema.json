@@ -1191,6 +1191,16 @@
           "help": "Grading remains public while advanced pipeline editing is staged behind the Color Pipeline window."
         },
         {
+          "id": "color_smooth_escape_interior_strength",
+          "type": "slider_float",
+          "label": "Interior Strength",
+          "value_type": "float",
+          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.2,
+          "visible_if": { "op": "eq", "path": "fractal.params.coloring_mode", "value": "smooth_escape" },
+          "binding": { "kind": "param", "path": "fractal.params.color_smooth_escape_interior_strength" },
+          "help": "Controls how strongly smooth-escape interiors use the live smooth palette instead of the muted interior anchor."
+        },
+        {
           "id": "exposure",
           "type": "slider_float",
           "label": "Exposure",

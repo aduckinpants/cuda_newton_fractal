@@ -49,6 +49,19 @@ ESCAPE_TIME_COLOR_HD inline Color EscapeTimeColorMulRgb(Color color, float scale
 }
 
 template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color EscapeTimeColorBlendRgb(Color base, Color target, float t) {
+    t = EscapeTimeColorClamp(t, 0.0f, 1.0f);
+    const int r = static_cast<int>(roundf(EscapeTimeColorLerp(static_cast<float>(base.x), static_cast<float>(target.x), t)));
+    const int g = static_cast<int>(roundf(EscapeTimeColorLerp(static_cast<float>(base.y), static_cast<float>(target.y), t)));
+    const int b = static_cast<int>(roundf(EscapeTimeColorLerp(static_cast<float>(base.z), static_cast<float>(target.z), t)));
+    return EscapeTimeColorMake<Color>(
+        static_cast<unsigned char>(EscapeTimeColorClamp(r, 0, 255)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(g, 0, 255)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(b, 0, 255)),
+        target.w);
+}
+
+template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color HsvToRgb(float h, float s, float v);
 
 ESCAPE_TIME_COLOR_HD inline unsigned char EscapeTimeColorToneMap(unsigned char value, float exposure) {
@@ -1263,6 +1276,28 @@ ESCAPE_TIME_COLOR_HD inline Color SampleProgrammableEscapeTimePalette(float sign
         LegacyColorPipelinePaletteRuntimeParams(params)));
 }
 
+ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeInteriorStrength(const KernelParams& params) {
+    const float strength = isfinite(params.color_smooth_escape_interior_strength)
+        ? params.color_smooth_escape_interior_strength
+        : 0.2f;
+    return EscapeTimeColorClamp(strength, 0.0f, 1.0f);
+}
+
+ESCAPE_TIME_COLOR_HD inline bool ShouldApplySmoothEscapeInteriorStrength(const KernelParams& params) {
+    return params.color_pipeline.signal == ColorSignal::smooth_escape &&
+        ClampColorPipelineSourceStackCount(params.color_source_stack_count) == 0;
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplySmoothEscapeInteriorStrength(Color fullInteriorColor, const KernelParams& params) {
+    const float strength = ResolveSmoothEscapeInteriorStrength(params);
+    if (strength >= 0.999f) {
+        return fullInteriorColor;
+    }
+    const Color mutedInteriorColor = SampleProgrammableEscapeTimePalette<Color>(0.0f, false, params);
+    return EscapeTimeColorBlendRgb(mutedInteriorColor, fullInteriorColor, strength);
+}
+
 // Cyclic iteration-band palette (8 distinct hues).
 template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color IterationBandColor(int iteration, int maxIter, const KernelParams& params) {
@@ -1480,7 +1515,11 @@ ESCAPE_TIME_COLOR_HD inline Color MakeEscapeTimeBaseColor(
     const float shapedSignal = ApplyColorPipelineShapeValue(
         ResolveProgrammableEscapeTimeSignal(fractalType, iteration, maxIter, z, params),
         params);
-    return SampleProgrammableEscapeTimePalette<Color>(shapedSignal, escaped, params);
+    const Color color = SampleProgrammableEscapeTimePalette<Color>(shapedSignal, escaped, params);
+    if (!escaped && ShouldApplySmoothEscapeInteriorStrength(params)) {
+        return ApplySmoothEscapeInteriorStrength(color, params);
+    }
+    return color;
 }
 
 #undef ESCAPE_TIME_COLOR_HD

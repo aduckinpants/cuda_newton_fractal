@@ -445,6 +445,7 @@ struct KernelParams {
     float color_iteration_band_palette_offset{0.0f};
     float color_smooth_escape_scale{1.0f};
     float color_smooth_escape_bias{0.0f};
+    float color_smooth_escape_interior_strength{0.2f};
     float color_escape_magnitude_scale{1.0f};
     float color_escape_magnitude_bias{0.0f};
     float color_orbit_stripe_frequency{1.0f};

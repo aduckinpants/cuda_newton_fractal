@@ -688,6 +688,7 @@ int main() {
         bool foundColorSignalControl = false;
         bool foundColorPaletteControl = false;
         bool foundColorGradingControl = false;
+        bool foundSmoothEscapeInteriorStrength = false;
         int coloringModeControlCount = 0;
         int colorSignalControlCount = 0;
         int colorPaletteControlCount = 0;
@@ -926,6 +927,16 @@ int main() {
                     ctrl.has_min && ctrl.min == 2.0 && ctrl.has_max && ctrl.max == 64.0 &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "magnet") {
                     foundMagnetBailout = true;
+                }
+                if (ctrl.id == "color_smooth_escape_interior_strength" && ctrl.type == "slider_float" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.params.color_smooth_escape_interior_strength" &&
+                    ctrl.has_min && ctrl.min == 0.0 && ctrl.has_max && ctrl.max == 1.0 &&
+                    ctrl.has_step && ctrl.step == 0.01 &&
+                    ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 0.2 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
+                    ctrl.visible_if.path == "fractal.params.coloring_mode" &&
+                    ctrl.visible_if.value == "smooth_escape") {
+                    foundSmoothEscapeInteriorStrength = true;
                 }
                 if (ctrl.id == "resolution_aspect_preset" && ctrl.type == "combo" && ctrl.has_binding &&
                     ctrl.binding.path == "fractal.render.resolution.aspect_preset" &&
@@ -1449,6 +1460,7 @@ int main() {
             return 1;
         }
         if (!foundDualSeedB || !foundDualSeedMix || !foundColoringModeControl || !foundColorGradingControl ||
+            !foundSmoothEscapeInteriorStrength ||
             coloringModeControlCount != 1 ||
             foundColorSignalControl || foundColorPaletteControl ||
             colorSignalControlCount != 0 || colorPaletteControlCount != 0 || colorGradingControlCount != 1) {

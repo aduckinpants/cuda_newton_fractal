@@ -400,6 +400,7 @@ void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
     js << "    \"color_iteration_band_palette_offset\": " << static_cast<double>(params.color_iteration_band_palette_offset) << ",\n";
     js << "    \"color_smooth_escape_scale\": " << static_cast<double>(params.color_smooth_escape_scale) << ",\n";
     js << "    \"color_smooth_escape_bias\": " << static_cast<double>(params.color_smooth_escape_bias) << ",\n";
+    js << "    \"color_smooth_escape_interior_strength\": " << static_cast<double>(params.color_smooth_escape_interior_strength) << ",\n";
     js << "    \"color_escape_magnitude_scale\": " << static_cast<double>(params.color_escape_magnitude_scale) << ",\n";
     js << "    \"color_escape_magnitude_bias\": " << static_cast<double>(params.color_escape_magnitude_bias) << ",\n";
     js << "    \"color_orbit_stripe_frequency\": " << static_cast<double>(params.color_orbit_stripe_frequency) << ",\n";

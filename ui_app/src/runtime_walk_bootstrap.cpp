@@ -690,6 +690,7 @@ std::string BuildSynthesizedStateJson(const ViewState& view, const KernelParams&
     js << "    \"color_iteration_band_palette_offset\": " << static_cast<double>(params.color_iteration_band_palette_offset) << ",\n";
     js << "    \"color_smooth_escape_scale\": " << static_cast<double>(params.color_smooth_escape_scale) << ",\n";
     js << "    \"color_smooth_escape_bias\": " << static_cast<double>(params.color_smooth_escape_bias) << ",\n";
+    js << "    \"color_smooth_escape_interior_strength\": " << static_cast<double>(params.color_smooth_escape_interior_strength) << ",\n";
     js << "    \"color_heatmap_cycle_scale\": " << static_cast<double>(params.color_heatmap_cycle_scale) << ",\n";
     js << "    \"color_heatmap_saturation\": " << static_cast<double>(params.color_heatmap_saturation) << ",\n";
     js << "    \"color_contrast_lift_exposure\": " << static_cast<double>(params.color_contrast_lift_exposure) << ",\n";

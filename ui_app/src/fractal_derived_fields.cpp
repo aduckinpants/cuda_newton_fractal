@@ -142,6 +142,7 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.color_iteration_band_palette_offset = 0.0f;
     params.color_smooth_escape_scale = 1.0f;
     params.color_smooth_escape_bias = 0.0f;
+    params.color_smooth_escape_interior_strength = 0.2f;
     params.color_heatmap_cycle_scale = 1.0f;
     params.color_heatmap_saturation = 1.0f;
     params.color_explaino_palette_seed_scale = 1.0f;

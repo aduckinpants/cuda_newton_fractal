@@ -2273,6 +2273,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorIterationBandPaletteOffset = nextParams.color_iteration_band_palette_offset;
     double colorSmoothEscapeScale = nextParams.color_smooth_escape_scale;
     double colorSmoothEscapeBias = nextParams.color_smooth_escape_bias;
+    double colorSmoothEscapeInteriorStrength = nextParams.color_smooth_escape_interior_strength;
     double colorEscapeMagnitudeScale = nextParams.color_escape_magnitude_scale;
     double colorEscapeMagnitudeBias = nextParams.color_escape_magnitude_bias;
     double colorOrbitStripeFrequency = nextParams.color_orbit_stripe_frequency;
@@ -2341,6 +2342,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "color_iteration_band_palette_offset", &colorIterationBandPaletteOffset, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_smooth_escape_scale", &colorSmoothEscapeScale, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_smooth_escape_bias", &colorSmoothEscapeBias, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_smooth_escape_interior_strength", &colorSmoothEscapeInteriorStrength, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_escape_magnitude_scale", &colorEscapeMagnitudeScale, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_escape_magnitude_bias", &colorEscapeMagnitudeBias, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_orbit_stripe_frequency", &colorOrbitStripeFrequency, nullptr, outError)) return false;
@@ -2383,6 +2385,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_iteration_band_palette_offset = static_cast<float>(colorIterationBandPaletteOffset);
     nextParams.color_smooth_escape_scale = static_cast<float>(colorSmoothEscapeScale);
     nextParams.color_smooth_escape_bias = static_cast<float>(colorSmoothEscapeBias);
+    nextParams.color_smooth_escape_interior_strength = static_cast<float>(colorSmoothEscapeInteriorStrength);
     nextParams.color_escape_magnitude_scale = static_cast<float>(colorEscapeMagnitudeScale);
     nextParams.color_escape_magnitude_bias = static_cast<float>(colorEscapeMagnitudeBias);
     nextParams.color_orbit_stripe_frequency = static_cast<float>(colorOrbitStripeFrequency);

@@ -1213,6 +1213,34 @@ int main() {
             std::cerr << "Expected coloring mode enum round-trip to accept smooth_escape\n";
             return 1;
         }
+        float* smoothInteriorStrength = nullptr;
+        if (!ctx.BindFloat("fractal.params.color_smooth_escape_interior_strength", &smoothInteriorStrength) ||
+            smoothInteriorStrength != &params.color_smooth_escape_interior_strength) {
+            std::cerr << "Expected smooth-escape interior strength to bind through the public Color panel path\n";
+            return 1;
+        }
+        *smoothInteriorStrength = 0.65f;
+        if (!NearlyEqual(params.color_smooth_escape_interior_strength, 0.65f)) {
+            std::cerr << "Expected smooth-escape interior strength edits to write the live KernelParams field\n";
+            return 1;
+        }
+        UISchemaPredicate smoothInteriorVisible{};
+        smoothInteriorVisible.op = "eq";
+        smoothInteriorVisible.path = "fractal.params.coloring_mode";
+        smoothInteriorVisible.value = "smooth_escape";
+        if (!ctx.EvalVisibleIf(smoothInteriorVisible)) {
+            std::cerr << "Expected smooth-escape interior strength to be visible in smooth_escape mode\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.coloring_mode", "iteration_count") ||
+            ctx.EvalVisibleIf(smoothInteriorVisible)) {
+            std::cerr << "Expected smooth-escape interior strength to hide outside smooth_escape mode\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.coloring_mode", "smooth_escape")) {
+            std::cerr << "Expected coloring mode to return to smooth_escape after visibility proof\n";
+            return 1;
+        }
         if (ctx.GetEnumId("fractal.params.color_signal") != "smooth_escape" ||
             ctx.GetEnumId("fractal.params.color_palette") != "cyclic_escape" ||
             ctx.GetEnumId("fractal.params.color_grading") != "escape_default") {

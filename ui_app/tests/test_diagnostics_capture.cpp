@@ -55,6 +55,7 @@ void PopulateState(ViewState* view, KernelParams* params, RenderSettings* render
     params->color_shape = ColorPipelineShape::posterize;
     params->color_shape_posterize_steps = 7;
     params->color_shape_posterize_mix = 0.5f;
+    params->color_smooth_escape_interior_strength = 0.5f;
     params->color_root_basin_pair_count = 2;
     params->color_root_basin_pairs[0] = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
     params->color_root_basin_pairs[1] = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
@@ -106,6 +107,8 @@ void TestBundleWritesFrameAndState() {
     Check(json.find("\"resolved_backend\": \"float64\"") != std::string::npos, "state persists resolved numeric backend");
     Check(json.find("\"resolved_strategy\": \"direct\"") != std::string::npos, "state persists resolved iteration strategy");
     Check(json.find("\"color_palette\": \"joy\"") != std::string::npos, "state persists widened color palette id");
+    Check(json.find("\"color_smooth_escape_interior_strength\": 0.5") != std::string::npos,
+        "state persists smooth-escape interior color strength");
     Check(json.find("\"coloring_mode\": \"joy_basins\"") != std::string::npos, "state derives legacy coloring mirror from coherent root-basin pair");
 }
 

@@ -179,7 +179,9 @@ void TestKernelParamsDefaults() {
         "KernelParams posterize controls keep stable defaults");
     Check(params.color_iteration_band_count == 8 && Near(params.color_iteration_band_softness, 0.35f),
         "KernelParams iteration-band controls keep stable defaults");
-    Check(Near(params.color_smooth_escape_scale, 1.0f) && Near(params.color_escape_magnitude_scale, 1.0f),
+    Check(Near(params.color_smooth_escape_scale, 1.0f) &&
+            Near(params.color_smooth_escape_interior_strength, 0.2f) &&
+            Near(params.color_escape_magnitude_scale, 1.0f),
         "KernelParams color source scale defaults are stable");
     Check(Near(params.color_orbit_stripe_frequency, 1.0f) && Near(params.color_root_proximity_scale, 1.0f),
         "KernelParams advanced color signal defaults are stable");

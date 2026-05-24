@@ -76,6 +76,16 @@ bool BindExplainoRootCoordinate(KernelParams& params, const std::string& path, f
     return false;
 }
 
+bool BindColorPanelFloat(KernelParams& params, const std::string& path, float** outPtr) {
+    if (path == "fractal.params.color_saturation") { *outPtr = &params.color_saturation; return true; }
+    if (path == "fractal.params.color_contrast") { *outPtr = &params.color_contrast; return true; }
+    if (path == "fractal.params.color_tint_r") { *outPtr = &params.color_tint_r; return true; }
+    if (path == "fractal.params.color_tint_g") { *outPtr = &params.color_tint_g; return true; }
+    if (path == "fractal.params.color_tint_b") { *outPtr = &params.color_tint_b; return true; }
+    if (path == "fractal.params.color_smooth_escape_interior_strength") { *outPtr = &params.color_smooth_escape_interior_strength; return true; }
+    return false;
+}
+
 bool SetExplainoRootAuthority(BindingContext* ctx, const std::string& id) {
     if (!ctx || !ctx->params) return false;
     ExplainoRootAuthority authority{};
@@ -1152,11 +1162,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.celtic_abs_mix") { *outPtr = &params->celtic_abs_mix; return true; }
         if (path == "fractal.params.perpendicular_fold_mix") { *outPtr = &params->perpendicular_fold_mix; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power_float; return true; }
-        if (path == "fractal.params.color_saturation") { *outPtr = &params->color_saturation; return true; }
-        if (path == "fractal.params.color_contrast") { *outPtr = &params->color_contrast; return true; }
-        if (path == "fractal.params.color_tint_r") { *outPtr = &params->color_tint_r; return true; }
-        if (path == "fractal.params.color_tint_g") { *outPtr = &params->color_tint_g; return true; }
-        if (path == "fractal.params.color_tint_b") { *outPtr = &params->color_tint_b; return true; }
+        if (BindColorPanelFloat(*params, path, outPtr)) return true;
         if (path == "fractal.params.explaino_warp_strength") { *outPtr = &params->explaino_warp_strength; return true; }
         if (path == "fractal.params.explaino_mix") { *outPtr = &params->explaino_mix; return true; }
         if (path == "fractal.params.explaino_root_spread") { *outPtr = &params->explaino_root_spread; return true; }

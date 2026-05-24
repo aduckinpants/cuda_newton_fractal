@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "contract_id": "multibrot_interior_tone_regression",
+  "feature_id": "escape_time_interior_color_authority",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/multibrot_interior_tone_regression_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/multibrot_interior_tone_regression_PHASED_PLAN.md",
+    "docs/contracts/multibrot_interior_tone_regression.contract.json",
+    "docs/notes/top_five_backlog_campaign_PHASED_PLAN.md",
+    "KNOWN_ISSUES.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/runtime_walk_bootstrap.cpp",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_diagnostics_capture.cpp",
+    "ui_app/tests/test_fractal_types.cpp",
+    "ui_app/tests/test_safe_mode_schema.cpp",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "treat default Multibrot yellow interior as one witness of a broader escape-time interior coloring regression",
+    "add deeper native/unit and runtime smoke setup",
+    "add better user control over colored smooth-escape interiors",
+    "preserve recent smooth-escape inventory repairs",
+    "use no-mouse runtime proof"
+  ],
+  "forbidden_operator_prompts": [
+    "change fractal formula behavior",
+    "redesign the palette",
+    "add histogram equalization",
+    "add adaptive normalization",
+    "implement selector/view presets",
+    "implement camera/dive behavior",
+    "implement authored SDF packs",
+    "implement CUDA SDF pack evaluation",
+    "replace the renderer",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "smooth_escape_escape_time_interior_color_authority",
+    "posture": "forward_tdd",
+    "runtime_proof": "published_no_mouse_capture_or_control_automation"
+  },
+  "forbidden_defaults": {
+    "formula_changes": "forbidden",
+    "palette_redesign": "forbidden",
+    "general_color_pipeline_redesign": "forbidden",
+    "source_stack_semantic_changes": "forbidden",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/multibrot_interior_tone_regression.contract.json --out-json artifacts/validation/escape_time_interior_color_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label escape_time_interior_color_native_final --log artifacts/logs/escape_time_interior_color_native_final.log --out-json artifacts/validation/escape_time_interior_color_native_final.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label escape_time_interior_color_schema_native --log artifacts/logs/escape_time_interior_color_schema_native.log --out-json artifacts/validation/escape_time_interior_color_schema_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_explaino_counterfactual_repair",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label escape_time_interior_color_capture_native --log artifacts/logs/escape_time_interior_color_capture_native.log --out-json artifacts/validation/escape_time_interior_color_capture_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_capture",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label escape_time_interior_color_types_native --log artifacts/logs/escape_time_interior_color_types_native.log --out-json artifacts/validation/escape_time_interior_color_types_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_fractal_types",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label escape_time_interior_color_derived_native --log artifacts/logs/escape_time_interior_color_derived_native.log --out-json artifacts/validation/escape_time_interior_color_derived_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_fractal_derived_fields",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label escape_time_interior_color_runtime_publish --log artifacts/logs/escape_time_interior_color_runtime_publish.log --out-json artifacts/validation/escape_time_interior_color_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_multibrot_interior_tone.py -q --junitxml artifacts/pytest/escape_time_interior_color_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label escape_time_interior_color_inventory --log artifacts/logs/escape_time_interior_color_inventory.log --out-json artifacts/validation/escape_time_interior_color_inventory.json --heartbeat-seconds 30 --timeout-seconds 240 -- py -3.14 tools/smooth_escape_color_inventory.py --out-dir artifacts/escape_time_interior_color/latest --width 96 --height 72 --runtime-lock",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/multibrot_interior_tone_regression_PHASED_PLAN.md --out-json artifacts/validation/escape_time_interior_color_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/escape_time_interior_color_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label escape_time_interior_color_diff_check --log artifacts/logs/escape_time_interior_color_diff_check.log --out-json artifacts/validation/escape_time_interior_color_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The escape-time interior color authority contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/escape_time_interior_color_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The escape-time interior color authority hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/escape_time_interior_color_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

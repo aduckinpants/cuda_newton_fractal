@@ -227,3 +227,6 @@
 - `ck:9727b1b4` 2026-05-24 16:04 UTC | score 5 — Post-closeout stale-plan gate repaired: smooth-escape Collatz luma plan now states the slice is checkpointed, receipted, pushed, and merged.
 - `ck:2f8a5c89` 2026-05-24 16:55 UTC — session-start | branch=codex/smooth-escape-low-unique | head=89d68ef | status=dirty | profile=runtime | intent=smooth-escape low-unique tuning
 - `ck:2f8a5c89` 2026-05-24 17:30 UTC | score 95 — Smooth-escape low-unique tuning closed on feature branch: scoped target-family signal tuning clears remaining measured low-unique rows, preserves Color Pipeline owner controls, native/runtime/inventory rails green.
+- `ck:d9c98fa0` 2026-05-24 17:51 UTC — session-start | branch=codex/multibrot-interior-tone | head=08ca494 | status=dirty | profile=runtime | intent=multibrot interior tone regression
+- `ck:d9c98fa0` 2026-05-24 18:33 UTC | score 95 — Escape-time interior color authority repaired: added public smooth-escape Interior Strength control, multi-family interior tone smoke, diagnostics persistence, no-mouse runtime proof, and preserved smooth-escape inventory.
+- `ck:d9c98fa0` 2026-05-24 18:34 UTC | score 95 — Escape-time interior color authority repaired: public smooth-escape Interior Strength control, multi-family interior tone smoke, diagnostics persistence, no-mouse runtime proof, and smooth-escape inventory preserved.
