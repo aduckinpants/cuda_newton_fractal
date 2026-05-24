@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <limits>
 
 namespace {
 
@@ -26,6 +27,12 @@ bool Equals(TestColor left, TestColor right) {
 bool NearlyEqual(float left, float right, float eps = 1.0e-6f) {
     const float delta = left - right;
     return delta < eps && delta > -eps;
+}
+
+float ColorLuma(TestColor color) {
+    return 0.299f * static_cast<float>(color.x) +
+        0.587f * static_cast<float>(color.y) +
+        0.114f * static_cast<float>(color.z);
 }
 
 TestColor ApplyGlowHighlight(TestColor color, float glow) {
@@ -218,6 +225,92 @@ int main() {
         std::cerr << "Smooth-escape coloring should respect the multibrot power denominator\n";
         return 1;
     }
+
+    params.color_smooth_escape_scale = 1.0f;
+    params.color_smooth_escape_bias = 0.0f;
+    params.color_heatmap_cycle_scale = 1.0f;
+    params.color_heatmap_saturation = 1.0f;
+    const TestColor collatzFastEscape = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::collatz,
+        ColoringMode::smooth_escape,
+        true,
+        5,
+        100,
+        TestComplex{100.0f, 0.0f},
+        params);
+    if (ColorLuma(collatzFastEscape) < 90.0f) {
+        std::cerr << "Collatz fast-escape smooth coloring should not stay trapped in the dark heatmap stop\n";
+        return 1;
+    }
+
+    const TestColor explainoCollatzDirectFastEscape = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::explaino_collatz_direct,
+        ColoringMode::smooth_escape,
+        true,
+        5,
+        100,
+        TestComplex{100.0f, 0.0f},
+        params);
+    if (ColorLuma(explainoCollatzDirectFastEscape) < 90.0f) {
+        std::cerr << "Explaino-Collatz-direct fast-escape smooth coloring should not stay trapped in the dark heatmap stop\n";
+        return 1;
+    }
+
+    params.color_smooth_escape_scale = 1.7f;
+    const TestColor collatzFastEscapeScaled = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::collatz,
+        ColoringMode::smooth_escape,
+        true,
+        5,
+        100,
+        TestComplex{100.0f, 0.0f},
+        params);
+    if (Equals(collatzFastEscape, collatzFastEscapeScaled)) {
+        std::cerr << "Collatz tuned smooth coloring should still react to the live smooth-escape scale owner field\n";
+        return 1;
+    }
+
+    KernelParams collatzSourceStackParams = params;
+    collatzSourceStackParams.color_source_stack_count = 1;
+    collatzSourceStackParams.color_source_stack[0].signal = ColorSignal::smooth_escape;
+    collatzSourceStackParams.color_source_stack[0].params.scale = 1.0f;
+    collatzSourceStackParams.color_source_stack[0].params.bias = 0.0f;
+    collatzSourceStackParams.color_source_stack[0].params.blend_weight = 1.0f;
+    const TestColor collatzSourceStackBase = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::collatz,
+        ColoringMode::smooth_escape,
+        true,
+        5,
+        100,
+        TestComplex{100.0f, 0.0f},
+        collatzSourceStackParams);
+    collatzSourceStackParams.color_source_stack[0].params.scale = 1.7f;
+    const TestColor collatzSourceStackScaled = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::collatz,
+        ColoringMode::smooth_escape,
+        true,
+        5,
+        100,
+        TestComplex{100.0f, 0.0f},
+        collatzSourceStackParams);
+    if (Equals(collatzSourceStackBase, collatzSourceStackScaled)) {
+        std::cerr << "Collatz tuned smooth coloring should still react to Source row scale owner fields\n";
+        return 1;
+    }
+
+    const TestColor collatzOverflowEscape = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::collatz,
+        ColoringMode::smooth_escape,
+        true,
+        1,
+        100,
+        TestComplex{std::numeric_limits<float>::infinity(), 0.0f},
+        params);
+    if (Equals(collatzOverflowEscape, TestColor{0, 0, 0, 255})) {
+        std::cerr << "Collatz overflow escape coloring should fail closed to a visible smooth color instead of black\n";
+        return 1;
+    }
+    params.color_smooth_escape_scale = 1.0f;
 
     if (!Equals(ApplyFractalColorGrading(TestColor{100, 150, 200, 255}, params), TestColor{82, 113, 138, 255})) {
         std::cerr << "Fractal color grading should preserve the current exposure/tint/saturation/contrast pipeline\n";

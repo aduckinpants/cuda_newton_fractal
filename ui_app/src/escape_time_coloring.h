@@ -342,13 +342,29 @@ ESCAPE_TIME_COLOR_HD inline float ComputeEscapeTimeNu(
     float magnitude,
     const KernelParams& params);
 
+ESCAPE_TIME_COLOR_HD inline bool UsesCollatzSmoothEscapeTuning(FractalType fractalType) {
+    return fractalType == FractalType::collatz ||
+        fractalType == FractalType::explaino_collatz_direct;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeBaseSignal(
+    FractalType fractalType,
+    int iteration,
+    float magnitude,
+    const KernelParams& params) {
+    const float familyScale = UsesCollatzSmoothEscapeTuning(fractalType) ? 4.0f : 1.0f;
+    const float familyBias = UsesCollatzSmoothEscapeTuning(fractalType) ? 0.18f : 0.0f;
+    const float safeMagnitude = UsesCollatzSmoothEscapeTuning(fractalType) && !isfinite(magnitude) ? 100.0f : magnitude;
+    return ComputeEscapeTimeNu(fractalType, iteration, safeMagnitude, params) * 0.025f * familyScale + familyBias;
+}
+
 ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeSignal(
     FractalType fractalType,
     int iteration,
     float magnitude,
     const KernelParams& params) {
-    const float nu = ComputeEscapeTimeNu(fractalType, iteration, magnitude, params);
-    return nu * 0.025f * EscapeTimeColorClamp(params.color_smooth_escape_scale, 0.25f, 4.0f) +
+    return ResolveSmoothEscapeBaseSignal(fractalType, iteration, magnitude, params) *
+        EscapeTimeColorClamp(params.color_smooth_escape_scale, 0.25f, 4.0f) +
         EscapeTimeColorClamp(params.color_smooth_escape_bias, -1.0f, 1.0f);
 }
 
@@ -358,8 +374,8 @@ ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeSignal(
     float magnitude,
     const ColorPipelineSourceRuntimeParams& sourceParams,
     const KernelParams& params) {
-    const float nu = ComputeEscapeTimeNu(fractalType, iteration, magnitude, params);
-    return nu * 0.025f * EscapeTimeColorClamp(sourceParams.scale, 0.25f, 4.0f) +
+    return ResolveSmoothEscapeBaseSignal(fractalType, iteration, magnitude, params) *
+        EscapeTimeColorClamp(sourceParams.scale, 0.25f, 4.0f) +
         EscapeTimeColorClamp(sourceParams.bias, -1.0f, 1.0f);
 }
 

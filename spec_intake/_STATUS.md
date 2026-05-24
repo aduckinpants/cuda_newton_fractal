@@ -59,7 +59,7 @@ These are planned for dedicated future branches, not this docs reconciliation sl
 | ID | Finding | Priority | Disposition |
 |----|---------|----------|------------|
 | KF-1 | explaino_y: 0 avg iters, residual up to 27, 100% convergence - degenerate early-exit? | **High** | **DONE** (816b5d1) - root-snap + residual zero + regression test |
-| KF-2 | collatz RGBA: fast-escape pixels render black | Low | Cosmetic; not a sample-path bug |
+| KF-2 | collatz RGBA: fast-escape pixels render black | Low | **DONE** - repaired by `docs/notes/smooth_escape_collatz_luma_PHASED_PLAN.md`; published inventory now reports `collatz` and `explaino_collatz_direct` black fraction `0.000` |
 | KF-3 | "neither" band: 3-12% max_iter exhaustion across escape types | Deferred | Optimization/color tuning target for future phase |
 | KF-4 | nova/explaino_nova: 99.5% escape at 1 avg iter | Low | Parameter/default tuning - not a control-authority bug |
 | KF-5 | lambda_map/explaino_lambda: degenerate at default params | Low | Same as KF-4 |
