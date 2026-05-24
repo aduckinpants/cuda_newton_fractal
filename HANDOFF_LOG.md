@@ -218,3 +218,5 @@
 - `ck:11b4122b-runtime-proof` 2026-05-24 14:36 UTC | score 95 — Smooth-escape measurement receipt-gate repair: added published-runtime pytest wrapper for inventory tool, updated contract, and revalidated.
 - `ck:11b4122b-parseable-inventory` 2026-05-24 14:38 UTC | score 95 — Smooth-escape measurement parseable inventory proof repaired: full inventory command now runs through logged-command wrapper with out-json evidence.
 - `ck:11b4122b-stale-plan` 2026-05-24 14:39 UTC | score 95 — Smooth-escape measurement stale-plan gate repaired after merge: closed plan no longer lists active asks.
+- `ck:15952aea` 2026-05-24 14:54 UTC — session-start | branch=codex/smooth-escape-interior-tone | head=bdfa342 | status=dirty | profile=runtime | intent=smooth-escape interior tone
+- `ck:15952aea` 2026-05-24 15:17 UTC | score 5 — Smooth-escape interior-tone repair closed: non-escaped smooth_escape now uses programmable color path, iteration-count/band black interiors preserved, runtime inventory high-black cases cleared.

@@ -42,8 +42,8 @@ Out of scope:
 Current continuation order after the 2026-05-24 reprioritization:
 
 1. Diagnostics capture output paths - closed in `docs/notes/diagnostics_capture_output_paths_PHASED_PLAN.md`.
-2. Smooth-escape/color tuning - active now, starting with measurement-only inventory in `docs/notes/smooth_escape_color_measurement_PHASED_PLAN.md`.
-3. Highest-confidence smooth/color fixes from that measurement - next, only after evidence exists.
+2. Smooth-escape/color tuning - measurement inventory closed in `docs/notes/smooth_escape_color_measurement_PHASED_PLAN.md`; interior-tone repair closed in `docs/notes/smooth_escape_interior_tone_PHASED_PLAN.md`.
+3. Highest-confidence smooth/color fixes from that measurement - continue only from measured evidence and keep low-luma/low-unique rows separate.
 4. Authored SDF pack parser plus CPU reference - later SDF substrate work from `docs/notes/sdf_field_pack_near_term_TODO.md`.
 5. CUDA SDF pack evaluator - after the parser/CPU reference is closed.
 
@@ -377,10 +377,10 @@ Proof gates:
 
 ### Current Problem
 
-The renderer has a better cyclic palette than the old flat ramp, but escape-time coloring still uses global assumptions:
+The renderer has a better cyclic palette than the old flat ramp, but escape-time coloring still has remaining global assumptions:
 
 - one global band period
-- black interiors across families
+- forced-black smooth-escape interiors repaired in `docs/notes/smooth_escape_interior_tone_PHASED_PLAN.md`
 - weak deep-zoom normalization
 - known low-tuning rows from K4 remain deferred polish
 

@@ -47,10 +47,10 @@ Potential fixes:
 **Status:** partially addressed (cyclic palette landed in 34b7024)
 **Area:** renderer / coloring
 
-The 5-stop cyclic palette is a large improvement over the flat ramp, but:
+The 5-stop cyclic palette is a large improvement over the flat ramp, and `docs/notes/smooth_escape_interior_tone_PHASED_PLAN.md` repaired the forced-black smooth-escape interior path. Remaining work:
 - The band period (`nu * 0.025`) is a single global constant; escape-time families have different iteration profiles.
-- Interior (non-escaped) pixels are solid black regardless of fractal type.
 - No histogram equalization or adaptive normalization; at very deep zoom the visible band range collapses.
+- Low-luma / low-unique-color smooth-escape rows still need bounded tuning after the interior-tone repair.
 
 **File:** `ui_app/src/fractal_renderer.cu` - escape-time coloring block
 

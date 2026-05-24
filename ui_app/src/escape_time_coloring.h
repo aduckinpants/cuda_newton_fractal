@@ -788,9 +788,10 @@ ESCAPE_TIME_COLOR_HD inline bool TryMakeDiscreteEscapeTimeColor(FractalType, Col
         }
         return true;
     }
-    if (!escaped) { *outColor = EscapeTimeColorMake<Color>(0, 0, 0, 255); return true; }
     if (mode == ColoringMode::iteration_count) {
-        *outColor = MakeIterationCountEscapeTimeColor<Color>(iteration, maxIter);
+        *outColor = escaped
+            ? MakeIterationCountEscapeTimeColor<Color>(iteration, maxIter)
+            : EscapeTimeColorMake<Color>(0, 0, 0, 255);
         return true;
     }
     return false;
@@ -1339,6 +1340,12 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
     return ResolveIterationRatioSignal(iteration, maxIter);
 }
 
+ESCAPE_TIME_COLOR_HD inline bool ShouldUseProgrammableColorForUnescapedSample(const KernelParams& params) {
+    return params.color_pipeline.signal == ColorSignal::root_proximity ||
+        params.color_pipeline.signal == ColorSignal::smooth_escape ||
+        params.color_pipeline.palette == ColorPalette::phase_wheel;
+}
+
 template <typename Color, typename Complex>
 ESCAPE_TIME_COLOR_HD inline Color MakeProgrammableBasinColor(
     FractalType fractalType,
@@ -1350,8 +1357,7 @@ ESCAPE_TIME_COLOR_HD inline Color MakeProgrammableBasinColor(
     float residual,
     const KernelParams& params) {
     if (!colorable &&
-        params.color_pipeline.signal != ColorSignal::root_proximity &&
-        params.color_pipeline.palette != ColorPalette::phase_wheel) {
+        !ShouldUseProgrammableColorForUnescapedSample(params)) {
         return EscapeTimeColorMake<Color>(0, 0, 0, 255);
     }
     const float shapedSignal = ApplyColorPipelineShapeValue(
@@ -1393,9 +1399,7 @@ ESCAPE_TIME_COLOR_HD inline Color MakeEscapeTimeBaseColor(
     if (TryMakeDiscreteEscapeTimeColor(fractalType, mode, escaped, iteration, maxIter, z, params, &discreteColor)) {
         return discreteColor;
     }
-    if (!escaped &&
-        params.color_pipeline.signal != ColorSignal::root_proximity &&
-        params.color_pipeline.palette != ColorPalette::phase_wheel) {
+    if (!escaped && !ShouldUseProgrammableColorForUnescapedSample(params)) {
         return EscapeTimeColorMake<Color>(0, 0, 0, 255);
     }
     const float shapedSignal = ApplyColorPipelineShapeValue(

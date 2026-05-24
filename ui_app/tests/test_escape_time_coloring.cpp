@@ -121,6 +121,37 @@ int main() {
         return 1;
     }
 
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    params.color_smooth_escape_scale = 1.0f;
+    params.color_smooth_escape_bias = 0.0f;
+    params.color_heatmap_cycle_scale = 1.0f;
+    params.color_heatmap_saturation = 1.0f;
+    const TestColor smoothInteriorBase = MakeEscapeTimeBaseColor<TestColor>(FractalType::mandelbrot,
+        ColoringMode::smooth_escape,
+        false,
+        80,
+        100,
+        TestComplex{0.25f, 0.25f},
+        params);
+    if (Equals(smoothInteriorBase, TestColor{0, 0, 0, 255})) {
+        std::cerr << "Smooth-escape interiors should use the programmable color path instead of forced black\n";
+        return 1;
+    }
+
+    params.color_smooth_escape_scale = 1.7f;
+    const TestColor smoothInteriorScaled = MakeEscapeTimeBaseColor<TestColor>(FractalType::mandelbrot,
+        ColoringMode::smooth_escape,
+        false,
+        80,
+        100,
+        TestComplex{0.25f, 0.25f},
+        params);
+    if (Equals(smoothInteriorBase, smoothInteriorScaled)) {
+        std::cerr << "Smooth-escape interiors should react to the live smooth-escape scale owner field\n";
+        return 1;
+    }
+
+    params.color_smooth_escape_scale = 1.0f;
     params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_count);
     if (!Equals(MakeEscapeTimeBaseColor<TestColor>(FractalType::mandelbrot,
             ColoringMode::iteration_count,
@@ -130,7 +161,20 @@ int main() {
             TestComplex{4.0f, 0.0f},
             params),
             TestColor{0, 0, 0, 255})) {
-        std::cerr << "Unescaped escape-time pixels should stay black\n";
+        std::cerr << "Unescaped iteration-count pixels should stay black\n";
+        return 1;
+    }
+
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
+    if (!Equals(MakeEscapeTimeBaseColor<TestColor>(FractalType::mandelbrot,
+            ColoringMode::iteration_bands,
+            false,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params),
+            TestColor{0, 0, 0, 255})) {
+        std::cerr << "Unescaped iteration-band pixels should stay black\n";
         return 1;
     }
 
@@ -961,6 +1005,38 @@ int main() {
             params);
         if (!Equals(explainoResidualTight, explainoResidualLoose)) {
             std::cerr << "Explaino escape_magnitude should sample orbit magnitude, not residual-sensitive basin exit state\n";
+            return 1;
+        }
+
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        params.color_smooth_escape_scale = 1.0f;
+        params.color_smooth_escape_bias = 0.0f;
+        const TestColor basinSmoothInterior = MakeProgrammableBasinColor<TestColor>(
+            FractalType::explaino,
+            false,
+            false,
+            80,
+            100,
+            TestComplex{0.25f, 0.25f},
+            1.0e-3f,
+            params);
+        if (Equals(basinSmoothInterior, TestColor{0, 0, 0, 255})) {
+            std::cerr << "Smooth-escape basin interiors should use the programmable color path instead of forced black\n";
+            return 1;
+        }
+
+        params.color_smooth_escape_scale = 1.7f;
+        const TestColor basinSmoothInteriorScaled = MakeProgrammableBasinColor<TestColor>(
+            FractalType::explaino,
+            false,
+            false,
+            80,
+            100,
+            TestComplex{0.25f, 0.25f},
+            1.0e-3f,
+            params);
+        if (Equals(basinSmoothInterior, basinSmoothInteriorScaled)) {
+            std::cerr << "Smooth-escape basin interiors should react to the live smooth-escape scale owner field\n";
             return 1;
         }
     }

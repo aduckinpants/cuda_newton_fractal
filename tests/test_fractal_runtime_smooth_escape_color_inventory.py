@@ -52,4 +52,6 @@ def test_smooth_escape_color_inventory_runs_against_published_runtime(tmp_path: 
     assert report["height"] == 36
     assert [case["fractal_type"] for case in report["cases"]] == ["mandelbrot", "magnet"]
     assert report["analysis"]["observed_color_tuple_count"] == 1
-    assert "magnet" in report["analysis"]["later_tuning_candidate_cases"]
+    cases_by_type = {case["fractal_type"]: case for case in report["cases"]}
+    assert cases_by_type["magnet"]["frame_metrics"]["black_pixel_fraction"] < 0.50
+    assert "magnet" not in report["analysis"]["high_black_fraction_cases"]
