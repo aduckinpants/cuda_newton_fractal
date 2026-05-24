@@ -1283,8 +1283,9 @@ ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeInteriorStrength(const Kern
     return EscapeTimeColorClamp(strength, 0.0f, 1.0f);
 }
 
-ESCAPE_TIME_COLOR_HD inline bool ShouldApplySmoothEscapeInteriorStrength(const KernelParams& params) {
-    return params.color_pipeline.signal == ColorSignal::smooth_escape;
+ESCAPE_TIME_COLOR_HD inline bool ShouldApplySmoothEscapeInteriorStrength(ColoringMode mode, const KernelParams& params) {
+    return mode == ColoringMode::smooth_escape ||
+        params.color_pipeline.signal == ColorSignal::smooth_escape;
 }
 
 template <typename Color>
@@ -1293,8 +1294,8 @@ ESCAPE_TIME_COLOR_HD inline Color ApplySmoothEscapeInteriorStrength(Color fullIn
     if (strength >= 0.999f) {
         return fullInteriorColor;
     }
-    const Color mutedInteriorColor = SampleProgrammableEscapeTimePalette<Color>(0.0f, false, params);
-    return EscapeTimeColorBlendRgb(mutedInteriorColor, fullInteriorColor, strength);
+    const Color blackInteriorColor = EscapeTimeColorMake<Color>(0, 0, 0, 255);
+    return EscapeTimeColorBlendRgb(blackInteriorColor, fullInteriorColor, strength);
 }
 
 // Cyclic iteration-band palette (8 distinct hues).
@@ -1455,6 +1456,11 @@ ESCAPE_TIME_COLOR_HD inline bool ShouldUseProgrammableColorForUnescapedSample(co
         params.color_pipeline.palette == ColorPalette::phase_wheel;
 }
 
+ESCAPE_TIME_COLOR_HD inline bool ShouldUseProgrammableColorForUnescapedSample(ColoringMode mode, const KernelParams& params) {
+    return mode == ColoringMode::smooth_escape ||
+        ShouldUseProgrammableColorForUnescapedSample(params);
+}
+
 template <typename Color, typename Complex>
 ESCAPE_TIME_COLOR_HD inline Color MakeProgrammableBasinColor(
     FractalType fractalType,
@@ -1508,14 +1514,14 @@ ESCAPE_TIME_COLOR_HD inline Color MakeEscapeTimeBaseColor(
     if (TryMakeDiscreteEscapeTimeColor(fractalType, mode, escaped, iteration, maxIter, z, params, &discreteColor)) {
         return discreteColor;
     }
-    if (!escaped && !ShouldUseProgrammableColorForUnescapedSample(params)) {
+    if (!escaped && !ShouldUseProgrammableColorForUnescapedSample(mode, params)) {
         return EscapeTimeColorMake<Color>(0, 0, 0, 255);
     }
     const float shapedSignal = ApplyColorPipelineShapeValue(
         ResolveProgrammableEscapeTimeSignal(fractalType, iteration, maxIter, z, params),
         params);
     const Color color = SampleProgrammableEscapeTimePalette<Color>(shapedSignal, escaped, params);
-    if (!escaped && ShouldApplySmoothEscapeInteriorStrength(params)) {
+    if (!escaped && ShouldApplySmoothEscapeInteriorStrength(mode, params)) {
         return ApplySmoothEscapeInteriorStrength(color, params);
     }
     return color;

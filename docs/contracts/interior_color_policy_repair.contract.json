@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "interior_color_policy_repair",
+  "feature_id": "smooth_escape_interior_black_to_palette_authority",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/interior_color_policy_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/interior_color_policy_repair_PHASED_PLAN.md",
+    "docs/contracts/interior_color_policy_repair.contract.json",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "tests/test_fractal_runtime_multibrot_interior_tone.py",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "pure black interiors must remain possible",
+    "Interior Strength must not produce inconsistent Smooth Escape behavior across source-stack paths",
+    "non-black interiors need direct Color Pipeline influence",
+    "no physical mouse automation"
+  ],
+  "forbidden_operator_prompts": [
+    "redesign the palette system",
+    "change fractal formula behavior",
+    "add histogram equalization",
+    "add adaptive normalization",
+    "replace the renderer",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "interior_color_policy_only",
+    "posture": "forward_tdd",
+    "runtime_proof": "published_no_mouse_metric_proof"
+  },
+  "forbidden_defaults": {
+    "formula_changes": "forbidden",
+    "palette_redesign": "forbidden",
+    "general_color_pipeline_redesign": "forbidden",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/interior_color_policy_repair.contract.json --out-json artifacts/validation/interior_color_policy_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label interior_color_policy_native_final --log artifacts/logs/interior_color_policy_native_final.log --out-json artifacts/validation/interior_color_policy_native_final.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label interior_color_policy_runtime_publish --log artifacts/logs/interior_color_policy_runtime_publish.log --out-json artifacts/validation/interior_color_policy_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_multibrot_interior_tone.py -q --junitxml artifacts/pytest/interior_color_policy_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label interior_color_policy_inventory --log artifacts/logs/interior_color_policy_inventory.log --out-json artifacts/validation/interior_color_policy_inventory.json --heartbeat-seconds 30 --timeout-seconds 240 -- py -3.14 tools/smooth_escape_color_inventory.py --out-dir artifacts/interior_color_policy/latest --width 96 --height 72 --runtime-lock",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/interior_color_policy_repair_PHASED_PLAN.md --out-json artifacts/validation/interior_color_policy_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/interior_color_policy_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label interior_color_policy_diff_check --log artifacts/logs/interior_color_policy_diff_check.log --out-json artifacts/validation/interior_color_policy_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The interior color policy repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/interior_color_policy_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The interior color policy hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/interior_color_policy_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

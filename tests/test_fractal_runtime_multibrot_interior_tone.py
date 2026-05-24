@@ -59,15 +59,22 @@ def _write_state_text(path: Path, text: str) -> None:
         handle.write(text)
 
 
-def _with_smooth_escape_source_stack(state_text: str) -> str:
+def _with_source_stack(state_text: str, signal: str) -> str:
+    if '"color_source_stack"' in state_text:
+        return state_text
+    if signal == "smooth_escape":
+        row = '{ "signal": "smooth_escape", "scale": 1.0, "bias": 0.0, "blend_weight": 1.0 }'
+    elif signal == "escape_magnitude":
+        row = '{ "signal": "escape_magnitude", "magnitude_scale": 1.5, "magnitude_bias": -0.25, "blend_weight": 1.0 }'
+    else:
+        raise ValueError(f"unsupported source stack signal: {signal}")
+    state_text = re.sub(r'("color_signal"\s*:\s*)"[^"]+"', rf'\g<1>"{signal}"', state_text, count=1)
     source_stack = (
         '    "color_grading": "escape_default",\n'
         '    "color_source_stack": [\n'
-        '      { "signal": "smooth_escape", "scale": 1.0, "bias": 0.0, "blend_weight": 1.0 }\n'
+        f"      {row}\n"
         "    ],\n"
     )
-    if '"color_source_stack"' in state_text:
-        return state_text
     return state_text.replace('    "color_grading": "escape_default",\n', source_stack)
 
 
@@ -161,7 +168,7 @@ def test_smooth_escape_interior_strength_is_no_mouse_runtime_control(tmp_path: P
     exe_path = active_runtime_exe()
     capture = _capture_default_escape_time_frame(exe_path, tmp_path / "multibrot_control_seed", "multibrot")
     state_path = capture["state_path"]
-    state_text = _with_smooth_escape_source_stack(state_path.read_text(encoding="utf-8"))
+    state_text = _with_source_stack(state_path.read_text(encoding="utf-8"), "smooth_escape")
     assert '"color_smooth_escape_interior_strength": 0.2' in state_text
     state_path = tmp_path / "multibrot_source_stack_seed" / "state.json"
     _write_state_text(state_path, state_text)
@@ -188,22 +195,23 @@ def test_smooth_escape_interior_strength_is_no_mouse_runtime_control(tmp_path: P
             assert edited_hash != baseline_hash
 
 
-def test_smooth_escape_interior_strength_has_visible_source_stack_effect(tmp_path: Path) -> None:
+@pytest.mark.parametrize("source_signal", ["smooth_escape", "escape_magnitude"])
+def test_smooth_escape_interior_strength_has_visible_source_stack_effect(tmp_path: Path, source_signal: str) -> None:
     if sys.platform != "win32":
         pytest.skip("published viewer runtime capture is Windows-only")
 
     inventory = _load_inventory_module()
     exe_path = active_runtime_exe()
-    seed_capture = _capture_default_escape_time_frame(exe_path, tmp_path / "multibrot_source_stack_metric_seed", "multibrot")
-    state_text = _with_smooth_escape_source_stack(seed_capture["state_path"].read_text(encoding="utf-8"))
+    seed_capture = _capture_default_escape_time_frame(exe_path, tmp_path / f"multibrot_{source_signal}_metric_seed", "multibrot")
+    state_text = _with_source_stack(seed_capture["state_path"].read_text(encoding="utf-8"), source_signal)
 
-    low_state_path = tmp_path / "interior_strength_low" / "state.json"
-    high_state_path = tmp_path / "interior_strength_high" / "state.json"
+    low_state_path = tmp_path / f"{source_signal}_interior_strength_low" / "state.json"
+    high_state_path = tmp_path / f"{source_signal}_interior_strength_high" / "state.json"
     _write_state_text(low_state_path, _with_interior_strength(state_text, 0.0))
     _write_state_text(high_state_path, _with_interior_strength(state_text, 1.0))
 
-    low_capture = _capture_loaded_state(exe_path, low_state_path, tmp_path / "interior_strength_low_capture")
-    high_capture = _capture_loaded_state(exe_path, high_state_path, tmp_path / "interior_strength_high_capture")
+    low_capture = _capture_loaded_state(exe_path, low_state_path, tmp_path / f"{source_signal}_interior_strength_low_capture")
+    high_capture = _capture_loaded_state(exe_path, high_state_path, tmp_path / f"{source_signal}_interior_strength_high_capture")
     low_frame = inventory.read_bmp_rgb(low_capture["frame_path"])
     high_frame = inventory.read_bmp_rgb(high_capture["frame_path"])
     delta = _frame_delta_metrics(low_frame["pixels"], high_frame["pixels"])
@@ -220,5 +228,5 @@ def test_smooth_escape_interior_strength_has_visible_source_stack_effect(tmp_pat
         "low": low_metrics,
         "high": high_metrics,
     }
-    assert low_metrics["black_pixel_fraction"] < 0.05
+    assert low_metrics["black_pixel_fraction"] > 0.25
     assert high_metrics["black_pixel_fraction"] < 0.05

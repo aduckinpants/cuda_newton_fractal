@@ -210,7 +210,7 @@ int main() {
 
     KernelParams interiorToneControlParams = params;
     interiorToneControlParams.color_smooth_escape_interior_strength = 0.0f;
-    const TestColor mutedInterior = MakeEscapeTimeBaseColor<TestColor>(
+    const TestColor blackInterior = MakeEscapeTimeBaseColor<TestColor>(
         FractalType::multibrot,
         ColoringMode::smooth_escape,
         false,
@@ -227,16 +227,16 @@ int main() {
         514,
         TestComplex{0.0f, 0.0f},
         interiorToneControlParams);
-    if (Equals(mutedInterior, fullInterior)) {
+    if (!IsForcedBlack(blackInterior)) {
+        std::cerr << "Smooth-escape interior strength at zero should intentionally restore pure black contrast\n";
+        return 1;
+    }
+    if (Equals(blackInterior, fullInterior)) {
         std::cerr << "Smooth-escape interior strength should provide explicit user authority over colored interiors\n";
         return 1;
     }
-    if (RgbDistance(mutedInterior, fullInterior) < 96) {
+    if (RgbDistance(blackInterior, fullInterior) < 96) {
         std::cerr << "Smooth-escape interior strength should produce a visibly large interior color delta\n";
-        return 1;
-    }
-    if (IsYellowDominant(mutedInterior)) {
-        std::cerr << "Smooth-escape interior strength at zero should hold a muted non-yellow interior anchor\n";
         return 1;
     }
 
@@ -256,6 +256,10 @@ int main() {
         514,
         TestComplex{0.0f, 0.0f},
         sourceStackInteriorToneParams);
+    if (!IsForcedBlack(sourceStackMutedInterior)) {
+        std::cerr << "Smooth-escape Source stack interiors should restore pure black when interior strength is zero\n";
+        return 1;
+    }
     sourceStackInteriorToneParams.color_smooth_escape_interior_strength = 1.0f;
     const TestColor sourceStackFullInterior = MakeEscapeTimeBaseColor<TestColor>(
         FractalType::multibrot,
@@ -267,6 +271,37 @@ int main() {
         sourceStackInteriorToneParams);
     if (RgbDistance(sourceStackMutedInterior, sourceStackFullInterior) < 96) {
         std::cerr << "Smooth-escape interior strength should stay authoritative when a smooth-escape Source stack row is active\n";
+        return 1;
+    }
+
+    KernelParams escapeMagnitudeInteriorToneParams = interiorToneControlParams;
+    escapeMagnitudeInteriorToneParams.color_pipeline.signal = ColorSignal::escape_magnitude;
+    escapeMagnitudeInteriorToneParams.color_escape_magnitude_scale = 1.5f;
+    escapeMagnitudeInteriorToneParams.color_escape_magnitude_bias = -0.25f;
+    escapeMagnitudeInteriorToneParams.color_smooth_escape_interior_strength = 0.0f;
+    const TestColor escapeMagnitudeBlackInterior = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::multibrot,
+        ColoringMode::smooth_escape,
+        false,
+        514,
+        514,
+        TestComplex{0.25f, 0.25f},
+        escapeMagnitudeInteriorToneParams);
+    escapeMagnitudeInteriorToneParams.color_smooth_escape_interior_strength = 1.0f;
+    const TestColor escapeMagnitudeFullInterior = MakeEscapeTimeBaseColor<TestColor>(
+        FractalType::multibrot,
+        ColoringMode::smooth_escape,
+        false,
+        514,
+        514,
+        TestComplex{0.25f, 0.25f},
+        escapeMagnitudeInteriorToneParams);
+    if (!IsForcedBlack(escapeMagnitudeBlackInterior)) {
+        std::cerr << "Smooth Escape mode should give Interior Strength predictable black control for escape-magnitude source colors\n";
+        return 1;
+    }
+    if (RgbDistance(escapeMagnitudeBlackInterior, escapeMagnitudeFullInterior) < 96) {
+        std::cerr << "Smooth Escape mode should let escape-magnitude source colors drive non-black interiors at full strength\n";
         return 1;
     }
 

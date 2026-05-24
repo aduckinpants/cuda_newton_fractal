@@ -234,3 +234,5 @@
 - `ck:adc97a36` 2026-05-24 18:42 UTC — session-start | branch=codex/interior-strength-control-repair | head=38ee801 | status=dirty | profile=runtime | intent=interior strength visible control authority repair
 - `ck:adc97a36` 2026-05-24 19:05 UTC | score 95 — Interior Strength source-stack control authority repaired; native color/schema/state rails, runtime publish, no-mouse source-stack slider proof, smooth-escape inventory, hostile audit, code-quality baseline, and diff check passed.
 - `ck:adc97a36-closeout` 2026-05-24 19:07 UTC | score 95 — Interior Strength control repair plan closeout synced on master after receipts, merge-back, hostile audit validation, and stale-plan grep.
+- `ck:c1475175` 2026-05-24 19:26 UTC — session-start | branch=codex/interior-color-policy-repair | head=cb9367a | status=dirty | profile=runtime | intent=interior color policy repair
+- `ck:c1475175` 2026-05-24 19:40 UTC | score 95 — Interior color policy repaired: Interior Strength now controls black-to-palette interior authority, applies consistently across Smooth Escape source-stack paths, native/runtime/inventory rails green.
