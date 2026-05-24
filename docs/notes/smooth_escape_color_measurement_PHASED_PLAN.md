@@ -46,6 +46,7 @@ Out of scope:
 - RED: `py -3.14 -m pytest tests/test_smooth_escape_color_inventory.py -q --junitxml artifacts/pytest/smooth_escape_color_inventory_unit_red.junit.xml` failed because `tools/smooth_escape_color_inventory.py` did not exist.
 - Unit green: `py -3.14 -m pytest tests/test_smooth_escape_color_inventory.py -q --junitxml artifacts/pytest/smooth_escape_color_inventory_unit.junit.xml` passed with 4 tests.
 - Runtime publish: `py -3.14 tools/viewer_host_run_logged_command.py --label smooth_escape_color_measurement_runtime_publish --log artifacts/logs/smooth_escape_color_measurement_runtime_publish.log --out-json artifacts/validation/smooth_escape_color_measurement_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\build_vsdevcmd.cmd` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Published-runtime proof: `py -3.14 -m pytest tests/test_fractal_runtime_smooth_escape_color_inventory.py -q --junitxml artifacts/pytest/smooth_escape_color_inventory_runtime.junit.xml` passed and proves the inventory tool runs against the active published runtime without mouse automation.
 - Runtime measurement proof: `py -3.14 tools/smooth_escape_color_inventory.py --out-dir artifacts/smooth_escape_color_measurement/latest --width 96 --height 72 --runtime-lock` passed with 18 no-mouse capture cases and wrote `artifacts/smooth_escape_color_measurement/latest/inventory.json` plus `inventory.md`.
 - Measurement summary:
   - all measured cases use `smooth_escape/cyclic_escape/escape_default` and the same global color tuple
@@ -76,6 +77,7 @@ Out of scope:
 - [x] Real finding - The first runtime smoke showed relative `--out-dir` values were passed to the runtime while the subprocess cwd is the runtime directory, so captures landed outside the repo artifact tree. Repaired by resolving the inventory output directory to an absolute path before launching captures and adding a unit regression.
 - [x] Real finding - The first report shape was row-only and did not classify the later tuning queue. Repaired by adding aggregate flags for shared color tuple, high black fraction, low luma span, and low unique-color cases.
 - [x] Real finding - `KNOWN_ISSUES.md` still listed diagnostics capture and Lens SDF truth as open after those slices had closed. Repaired by marking both resolved with proof-plan links.
+- [x] Real finding - The first receipt attempt was blocked because the viewer-first receipt gate requires a published-runtime pytest/profile command, not only the inventory tool command. Repaired by adding `tests/test_fractal_runtime_smooth_escape_color_inventory.py`, updating the contract, re-locking it, and validating the runtime pytest.
 - [x] Clean re-read - Re-read the diff and confirmed no renderer, escape-coloring, Color Pipeline, selector/view preset, camera/dive, SDF pack, or physical mouse automation changes were introduced.
 
 ## Action Hostile Review

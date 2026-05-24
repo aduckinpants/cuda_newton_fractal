@@ -215,3 +215,4 @@
 - `ck:ff90e1aa-stale-plan` 2026-05-24 14:10 UTC | score 95 — Lens semantics stale-plan gate repaired after push: active plan now says checkpointed, receipted, and pushed instead of ready-for-closeout text.
 - `ck:11b4122b` 2026-05-24 14:22 UTC — session-start | branch=codex/smooth-escape-color-measurement | head=b9b2ae1 | status=dirty | profile=runtime | intent=smooth-escape color measurement
 - `ck:11b4122b` 2026-05-24 14:34 UTC | score 95 — Smooth-escape color measurement closed: added deterministic no-mouse inventory tool, runtime measurement report, stale diagnostics/Lens docs sync, and focused validation.
+- `ck:11b4122b-runtime-proof` 2026-05-24 14:36 UTC | score 95 — Smooth-escape measurement receipt-gate repair: added published-runtime pytest wrapper for inventory tool, updated contract, and revalidated.
