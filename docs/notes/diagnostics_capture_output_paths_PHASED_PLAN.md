@@ -53,10 +53,10 @@ Out of scope:
   - `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/diagnostics_capture_output_paths.contract.json --out-json artifacts/validation/diagnostics_capture_output_paths_contract.json`
   - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
   - `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/diagnostics_capture_output_paths_PHASED_PLAN.md --out-json artifacts/validation/diagnostics_capture_output_paths_hostile_audit.json`
-  - `cmd /c ui_app\build_tests_vsdevcmd.cmd test_viewer_cli`
-  - `cmd /c ui_app\build_tests_vsdevcmd.cmd test_diagnostics_capture`
-  - `cmd /c ui_app\build_vsdevcmd.cmd`
-  - `py -3.14 -m pytest tests/test_diagnostics_capture.py`
+  - `py -3.14 tools/viewer_host_run_logged_command.py --label diagnostics_capture_output_paths_test_viewer_cli --log artifacts/logs/diagnostics_capture_output_paths_test_viewer_cli.log --out-json artifacts/validation/diagnostics_capture_output_paths_test_viewer_cli.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\build_tests_vsdevcmd.cmd test_viewer_cli`
+  - `py -3.14 tools/viewer_host_run_logged_command.py --label diagnostics_capture_output_paths_test_diagnostics_capture --log artifacts/logs/diagnostics_capture_output_paths_test_diagnostics_capture.log --out-json artifacts/validation/diagnostics_capture_output_paths_test_diagnostics_capture.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\build_tests_vsdevcmd.cmd test_diagnostics_capture`
+  - `py -3.14 tools/viewer_host_run_logged_command.py --label diagnostics_capture_output_paths_runtime_publish --log artifacts/logs/diagnostics_capture_output_paths_runtime_publish.log --out-json artifacts/validation/diagnostics_capture_output_paths_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\build_vsdevcmd.cmd`
+  - `py -3.14 -m pytest tests/test_diagnostics_capture.py -q --junitxml artifacts/pytest/diagnostics_capture_output_paths_pytest.junit.xml`
   - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/diagnostics_capture_output_paths_code_quality.json`
   - `py -3.14 tools/viewer_host_run_logged_command.py --label diagnostics_capture_output_paths_diff_check --log artifacts/logs/diagnostics_capture_output_paths_diff_check.log --out-json artifacts/validation/diagnostics_capture_output_paths_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
@@ -73,6 +73,7 @@ Out of scope:
 ## Audit Findings
 
 - [x] Real finding - The initial contract required `cmd /c ui_app\build_tests_vsdevcmd.cmd test_diagnostics_capture`, but the focused build target did not exist. Repaired by adding focused `test_viewer_cli` and `test_diagnostics_capture` targets before relying on the rail.
+- [x] Real finding - The first receipt attempt proved the contract still listed raw build/test commands without parseable evidence artifacts. Repaired by switching the required native/runtime rails to logged commands and the runtime pytest rail to JUnit output.
 - [x] Clean re-read - Re-read the repaired diagnostics path code and confirmed default capture returns the unique archive while updating `diagnostics/last` only as compatibility.
 - [x] Clean re-read - Re-read the touched CLI/main seams and confirmed explicit output-directory routing is limited to diagnostic capture and does not change finding capture, render quality, Color Pipeline, or physical mouse automation.
 
