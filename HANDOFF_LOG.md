@@ -247,3 +247,4 @@
 - `ck:10ed1176` 2026-05-24 20:10 UTC | score 96 — SDF pack parser CPU reference plan closed on master after merge-back; stale-plan grep, plan sync, hostile audit, and diff check passed.
 - `ck:4e31f8cb` 2026-05-24 21:31 UTC — session-start | branch=codex/sdf-pack-cuda-evaluator | head=9d858eb | status=dirty | profile=native | intent=sdf pack cuda evaluator
 - `ck:4e31f8cb` 2026-05-24 22:15 UTC | score 96 — SDF pack CUDA evaluator implemented: runtime descriptor lowering, standalone CUDA sampling, CPU/CUDA parity, invalid descriptor hardening, full helper wiring, and preservation rails green.
+- `ck:4e31f8cb-postmerge` 2026-05-24 22:17 UTC | score 96 — SDF pack CUDA evaluator post-merge plan closeout synced on master; stale-plan grep, plan sync, hostile audit, and diff check passed.

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - checkpoint, receipts, merge-back, push, clean-tree, and stale-plan closeout.
+Closed - checkpointed, receipt-backed, and merged to `master`; final git status after push is the authority for remote and clean-tree state.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - checkpoint, receipts, merge-back, push, clean-tree, and stale-plan clo
 - [x] Phase 2 - write RED native CUDA parity tests for primitive, transform, combinator, and bounded nested SDF packs
 - [x] Phase 3 - implement bounded runtime lowering plus CUDA sampling while preserving the CPU reference path
 - [x] Phase 4 - validate focused native preservation rails and hostile-audit the repaired seam
-- [ ] Phase 5 - checkpoint, receipts, merge-back, push, clean-tree, and stale-plan closeout
+- [x] Phase 5 - checkpoint, receipts, merge-back, push, clean-tree, and stale-plan closeout
 
 ## Explicit User Asks
 
@@ -56,6 +56,15 @@ Out of scope:
 - Generic Equation Pack preservation proof: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_test_generic_equation_pack --log artifacts/logs/sdf_pack_cuda_evaluator_test_generic_equation_pack.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_test_generic_equation_pack.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\build_tests_vsdevcmd.cmd test_generic_equation_pack` passed with CPU `pass=23 fail=0` and CUDA `pass=54 fail=0`.
 - Color Pipeline preservation proof: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_color_pipeline_owner --log artifacts/logs/sdf_pack_cuda_evaluator_color_pipeline_owner.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_color_pipeline_owner.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner` passed with `test_color_pipeline_core`, `test_color_pipeline_window`, `test_schema_binding`, `test_escape_time_coloring`, `test_diagnostics_state_io`, `test_finding_archive_actions`, and `test_runtime_reset`.
 - Full native helper proof: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_full_native --log artifacts/logs/sdf_pack_cuda_evaluator_full_native.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_full_native.json --heartbeat-seconds 30 --timeout-seconds 1800 -- cmd /c ui_app\build_tests_vsdevcmd.cmd` passed; the log shows `test_sdf_pack_cuda: pass=19293 fail=0` and ends with `All helper tests passed`.
+- Contract validation: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_pack_cuda_evaluator.contract.json --out-json artifacts/validation/sdf_pack_cuda_evaluator_contract.json` passed.
+- Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
+- Hostile-audit validation: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_pack_cuda_evaluator_PHASED_PLAN.md --out-json artifacts/validation/sdf_pack_cuda_evaluator_hostile_audit.json` passed with two real findings and clean re-audit evidence.
+- Code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pack_cuda_evaluator_code_quality.json` passed with baseline check passed.
+- Diff hygiene: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_diff_check --log artifacts/logs/sdf_pack_cuda_evaluator_diff_check.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed.
+- Checkpoint commit: `43c760c` (`Add CUDA SDF pack evaluator`) on `codex/sdf-pack-cuda-evaluator`.
+- Receipts: validation and contract-proof receipts were written for `43c760c`.
+- Feature branch push: `codex/sdf-pack-cuda-evaluator` pushed to `origin`.
+- Merge-back: `master` fast-forwarded to `43c760c`.
 
 ## Hostile Audit
 
