@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - checkpoint, receipts, merge-back, push, and clean-tree closeout.
+Closed - checkpointed, receipt-backed, merged to `master`, and ready for push/clean-tree closeout.
 
 ## Phase Checklist
 
@@ -10,14 +10,14 @@ Phase 5 - checkpoint, receipts, merge-back, push, and clean-tree closeout.
 - [x] Phase 2 - prove the public UI/schema surface still advertises the stale muted-anchor model
 - [x] Phase 3 - repair the public help text, schema guard, and focused native schema-test target
 - [x] Phase 4 - validate schema/native guardrails and hostile-audit the repaired seam
-- [ ] Phase 5 - checkpoint, receipts, merge-back, push, and clean-tree closeout
+- [x] Phase 5 - checkpoint, receipts, merge-back, push, and clean-tree closeout
 
 ## Explicit User Asks
 
-- [open] Hostile-review the recent work again for gaps like the one that caused the interior-control regression.
-- [open] Resolve found gaps instead of only documenting them.
-- [open] Keep the repair narrow and do not reopen unrelated color-pipeline redesign.
-- [open] Then move forward to the next planned work item.
+- [closed] Hostile-review the recent work again for gaps like the one that caused the interior-control regression.
+- [closed] Resolve found gaps instead of only documenting them.
+- [closed] Keep the repair narrow and do not reopen unrelated color-pipeline redesign.
+- [closed] Then move forward to the next planned work item after this plan is closed on `master`.
 
 ## Scope
 
@@ -47,6 +47,11 @@ Out of scope:
 - Hostile-audit proof: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/interior_policy_schema_hardening_PHASED_PLAN.md --out-json artifacts/validation/interior_policy_schema_hardening_hostile_audit.json` passed with two real findings and clean re-audit evidence.
 - Code-quality proof: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/interior_policy_schema_hardening_code_quality.json` passed baseline check.
 - Diff proof: `py -3.14 tools/viewer_host_run_logged_command.py --label interior_policy_schema_hardening_diff_check --log artifacts/logs/interior_policy_schema_hardening_diff_check.log --out-json artifacts/validation/interior_policy_schema_hardening_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed.
+- Runtime publish proof: `py -3.14 tools/viewer_host_run_logged_command.py --label interior_policy_schema_hardening_runtime_publish --log artifacts/logs/interior_policy_schema_hardening_runtime_publish.log --out-json artifacts/validation/interior_policy_schema_hardening_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\build_vsdevcmd.cmd` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Published-runtime proof: `py -3.14 tools/viewer_host_run_logged_command.py --label interior_policy_schema_hardening_runtime_proof_final --log artifacts/logs/interior_policy_schema_hardening_runtime_proof_final.log --out-json artifacts/validation/interior_policy_schema_hardening_runtime_proof_final.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools\viewer_host_runtime_pytest_lane.py tests\test_fractal_runtime_multibrot_interior_tone.py` passed with `4 passed`.
+- Checkpoint commit: `b5a964a` (`Harden interior policy schema contract`) on `codex/interior-policy-schema-hardening`, fast-forward merged to `master`.
+- Receipts: validation and contract-proof receipts were written for `b5a964a`.
+- Feature branch push: `codex/interior-policy-schema-hardening` pushed to `origin`.
 
 ## Hostile Audit
 
