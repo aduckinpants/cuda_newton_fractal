@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - checkpoint, receipts, merge-back, push, clean-tree, and stale-plan closeout.
+Closed - checkpointed, receipt-backed, and merged to `master`; final git status is the authority for push and clean-tree state.
 
 ## Phase Checklist
 
@@ -10,14 +10,14 @@ Phase 5 - checkpoint, receipts, merge-back, push, clean-tree, and stale-plan clo
 - [x] Phase 2 - write RED native tests for v1 SDF pack parsing, deterministic rejection, and CPU sample sensitivity
 - [x] Phase 3 - implement the bounded parser and CPU reference evaluator
 - [x] Phase 4 - validate focused native rails and hostile-audit the repaired seam
-- [ ] Phase 5 - checkpoint, receipts, merge-back, push, clean-tree, and stale-plan closeout
+- [x] Phase 5 - checkpoint, receipts, merge-back, push, clean-tree, and stale-plan closeout
 
 ## Explicit User Asks
 
-- [open] Continue the next forward work item after the interior policy regression hardening.
-- [open] Keep this as the next SDF roadmap slice, not a broad renderer or UI rewrite.
-- [open] Build a simple, extensible foundation that can support later CUDA SDF packs, Color Pipeline/probe consumption, viewport overlay, and SDF-native fractal lanes.
-- [open] Preserve existing Lens SDF and Generic Equation Pack behavior.
+- [closed] Continue the next forward work item after the interior policy regression hardening.
+- [closed] Keep this as the next SDF roadmap slice, not a broad renderer or UI rewrite.
+- [closed] Build a simple, extensible foundation that can support later CUDA SDF packs, Color Pipeline/probe consumption, viewport overlay, and SDF-native fractal lanes.
+- [closed] Preserve existing Lens SDF and Generic Equation Pack behavior.
 
 ## Scope
 
@@ -56,6 +56,9 @@ Out of scope:
 - Code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pack_parser_cpu_reference_code_quality.json` passed with baseline check passed.
 - Diff hygiene: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_parser_cpu_reference_diff_check --log artifacts/logs/sdf_pack_parser_cpu_reference_diff_check.log --out-json artifacts/validation/sdf_pack_parser_cpu_reference_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed.
 - Generic Equation Pack preservation proof: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_parser_cpu_reference_test_generic_equation_pack --log artifacts/logs/sdf_pack_parser_cpu_reference_test_generic_equation_pack.log --out-json artifacts/validation/sdf_pack_parser_cpu_reference_test_generic_equation_pack.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\build_tests_vsdevcmd.cmd test_generic_equation_pack` passed with CPU `pass=23 fail=0` and CUDA `pass=54 fail=0`.
+- Checkpoint commit: `070e5d8` (`Add SDF pack parser CPU reference`) on `codex/sdf-pack-parser-cpu-reference`, fast-forward merged to `master`.
+- Receipts: validation and contract-proof receipts were written for `070e5d8`.
+- Feature branch push: `codex/sdf-pack-parser-cpu-reference` pushed to `origin`.
 
 ## Hostile Audit
 
