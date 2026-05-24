@@ -24,7 +24,7 @@ In scope:
 
 - Diagnostic capture output path resolution.
 - Default unique timestamp/collision-safe diagnostic bundles.
-- Explicit `--diagnostics-out-dir` support for diagnostic capture.
+- Explicit `--diagnostics-out-dir` support for diagnostic capture, with `--out-dir` as the campaign-requested alias.
 - Compatibility handling for `runtime/diagnostics/last`.
 - Focused native/headless tests and docs/help text if exposed to users.
 
@@ -49,6 +49,7 @@ Out of scope:
   - `cmd /c ui_app\build_vsdevcmd.cmd` passed and published `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
   - `py -3.14 -m pytest tests/test_diagnostics_capture.py` passed with no-mouse default archive, explicit output-directory, and invalid-output-directory command proofs.
 - Hostile audit: complete; one workflow defect was found and repaired.
+- Follow-up hostile review: complete; one operator-contract mismatch was found and repaired.
 - Validation passed:
   - `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/diagnostics_capture_output_paths.contract.json --out-json artifacts/validation/diagnostics_capture_output_paths_contract.json`
   - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
@@ -74,6 +75,7 @@ Out of scope:
 
 - [x] Real finding - The initial contract required `cmd /c ui_app\build_tests_vsdevcmd.cmd test_diagnostics_capture`, but the focused build target did not exist. Repaired by adding focused `test_viewer_cli` and `test_diagnostics_capture` targets before relying on the rail.
 - [x] Real finding - The first receipt attempt proved the contract still listed raw build/test commands without parseable evidence artifacts. Repaired by switching the required native/runtime rails to logged commands and the runtime pytest rail to JUnit output.
+- [x] Real finding - A later hostile review found the parent campaign asked for explicit `--out-dir`, while the first implementation only exposed `--diagnostics-out-dir`. Repaired by adding `--out-dir` as a diagnostic-capture alias with conflict/missing-value checks and runtime proof.
 - [x] Clean re-read - Re-read the repaired diagnostics path code and confirmed default capture returns the unique archive while updating `diagnostics/last` only as compatibility.
 - [x] Clean re-read - Re-read the touched CLI/main seams and confirmed explicit output-directory routing is limited to diagnostic capture and does not change finding capture, render quality, Color Pipeline, or physical mouse automation.
 

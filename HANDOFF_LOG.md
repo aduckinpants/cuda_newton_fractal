@@ -205,3 +205,4 @@
 - `ck:602d40b6` 2026-05-24 05:44 UTC | score 95 — Diagnostics capture output paths repaired: default diagnostic capture writes unique archive bundles plus diagnostics/last compatibility mirror; --diagnostics-out-dir added for explicit headless diagnostic output; focused native and published-runtime no-mouse proofs passed.
 - `ck:602d40b6` 2026-05-24 05:45 UTC | score 95 — Diagnostics capture output paths repaired and validated.
 - `ck:602d40b6` 2026-05-24 05:51 UTC | score 95 — Diagnostics capture receipt evidence contract repaired and revalidated.
+- `ck:602d40b6` 2026-05-24 05:58 UTC | score 95 — Diagnostics capture hostile review repaired --out-dir alias mismatch and revalidated.

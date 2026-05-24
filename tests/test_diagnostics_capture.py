@@ -85,6 +85,34 @@ def test_capture_diagnostic_explicit_out_dir_writes_requested_bundle(tmp_path: P
     _assert_bundle_files(output_dir)
 
 
+def test_capture_diagnostic_out_dir_alias_writes_requested_bundle(tmp_path: Path) -> None:
+    exe_path = active_runtime_exe()
+    output_dir = tmp_path / "explicit_diagnostic_bundle_alias"
+
+    with runtime_automation_lock():
+        result = subprocess.run(
+            [
+                str(exe_path),
+                "--capture-diagnostic",
+                "--out-dir",
+                str(output_dir),
+                "--fractal-type",
+                "julia",
+                "--width",
+                "64",
+                "--height",
+                "48",
+            ],
+            cwd=str(RUNTIME_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    _assert_bundle_files(output_dir)
+
+
 def test_capture_diagnostic_bad_explicit_out_dir_fails_usefully(tmp_path: Path) -> None:
     exe_path = active_runtime_exe()
     blocked_parent = tmp_path / "not_a_directory"

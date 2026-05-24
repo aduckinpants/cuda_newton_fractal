@@ -23,6 +23,8 @@ struct ViewerCliArgs {
     // Diagnostic capture output
     bool have_diagnostics_out_dir = false;
     std::string diagnostics_out_dir;
+    bool have_diagnostics_out_dir_alias = false;
+    std::string diagnostics_out_dir_alias;
 
     // Sample mode
     bool sample_request_stdin = false;

@@ -439,6 +439,16 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     out->describe_explaino_axis_registry = HasArg(args, "--describe-explaino-axis-registry");
     out->explore_recommend = HasArg(args, "--explore-recommend");
     if (!TryStr(args, "--diagnostics-out-dir", &out->have_diagnostics_out_dir, &out->diagnostics_out_dir)) return 1;
+    if (!TryStr(args, "--out-dir", &out->have_diagnostics_out_dir_alias, &out->diagnostics_out_dir_alias)) return 1;
+    if (out->have_diagnostics_out_dir && out->have_diagnostics_out_dir_alias &&
+            out->diagnostics_out_dir != out->diagnostics_out_dir_alias) {
+        std::fprintf(stderr, "--diagnostics-out-dir and --out-dir must match when both are provided\n");
+        return 1;
+    }
+    if (!out->have_diagnostics_out_dir && out->have_diagnostics_out_dir_alias) {
+        out->have_diagnostics_out_dir = true;
+        out->diagnostics_out_dir = out->diagnostics_out_dir_alias;
+    }
 
     // Sample mode
     out->sample_request_stdin = HasArg(args, "--sample-request-stdin");
