@@ -261,6 +261,27 @@ int NormalizeLensDownsamplePow2(int value) {
     return 16;
 }
 
+void SdfFieldResult::Clear() {
+    width = 0;
+    height = 0;
+    pixel_scale = 1.0f;
+    sign_convention = SdfSignConvention::negative_inside_positive_outside;
+    source_kind = SdfFieldSourceKind::mask_derived;
+    signed_distance_px.clear();
+}
+
+SdfFieldView SdfFieldResult::View() const {
+    return SdfFieldView{
+        width,
+        height,
+        pixel_scale,
+        sign_convention,
+        source_kind,
+        signed_distance_px.empty() ? nullptr : signed_distance_px.data(),
+        signed_distance_px.size(),
+    };
+}
+
 bool DownsampleMaskPow2(const uint8_t* inMask,
     int inW,
     int inH,
@@ -277,6 +298,27 @@ bool DownsampleMaskPow2(const uint8_t* inMask,
     g_stub.last_downsample_out_w = outW;
     g_stub.last_downsample_out_h = outH;
     outMask.assign(static_cast<std::size_t>(outW) * static_cast<std::size_t>(outH), 255u);
+    return true;
+}
+
+bool ComputeLensSdfFieldForMask(const uint8_t* mask,
+    int width,
+    int height,
+    int downsample,
+    SdfFieldResult& outField) {
+    outField.Clear();
+    if (!mask || width <= 0 || height <= 0) return false;
+    ++g_stub.downsample_calls;
+    const int ds = NormalizeLensDownsamplePow2(downsample);
+    g_stub.last_downsample = ds;
+    outField.width = (width + ds - 1) / ds;
+    outField.height = (height + ds - 1) / ds;
+    outField.pixel_scale = static_cast<float>(ds);
+    outField.sign_convention = SdfSignConvention::negative_inside_positive_outside;
+    outField.source_kind = SdfFieldSourceKind::mask_derived;
+    outField.signed_distance_px.assign(static_cast<std::size_t>(outField.width) * static_cast<std::size_t>(outField.height), 1.0f);
+    g_stub.last_downsample_out_w = outField.width;
+    g_stub.last_downsample_out_h = outField.height;
     return true;
 }
 
@@ -298,6 +340,19 @@ bool SampleSignedDistanceSdfChamfer(const uint8_t*,
     bool& outInside) {
     outSignedPx = 0.0f;
     outInside = false;
+    return true;
+}
+
+bool SampleSignedDistanceSdfField(const SdfFieldView& field,
+    int x,
+    int y,
+    float& outSignedPx,
+    bool& outInside) {
+    if (!field.signed_distance_px || x < 0 || y < 0 || x >= field.width || y >= field.height) return false;
+    const std::size_t index = static_cast<std::size_t>(y) * static_cast<std::size_t>(field.width) + static_cast<std::size_t>(x);
+    if (index >= field.signed_distance_count) return false;
+    outSignedPx = field.signed_distance_px[index];
+    outInside = outSignedPx < 0.0f;
     return true;
 }
 

@@ -1,5 +1,6 @@
 #include "../src/lens_sdf.h"
 
+#include <cmath>
 #include <iostream>
 #include <vector>
 
@@ -82,12 +83,64 @@ int main() {
     }
 
     {
+        SdfFieldResult field;
+        if (!ComputeSignedDistanceSdfFieldChamfer(mask.data(), w, h, field)) {
+            std::cerr << "ComputeSignedDistanceSdfFieldChamfer should accept valid masks\n";
+            return 1;
+        }
+        SdfFieldView view = field.View();
+        if (view.width != w || view.height != h || view.signed_distance_count != static_cast<size_t>(w) * static_cast<size_t>(h)) {
+            std::cerr << "SdfFieldView should expose scalar dimensions and count\n";
+            return 1;
+        }
+        if (view.sign_convention != SdfSignConvention::negative_inside_positive_outside ||
+            view.source_kind != SdfFieldSourceKind::mask_derived ||
+            std::fabs(view.pixel_scale - 1.0f) > 0.0001f) {
+            std::cerr << "SdfFieldView should expose source metadata and sign convention\n";
+            return 1;
+        }
+        float fieldCenter = 0.0f;
+        float fieldCorner = 0.0f;
+        bool fieldCenterInside = false;
+        bool fieldCornerInside = false;
+        if (!SampleSignedDistanceSdfField(view, 2, 2, fieldCenter, fieldCenterInside) ||
+            !SampleSignedDistanceSdfField(view, 0, 0, fieldCorner, fieldCornerInside)) {
+            std::cerr << "SampleSignedDistanceSdfField should sample valid field coordinates\n";
+            return 1;
+        }
+        if (!fieldCenterInside || fieldCornerInside || !(fieldCenter < 0.0f) || !(fieldCorner > 2.7f && fieldCorner < 2.9f)) {
+            std::cerr << "Scalar SDF field should preserve inside/outside sign and diagonal distance\n";
+            return 1;
+        }
+        std::vector<uint32_t> rgbaFromField;
+        BuildSignedDistanceSdfRgba(view, 8.0f, rgbaFromField);
+        if (rgbaFromField != rgba) {
+            std::cerr << "RGBA Lens SDF visualization should be derived from scalar field data without changing output\n";
+            return 1;
+        }
+        SdfFieldResult invalidField;
+        if (ComputeSignedDistanceSdfFieldChamfer(nullptr, w, h, invalidField) ||
+            invalidField.width != 0 ||
+            !invalidField.signed_distance_px.empty()) {
+            std::cerr << "Invalid scalar SDF field input should fail closed and clear output\n";
+            return 1;
+        }
+    }
+
+    {
         std::vector<uint8_t> allOutside(static_cast<size_t>(w) * static_cast<size_t>(h), 0);
         std::vector<uint8_t> allInside(static_cast<size_t>(w) * static_cast<size_t>(h), 255);
         std::vector<uint32_t> outsideRgba;
         std::vector<uint32_t> insideRgba;
+        SdfFieldResult outsideField;
+        SdfFieldResult insideField;
         ComputeSignedDistanceSdfChamfer(allOutside.data(), w, h, 8.0f, outsideRgba);
         ComputeSignedDistanceSdfChamfer(allInside.data(), w, h, 8.0f, insideRgba);
+        if (!ComputeSignedDistanceSdfFieldChamfer(allOutside.data(), w, h, outsideField) ||
+            !ComputeSignedDistanceSdfFieldChamfer(allInside.data(), w, h, insideField)) {
+            std::cerr << "Uniform-mask scalar SDF fields should be representable\n";
+            return 1;
+        }
         if (outsideRgba.size() != static_cast<size_t>(w) * static_cast<size_t>(h) ||
             insideRgba.size() != static_cast<size_t>(w) * static_cast<size_t>(h)) {
             std::cerr << "Uniform-mask SDF output should still match the input size\n";
@@ -95,6 +148,13 @@ int main() {
         }
         if (outsideRgba[0] == insideRgba[0]) {
             std::cerr << "Uniform inside and uniform outside masks should not collapse to the same SDF visualization\n";
+            return 1;
+        }
+        if (!(outsideField.signed_distance_px[0] > 1.0e8f) ||
+            !(insideField.signed_distance_px[0] < -1.0e8f) ||
+            !std::isfinite(outsideField.signed_distance_px[0]) ||
+            !std::isfinite(insideField.signed_distance_px[0])) {
+            std::cerr << "Uniform-mask scalar fields should preserve finite saturated sign authority\n";
             return 1;
         }
     }
@@ -132,6 +192,17 @@ int main() {
         ComputeSignedDistanceSdfChamfer(lowMask.data(), lowW, lowH, 4.0f, expectedRgba);
         if (lensRgba != expectedRgba) {
             std::cerr << "ComputeLensSdfRgbaForMask should normalize SDF scale in low-resolution pixels\n";
+            return 1;
+        }
+        SdfFieldResult lensField;
+        if (!ComputeLensSdfFieldForMask(mask2.data(), srcW, srcH, 2, lensField)) {
+            std::cerr << "ComputeLensSdfFieldForMask should expose downsampled scalar field authority\n";
+            return 1;
+        }
+        if (lensField.width != 4 || lensField.height != 2 ||
+            lensField.signed_distance_px.size() != 8 ||
+            std::fabs(lensField.pixel_scale - 2.0f) > 0.0001f) {
+            std::cerr << "ComputeLensSdfFieldForMask should report low dimensions and source pixel scale\n";
             return 1;
         }
         if (ComputeLensSdfRgbaForMask(nullptr, srcW, srcH, 2, 8.0f, lensRgba, lensW, lensH)) {

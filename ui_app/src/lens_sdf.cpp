@@ -78,6 +78,27 @@ void BuildDistanceFields(const uint8_t* mask, int width, int height, std::vector
 
 } // namespace
 
+void SdfFieldResult::Clear() {
+    width = 0;
+    height = 0;
+    pixel_scale = 1.0f;
+    sign_convention = SdfSignConvention::negative_inside_positive_outside;
+    source_kind = SdfFieldSourceKind::mask_derived;
+    signed_distance_px.clear();
+}
+
+SdfFieldView SdfFieldResult::View() const {
+    return SdfFieldView{
+        width,
+        height,
+        pixel_scale,
+        sign_convention,
+        source_kind,
+        signed_distance_px.empty() ? nullptr : signed_distance_px.data(),
+        signed_distance_px.size(),
+    };
+}
+
 int NormalizeLensDownsamplePow2(int value) {
     if (value <= 1) return 1;
     if (value <= 2) return 2;
@@ -128,15 +149,14 @@ bool DownsampleMaskPow2(
     return true;
 }
 
-void ComputeSignedDistanceSdfChamfer(
+bool ComputeSignedDistanceSdfFieldChamfer(
     const uint8_t* mask,
     int width,
     int height,
-    float maxAbsPx,
-    std::vector<uint32_t>& outRgba) {
+    SdfFieldResult& outField) {
+    outField.Clear();
     if (!mask || width <= 0 || height <= 0) {
-        outRgba.clear();
-        return;
+        return false;
     }
 
     std::vector<float> dToInside;
@@ -144,10 +164,34 @@ void ComputeSignedDistanceSdfChamfer(
     BuildDistanceFields(mask, width, height, dToInside, dToOutside);
 
     const size_t count = static_cast<size_t>(width) * static_cast<size_t>(height);
-    outRgba.resize(count);
-    float denom = fmaxf(1.0f, maxAbsPx);
+    outField.width = width;
+    outField.height = height;
+    outField.pixel_scale = 1.0f;
+    outField.sign_convention = SdfSignConvention::negative_inside_positive_outside;
+    outField.source_kind = SdfFieldSourceKind::mask_derived;
+    outField.signed_distance_px.resize(count);
     for (size_t index = 0; index < count; ++index) {
-        float signedPx = dToInside[index] - dToOutside[index];
+        outField.signed_distance_px[index] = dToInside[index] - dToOutside[index];
+    }
+    return true;
+}
+
+void BuildSignedDistanceSdfRgba(
+    const SdfFieldView& field,
+    float maxAbsPx,
+    std::vector<uint32_t>& outRgba) {
+    if (!field.signed_distance_px ||
+        field.width <= 0 ||
+        field.height <= 0 ||
+        field.signed_distance_count != static_cast<size_t>(field.width) * static_cast<size_t>(field.height)) {
+        outRgba.clear();
+        return;
+    }
+
+    outRgba.resize(field.signed_distance_count);
+    float denom = fmaxf(1.0f, maxAbsPx);
+    for (size_t index = 0; index < field.signed_distance_count; ++index) {
+        float signedPx = field.signed_distance_px[index];
         float value = 0.5f + (signedPx / (2.0f * denom));
         if (value < 0.0f) value = 0.0f;
         if (value > 1.0f) value = 1.0f;
@@ -165,6 +209,20 @@ void ComputeSignedDistanceSdfChamfer(
                 | (static_cast<uint32_t>(255) << 24);
         }
     }
+}
+
+void ComputeSignedDistanceSdfChamfer(
+    const uint8_t* mask,
+    int width,
+    int height,
+    float maxAbsPx,
+    std::vector<uint32_t>& outRgba) {
+    SdfFieldResult field;
+    if (!ComputeSignedDistanceSdfFieldChamfer(mask, width, height, field)) {
+        outRgba.clear();
+        return;
+    }
+    BuildSignedDistanceSdfRgba(field.View(), maxAbsPx, outRgba);
 }
 
 bool SampleSignedDistanceSdfChamfer(
@@ -188,6 +246,49 @@ bool SampleSignedDistanceSdfChamfer(
     return true;
 }
 
+bool SampleSignedDistanceSdfField(
+    const SdfFieldView& field,
+    int x,
+    int y,
+    float& outSignedPx,
+    bool& outInside) {
+    if (!field.signed_distance_px ||
+        field.width <= 0 ||
+        field.height <= 0 ||
+        field.signed_distance_count != static_cast<size_t>(field.width) * static_cast<size_t>(field.height)) {
+        return false;
+    }
+    if (x < 0 || y < 0 || x >= field.width || y >= field.height) return false;
+
+    size_t index = static_cast<size_t>(y) * static_cast<size_t>(field.width) + static_cast<size_t>(x);
+    outSignedPx = field.signed_distance_px[index];
+    outInside = outSignedPx < 0.0f;
+    return true;
+}
+
+bool ComputeLensSdfFieldForMask(
+    const uint8_t* mask,
+    int width,
+    int height,
+    int downsample,
+    SdfFieldResult& outField) {
+    outField.Clear();
+
+    std::vector<uint8_t> lowMask;
+    int outWidth = 0;
+    int outHeight = 0;
+    if (!DownsampleMaskPow2(mask, width, height, downsample, lowMask, outWidth, outHeight)) {
+        return false;
+    }
+
+    if (!ComputeSignedDistanceSdfFieldChamfer(lowMask.data(), outWidth, outHeight, outField)) {
+        outField.Clear();
+        return false;
+    }
+    outField.pixel_scale = static_cast<float>(NormalizeLensDownsamplePow2(downsample));
+    return true;
+}
+
 bool ComputeLensSdfRgbaForMask(
     const uint8_t* mask,
     int width,
@@ -201,13 +302,15 @@ bool ComputeLensSdfRgbaForMask(
     outWidth = 0;
     outHeight = 0;
 
-    std::vector<uint8_t> lowMask;
-    if (!DownsampleMaskPow2(mask, width, height, downsample, lowMask, outWidth, outHeight)) {
+    SdfFieldResult field;
+    if (!ComputeLensSdfFieldForMask(mask, width, height, downsample, field)) {
         return false;
     }
 
     const int normalizedDownsample = NormalizeLensDownsamplePow2(downsample);
     const float lowMaxAbsPx = maxAbsPx / static_cast<float>(normalizedDownsample);
-    ComputeSignedDistanceSdfChamfer(lowMask.data(), outWidth, outHeight, lowMaxAbsPx, outRgba);
+    BuildSignedDistanceSdfRgba(field.View(), lowMaxAbsPx, outRgba);
+    outWidth = field.width;
+    outHeight = field.height;
     return outRgba.size() == static_cast<size_t>(outWidth) * static_cast<size_t>(outHeight);
 }

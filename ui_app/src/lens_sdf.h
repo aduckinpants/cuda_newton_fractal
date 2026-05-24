@@ -1,7 +1,38 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
+
+enum class SdfFieldSourceKind {
+    mask_derived,
+};
+
+enum class SdfSignConvention {
+    negative_inside_positive_outside,
+};
+
+struct SdfFieldView {
+    int width{0};
+    int height{0};
+    float pixel_scale{1.0f};
+    SdfSignConvention sign_convention{SdfSignConvention::negative_inside_positive_outside};
+    SdfFieldSourceKind source_kind{SdfFieldSourceKind::mask_derived};
+    const float* signed_distance_px{nullptr};
+    std::size_t signed_distance_count{0};
+};
+
+struct SdfFieldResult {
+    int width{0};
+    int height{0};
+    float pixel_scale{1.0f};
+    SdfSignConvention sign_convention{SdfSignConvention::negative_inside_positive_outside};
+    SdfFieldSourceKind source_kind{SdfFieldSourceKind::mask_derived};
+    std::vector<float> signed_distance_px;
+
+    void Clear();
+    SdfFieldView View() const;
+};
 
 int NormalizeLensDownsamplePow2(int value);
 
@@ -21,6 +52,17 @@ void ComputeSignedDistanceSdfChamfer(
     float maxAbsPx,
     std::vector<uint32_t>& outRgba);
 
+bool ComputeSignedDistanceSdfFieldChamfer(
+    const uint8_t* mask,
+    int width,
+    int height,
+    SdfFieldResult& outField);
+
+void BuildSignedDistanceSdfRgba(
+    const SdfFieldView& field,
+    float maxAbsPx,
+    std::vector<uint32_t>& outRgba);
+
 bool SampleSignedDistanceSdfChamfer(
     const uint8_t* mask,
     int width,
@@ -29,6 +71,20 @@ bool SampleSignedDistanceSdfChamfer(
     int y,
     float& outSignedPx,
     bool& outInside);
+
+bool SampleSignedDistanceSdfField(
+    const SdfFieldView& field,
+    int x,
+    int y,
+    float& outSignedPx,
+    bool& outInside);
+
+bool ComputeLensSdfFieldForMask(
+    const uint8_t* mask,
+    int width,
+    int height,
+    int downsample,
+    SdfFieldResult& outField);
 
 bool ComputeLensSdfRgbaForMask(
     const uint8_t* mask,

@@ -329,10 +329,13 @@ int RunFlashlightProbe(const std::string& exeDir,
         return 1;
     }
     const int referenceDownsample = NormalizeFlashlightLensDownsamplePow2(lens.downsample);
-    std::vector<uint8_t> referenceLensMaskLow;
-    int referenceLensW = 0;
-    int referenceLensH = 0;
-    DownsampleMaskPow2(referenceMask.data(), render.resolution.x, render.resolution.y, referenceDownsample, referenceLensMaskLow, referenceLensW, referenceLensH);
+    SdfFieldResult referenceLensField;
+    if (!ComputeLensSdfFieldForMask(referenceMask.data(), render.resolution.x, render.resolution.y, referenceDownsample, referenceLensField)) {
+        std::fprintf(stderr, "Failed to build flashlight reference Lens SDF field\n");
+        return 1;
+    }
+    const int referenceLensW = referenceLensField.width;
+    const int referenceLensH = referenceLensField.height;
     const float referenceMaxAbsPxLow = 48.0f / static_cast<float>(referenceDownsample);
 
     std::ostringstream json;
@@ -444,11 +447,16 @@ int RunFlashlightProbe(const std::string& exeDir,
             return 1;
         }
 
-        std::vector<uint8_t> lensMaskLow;
         int lensW = 0;
         int lensH = 0;
         const int ds = NormalizeFlashlightLensDownsamplePow2(lens.downsample);
-        DownsampleMaskPow2(mask.data(), render.resolution.x, render.resolution.y, ds, lensMaskLow, lensW, lensH);
+        SdfFieldResult lensField;
+        if (!ComputeLensSdfFieldForMask(mask.data(), render.resolution.x, render.resolution.y, ds, lensField)) {
+            std::fprintf(stderr, "Failed to build flashlight tick Lens SDF field\n");
+            return 1;
+        }
+        lensW = lensField.width;
+        lensH = lensField.height;
         const float maxAbsPxLow = 48.0f / static_cast<float>(ds);
 
         float signed0 = 0.0f;
@@ -478,7 +486,7 @@ int RunFlashlightProbe(const std::string& exeDir,
                 const int y = std::clamp(referencePoint.low_y + offsets[i][1], 0, std::max(0, referenceLensH - 1));
                 float signedPx = 0.0f;
                 bool inside = false;
-                const bool ok = SampleSignedDistanceSdfChamfer(referenceLensMaskLow.data(), referenceLensW, referenceLensH, x, y, signedPx, inside);
+                const bool ok = SampleSignedDistanceSdfField(referenceLensField.View(), x, y, signedPx, inside);
                 referenceSignedPx[static_cast<std::size_t>(i)] = signedPx;
                 referenceInside[static_cast<std::size_t>(i)] = inside ? 1u : 0u;
                 if (ok) {
@@ -547,7 +555,7 @@ int RunFlashlightProbe(const std::string& exeDir,
 
             float signedPx = 0.0f;
             bool inside = false;
-            const bool ok = SampleSignedDistanceSdfChamfer(lensMaskLow.data(), lensW, lensH, x, y, signedPx, inside);
+            const bool ok = SampleSignedDistanceSdfField(lensField.View(), x, y, signedPx, inside);
             if (i == 0) {
                 signed0 = signedPx;
                 inside0 = inside;

@@ -412,10 +412,13 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
     }
 
     const int referenceDownsample = NormalizeLensDownsamplePow2(lens.downsample);
-    std::vector<uint8_t> referenceLensMaskLow;
-    int referenceLensW = 0;
-    int referenceLensH = 0;
-    DownsampleMaskPow2(referenceMask.data(), render.resolution.x, render.resolution.y, referenceDownsample, referenceLensMaskLow, referenceLensW, referenceLensH);
+    SdfFieldResult referenceLensField;
+    if (!ComputeLensSdfFieldForMask(referenceMask.data(), render.resolution.x, render.resolution.y, referenceDownsample, referenceLensField)) {
+        std::fprintf(stderr, "Failed to build runtime walk reference Lens SDF field\n");
+        return 1;
+    }
+    const int referenceLensW = referenceLensField.width;
+    const int referenceLensH = referenceLensField.height;
 
     const double baseCx = referenceView.center_hp_x;
     const double baseCy = referenceView.center_hp_y;
@@ -536,10 +539,13 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
             return 1;
         }
 
-        std::vector<uint8_t> lensMaskLow;
-        int lensW = 0;
-        int lensH = 0;
-        DownsampleMaskPow2(mask.data(), render.resolution.x, render.resolution.y, referenceDownsample, lensMaskLow, lensW, lensH);
+        SdfFieldResult lensField;
+        if (!ComputeLensSdfFieldForMask(mask.data(), render.resolution.x, render.resolution.y, referenceDownsample, lensField)) {
+            std::fprintf(stderr, "Failed to build runtime walk tick Lens SDF field\n");
+            return 1;
+        }
+        const int lensW = lensField.width;
+        const int lensH = lensField.height;
 
         float minAbsSigned = 1.0e30f;
         int nearCount = 0;
@@ -552,7 +558,7 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
             y = std::clamp(y, 0, std::max(0, lensH - 1));
             float signedPx = 0.0f;
             bool inside = false;
-            if (SampleSignedDistanceSdfChamfer(lensMaskLow.data(), lensW, lensH, x, y, signedPx, inside)) {
+            if (SampleSignedDistanceSdfField(lensField.View(), x, y, signedPx, inside)) {
                 minAbsSigned = std::min(minAbsSigned, std::fabs(signedPx));
                 if (std::fabs(signedPx) <= kNearEpsPx) ++nearCount;
             }
@@ -589,7 +595,7 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
             const int y = std::clamp(referencePoint.low_y + offsets[sampleIndex][1], 0, std::max(0, referenceLensH - 1));
             float signedPx = 0.0f;
             bool inside = false;
-            if (SampleSignedDistanceSdfChamfer(referenceLensMaskLow.data(), referenceLensW, referenceLensH, x, y, signedPx, inside)) {
+            if (SampleSignedDistanceSdfField(referenceLensField.View(), x, y, signedPx, inside)) {
                 referenceMinAbsSigned = std::min(referenceMinAbsSigned, std::fabs(signedPx));
                 if (std::fabs(signedPx) <= kNearEpsPx) ++referenceNearCount;
             }
