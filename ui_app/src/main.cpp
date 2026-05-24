@@ -762,9 +762,13 @@ static void DispatchRenderFrame(
         if (lens.enabled && maskPtr) {
             EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
             UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
-            EnsureLensSdfTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
-            ComputeSignedDistanceSdfChamfer(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y, 48.0f, lensSdfRgba);
-            UploadLensSdfRGBA(lensSdfRgba.data(), dispatchRender.resolution.x, dispatchRender.resolution.y);
+            int lensSdfW = 0;
+            int lensSdfH = 0;
+            if (ComputeLensSdfRgbaForMask(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y,
+                    lens.downsample, 48.0f, lensSdfRgba, lensSdfW, lensSdfH)) {
+                EnsureLensSdfTexture(lensSdfW, lensSdfH);
+                UploadLensSdfRGBA(lensSdfRgba.data(), lensSdfW, lensSdfH);
+            }
         }
     }
     dirtyOut = !renderedFrame.ready;

@@ -206,3 +206,5 @@
 - `ck:602d40b6` 2026-05-24 05:45 UTC | score 95 — Diagnostics capture output paths repaired and validated.
 - `ck:602d40b6` 2026-05-24 05:51 UTC | score 95 — Diagnostics capture receipt evidence contract repaired and revalidated.
 - `ck:602d40b6` 2026-05-24 05:58 UTC | score 95 — Diagnostics capture hostile review repaired --out-dir alias mismatch and revalidated.
+- `ck:50f3292f` 2026-05-24 06:02 UTC — session-start | branch=codex/lens-sdf-truth-cleanup | head=e2bb164 | status=dirty | profile=runtime | intent=lens sdf truth cleanup
+- `ck:50f3292f` 2026-05-24 06:25 UTC | score 95 — Lens SDF truth cleanup repaired and validated.

@@ -172,51 +172,6 @@ std::string JsonEscape(const std::string& text) {
     return escaped;
 }
 
-void DownsampleMask2x(const uint8_t* inMask, int inW, int inH, std::vector<uint8_t>* outMask, int* outW, int* outH) {
-    const int reducedW = (inW + 1) / 2;
-    const int reducedH = (inH + 1) / 2;
-    outMask->assign(static_cast<std::size_t>(reducedW) * static_cast<std::size_t>(reducedH), 0);
-    for (int y = 0; y < reducedH; ++y) {
-        int sampleY = y * 2;
-        if (sampleY >= inH) sampleY = inH - 1;
-        for (int x = 0; x < reducedW; ++x) {
-            int sampleX = x * 2;
-            if (sampleX >= inW) sampleX = inW - 1;
-            (*outMask)[static_cast<std::size_t>(y) * static_cast<std::size_t>(reducedW) + static_cast<std::size_t>(x)] =
-                inMask[static_cast<std::size_t>(sampleY) * static_cast<std::size_t>(inW) + static_cast<std::size_t>(sampleX)];
-        }
-    }
-    *outW = reducedW;
-    *outH = reducedH;
-}
-
-void DownsampleMaskPow2(const uint8_t* inMask, int inW, int inH, int downsample, std::vector<uint8_t>* outMask, int* outW, int* outH) {
-    const int ds = NormalizeFlashlightLensDownsamplePow2(downsample);
-    if (ds <= 1) {
-        *outW = inW;
-        *outH = inH;
-        outMask->assign(inMask, inMask + static_cast<std::size_t>(inW) * static_cast<std::size_t>(inH));
-        return;
-    }
-
-    std::vector<uint8_t> tmpA;
-    std::vector<uint8_t> tmpB;
-    const uint8_t* current = inMask;
-    int currentW = inW;
-    int currentH = inH;
-    int steps = 0;
-    for (int x = ds; x > 1; x >>= 1) ++steps;
-    for (int step = 0; step < steps; ++step) {
-        std::vector<uint8_t>* target = (step % 2 == 0) ? &tmpA : &tmpB;
-        DownsampleMask2x(current, currentW, currentH, target, &currentW, &currentH);
-        current = target->data();
-    }
-
-    *outW = currentW;
-    *outH = currentH;
-    outMask->assign(current, current + static_cast<std::size_t>(currentW) * static_cast<std::size_t>(currentH));
-}
-
 FlashlightReferencePoint WorldToReferenceLensLow(
     double worldX,
     double worldY,
@@ -277,10 +232,7 @@ std::array<uint32_t, 8> ComputeFlashlightConversationSpectrum8(const std::string
 }
 
 int NormalizeFlashlightLensDownsamplePow2(int value) {
-    if (value <= 1) return 1;
-    if (value <= 2) return 2;
-    if (value <= 4) return 4;
-    return 8;
+    return NormalizeLensDownsamplePow2(value);
 }
 
 FlashlightManifoldStep FlashlightManifoldAt(
@@ -380,7 +332,7 @@ int RunFlashlightProbe(const std::string& exeDir,
     std::vector<uint8_t> referenceLensMaskLow;
     int referenceLensW = 0;
     int referenceLensH = 0;
-    DownsampleMaskPow2(referenceMask.data(), render.resolution.x, render.resolution.y, referenceDownsample, &referenceLensMaskLow, &referenceLensW, &referenceLensH);
+    DownsampleMaskPow2(referenceMask.data(), render.resolution.x, render.resolution.y, referenceDownsample, referenceLensMaskLow, referenceLensW, referenceLensH);
     const float referenceMaxAbsPxLow = 48.0f / static_cast<float>(referenceDownsample);
 
     std::ostringstream json;
@@ -496,7 +448,7 @@ int RunFlashlightProbe(const std::string& exeDir,
         int lensW = 0;
         int lensH = 0;
         const int ds = NormalizeFlashlightLensDownsamplePow2(lens.downsample);
-        DownsampleMaskPow2(mask.data(), render.resolution.x, render.resolution.y, ds, &lensMaskLow, &lensW, &lensH);
+        DownsampleMaskPow2(mask.data(), render.resolution.x, render.resolution.y, ds, lensMaskLow, lensW, lensH);
         const float maxAbsPxLow = 48.0f / static_cast<float>(ds);
 
         float signed0 = 0.0f;

@@ -58,6 +58,10 @@ struct StubState {
     int apply_calls = 0;
     int sidecar_calls = 0;
     int sdf_calls = 0;
+    int downsample_calls = 0;
+    int last_downsample = 0;
+    int last_downsample_out_w = 0;
+    int last_downsample_out_h = 0;
 
     std::string seen_request_path;
     std::string seen_bundle_path;
@@ -235,11 +239,44 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
         if (outError) *outError = "stub capture failure";
         return false;
     }
+    std::error_code ec;
+    std::filesystem::create_directories(outputDir, ec);
+    if (ec) {
+        if (outError) *outError = "stub capture directory failure";
+        return false;
+    }
     if (outResult) {
         outResult->output_dir = outputDir;
         outResult->frame_bmp_path = outputDir + "/frame.bmp";
         outResult->state_json_path = outputDir + "/state.json";
     }
+    return true;
+}
+
+int NormalizeLensDownsamplePow2(int value) {
+    if (value <= 1) return 1;
+    if (value <= 2) return 2;
+    if (value <= 4) return 4;
+    if (value <= 8) return 8;
+    return 16;
+}
+
+bool DownsampleMaskPow2(const uint8_t* inMask,
+    int inW,
+    int inH,
+    int downsample,
+    std::vector<uint8_t>& outMask,
+    int& outW,
+    int& outH) {
+    if (!inMask || inW <= 0 || inH <= 0) return false;
+    ++g_stub.downsample_calls;
+    const int ds = NormalizeLensDownsamplePow2(downsample);
+    g_stub.last_downsample = ds;
+    outW = (inW + ds - 1) / ds;
+    outH = (inH + ds - 1) / ds;
+    g_stub.last_downsample_out_w = outW;
+    g_stub.last_downsample_out_h = outH;
+    outMask.assign(static_cast<std::size_t>(outW) * static_cast<std::size_t>(outH), 255u);
     return true;
 }
 
@@ -426,12 +463,31 @@ static void TestDefaultsRenderAndEnablesLensBeforeReferenceRender() {
     std::filesystem::remove_all(TestOutputRoot("render_default_failure"));
 }
 
+static void TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks() {
+    ResetStubs("successful_lens_downsample");
+    g_stub.render_ok = true;
+    g_stub.loaded_render.resolution = {33, 25};
+    LensSettings lens;
+
+    Check(RunHeadless(&lens) == 0, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_ReturnsSuccess");
+    Check(lens.enabled, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_EnablesLens");
+    Check(g_stub.render_calls == 3, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_RendersReferenceAndTicks");
+    Check(g_stub.downsample_calls == 3, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_DownsamplesReferenceAndTicks");
+    Check(g_stub.last_downsample == 2, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_UsesNormalizedDefaultDownsample");
+    Check(g_stub.last_downsample_out_w == 17, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_CeilsLowWidth");
+    Check(g_stub.last_downsample_out_h == 13, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_CeilsLowHeight");
+    Check(std::filesystem::exists(TestOutputRoot("successful_lens_downsample") / "runtime_walk_report.json"),
+        "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_WritesReport");
+    std::filesystem::remove_all(TestOutputRoot("successful_lens_downsample"));
+}
+
 int main() {
     TestRejectsRequestLoadFailureBeforeBundleLoad();
     TestRejectsBundleLoadFailureBeforeBaseState();
     TestRejectsBaseStateLoadFailureBeforeRender();
     TestRejectsNonExplainoBaseStateBeforeOutputWork();
     TestDefaultsRenderAndEnablesLensBeforeReferenceRender();
+    TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks();
 
     std::filesystem::remove_all(std::filesystem::temp_directory_path() / "cuda_newton_fractal_clone_runtime_walk_headless_tests");
     std::printf("test_runtime_walk_headless: passed=%d failed=%d\n", g_passed, g_failed);

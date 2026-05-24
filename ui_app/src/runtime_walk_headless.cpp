@@ -212,56 +212,6 @@ bool WriteBmp32Bgra(const std::filesystem::path& path, const uint32_t* rgba, int
     return true;
 }
 
-void DownsampleMask2x(const uint8_t* inMask, int inW, int inH, std::vector<uint8_t>* outMask, int* outW, int* outH) {
-    const int reducedW = (inW + 1) / 2;
-    const int reducedH = (inH + 1) / 2;
-    outMask->assign(static_cast<std::size_t>(reducedW) * static_cast<std::size_t>(reducedH), 0);
-    for (int y = 0; y < reducedH; ++y) {
-        int sampleY = y * 2;
-        if (sampleY >= inH) sampleY = inH - 1;
-        for (int x = 0; x < reducedW; ++x) {
-            int sampleX = x * 2;
-            if (sampleX >= inW) sampleX = inW - 1;
-            (*outMask)[static_cast<std::size_t>(y) * static_cast<std::size_t>(reducedW) + static_cast<std::size_t>(x)] =
-                inMask[static_cast<std::size_t>(sampleY) * static_cast<std::size_t>(inW) + static_cast<std::size_t>(sampleX)];
-        }
-    }
-    *outW = reducedW;
-    *outH = reducedH;
-}
-
-void DownsampleMaskPow2(const uint8_t* inMask, int inW, int inH, int downsample, std::vector<uint8_t>* outMask, int* outW, int* outH) {
-    int ds = 1;
-    if (downsample <= 1) ds = 1;
-    else if (downsample <= 2) ds = 2;
-    else if (downsample <= 4) ds = 4;
-    else ds = 8;
-
-    if (ds <= 1) {
-        *outW = inW;
-        *outH = inH;
-        outMask->assign(inMask, inMask + static_cast<std::size_t>(inW) * static_cast<std::size_t>(inH));
-        return;
-    }
-
-    std::vector<uint8_t> tmpA;
-    std::vector<uint8_t> tmpB;
-    const uint8_t* current = inMask;
-    int currentW = inW;
-    int currentH = inH;
-    int steps = 0;
-    for (int x = ds; x > 1; x >>= 1) ++steps;
-    for (int step = 0; step < steps; ++step) {
-        std::vector<uint8_t>* target = (step % 2 == 0) ? &tmpA : &tmpB;
-        DownsampleMask2x(current, currentW, currentH, target, &currentW, &currentH);
-        current = target->data();
-    }
-
-    *outW = currentW;
-    *outH = currentH;
-    outMask->assign(current, current + static_cast<std::size_t>(currentW) * static_cast<std::size_t>(currentH));
-}
-
 ReferencePoint WorldToReferencePoint(
     double worldX,
     double worldY,
@@ -461,11 +411,11 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
         return 1;
     }
 
-    const int referenceDownsample = (lens.downsample <= 1) ? 1 : (lens.downsample <= 2 ? 2 : (lens.downsample <= 4 ? 4 : 8));
+    const int referenceDownsample = NormalizeLensDownsamplePow2(lens.downsample);
     std::vector<uint8_t> referenceLensMaskLow;
     int referenceLensW = 0;
     int referenceLensH = 0;
-    DownsampleMaskPow2(referenceMask.data(), render.resolution.x, render.resolution.y, referenceDownsample, &referenceLensMaskLow, &referenceLensW, &referenceLensH);
+    DownsampleMaskPow2(referenceMask.data(), render.resolution.x, render.resolution.y, referenceDownsample, referenceLensMaskLow, referenceLensW, referenceLensH);
 
     const double baseCx = referenceView.center_hp_x;
     const double baseCy = referenceView.center_hp_y;
@@ -589,7 +539,7 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
         std::vector<uint8_t> lensMaskLow;
         int lensW = 0;
         int lensH = 0;
-        DownsampleMaskPow2(mask.data(), render.resolution.x, render.resolution.y, referenceDownsample, &lensMaskLow, &lensW, &lensH);
+        DownsampleMaskPow2(mask.data(), render.resolution.x, render.resolution.y, referenceDownsample, lensMaskLow, lensW, lensH);
 
         float minAbsSigned = 1.0e30f;
         int nearCount = 0;

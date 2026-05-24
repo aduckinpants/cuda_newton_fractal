@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.runtime_harness import RUNTIME_DIR, active_runtime_exe as _active_runtime_exe
+from tests.runtime_harness import RUNTIME_DIR, active_runtime_exe as _active_runtime_exe, runtime_automation_lock
 
 
 DIAGNOSTICS_LAST_DIR = RUNTIME_DIR / "diagnostics" / "last"
@@ -16,6 +16,14 @@ DIAGNOSTICS_LAST_DIR = RUNTIME_DIR / "diagnostics" / "last"
 
 def _mtime_or_zero(path: Path) -> float:
     return path.stat().st_mtime if path.exists() else 0.0
+
+
+def _bmp_dimensions(path: Path) -> tuple[int, int]:
+    data = path.read_bytes()
+    assert data[:2] == b"BM"
+    width = int.from_bytes(data[18:22], "little", signed=True)
+    height = int.from_bytes(data[22:26], "little", signed=True)
+    return abs(width), abs(height)
 
 
 def test_flashlight_probe_regenerates_probe_bundle(tmp_path: Path) -> None:
@@ -85,6 +93,43 @@ def test_flashlight_probe_regenerates_probe_bundle(tmp_path: Path) -> None:
     assert probe["reference_view"]["frame_bmp"] == "flashlight_reference_frame.bmp"
     assert probe["trace"][0]["reference_trace"]["render_xy"]
     assert probe["summary"]["closure"]["enabled"] is False
+
+
+def test_flashlight_probe_reports_lens_downsampled_size(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("flashlight probe runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    seed_path = tmp_path / "flashlight_seed.txt"
+    seed_path.write_text("lens downsample proof", encoding="utf-8")
+
+    with runtime_automation_lock():
+        result = subprocess.run(
+            [
+                str(exe_path),
+                "--flashlight-probe",
+                str(seed_path),
+                "--flashlight-ticks",
+                "1",
+                "--width",
+                "64",
+                "--height",
+                "48",
+            ],
+            cwd=str(RUNTIME_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    probe = json.loads((DIAGNOSTICS_LAST_DIR / "flashlight_probe.json").read_text(encoding="utf-8"))
+    render_width, render_height = _bmp_dimensions(DIAGNOSTICS_LAST_DIR / "flashlight_reference_frame.bmp")
+    assert probe["reference_view"]["lens"]["downsample"] == 2
+    assert probe["reference_view"]["lens"]["lens_low_size"] == [
+        (render_width + 1) // 2,
+        (render_height + 1) // 2,
+    ]
 
 
 def test_flashlight_probe_conflicts_with_describe_functions(tmp_path: Path) -> None:

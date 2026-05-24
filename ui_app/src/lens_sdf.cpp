@@ -4,6 +4,22 @@
 
 namespace {
 
+void DownsampleMask2x(const uint8_t* inMask, int inW, int inH, std::vector<uint8_t>& outMask, int& outW, int& outH) {
+    outW = (inW + 1) / 2;
+    outH = (inH + 1) / 2;
+    outMask.assign(static_cast<size_t>(outW) * static_cast<size_t>(outH), 0);
+    for (int y = 0; y < outH; ++y) {
+        int sampleY = y * 2;
+        if (sampleY >= inH) sampleY = inH - 1;
+        for (int x = 0; x < outW; ++x) {
+            int sampleX = x * 2;
+            if (sampleX >= inW) sampleX = inW - 1;
+            outMask[static_cast<size_t>(y) * static_cast<size_t>(outW) + static_cast<size_t>(x)] =
+                inMask[static_cast<size_t>(sampleY) * static_cast<size_t>(inW) + static_cast<size_t>(sampleX)];
+        }
+    }
+}
+
 void RelaxChamferForward(std::vector<float>& distances, int width, int height) {
     const float w1 = 1.0f;
     const float w2 = 1.41421356f;
@@ -61,6 +77,56 @@ void BuildDistanceFields(const uint8_t* mask, int width, int height, std::vector
 }
 
 } // namespace
+
+int NormalizeLensDownsamplePow2(int value) {
+    if (value <= 1) return 1;
+    if (value <= 2) return 2;
+    if (value <= 4) return 4;
+    if (value <= 8) return 8;
+    return 16;
+}
+
+bool DownsampleMaskPow2(
+    const uint8_t* inMask,
+    int inW,
+    int inH,
+    int downsample,
+    std::vector<uint8_t>& outMask,
+    int& outW,
+    int& outH) {
+    outMask.clear();
+    outW = 0;
+    outH = 0;
+    if (!inMask || inW <= 0 || inH <= 0) {
+        return false;
+    }
+
+    const int ds = NormalizeLensDownsamplePow2(downsample);
+    if (ds <= 1) {
+        outW = inW;
+        outH = inH;
+        outMask.assign(inMask, inMask + static_cast<size_t>(inW) * static_cast<size_t>(inH));
+        return true;
+    }
+
+    std::vector<uint8_t> tmpA;
+    std::vector<uint8_t> tmpB;
+    const uint8_t* current = inMask;
+    int currentW = inW;
+    int currentH = inH;
+    int steps = 0;
+    for (int x = ds; x > 1; x >>= 1) ++steps;
+    for (int step = 0; step < steps; ++step) {
+        std::vector<uint8_t>& target = (step % 2 == 0) ? tmpA : tmpB;
+        DownsampleMask2x(current, currentW, currentH, target, currentW, currentH);
+        current = target.data();
+    }
+
+    outW = currentW;
+    outH = currentH;
+    outMask.assign(current, current + static_cast<size_t>(currentW) * static_cast<size_t>(currentH));
+    return true;
+}
 
 void ComputeSignedDistanceSdfChamfer(
     const uint8_t* mask,
@@ -120,4 +186,28 @@ bool SampleSignedDistanceSdfChamfer(
     outSignedPx = dToInside[index] - dToOutside[index];
     outInside = mask[index] > 127;
     return true;
+}
+
+bool ComputeLensSdfRgbaForMask(
+    const uint8_t* mask,
+    int width,
+    int height,
+    int downsample,
+    float maxAbsPx,
+    std::vector<uint32_t>& outRgba,
+    int& outWidth,
+    int& outHeight) {
+    outRgba.clear();
+    outWidth = 0;
+    outHeight = 0;
+
+    std::vector<uint8_t> lowMask;
+    if (!DownsampleMaskPow2(mask, width, height, downsample, lowMask, outWidth, outHeight)) {
+        return false;
+    }
+
+    const int normalizedDownsample = NormalizeLensDownsamplePow2(downsample);
+    const float lowMaxAbsPx = maxAbsPx / static_cast<float>(normalizedDownsample);
+    ComputeSignedDistanceSdfChamfer(lowMask.data(), outWidth, outHeight, lowMaxAbsPx, outRgba);
+    return outRgba.size() == static_cast<size_t>(outWidth) * static_cast<size_t>(outHeight);
 }

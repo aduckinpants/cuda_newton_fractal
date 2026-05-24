@@ -56,13 +56,16 @@ if /I "%FOCUSED_TEST%"=="advanced_color_grading_owner" goto focused_advanced_col
 if /I "%FOCUSED_TEST%"=="serializer_owner_fast" goto focused_serializer_owner_fast
 if /I "%FOCUSED_TEST%"=="test_viewer_ui_automation_report" goto focused_test_viewer_ui_automation_report
 if /I "%FOCUSED_TEST%"=="test_viewer_cli" goto focused_test_viewer_cli
+if /I "%FOCUSED_TEST%"=="test_flashlight_probe" goto focused_test_flashlight_probe
 if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
 if /I "%FOCUSED_TEST%"=="test_diagnostics_capture" goto focused_test_diagnostics_capture
+if /I "%FOCUSED_TEST%"=="test_lens_sdf" goto focused_test_lens_sdf
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
 if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" goto focused_test_viewer_render_pacing
 if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" goto focused_test_sample_tier_resolver
 if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
 if /I "%FOCUSED_TEST%"=="test_fractal_sample_kernel" goto focused_test_fractal_sample_kernel
+if /I "%FOCUSED_TEST%"=="test_runtime_walk_headless" goto focused_test_runtime_walk_headless
 if /I "%FOCUSED_TEST%"=="test_safe_mode_schema" goto focused_test_safe_mode_schema
 if /I "%FOCUSED_TEST%"=="test_fractal_parameter_surface_descriptor" goto focused_test_fractal_parameter_surface_descriptor
 if /I "%FOCUSED_TEST%"=="test_fractal_catalog_authority" goto focused_test_fractal_catalog_authority
@@ -588,6 +591,14 @@ if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_viewer_cli.exe" || exit /b 1
 exit /b 0
 
+:focused_test_flashlight_probe
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\flashlight_probe.cpp .\src\lens_sdf.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_flashlight_probe.cpp .\tests\test_flashlight_render_stub.cpp .\tests\test_flashlight_capture_stub.cpp ^
+  /Fe:"%TESTROOT%\test_flashlight_probe.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_flashlight_probe.exe" || exit /b 1
+exit /b 0
+
 :focused_test_diagnostics_state_io
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
@@ -602,6 +613,14 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_diagnostics_capture.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_diagnostics_capture.exe" || exit /b 1
+exit /b 0
+
+:focused_test_lens_sdf
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\lens_sdf.cpp .\tests\test_lens_sdf.cpp ^
+  /Fe:"%TESTROOT%\test_lens_sdf.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_lens_sdf.exe" || exit /b 1
 exit /b 0
 
 :focused_test_finding_archive_actions
@@ -661,6 +680,14 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_fractal_sample_kernel.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_fractal_sample_kernel.exe" || exit /b 1
+exit /b 0
+
+:focused_test_runtime_walk_headless
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\runtime_walk_headless.cpp .\tests\test_runtime_walk_headless.cpp ^
+  /Fe:"%TESTROOT%\test_runtime_walk_headless.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_runtime_walk_headless.exe" || exit /b 1
 exit /b 0
 
 :focused_test_explaino_counterfactual_repair

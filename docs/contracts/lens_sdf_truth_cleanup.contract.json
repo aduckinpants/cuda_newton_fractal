@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "contract_id": "lens_sdf_truth_cleanup",
+  "feature_id": "lens_sdf_truth_cleanup",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/lens_sdf_truth_cleanup_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/lens_sdf_truth_cleanup_PHASED_PLAN.md",
+    "docs/contracts/lens_sdf_truth_cleanup.contract.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src/lens_sdf.cpp",
+    "ui_app/src/lens_sdf.h",
+    "ui_app/src/main.cpp",
+    "ui_app/src/flashlight_probe.cpp",
+    "ui_app/src/flashlight_probe.h",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/tests/test_lens_sdf.cpp",
+    "ui_app/tests/test_flashlight_probe.cpp",
+    "ui_app/tests/test_runtime_walk_headless.cpp",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "continue the top-five mini-sprint after diagnostics capture",
+    "work Step 2A Lens SDF truth cleanup first",
+    "make fractal.lens.downsample truthful",
+    "keep this cleanup bounded and do not start authored SDF packs"
+  ],
+  "forbidden_operator_prompts": [
+    "implement authored SDF packs",
+    "extract the full SDF field substrate beyond the Lens SDF helper seam",
+    "change Color Pipeline behavior",
+    "change selector or view preset behavior",
+    "change camera or dive behavior",
+    "change smooth-escape tuning",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "lens_sdf_truth_cleanup_only",
+    "posture": "forward_tdd",
+    "compatibility": "preserve_default_lens_behavior_where_possible"
+  },
+  "forbidden_defaults": {
+    "authored_sdf_pack": "forbidden",
+    "renderer_rewrite": "forbidden",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/lens_sdf_truth_cleanup.contract.json --out-json artifacts/validation/lens_sdf_truth_cleanup_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/lens_sdf_truth_cleanup_PHASED_PLAN.md --out-json artifacts/validation/lens_sdf_truth_cleanup_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_sdf_truth_cleanup_test_lens_sdf --log artifacts/logs/lens_sdf_truth_cleanup_test_lens_sdf.log --out-json artifacts/validation/lens_sdf_truth_cleanup_test_lens_sdf.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_lens_sdf",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_sdf_truth_cleanup_test_flashlight_probe --log artifacts/logs/lens_sdf_truth_cleanup_test_flashlight_probe.log --out-json artifacts/validation/lens_sdf_truth_cleanup_test_flashlight_probe.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_flashlight_probe",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_sdf_truth_cleanup_test_runtime_walk_headless --log artifacts/logs/lens_sdf_truth_cleanup_test_runtime_walk_headless.log --out-json artifacts/validation/lens_sdf_truth_cleanup_test_runtime_walk_headless.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_runtime_walk_headless",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_sdf_truth_cleanup_runtime_publish --log artifacts/logs/lens_sdf_truth_cleanup_runtime_publish.log --out-json artifacts/validation/lens_sdf_truth_cleanup_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_flashlight_probe.py::test_flashlight_probe_reports_lens_downsampled_size -q --junitxml artifacts/pytest/lens_sdf_truth_cleanup_runtime.junit.xml",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/lens_sdf_truth_cleanup_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_sdf_truth_cleanup_diff_check --log artifacts/logs/lens_sdf_truth_cleanup_diff_check.log --out-json artifacts/validation/lens_sdf_truth_cleanup_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Lens SDF truth cleanup contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/lens_sdf_truth_cleanup_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Lens SDF truth cleanup hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/lens_sdf_truth_cleanup_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

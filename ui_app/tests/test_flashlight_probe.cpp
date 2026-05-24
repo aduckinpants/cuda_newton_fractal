@@ -46,7 +46,8 @@ static void TestComputeConversationSpectrum8() {
 static void TestNormalizeFlashlightLensDownsamplePow2() {
     Check(NormalizeFlashlightLensDownsamplePow2(1) == 1, "TestNormalizeFlashlightLensDownsamplePow2_One");
     Check(NormalizeFlashlightLensDownsamplePow2(3) == 4, "TestNormalizeFlashlightLensDownsamplePow2_Three");
-    Check(NormalizeFlashlightLensDownsamplePow2(9) == 8, "TestNormalizeFlashlightLensDownsamplePow2_Nine");
+    Check(NormalizeFlashlightLensDownsamplePow2(9) == 16, "TestNormalizeFlashlightLensDownsamplePow2_Nine");
+    Check(NormalizeFlashlightLensDownsamplePow2(17) == 16, "TestNormalizeFlashlightLensDownsamplePow2_Seventeen");
 }
 
 static void TestFlashlightManifoldAtDeterministic() {
