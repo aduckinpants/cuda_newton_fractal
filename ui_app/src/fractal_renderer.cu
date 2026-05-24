@@ -222,12 +222,12 @@ __global__ void kernel_render(
 
     if (outMask) {
         bool inside;
-        if (SupportsBasinColoring(ft)) {
+        if (LensMaskUsesSyntheticBasinRootParity(ft)) {
             // Basin types: mask boundary = basin boundaries (root-index parity).
             // "converged vs not" is useless here — nearly all pixels converge,
             // producing a uniform mask and a flat (black) SDF.
             const int rootIdx = ResolveBasinRenderRootIndex(ft, z, params);
-            inside = (rootIdx >= 0) && ((rootIdx & 1) == 0);
+            inside = LensMaskInsideForBasinRootIndex(ft, rootIdx);
         } else {
             inside = LensMaskInsideForFractal(ft, converged, escaped);
         }

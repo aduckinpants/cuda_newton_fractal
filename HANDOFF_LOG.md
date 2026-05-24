@@ -210,3 +210,5 @@
 - `ck:50f3292f` 2026-05-24 06:25 UTC | score 95 — Lens SDF truth cleanup repaired and validated.
 - `ck:2061e36c` 2026-05-24 06:28 UTC — session-start | branch=codex/sdf-field-interface-extraction | head=5ebf734 | status=dirty | profile=runtime | intent=sdf field interface extraction
 - `ck:2061e36c` 2026-05-24 06:39 UTC | score 95 — SDF field interface extraction repaired and validated.
+- `ck:ff90e1aa` 2026-05-24 13:33 UTC — session-start | branch=codex/lens-semantics-authority | head=0f8fc28 | status=dirty | profile=runtime | intent=lens semantics authority
+- `ck:ff90e1aa` 2026-05-24 14:08 UTC | score 95 — Lens semantics authority closed: explicit per-fractal Lens mask semantics registry, renderer/report routing, stale-output runtime proof hardening, and focused native/runtime rails green.

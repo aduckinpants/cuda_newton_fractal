@@ -18,6 +18,13 @@ def _mtime_or_zero(path: Path) -> float:
     return path.stat().st_mtime if path.exists() else 0.0
 
 
+def _remove_if_exists(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
 def _bmp_dimensions(path: Path) -> tuple[int, int]:
     data = path.read_bytes()
     assert data[:2] == b"BM"
@@ -57,25 +64,26 @@ def test_flashlight_probe_regenerates_probe_bundle(tmp_path: Path) -> None:
     }
 
     time.sleep(1.1)
-    result = subprocess.run(
-        [
-            str(exe_path),
-            "--flashlight-probe",
-            str(seed_path),
-            "--flashlight-ticks",
-            "4",
-            "--flashlight-radius",
-            "0.61",
-            "--flashlight-zoom-radius",
-            "0.19",
-            "--flashlight-warp",
-            "0.2",
-        ],
-        cwd=str(RUNTIME_DIR),
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    with runtime_automation_lock():
+        result = subprocess.run(
+            [
+                str(exe_path),
+                "--flashlight-probe",
+                str(seed_path),
+                "--flashlight-ticks",
+                "4",
+                "--flashlight-radius",
+                "0.61",
+                "--flashlight-zoom-radius",
+                "0.19",
+                "--flashlight-warp",
+                "0.2",
+            ],
+            cwd=str(RUNTIME_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
     assert result.returncode == 0, result.stderr or result.stdout
 
     for path, previous_mtime in before.items():
@@ -103,6 +111,11 @@ def test_flashlight_probe_reports_lens_downsampled_size(tmp_path: Path) -> None:
     seed_path = tmp_path / "flashlight_seed.txt"
     seed_path.write_text("lens downsample proof", encoding="utf-8")
 
+    probe_json = DIAGNOSTICS_LAST_DIR / "flashlight_probe.json"
+    reference_frame_bmp = DIAGNOSTICS_LAST_DIR / "flashlight_reference_frame.bmp"
+    for stale_path in [probe_json, reference_frame_bmp]:
+        _remove_if_exists(stale_path)
+
     with runtime_automation_lock():
         result = subprocess.run(
             [
@@ -123,9 +136,13 @@ def test_flashlight_probe_reports_lens_downsampled_size(tmp_path: Path) -> None:
         )
     assert result.returncode == 0, result.stderr or result.stdout
 
-    probe = json.loads((DIAGNOSTICS_LAST_DIR / "flashlight_probe.json").read_text(encoding="utf-8"))
-    render_width, render_height = _bmp_dimensions(DIAGNOSTICS_LAST_DIR / "flashlight_reference_frame.bmp")
+    assert probe_json.exists(), f"missing regenerated flashlight probe: {probe_json}"
+    assert reference_frame_bmp.exists(), f"missing regenerated flashlight reference frame: {reference_frame_bmp}"
+
+    probe = json.loads(probe_json.read_text(encoding="utf-8"))
+    render_width, render_height = _bmp_dimensions(reference_frame_bmp)
     assert probe["reference_view"]["lens"]["downsample"] == 2
+    assert probe["reference_view"]["lens"]["semantics"] == "synthetic_basin_root_parity"
     assert probe["reference_view"]["lens"]["lens_low_size"] == [
         (render_width + 1) // 2,
         (render_height + 1) // 2,

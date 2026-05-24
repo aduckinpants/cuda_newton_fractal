@@ -75,6 +75,64 @@ int main() {
     }
 
     {
+        if (LensMaskSemanticsRegistryCount() != std::size(enum_id_utils::kFractalTypeIds)) {
+            std::cerr << "Lens semantics registry must classify every shipped fractal type exactly once\n";
+            return 1;
+        }
+        for (const auto& pair : enum_id_utils::kFractalTypeIds) {
+            const LensMaskSemanticsDescriptor* descriptor = FindLensMaskSemanticsDescriptor(pair.value);
+            if (!descriptor || descriptor->fractal_type != pair.value || !descriptor->semantic_id || descriptor->semantic_id[0] == '\0') {
+                std::cerr << "Every shipped fractal type must have a named Lens semantics descriptor: " << pair.id << "\n";
+                return 1;
+            }
+            if (std::string_view(descriptor->semantic_id) == "unsupported") {
+                std::cerr << "No shipped fractal type should silently use the unsupported Lens semantics descriptor: " << pair.id << "\n";
+                return 1;
+            }
+            const bool descriptorUsesBasinParity = descriptor->partition == LensMaskPartition::synthetic_basin_root_parity;
+            const bool descriptorUsesEscapeInterior = descriptor->partition == LensMaskPartition::escape_interior_membership;
+            if (descriptorUsesBasinParity != SupportsBasinColoring(pair.value)) {
+                std::cerr << "Lens semantics registry must preserve existing basin-mask behavior for: " << pair.id << "\n";
+                return 1;
+            }
+            if (descriptorUsesEscapeInterior != IsEscapeTimeFamily(pair.value)) {
+                std::cerr << "Lens semantics registry must preserve existing escape-mask behavior for: " << pair.id << "\n";
+                return 1;
+            }
+        }
+
+        const LensMaskSemanticsDescriptor* newtonLens = FindLensMaskSemanticsDescriptor(FractalType::newton);
+        const LensMaskSemanticsDescriptor* mandelbrotLens = FindLensMaskSemanticsDescriptor(FractalType::mandelbrot);
+        if (!newtonLens || newtonLens->partition != LensMaskPartition::synthetic_basin_root_parity ||
+            std::string_view(newtonLens->semantic_id) != "synthetic_basin_root_parity") {
+            std::cerr << "Newton Lens semantics should explicitly name synthetic basin root-parity\n";
+            return 1;
+        }
+        if (!mandelbrotLens || mandelbrotLens->partition != LensMaskPartition::escape_interior_membership ||
+            std::string_view(mandelbrotLens->semantic_id) != "escape_interior_membership") {
+            std::cerr << "Mandelbrot Lens semantics should explicitly name escape/interior membership\n";
+            return 1;
+        }
+        if (!LensMaskInsideForBasinRootIndex(FractalType::newton, 0) ||
+            LensMaskInsideForBasinRootIndex(FractalType::newton, 1) ||
+            LensMaskInsideForBasinRootIndex(FractalType::newton, -1)) {
+            std::cerr << "Basin Lens semantics should preserve even-root synthetic parity and fail closed for invalid roots\n";
+            return 1;
+        }
+        if (!LensMaskInsideForFractal(FractalType::mandelbrot, false, false) ||
+            LensMaskInsideForFractal(FractalType::mandelbrot, false, true)) {
+            std::cerr << "Escape-time Lens semantics should preserve bounded-inside membership\n";
+            return 1;
+        }
+        if (FindLensMaskSemanticsDescriptor(static_cast<FractalType>(999)) ||
+            LensMaskInsideForFractal(static_cast<FractalType>(999), true, false) ||
+            LensMaskInsideForBasinRootIndex(static_cast<FractalType>(999), 0)) {
+            std::cerr << "Unsupported future Lens semantics should fail closed\n";
+            return 1;
+        }
+    }
+
+    {
         if (!SupportsBasinColoring(FractalType::projection_and_flow)) {
             std::cerr << "Projection-and-Flow should support basin coloring\n";
             return 1;

@@ -782,9 +782,125 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fra
         fractalType == FractalType::perpendicular_burning_ship;
 }
 
+enum class LensMaskPartition : int {
+    synthetic_basin_root_parity = 0,
+    escape_interior_membership = 1,
+    unsupported = 2,
+};
+
+struct LensMaskSemanticsDescriptor {
+    FractalType fractal_type;
+    LensMaskPartition partition;
+    const char* semantic_id;
+    const char* label;
+};
+
+#define LENS_MASK_SEMANTICS_REGISTRY_ENTRIES(X) \
+    X(newton, FractalType::newton, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(nova, FractalType::nova, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(mandelbrot, FractalType::mandelbrot, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(julia, FractalType::julia, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(burning_ship, FractalType::burning_ship, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(multibrot, FractalType::multibrot, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(phoenix, FractalType::phoenix, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(explaino, FractalType::explaino, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_all, FractalType::explaino_all, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_y, FractalType::explaino_y, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_fp, FractalType::explaino_fp, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_nova, FractalType::explaino_nova, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(explaino_halley, FractalType::explaino_halley, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_dual, FractalType::explaino_dual, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_mult, FractalType::explaino_mult, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_phoenix, FractalType::explaino_phoenix, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_transcendental, FractalType::explaino_transcendental, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_inertial, FractalType::explaino_inertial, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_julia, FractalType::explaino_julia, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(explaino_rational, FractalType::explaino_rational, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(multicorn, FractalType::multicorn, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(halley, FractalType::halley, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(collatz, FractalType::collatz, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(explaino_collatz, FractalType::explaino_collatz, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_collatz_direct, FractalType::explaino_collatz_direct, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(mcmullen, FractalType::mcmullen, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(lambda_map, FractalType::lambda_map, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(explaino_lambda, FractalType::explaino_lambda, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(explaino_rational_escape, FractalType::explaino_rational_escape, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(spider, FractalType::spider, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(celtic_mandelbrot, FractalType::celtic_mandelbrot, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(perpendicular_burning_ship, FractalType::perpendicular_burning_ship, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(explaino_joy, FractalType::explaino_joy, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_fold, FractalType::explaino_fold, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_bell, FractalType::explaino_bell, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_ripple, FractalType::explaino_ripple, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_splice, FractalType::explaino_splice, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_vortex, FractalType::explaino_vortex, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_tension, FractalType::explaino_tension, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_balance_void, FractalType::explaino_balance_void, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(counterfactual_pair, FractalType::counterfactual_pair, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_counterfactual_pair, FractalType::explaino_counterfactual_pair, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(projection_and_flow, FractalType::projection_and_flow, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(explaino_projection_and_flow, FractalType::explaino_projection_and_flow, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
+    X(magnet, FractalType::magnet, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(generic_equation_pack, FractalType::generic_equation_pack, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership")
+
+#define LENS_MASK_SEMANTICS_DESCRIPTOR_ENTRY(name, fractalType, partitionKind, semanticId, labelText) \
+    {fractalType, partitionKind, semanticId, labelText},
+
+inline constexpr LensMaskSemanticsDescriptor kLensMaskSemanticsRegistry[] = {
+    LENS_MASK_SEMANTICS_REGISTRY_ENTRIES(LENS_MASK_SEMANTICS_DESCRIPTOR_ENTRY)
+};
+
+#undef LENS_MASK_SEMANTICS_DESCRIPTOR_ENTRY
+
+inline constexpr std::size_t LensMaskSemanticsRegistryCount() {
+    return sizeof(kLensMaskSemanticsRegistry) / sizeof(kLensMaskSemanticsRegistry[0]);
+}
+
+inline constexpr const LensMaskSemanticsDescriptor* FindLensMaskSemanticsDescriptor(FractalType fractalType) {
+    for (std::size_t index = 0; index < LensMaskSemanticsRegistryCount(); ++index) {
+        if (kLensMaskSemanticsRegistry[index].fractal_type == fractalType) {
+            return &kLensMaskSemanticsRegistry[index];
+        }
+    }
+    return nullptr;
+}
+
+#define LENS_MASK_SEMANTICS_PARTITION_CASE(name, fractalType, partitionKind, semanticId, labelText) \
+    case fractalType: return partitionKind;
+
+FRACTAL_FAMILY_RULES_HD inline constexpr LensMaskPartition LensMaskPartitionForFractal(FractalType fractalType) {
+    switch (fractalType) {
+    LENS_MASK_SEMANTICS_REGISTRY_ENTRIES(LENS_MASK_SEMANTICS_PARTITION_CASE)
+    default:
+        return LensMaskPartition::unsupported;
+    }
+}
+
+#undef LENS_MASK_SEMANTICS_PARTITION_CASE
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool LensMaskUsesSyntheticBasinRootParity(FractalType fractalType) {
+    return LensMaskPartitionForFractal(fractalType) == LensMaskPartition::synthetic_basin_root_parity;
+}
+
+inline constexpr const char* LensMaskSemanticId(FractalType fractalType) {
+    const LensMaskSemanticsDescriptor* descriptor = FindLensMaskSemanticsDescriptor(fractalType);
+    return descriptor ? descriptor->semantic_id : "unsupported";
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool LensMaskInsideForBasinRootIndex(FractalType fractalType, int rootIndex) {
+    return LensMaskUsesSyntheticBasinRootParity(fractalType) && rootIndex >= 0 && ((rootIndex & 1) == 0);
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr bool LensMaskInsideForFractal(FractalType fractalType, bool converged, bool escaped) {
-    if (SupportsBasinColoring(fractalType)) return converged;
-    if (IsEscapeTimeFamily(fractalType)) return !escaped;
+    switch (LensMaskPartitionForFractal(fractalType)) {
+    case LensMaskPartition::synthetic_basin_root_parity:
+        return converged;
+    case LensMaskPartition::escape_interior_membership:
+        return !escaped;
+    case LensMaskPartition::unsupported:
+    default:
+        break;
+    }
     return false;
 }
 

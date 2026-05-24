@@ -11,6 +11,7 @@
 #include "diagnostics_capture.h"
 #include "enum_id_utils.h"
 #include "fractal_derived_fields.h"
+#include "fractal_family_rules.h"
 #include "lens_sdf.h"
 #include "view_hp_sync.h"
 
@@ -144,6 +145,40 @@ bool WriteBmp32Bgra(const std::string& path, const uint32_t* rgba, int width, in
         }
     }
     return true;
+}
+
+bool WriteFlashlightProbeCompanionArtifacts(
+    const std::filesystem::path& outputDir,
+    const std::vector<uint32_t>& lensSdfRgba,
+    const std::vector<uint32_t>& referenceRgba,
+    const std::vector<uint32_t>& referenceLensSdfRgba,
+    const RenderSettings& render,
+    const std::string& probeJson,
+    std::string* outError) {
+    std::error_code ec;
+    std::filesystem::create_directories(outputDir, ec);
+    if (ec) {
+        if (outError) *outError = "Failed to create flashlight probe output directory: " + outputDir.string();
+        return false;
+    }
+
+    const std::string lensSdfPath = (outputDir / "lens_sdf.bmp").string();
+    if (!WriteBmp32Bgra(lensSdfPath, lensSdfRgba.data(), render.resolution.x, render.resolution.y, outError)) {
+        return false;
+    }
+
+    const std::string referenceFramePath = (outputDir / "flashlight_reference_frame.bmp").string();
+    if (!WriteBmp32Bgra(referenceFramePath, referenceRgba.data(), render.resolution.x, render.resolution.y, outError)) {
+        return false;
+    }
+
+    const std::string referenceLensSdfPath = (outputDir / "flashlight_reference_lens_sdf.bmp").string();
+    if (!WriteBmp32Bgra(referenceLensSdfPath, referenceLensSdfRgba.data(), render.resolution.x, render.resolution.y, outError)) {
+        return false;
+    }
+
+    const std::string probePath = (outputDir / "flashlight_probe.json").string();
+    return WriteTextFile(probePath, probeJson, outError);
 }
 
 std::string JsonEscape(const std::string& text) {
@@ -377,6 +412,7 @@ int RunFlashlightProbe(const std::string& exeDir,
     json << "    },\n";
     json << "    \"lens\": {\n";
     json << "      \"downsample\": " << referenceDownsample << ",\n";
+    json << "      \"semantics\": \"" << JsonEscape(LensMaskSemanticId(view.fractal_type)) << "\",\n";
     json << "      \"lens_low_size\": [" << referenceLensW << ", " << referenceLensH << "],\n";
     json << "      \"sdf_max_abs_px_low\": " << static_cast<double>(referenceMaxAbsPxLow) << "\n";
     json << "    },\n";
@@ -542,6 +578,7 @@ int RunFlashlightProbe(const std::string& exeDir,
         json << "      },\n";
         json << "      \"lens\": {\n";
         json << "        \"downsample\": " << ds << ",\n";
+        json << "        \"semantics\": \"" << JsonEscape(LensMaskSemanticId(view.fractal_type)) << "\",\n";
         json << "        \"lens_low_size\": [" << lensW << ", " << lensH << "],\n";
         json << "        \"sdf_max_abs_px_low\": " << static_cast<double>(maxAbsPxLow) << "\n";
         json << "      },\n";
@@ -681,27 +718,31 @@ int RunFlashlightProbe(const std::string& exeDir,
 
     std::vector<uint32_t> lensSdfRgba;
     ComputeSignedDistanceSdfChamfer(finalMask.data(), render.resolution.x, render.resolution.y, 48.0f, lensSdfRgba);
-    const std::string lensSdfPath = (std::filesystem::path(capture.output_dir) / "lens_sdf.bmp").string();
-    if (!WriteBmp32Bgra(lensSdfPath, lensSdfRgba.data(), render.resolution.x, render.resolution.y, &error)) {
-        std::fprintf(stderr, "%s\n", error.c_str());
-        return 1;
-    }
-
-    const std::string referenceFramePath = (std::filesystem::path(capture.output_dir) / "flashlight_reference_frame.bmp").string();
-    if (!WriteBmp32Bgra(referenceFramePath, referenceRgba.data(), render.resolution.x, render.resolution.y, &error)) {
-        std::fprintf(stderr, "%s\n", error.c_str());
-        return 1;
-    }
     std::vector<uint32_t> referenceLensSdfRgba;
     ComputeSignedDistanceSdfChamfer(referenceMask.data(), render.resolution.x, render.resolution.y, 48.0f, referenceLensSdfRgba);
-    const std::string referenceLensSdfPath = (std::filesystem::path(capture.output_dir) / "flashlight_reference_lens_sdf.bmp").string();
-    if (!WriteBmp32Bgra(referenceLensSdfPath, referenceLensSdfRgba.data(), render.resolution.x, render.resolution.y, &error)) {
+
+    const std::string probeJson = json.str();
+    if (!WriteFlashlightProbeCompanionArtifacts(
+            std::filesystem::path(capture.output_dir),
+            lensSdfRgba,
+            referenceRgba,
+            referenceLensSdfRgba,
+            render,
+            probeJson,
+            &error)) {
         std::fprintf(stderr, "%s\n", error.c_str());
         return 1;
     }
 
-    const std::string probePath = (std::filesystem::path(capture.output_dir) / "flashlight_probe.json").string();
-    if (!WriteTextFile(probePath, json.str(), &error)) {
+    const std::filesystem::path lastOutputDir = std::filesystem::path(exeDir) / "diagnostics" / "last";
+    if (!WriteFlashlightProbeCompanionArtifacts(
+            lastOutputDir,
+            lensSdfRgba,
+            referenceRgba,
+            referenceLensSdfRgba,
+            render,
+            probeJson,
+            &error)) {
         std::fprintf(stderr, "%s\n", error.c_str());
         return 1;
     }

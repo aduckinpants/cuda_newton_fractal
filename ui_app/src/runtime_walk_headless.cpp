@@ -459,6 +459,7 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
     report << "    },\n";
     report << "    \"lens\": {\n";
     report << "      \"downsample\": " << referenceDownsample << ",\n";
+    report << "      \"semantics\": \"" << JsonEscape(LensMaskSemanticId(referenceView.fractal_type)) << "\",\n";
     report << "      \"lens_low_size\": [" << referenceLensW << ", " << referenceLensH << "]\n";
     report << "    }\n";
     report << "  },\n";
