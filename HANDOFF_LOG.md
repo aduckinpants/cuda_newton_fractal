@@ -199,3 +199,5 @@
 - `ck:dfa488e7` 2026-05-24 00:12 UTC | score 95 — Migrated fractal view defaults into catalog authority with RED/green coverage, hostile audit, focused rails, and full native proof.
 - `ck:c462b33c` 2026-05-24 05:11 UTC — session-start | branch=master | head=2cb870b | status=dirty | intent=SDF field-pack near-term planning
 - `ck:c462b33c` 2026-05-24 05:15 UTC | score 95 — SDF field-pack near-term planning closed: documented the Lens SDF truth cleanup, shared field substrate, authored SDF pack, Color Pipeline/probe consumption, viewport overlay, and first SDF-native lane sequencing with docs-only validation.
+- `ck:32af33ac` 2026-05-24 05:23 UTC — session-start | branch=master | head=3384e37 | status=dirty | intent=top five backlog campaign planning
+- `ck:32af33ac` 2026-05-24 05:25 UTC | score 95 — Top-five backlog campaign planning closed: detailed linear slices for diagnostics output paths, Lens SDF/SDF substrate, selector/view presets, camera/dive behavior, and smooth-escape/color tuning with boundaries, REDs, proof gates, and docs-only validation.

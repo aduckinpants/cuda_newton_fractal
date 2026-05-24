@@ -52,6 +52,7 @@ These are planned for dedicated future branches, not this docs reconciliation sl
 | DeferredBacklogReprioritization | Current docs-only reconciliation of deferred issues by difficulty-to-reward ratio. | See `docs/notes/deferred_backlog_reprioritization_PHASED_PLAN.md` |
 | FractalCatalogAuthoritySlices | Prepared Slice A and Slice B for catalog/default authority cleanup before further catalog growth or perturbation expansion. | Slice A: `docs/notes/fractal_catalog_authority_inventory_PHASED_PLAN.md`; Slice B: `docs/notes/fractal_view_defaults_catalog_migration_PHASED_PLAN.md` |
 | SdfFieldPackNearTermPlanning | Near-term SDF modernization plan that starts with Lens SDF control truth, then extracts a shared signed-distance field substrate before authored SDF packs, Color Pipeline/probe consumption, viewport overlay, or SDF-native fractal lanes. | See `docs/notes/sdf_field_pack_near_term_TODO.md` and `docs/notes/sdf_field_pack_near_term_planning_PHASED_PLAN.md` |
+| TopFiveBacklogCampaignPlanning | Detailed docs-only plan for the next five linear cleanup/polish items: diagnostics capture output paths, Lens SDF truth/SDF field substrate, categorized selector/view presets, camera/dive behavior, and smooth-escape/color tuning. | See `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md` |
 
 ### K4 Diagnostic Findings (investigation backlog, prioritized)
 

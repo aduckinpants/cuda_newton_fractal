@@ -14,11 +14,11 @@ This table is the current backlog order after reconciling the older deferred not
 | Rank | Work thread | Difficulty | Reward | Current next gate |
 |------|-------------|------------|--------|-------------------|
 | 1 | Backlog truth refresh | Low | High trust | This docs-only slice reconciles stale planning text. |
-| 2 | Diagnostics capture output paths | Low | Medium | Add timestamped or explicit `--out-dir` bundles so captures stop overwriting `runtime/diagnostics/last`. |
+| 2 | Diagnostics capture output paths | Low | Medium | Add timestamped or explicit `--out-dir` bundles so captures stop overwriting `runtime/diagnostics/last`; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 3 | Lens SDF control truth + SDF field substrate seed | Low/Medium | Medium/High | First make `lens.downsample` truthful, then extract a reusable SDF field interface; see `docs/notes/sdf_field_pack_near_term_TODO.md`. |
-| 4 | Categorized selector + view presets | Medium | High | Organize the growing catalog and add per-fractal view preset choices before more catalog growth. |
-| 5 | Camera/dive behavior | Medium | High | Make auto-dive dt-aware and implement at least one real behavior mode instead of flat zoom stubs. |
-| 6 | Smooth-escape/color tuning | Medium | Medium/High | Per-family color tuning and interior treatment, without reopening Color Pipeline architecture broadly. |
+| 4 | Categorized selector + view presets | Medium | High | Organize the growing catalog and add per-fractal view preset choices before more catalog growth; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
+| 5 | Camera/dive behavior | Medium | High | Make auto-dive dt-aware and implement at least one real behavior mode instead of flat zoom stubs; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
+| 6 | Smooth-escape/color tuning | Medium | Medium/High | Per-family color tuning and interior treatment, without reopening Color Pipeline architecture broadly; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 7 | Viewer responsiveness telemetry follow-up | Medium/High | High | If pacing is still painful, measure end-to-end input-to-frame latency before another pacing policy change. |
 | 8 | Generic equation-pack productization | Medium/High | High strategic | Persistence first, then catalog picker, authoring UX, Salticid adapter, performance profiling. |
 | 9 | Callable/transpiler handoff | High | High strategic | Finish the handoff boundary without pretending dynamic backend execution already exists. |
@@ -202,9 +202,9 @@ Key reference:
 
 ## 9. Recommended Next Campaigns
 
-1. Quick trust cleanup campaign: diagnostics capture output path, Lens SDF control truth, and any stale doc leftovers discovered by plan sync.
-2. Viewer product polish campaign: categorized selector, view presets, startup/default choice, and camera/dive behavior.
-3. Visual tuning campaign: smooth-escape per-family tuning and interior treatment without broad Color Pipeline redesign.
+1. Top-five backlog campaign: diagnostics capture output path, Lens SDF control truth/SDF field substrate seed, categorized selector/view presets, camera/dive behavior, and smooth-escape per-family tuning. Planning surface: `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`.
+2. Viewer product polish campaign: any selector/view-preset follow-ons, startup/default choice, and camera/dive refinements not closed by the top-five campaign.
+3. Visual tuning campaign: any smooth-escape or interior-treatment follow-ons not closed by the top-five campaign, without broad Color Pipeline redesign.
 4. Measurement campaign if needed: end-to-end responsiveness telemetry before any more FPS/debounce policy changes.
 5. Equation-pack productization campaign: persistence, catalog, authoring UX, then Salticid adapter boundary.
 6. Engine substrate campaign: family authority refactor, perturbation proof expansion, then new-substrate fractals.
