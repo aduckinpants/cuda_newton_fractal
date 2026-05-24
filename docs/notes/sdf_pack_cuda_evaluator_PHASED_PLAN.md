@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed - checkpointed, receipt-backed, and merged to `master`; final git status after push is the authority for remote and clean-tree state.
+Closed - continuation hardening implemented and validation-backed; final git status, receipts, and push state are the authority for checkpoint closure.
 
 ## Phase Checklist
 
@@ -11,6 +11,9 @@ Closed - checkpointed, receipt-backed, and merged to `master`; final git status 
 - [x] Phase 3 - implement bounded runtime lowering plus CUDA sampling while preserving the CPU reference path
 - [x] Phase 4 - validate focused native preservation rails and hostile-audit the repaired seam
 - [x] Phase 5 - checkpoint, receipts, merge-back, push, clean-tree, and stale-plan closeout
+- [x] Phase 6 - open continuation hardening contract and add RED tests for the false-green and boundary gaps
+- [x] Phase 7 - implement the minimal CUDA descriptor/API hardening
+- [x] Phase 8 - run focused/native validation, hostile audit, checkpoint, receipts, push, and clean-tree closeout
 
 ## Explicit User Asks
 
@@ -18,6 +21,7 @@ Closed - checkpointed, receipt-backed, and merged to `master`; final git status 
 - [closed] Keep the work simple, modular, and extensible instead of creating a renderer monolith.
 - [closed] Prove behavior with deterministic tests and no physical mouse automation.
 - [closed] Preserve Generic Equation Pack, Lens SDF, and Color Pipeline behavior while adding the CUDA SDF evaluator substrate.
+- [closed] Harden the merged CUDA evaluator API against false-green zero-count success, raw descriptor graph holes, and missing boundary coverage before using it as the substrate for SDF Color Pipeline/probe work.
 
 ## Scope
 
@@ -64,7 +68,19 @@ Out of scope:
 - Checkpoint commit: `43c760c` (`Add CUDA SDF pack evaluator`) on `codex/sdf-pack-cuda-evaluator`.
 - Receipts: validation and contract-proof receipts were written for `43c760c`.
 - Feature branch push: `codex/sdf-pack-cuda-evaluator` pushed to `origin`.
-- Merge-back: `master` fast-forwarded to `43c760c`.
+- Merge-back: master fast-forwarded to 43c760c.
+- Continuation bootstrap: viewer_host_session_bootstrap audit passed on master at 135b33a; repo was clean/even and the active contract still pointed at the closed SDF CUDA evaluator slice.
+- Continuation hostile review found a false-green gap: SampleSdfPackCuda returns success for pointCount <= 0 before validating the descriptor, and CUDA tests do not cover zero-count invalid descriptors, exact max-node boundary, overflow rejection, or raw cyclic descriptor rejection.
+- Continuation contract lock: `py -3.14 tools/viewer_host_begin_work_slice.py --intent "sdf pack cuda hardening" --profile native --plan docs/notes/sdf_pack_cuda_evaluator_PHASED_PLAN.md --contract docs/contracts/sdf_pack_cuda_evaluator.contract.json` passed on `codex/sdf-pack-cuda-hardening` and produced checkpoint token `ck:fa02c89c`.
+- Continuation RED proof: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_red --log artifacts/logs/sdf_pack_cuda_hardening_red.log --out-json artifacts/validation/sdf_pack_cuda_hardening_red.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\build_tests_vsdevcmd.cmd test_sdf_pack_cuda` failed as expected with six failures covering zero-count invalid descriptor success, negative point-count success, and cyclic raw descriptor success.
+- Continuation CUDA hardening proof: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_test_sdf_pack_cuda --log artifacts/logs/sdf_pack_cuda_hardening_test_sdf_pack_cuda.log --out-json artifacts/validation/sdf_pack_cuda_hardening_test_sdf_pack_cuda.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\build_tests_vsdevcmd.cmd test_sdf_pack_cuda` passed with `test_sdf_pack_cuda: pass=19315 fail=0`; it now covers zero-count invalid descriptor rejection, zero-count valid descriptor no-op success, negative point-count rejection, raw cyclic descriptor rejection, exact max-node raw descriptor sampling, exact max-node lowered pack sampling, and over-limit descriptor rejection.
+- Continuation CPU pack proof: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_test_sdf_pack --log artifacts/logs/sdf_pack_cuda_hardening_test_sdf_pack.log --out-json artifacts/validation/sdf_pack_cuda_hardening_test_sdf_pack.json --heartbeat-seconds 30 --timeout-seconds 240 -- cmd /c ui_app\build_tests_vsdevcmd.cmd test_sdf_pack` passed with `test_sdf_pack: pass=26 fail=0`.
+- Continuation full native note: `sdf_pack_cuda_hardening_full_native` timed out after 1800s while compiling `test_generic_probe`; this is recorded as unproven timeout evidence, not a pass.
+- Continuation full native proof: retry command `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_full_native_retry --log artifacts/logs/sdf_pack_cuda_hardening_full_native_retry.log --out-json artifacts/validation/sdf_pack_cuda_hardening_full_native_retry.json --heartbeat-seconds 60 --timeout-seconds 3600 -- cmd /c ui_app\build_tests_vsdevcmd.cmd` passed and ended with `All helper tests passed`.
+- Continuation contract validation: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_pack_cuda_evaluator.contract.json --out-json artifacts/validation/sdf_pack_cuda_hardening_contract.json` passed.
+- Continuation plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
+- Continuation code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pack_cuda_hardening_code_quality.json` passed with baseline check passed.
+- Continuation diff hygiene: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_diff_check --log artifacts/logs/sdf_pack_cuda_hardening_diff_check.log --out-json artifacts/validation/sdf_pack_cuda_hardening_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed.
 
 ## Hostile Audit
 
@@ -75,12 +91,14 @@ Out of scope:
 - [x] Pass 1 - found the new `test_sdf_pack_cuda` focused rail was not wired into the full helper suite; repaired the full helper compile/run path and proved it in `sdf_pack_cuda_evaluator_full_native`.
 - [x] Pass 2 - found `SampleSdfPackCuda(...)` could return host-level success for a structurally invalid manual descriptor while only marking per-point errors; added invalid/nonfinite descriptor regressions and tightened runtime descriptor validation.
 - [x] Pass 3 - clean re-read of the repaired state confirmed the slice adds only SDF pack runtime lowering/evaluation/tests and does not change Generic Equation Pack behavior, Lens SDF behavior, Color Pipeline behavior, viewport integration, renderer routing, selector defaults, camera/dive, or smooth-escape tuning.
+- [x] Pass 4 - found the exact max-node proof was initially only a hand-built descriptor; added an exact max-node lowered-pack rail plus over-limit pack rejection and reran the focused CUDA rail.`n- [x] Pass 5 - clean re-read found no additional real defect after checking API order, lowerer postorder ownership, direct callers, focused rails, full native retry, and diff hygiene.
 
 ## Audit Findings
 
 - [x] Real finding - the focused CUDA SDF pack rail was callable directly but absent from the full native helper suite, so a broad helper run could have skipped the new CUDA substrate proof.
 - [x] Real finding - the CUDA sample API needed host-boundary descriptor validation for invalid child topology and nonfinite descriptor constants instead of relying on per-point device errors.
 - [x] Clean re-read - after the repairs, focused CUDA proof, full native helper proof, and preservation rails did not expose another SDF, Generic Equation Pack, Lens SDF, Color Pipeline, renderer, selector, camera, or smooth-escape issue in this slice.
+- [x] Continuation finding - zero-count CUDA sampling now validates descriptors before no-op success, negative point counts fail, raw cyclic descriptors fail at the host boundary, and exact/over-limit node boundaries are covered.`n- [x] Clean continuation re-read - no additional real defect found after the boundary rail was added and validation was rerun.
 
 ## Action Hostile Review
 

@@ -22,17 +22,21 @@ bool SampleSdfPackCuda(
     SdfPackGpuSample* outSamples,
     const char** outError) {
     if (outError) *outError = nullptr;
-    if (pointCount <= 0) return true;
+    if (pointCount < 0) {
+        if (outError) *outError = "pointCount is negative";
+        return false;
+    }
+    if (!sdf_pack_desc_is_valid(desc)) {
+        if (outError) *outError = "invalid SDF pack runtime descriptor";
+        return false;
+    }
+    if (pointCount == 0) return true;
     if (!points) {
         if (outError) *outError = "points is null";
         return false;
     }
     if (!outSamples) {
         if (outError) *outError = "outSamples is null";
-        return false;
-    }
-    if (!sdf_pack_desc_is_valid(desc)) {
-        if (outError) *outError = "invalid SDF pack runtime descriptor";
         return false;
     }
 

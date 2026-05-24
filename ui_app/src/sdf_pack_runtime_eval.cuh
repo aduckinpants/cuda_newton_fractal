@@ -92,6 +92,12 @@ SDF_PACK_HOST_DEVICE inline bool sdf_pack_desc_is_valid(const SdfPackRuntimeDesc
         if (n.child < -1 || n.child_a < -1 || n.child_b < -1) return false;
         if (n.child >= desc.node_count || n.child_a >= desc.node_count || n.child_b >= desc.node_count) return false;
         if (n.child == i || n.child_a == i || n.child_b == i) return false;
+        // The pack lowerer emits postorder nodes; backward-only links keep raw descriptors acyclic.
+        if ((n.child >= 0 && n.child >= i) ||
+            (n.child_a >= 0 && n.child_a >= i) ||
+            (n.child_b >= 0 && n.child_b >= i)) {
+            return false;
+        }
         const bool binary =
             n.op == SdfPackNodeOp::union_op ||
             n.op == SdfPackNodeOp::intersect_op ||

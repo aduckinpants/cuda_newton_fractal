@@ -248,3 +248,5 @@
 - `ck:4e31f8cb` 2026-05-24 21:31 UTC — session-start | branch=codex/sdf-pack-cuda-evaluator | head=9d858eb | status=dirty | profile=native | intent=sdf pack cuda evaluator
 - `ck:4e31f8cb` 2026-05-24 22:15 UTC | score 96 — SDF pack CUDA evaluator implemented: runtime descriptor lowering, standalone CUDA sampling, CPU/CUDA parity, invalid descriptor hardening, full helper wiring, and preservation rails green.
 - `ck:4e31f8cb-postmerge` 2026-05-24 22:17 UTC | score 96 — SDF pack CUDA evaluator post-merge plan closeout synced on master; stale-plan grep, plan sync, hostile audit, and diff check passed.
+- `ck:fa02c89c` 2026-05-24 22:33 UTC — session-start | branch=codex/sdf-pack-cuda-hardening | head=135b33a | status=dirty | profile=native | intent=sdf pack cuda hardening
+- `ck:fa02c89c` 2026-05-24 23:40 UTC | score 96 — SDF CUDA hardening implemented: zero-count invalid descriptors and negative counts now fail, raw cyclic descriptors fail at host validation, exact/over-limit node boundaries are covered, focused CUDA/CPU rails and full native retry passed.

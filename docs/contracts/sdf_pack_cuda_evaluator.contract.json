@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "contract_id": "sdf_pack_cuda_evaluator",
-  "feature_id": "sdf_pack_cuda_evaluator",
+  "contract_id": "sdf_pack_cuda_hardening",
+  "feature_id": "sdf_pack_cuda_hardening",
   "workflow_type": "headless_only",
   "plan_path": "docs/notes/sdf_pack_cuda_evaluator_PHASED_PLAN.md",
   "allowed_mutation_scope": [
@@ -14,15 +14,15 @@
     "artifacts"
   ],
   "required_operator_inputs": [
-    "continue the next planned SDF field-pack work item",
-    "implement SDF roadmap Slice 5: CUDA SDF pack evaluator",
-    "keep this native and bounded",
+    "harden the merged SDF pack CUDA evaluator after hostile review",
+    "add RED/native tests for zero-count false-green descriptor validation and runtime descriptor boundary gaps",
+    "keep this native and bounded before starting SDF Color Pipeline/probe work",
     "preserve existing Lens SDF, Generic Equation Pack, and Color Pipeline behavior"
   ],
   "forbidden_operator_prompts": [
     "add a live viewport SDF renderer",
     "add a new FractalType",
-    "add Color Pipeline SDF signals",
+    "add Color Pipeline SDF signals before this hardening is green",
     "change Lens SDF behavior",
     "change Generic Equation Pack behavior",
     "change selector or view presets",
@@ -31,43 +31,41 @@
     "use physical mouse automation"
   ],
   "required_defaults": {
-    "scope": "sdf_pack_cuda_evaluator_only",
+    "scope": "sdf_pack_cuda_hardening_only",
     "posture": "forward_tdd",
-    "execution": "native_cuda_substrate"
+    "execution": "native_cuda_substrate_hardening"
   },
   "forbidden_defaults": {
     "live_viewport_integration": "forbidden",
     "new_fractal_type": "forbidden",
     "renderer_rewrite": "forbidden",
-    "color_pipeline_sdf_signals": "forbidden",
+    "color_pipeline_sdf_signals": "forbidden_until_next_slice",
     "physical_mouse": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_pack_cuda_evaluator.contract.json --out-json artifacts/validation/sdf_pack_cuda_evaluator_contract.json",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_pack_cuda_evaluator.contract.json --out-json artifacts/validation/sdf_pack_cuda_hardening_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
-    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_pack_cuda_evaluator_PHASED_PLAN.md --out-json artifacts/validation/sdf_pack_cuda_evaluator_hostile_audit.json",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_test_sdf_pack_cuda --log artifacts/logs/sdf_pack_cuda_evaluator_test_sdf_pack_cuda.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_test_sdf_pack_cuda.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack_cuda",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_test_sdf_pack --log artifacts/logs/sdf_pack_cuda_evaluator_test_sdf_pack.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_test_sdf_pack.json --heartbeat-seconds 30 --timeout-seconds 240 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_test_lens_sdf --log artifacts/logs/sdf_pack_cuda_evaluator_test_lens_sdf.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_test_lens_sdf.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_lens_sdf",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_test_generic_equation_pack --log artifacts/logs/sdf_pack_cuda_evaluator_test_generic_equation_pack.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_test_generic_equation_pack.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_generic_equation_pack",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_color_pipeline_owner --log artifacts/logs/sdf_pack_cuda_evaluator_color_pipeline_owner.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_color_pipeline_owner.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner",
-    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pack_cuda_evaluator_code_quality.json",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_evaluator_diff_check --log artifacts/logs/sdf_pack_cuda_evaluator_diff_check.log --out-json artifacts/validation/sdf_pack_cuda_evaluator_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_pack_cuda_evaluator_PHASED_PLAN.md --out-json artifacts/validation/sdf_pack_cuda_hardening_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_test_sdf_pack_cuda --log artifacts/logs/sdf_pack_cuda_hardening_test_sdf_pack_cuda.log --out-json artifacts/validation/sdf_pack_cuda_hardening_test_sdf_pack_cuda.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack_cuda",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_test_sdf_pack --log artifacts/logs/sdf_pack_cuda_hardening_test_sdf_pack.log --out-json artifacts/validation/sdf_pack_cuda_hardening_test_sdf_pack.json --heartbeat-seconds 30 --timeout-seconds 240 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_full_native --log artifacts/logs/sdf_pack_cuda_hardening_full_native.log --out-json artifacts/validation/sdf_pack_cuda_hardening_full_native.json --heartbeat-seconds 30 --timeout-seconds 1800 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pack_cuda_hardening_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_diff_check --log artifacts/logs/sdf_pack_cuda_hardening_diff_check.log --out-json artifacts/validation/sdf_pack_cuda_hardening_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
   ],
   "required_acceptance_assertions": [
     {
       "assertion_id": "contract_schema_valid",
-      "description": "The SDF pack CUDA evaluator contract validates successfully",
+      "description": "The SDF pack CUDA hardening contract validates successfully",
       "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/sdf_pack_cuda_evaluator_contract.json",
+      "artifact_path": "artifacts/validation/sdf_pack_cuda_hardening_contract.json",
       "json_path": "checks.contract_schema_valid",
       "equals": true
     },
     {
       "assertion_id": "hostile_audit_ok",
-      "description": "The SDF pack CUDA evaluator hostile audit is complete",
+      "description": "The SDF pack CUDA hardening hostile audit is complete",
       "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/sdf_pack_cuda_evaluator_hostile_audit.json",
+      "artifact_path": "artifacts/validation/sdf_pack_cuda_hardening_hostile_audit.json",
       "json_path": "ok",
       "equals": true
     }

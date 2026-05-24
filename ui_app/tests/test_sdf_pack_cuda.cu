@@ -31,6 +31,30 @@ static bool Nearly(double actual, double expected, double tol = 1.0e-10) {
     return std::fabs(actual - expected) <= tol * scale;
 }
 
+static SdfPackRuntimeDesc MakeCircleDescriptor(double radius) {
+    SdfPackRuntimeDesc desc{};
+    desc.node_count = 1;
+    desc.root_node = 0;
+    desc.nodes[0].op = SdfPackNodeOp::circle;
+    desc.nodes[0].center = {};
+    desc.nodes[0].radius.kind = SdfPackScalarKind::constant;
+    desc.nodes[0].radius.value = radius;
+    return desc;
+}
+
+static SdfPackRuntimeDesc MakeTranslateChainDescriptor(int nodeCount) {
+    SdfPackRuntimeDesc desc{};
+    desc.node_count = nodeCount;
+    desc.root_node = nodeCount - 1;
+    desc.nodes[0].op = SdfPackNodeOp::circle;
+    desc.nodes[0].radius.kind = SdfPackScalarKind::constant;
+    desc.nodes[0].radius.value = 0.5;
+    for (int i = 1; i < nodeCount; ++i) {
+        desc.nodes[i].op = SdfPackNodeOp::translate;
+        desc.nodes[i].child = i - 1;
+    }
+    return desc;
+}
 static void CheckCudaParity(
     const char* label,
     const char* packJson,
@@ -253,6 +277,92 @@ static void TestInvalidDescriptorFailsFast() {
     const bool finiteOk = SampleSdfPackCuda(&point, 1, nonfinite, &sample, &error);
     CHECK(!finiteOk, "nonfinite runtime descriptor fails before CUDA sampling");
     CHECK(error != nullptr, "nonfinite runtime descriptor reports an error");
+
+    error = nullptr;
+    const bool zeroInvalidOk = SampleSdfPackCuda(nullptr, 0, desc, nullptr, &error);
+    CHECK(!zeroInvalidOk, "zero-count sampling still validates invalid descriptors");
+    CHECK(error != nullptr, "zero-count invalid descriptor reports an error");
+
+    SdfPackRuntimeDesc valid = MakeCircleDescriptor(0.5);
+    error = nullptr;
+    const bool zeroValidOk = SampleSdfPackCuda(nullptr, 0, valid, nullptr, &error);
+    CHECK(zeroValidOk, "zero-count valid descriptor succeeds without buffers");
+    CHECK(error == nullptr, "zero-count valid descriptor clears stale error");
+
+    error = nullptr;
+    const bool negativeCountOk = SampleSdfPackCuda(&point, -1, valid, &sample, &error);
+    CHECK(!negativeCountOk, "negative point count rejects instead of becoming a zero-count success");
+    CHECK(error != nullptr, "negative point count reports an error");
+}
+
+static void TestRawDescriptorTopologyFailsFast() {
+    SdfPackRuntimeDesc cyclic{};
+    cyclic.node_count = 2;
+    cyclic.root_node = 0;
+    cyclic.nodes[0].op = SdfPackNodeOp::translate;
+    cyclic.nodes[0].child = 1;
+    cyclic.nodes[1].op = SdfPackNodeOp::translate;
+    cyclic.nodes[1].child = 0;
+
+    SdfPackGpuPoint point{0.0, 0.0};
+    SdfPackGpuSample sample{};
+    const char* error = nullptr;
+    const bool ok = SampleSdfPackCuda(&point, 1, cyclic, &sample, &error);
+    CHECK(!ok, "cyclic raw runtime descriptor fails before CUDA sampling");
+    CHECK(error != nullptr, "cyclic raw runtime descriptor reports an error");
+}
+
+static std::string MakeNestedTranslatePackJson(int translateCount) {
+    std::string json = R"json({"schema":1,"pack_id":"nested_translate_boundary","name":"Nested Translate Boundary","kind":"sdf_scene_2d","ast":)json";
+    for (int i = 0; i < translateCount; ++i) {
+        json += R"json({"op":"translate","offset":[0.0,0.0],"child":)json";
+    }
+    json += R"json({"op":"circle","radius":0.5})json";
+    for (int i = 0; i < translateCount; ++i) {
+        json += "}";
+    }
+    json += "}";
+    return json;
+}
+static void TestRuntimeDescriptorNodeBoundaries() {
+    const std::string exactMaxJson = MakeNestedTranslatePackJson(SDF_PACK_MAX_AST_NODES - 1);
+    SdfPackParseResult exactParsed = ParseSdfPackJson(exactMaxJson);
+    CHECK(exactParsed.ok, "exact max-node pack parses");
+    SdfPackLowerResult exactLowered = exactParsed.ok ? LowerSdfPackToRuntimeDesc(exactParsed.pack, {}) : SdfPackLowerResult{};
+    CHECK(exactLowered.ok, "exact max-node pack lowers to a valid runtime descriptor");
+
+    const std::string overMaxJson = MakeNestedTranslatePackJson(SDF_PACK_MAX_AST_NODES);
+    SdfPackParseResult overParsed = ParseSdfPackJson(overMaxJson);
+    CHECK(!overParsed.ok, "over max-node pack rejects before CUDA sampling");
+
+    SdfPackRuntimeDesc maxChain = MakeTranslateChainDescriptor(SDF_PACK_MAX_AST_NODES);
+    SdfPackGpuPoint point{0.0, 0.0};
+    SdfPackGpuSample sample{};
+    const char* error = nullptr;
+    const bool maxOk = SampleSdfPackCuda(&point, 1, maxChain, &sample, &error);
+    CHECK(maxOk, "exact max-node descriptor samples successfully");
+    CHECK(error == nullptr, "exact max-node descriptor reports no host error");
+    CHECK(sample.ok, "exact max-node descriptor reports a valid sample");
+    CHECK(sample.error_code == 0, "exact max-node descriptor has no per-point error");
+    CHECK(Nearly(sample.distance, -0.5), "exact max-node descriptor preserves distance");
+
+    if (exactLowered.ok) {
+        error = nullptr;
+        sample = {};
+        const bool loweredMaxOk = SampleSdfPackCuda(&point, 1, exactLowered.desc, &sample, &error);
+        CHECK(loweredMaxOk, "exact max-node lowered pack samples successfully");
+        CHECK(error == nullptr, "exact max-node lowered pack reports no host error");
+        CHECK(sample.ok, "exact max-node lowered pack reports a valid sample");
+        CHECK(Nearly(sample.distance, -0.5), "exact max-node lowered pack preserves distance");
+    }
+
+    SdfPackRuntimeDesc tooMany{};
+    tooMany.node_count = SDF_PACK_MAX_AST_NODES + 1;
+    tooMany.root_node = 0;
+    error = nullptr;
+    const bool tooManyOk = SampleSdfPackCuda(&point, 1, tooMany, &sample, &error);
+    CHECK(!tooManyOk, "oversized raw runtime descriptor fails before CUDA sampling");
+    CHECK(error != nullptr, "oversized raw runtime descriptor reports an error");
 }
 
 int main() {
@@ -261,6 +371,8 @@ int main() {
     TestSmoothRepeatNestedParity();
     TestBoundedPerformanceWitness();
     TestInvalidDescriptorFailsFast();
+    TestRawDescriptorTopologyFailsFast();
+    TestRuntimeDescriptorNodeBoundaries();
     std::printf("test_sdf_pack_cuda: pass=%d fail=%d\n", g_pass, g_fail);
     return g_fail == 0 ? 0 : 1;
 }
