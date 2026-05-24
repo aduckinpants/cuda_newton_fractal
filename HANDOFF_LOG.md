@@ -216,3 +216,4 @@
 - `ck:11b4122b` 2026-05-24 14:22 UTC — session-start | branch=codex/smooth-escape-color-measurement | head=b9b2ae1 | status=dirty | profile=runtime | intent=smooth-escape color measurement
 - `ck:11b4122b` 2026-05-24 14:34 UTC | score 95 — Smooth-escape color measurement closed: added deterministic no-mouse inventory tool, runtime measurement report, stale diagnostics/Lens docs sync, and focused validation.
 - `ck:11b4122b-runtime-proof` 2026-05-24 14:36 UTC | score 95 — Smooth-escape measurement receipt-gate repair: added published-runtime pytest wrapper for inventory tool, updated contract, and revalidated.
+- `ck:11b4122b-parseable-inventory` 2026-05-24 14:38 UTC | score 95 — Smooth-escape measurement parseable inventory proof repaired: full inventory command now runs through logged-command wrapper with out-json evidence.
