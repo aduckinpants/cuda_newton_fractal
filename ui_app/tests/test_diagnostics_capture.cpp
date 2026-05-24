@@ -398,7 +398,13 @@ void TestLastBundleAndSidecarOverloads() {
 
     Check(ok, "CaptureDiagnosticsLastBundle sidecar overload succeeds");
     const fs::path resultDir(result.output_dir);
-    Check(resultDir.filename() == "last" && resultDir.parent_path().filename() == "diagnostics", "last-bundle overload writes under diagnostics/last");
+    const fs::path lastDir = exeDir / "diagnostics" / "last";
+    Check(resultDir.filename() != "last" && resultDir.parent_path().filename() == "diagnostics",
+        "last-bundle overload returns a unique diagnostics archive, not diagnostics/last");
+    Check(FileStartsWithBmpSignature(result.frame_bmp_path), "unique diagnostics archive includes frame.bmp");
+    Check(fs::exists(result.state_json_path), "unique diagnostics archive includes state.json");
+    Check(FileStartsWithBmpSignature(lastDir / "frame.bmp"), "last-bundle overload updates diagnostics/last frame compatibility mirror");
+    Check(fs::exists(lastDir / "state.json"), "last-bundle overload updates diagnostics/last state compatibility mirror");
 
     const std::string json = ReadTextFile(result.state_json_path);
     Check(json.find("\"sidecar_orientation\"") != std::string::npos, "state includes sidecar orientation block");
@@ -407,6 +413,25 @@ void TestLastBundleAndSidecarOverloads() {
     Check(json.find("\"allow_runtime_mutation\": true") != std::string::npos, "state serializes sidecar policy flags");
     Check(json.find("\"sidecar_mutation_history\"") != std::string::npos, "state includes sidecar mutation history");
     Check(json.find("\"path\": \"fractal.params.exposure\"") != std::string::npos, "state serializes mutation history path");
+
+    DiagnosticsCaptureResult secondResult{};
+    std::string secondError;
+    const bool secondOk = CaptureDiagnosticsLastBundle(
+        exeDir.string(),
+        view,
+        params,
+        render,
+        stats,
+        rgba.data(),
+        rgba.size(),
+        &orientation,
+        &policy,
+        &history,
+        &secondResult,
+        &secondError);
+    Check(secondOk, "second CaptureDiagnosticsLastBundle sidecar overload succeeds");
+    Check(fs::path(secondResult.output_dir) != resultDir,
+        "default diagnostic captures do not overwrite the only durable output directory");
 }
 
 } // namespace

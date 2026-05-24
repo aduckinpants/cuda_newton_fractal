@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "contract_id": "diagnostics_capture_output_paths",
+  "feature_id": "diagnostics_capture_output_paths",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/diagnostics_capture_output_paths_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/diagnostics_capture_output_paths_PHASED_PLAN.md",
+    "docs/contracts/diagnostics_capture_output_paths.contract.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_capture.h",
+    "ui_app/src/headless_modes.cpp",
+    "ui_app/src/headless_modes.h",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_cli.cpp",
+    "ui_app/src/viewer_cli.h",
+    "ui_app/tests",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "start implementation of the five-step mini-sprint in linear order",
+    "implement diagnostics capture output paths first",
+    "stop diagnostic captures from overwriting runtime/diagnostics/last as the only output",
+    "add deterministic explicit diagnostics output directory support where appropriate"
+  ],
+  "forbidden_operator_prompts": [
+    "change finding capture behavior",
+    "change render quality or camera behavior",
+    "change Lens SDF behavior",
+    "change selector/view preset behavior",
+    "change Color Pipeline behavior",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "diagnostics_capture_only",
+    "posture": "forward_tdd",
+    "compatibility": "preserve_runtime_diagnostics_last_as_compatibility_only"
+  },
+  "forbidden_defaults": {
+    "product_mutation_outside_diagnostics_capture": "forbidden",
+    "silent_fallback_on_bad_out_dir": "forbidden",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/diagnostics_capture_output_paths.contract.json --out-json artifacts/validation/diagnostics_capture_output_paths_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/diagnostics_capture_output_paths_PHASED_PLAN.md --out-json artifacts/validation/diagnostics_capture_output_paths_hostile_audit.json",
+    "cmd /c ui_app\\build_tests_vsdevcmd.cmd test_viewer_cli",
+    "cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_capture",
+    "cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_diagnostics_capture.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/diagnostics_capture_output_paths_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label diagnostics_capture_output_paths_diff_check --log artifacts/logs/diagnostics_capture_output_paths_diff_check.log --out-json artifacts/validation/diagnostics_capture_output_paths_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The diagnostics capture output paths contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/diagnostics_capture_output_paths_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The diagnostics capture output paths hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/diagnostics_capture_output_paths_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

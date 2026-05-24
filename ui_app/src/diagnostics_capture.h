@@ -143,3 +143,17 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     DiagnosticsCaptureResult* outResult,
     std::string* outError);
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError);

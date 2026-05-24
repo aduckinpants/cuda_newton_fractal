@@ -438,6 +438,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     out->describe_parameter_surface = HasArg(args, "--describe-parameter-surface");
     out->describe_explaino_axis_registry = HasArg(args, "--describe-explaino-axis-registry");
     out->explore_recommend = HasArg(args, "--explore-recommend");
+    if (!TryStr(args, "--diagnostics-out-dir", &out->have_diagnostics_out_dir, &out->diagnostics_out_dir)) return 1;
 
     // Sample mode
     out->sample_request_stdin = HasArg(args, "--sample-request-stdin");

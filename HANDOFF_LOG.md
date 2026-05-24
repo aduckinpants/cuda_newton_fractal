@@ -201,3 +201,6 @@
 - `ck:c462b33c` 2026-05-24 05:15 UTC | score 95 — SDF field-pack near-term planning closed: documented the Lens SDF truth cleanup, shared field substrate, authored SDF pack, Color Pipeline/probe consumption, viewport overlay, and first SDF-native lane sequencing with docs-only validation.
 - `ck:32af33ac` 2026-05-24 05:23 UTC — session-start | branch=master | head=3384e37 | status=dirty | intent=top five backlog campaign planning
 - `ck:32af33ac` 2026-05-24 05:25 UTC | score 95 — Top-five backlog campaign planning closed: detailed linear slices for diagnostics output paths, Lens SDF/SDF substrate, selector/view presets, camera/dive behavior, and smooth-escape/color tuning with boundaries, REDs, proof gates, and docs-only validation.
+- `ck:602d40b6` 2026-05-24 05:29 UTC — session-start | branch=codex/diagnostics-capture-output-paths | head=d7b07ba | status=dirty | profile=native | intent=diagnostics capture output paths
+- `ck:602d40b6` 2026-05-24 05:44 UTC | score 95 — Diagnostics capture output paths repaired: default diagnostic capture writes unique archive bundles plus diagnostics/last compatibility mirror; --diagnostics-out-dir added for explicit headless diagnostic output; focused native and published-runtime no-mouse proofs passed.
+- `ck:602d40b6` 2026-05-24 05:45 UTC | score 95 — Diagnostics capture output paths repaired and validated.

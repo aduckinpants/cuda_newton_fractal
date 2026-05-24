@@ -467,7 +467,7 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
 // --- Headless capture helpers ---
 
 static int RunHeadlessDiagnosticCapture(
-    const std::string& exeDir, const ViewState& view,
+    const std::string& exeDir, const ViewerCliArgs& cli, const ViewState& view,
     const KernelParams& params, const RenderSettings& render,
     const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
@@ -480,12 +480,20 @@ static int RunHeadlessDiagnosticCapture(
     const char* err = nullptr;
     RenderStats headlessStats{};
     if (!RenderFractalCUDA(view, params, diagnosticRender, headlessRgba.data(), nullptr, &headlessStats, &err)) {
+        WriteHeadlessErrorFile(exeDir, "capture_diagnostic_error.txt",
+            err ? err : "RenderFractalCUDA failed during headless diagnostic capture.");
         return 1;
     }
     std::string captureError;
     DiagnosticsCaptureResult captureResult;
-    if (!CaptureDiagnosticsLastBundle(exeDir, view, params, diagnosticRender, headlessStats,
-            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &captureResult, &captureError)) {
+    const bool captureOk = cli.have_diagnostics_out_dir
+        ? CaptureDiagnosticsBundleToDir(cli.diagnostics_out_dir, view, params, diagnosticRender, headlessStats,
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &captureResult, &captureError)
+        : CaptureDiagnosticsLastBundle(exeDir, view, params, diagnosticRender, headlessStats,
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &captureResult, &captureError);
+    if (!captureOk) {
+        WriteHeadlessErrorFile(exeDir, "capture_diagnostic_error.txt",
+            captureError.empty() ? "CaptureDiagnosticsBundle failed during headless diagnostic capture." : captureError);
         return 1;
     }
     return 0;
@@ -1354,7 +1362,7 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     const SidecarAutoDemoMutationHistory* mutationHistory =
         sidecarMutationHistoryValid ? &sidecarMutationHistory : nullptr;
     if (cli.validate_ui_only) return 0;
-    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, view, params, render, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
+    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, cli, view, params, render, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
     if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
     return -1;
 }

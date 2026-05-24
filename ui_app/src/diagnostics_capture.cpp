@@ -718,6 +718,53 @@ std::string BuildStateJson(
     return js.str();
 }
 
+std::filesystem::path DiagnosticsRootDir(const std::string& exeDir) {
+    return (std::filesystem::path(exeDir) / "diagnostics").lexically_normal();
+}
+
+std::filesystem::path DiagnosticsLastBundleDir(const std::string& exeDir) {
+    return (DiagnosticsRootDir(exeDir) / "last").lexically_normal();
+}
+
+std::string DiagnosticsTimestampPrefix() {
+    SYSTEMTIME now{};
+    GetLocalTime(&now);
+
+    std::ostringstream ss;
+    ss << std::setfill('0')
+       << std::setw(4) << now.wYear
+       << std::setw(2) << now.wMonth
+       << std::setw(2) << now.wDay
+       << "_"
+       << std::setw(2) << now.wHour
+       << std::setw(2) << now.wMinute
+       << std::setw(2) << now.wSecond
+       << "_"
+       << std::setw(3) << now.wMilliseconds
+       << "__diagnostic_"
+       << GetCurrentProcessId();
+    return ss.str();
+}
+
+std::filesystem::path BuildUniqueDiagnosticsBundleDir(const std::string& exeDir) {
+    const std::filesystem::path root = DiagnosticsRootDir(exeDir);
+    const std::string baseName = DiagnosticsTimestampPrefix();
+    for (int suffix = 0; suffix < 1000; ++suffix) {
+        std::ostringstream name;
+        name << baseName;
+        if (suffix > 0) {
+            name << "_" << std::setfill('0') << std::setw(3) << suffix;
+        }
+        const std::filesystem::path candidate = (root / name.str()).lexically_normal();
+        std::error_code ec;
+        const bool exists = std::filesystem::exists(candidate, ec);
+        if (!ec && !exists) {
+            return candidate;
+        }
+    }
+    return (root / (baseName + "_overflow")).lexically_normal();
+}
+
 bool CaptureDiagnosticsBundleToDirWithDraft(const std::string& outputDir,
     const ViewState& view,
     const KernelParams& params,
@@ -947,21 +994,46 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const ColorPipelineWindowState* colorPipelineWindow,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
-    const std::filesystem::path bundleDir = (std::filesystem::path(exeDir) / "diagnostics" / "last").lexically_normal();
-    return CaptureDiagnosticsBundleToDirWithDraft(
-        bundleDir.string(),
-        view,
-        params,
-        render,
-        stats,
-        rgba,
-        rgbaPixelCount,
-        sidecarOrientation,
-        sidecarControllerPolicy,
-        sidecarMutationHistory,
-        colorPipelineWindow,
-        outResult,
-        outError);
+    DiagnosticsCaptureResult archiveResult{};
+    if (!CaptureDiagnosticsBundleToDirWithDraft(
+            BuildUniqueDiagnosticsBundleDir(exeDir).string(),
+            view,
+            params,
+            render,
+            stats,
+            rgba,
+            rgbaPixelCount,
+            sidecarOrientation,
+            sidecarControllerPolicy,
+            sidecarMutationHistory,
+            colorPipelineWindow,
+            &archiveResult,
+            outError)) {
+        return false;
+    }
+
+    DiagnosticsCaptureResult mirrorResult{};
+    if (!CaptureDiagnosticsBundleToDirWithDraft(
+            DiagnosticsLastBundleDir(exeDir).string(),
+            view,
+            params,
+            render,
+            stats,
+            rgba,
+            rgbaPixelCount,
+            sidecarOrientation,
+            sidecarControllerPolicy,
+            sidecarMutationHistory,
+            colorPipelineWindow,
+            &mirrorResult,
+            outError)) {
+        return false;
+    }
+
+    if (outResult) {
+        *outResult = archiveResult;
+    }
+    return true;
 }
 
 bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
@@ -981,6 +1053,7 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
         stats,
         rgba,
         rgbaPixelCount,
+        nullptr,
         nullptr,
         nullptr,
         nullptr,
@@ -1007,6 +1080,7 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
         rgba,
         rgbaPixelCount,
         sidecarOrientation,
+        nullptr,
         nullptr,
         nullptr,
         outResult,
@@ -1034,6 +1108,7 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
         rgbaPixelCount,
         sidecarOrientation,
         sidecarControllerPolicy,
+        nullptr,
         nullptr,
         outResult,
         outError);
@@ -1051,7 +1126,7 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
-    return CaptureDiagnosticsBundleToDirWithDraft(
+    return CaptureDiagnosticsBundleToDir(
         outputDir,
         view,
         params,
@@ -1063,6 +1138,35 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
         sidecarControllerPolicy,
         sidecarMutationHistory,
         nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsBundleToDirWithDraft(
+        outputDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        sidecarMutationHistory,
+        colorPipelineWindow,
         outResult,
         outError);
 }

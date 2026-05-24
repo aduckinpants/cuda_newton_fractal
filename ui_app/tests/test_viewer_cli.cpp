@@ -34,6 +34,7 @@ static void TestDefaultsNoArgs() {
     Check(!cli.capture_finding_only, "TestDefaultsNoArgs_CaptureFinding");
     Check(!cli.describe_functions, "TestDefaultsNoArgs_DescribeFunctions");
     Check(!cli.describe_explaino_axis_registry, "TestDefaultsNoArgs_DescribeExplainoAxisRegistry");
+    Check(!cli.have_diagnostics_out_dir, "TestDefaultsNoArgs_DiagnosticsOutDir");
     Check(!cli.have_fractal_type, "TestDefaultsNoArgs_FractalType");
     Check(!cli.have_explaino_seed, "TestDefaultsNoArgs_ExplainoSeed");
     Check(!cli.have_width, "TestDefaultsNoArgs_Width");
@@ -561,6 +562,30 @@ static void TestCaptureDiagnostic() {
     Check(cli.capture_diagnostic_only, "TestCaptureDiagnostic_Flag");
 }
 
+static void TestCaptureDiagnosticOutDir() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--capture-diagnostic", "--diagnostics-out-dir", "D:\\captures\\diag_001"}), &cli);
+    Check(rc == 0, "TestCaptureDiagnosticOutDir_ReturnCode");
+    Check(cli.capture_diagnostic_only, "TestCaptureDiagnosticOutDir_CaptureFlag");
+    Check(cli.have_diagnostics_out_dir, "TestCaptureDiagnosticOutDir_Have");
+    Check(cli.diagnostics_out_dir == "D:\\captures\\diag_001", "TestCaptureDiagnosticOutDir_Value");
+    Check(ValidateViewerCliModeConflicts(cli), "TestCaptureDiagnosticOutDir_ModeValid");
+}
+
+static void TestCaptureDiagnosticOutDirMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--capture-diagnostic", "--diagnostics-out-dir"}), &cli);
+    Check(rc != 0, "TestCaptureDiagnosticOutDirMissingValue_Fails");
+}
+
+static void TestCaptureDiagnosticOutDirRequiresCaptureDiagnostic() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--diagnostics-out-dir", "D:\\captures\\diag_001"}), &cli);
+    Check(rc == 0, "TestCaptureDiagnosticOutDirRequiresCaptureDiagnostic_ParseAllowsFlag");
+    Check(cli.have_diagnostics_out_dir, "TestCaptureDiagnosticOutDirRequiresCaptureDiagnostic_Have");
+    Check(!ValidateViewerCliModeConflicts(cli), "TestCaptureDiagnosticOutDirRequiresCaptureDiagnostic_ModeInvalid");
+}
+
 static void TestCaptureFinding() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({"--capture-finding"}), &cli);
@@ -683,6 +708,9 @@ int main() {
     TestExplainoWarpStrength();
     TestLambdaOverrides();
     TestCaptureDiagnostic();
+    TestCaptureDiagnosticOutDir();
+    TestCaptureDiagnosticOutDirMissingValue();
+    TestCaptureDiagnosticOutDirRequiresCaptureDiagnostic();
     TestCaptureFinding();
     TestMultipleFlagsCompose();
     TestExplainoSeedDrift();

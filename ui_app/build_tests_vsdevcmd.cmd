@@ -55,7 +55,9 @@ if /I "%FOCUSED_TEST%"=="advanced_color_grading_red" goto focused_advanced_color
 if /I "%FOCUSED_TEST%"=="advanced_color_grading_owner" goto focused_advanced_color_grading_owner
 if /I "%FOCUSED_TEST%"=="serializer_owner_fast" goto focused_serializer_owner_fast
 if /I "%FOCUSED_TEST%"=="test_viewer_ui_automation_report" goto focused_test_viewer_ui_automation_report
+if /I "%FOCUSED_TEST%"=="test_viewer_cli" goto focused_test_viewer_cli
 if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
+if /I "%FOCUSED_TEST%"=="test_diagnostics_capture" goto focused_test_diagnostics_capture
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
 if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" goto focused_test_viewer_render_pacing
 if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" goto focused_test_sample_tier_resolver
@@ -578,12 +580,28 @@ if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_viewer_ui_automation_report.exe" || exit /b 1
 exit /b 0
 
+:focused_test_viewer_cli
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\cli_args.cpp .\src\viewer_cli.cpp .\tests\test_viewer_cli.cpp ^
+  /Fe:"%TESTROOT%\test_viewer_cli.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewer_cli.exe" || exit /b 1
+exit /b 0
+
 :focused_test_diagnostics_state_io
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
+exit /b 0
+
+:focused_test_diagnostics_capture
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_capture.cpp ^
+  /Fe:"%TESTROOT%\test_diagnostics_capture.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_diagnostics_capture.exe" || exit /b 1
 exit /b 0
 
 :focused_test_finding_archive_actions

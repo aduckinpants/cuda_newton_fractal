@@ -20,6 +20,10 @@ struct ViewerCliArgs {
     bool describe_parameter_surface = false;
     bool describe_explaino_axis_registry = false;
 
+    // Diagnostic capture output
+    bool have_diagnostics_out_dir = false;
+    std::string diagnostics_out_dir;
+
     // Sample mode
     bool sample_request_stdin = false;
     bool sample_response_stdout = false;
@@ -164,6 +168,7 @@ inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
     const bool colorPipelineHeadlessProof = !cli.color_pipeline_headless_proof.actions.empty();
     if (cli.have_runtime_walk_viewer_request_json && cli.have_runtime_walk_viewer_fits_path) return false;
+    if (cli.have_diagnostics_out_dir && !cli.capture_diagnostic_only) return false;
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
     if (colorPipelineHeadlessProof && !(cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
