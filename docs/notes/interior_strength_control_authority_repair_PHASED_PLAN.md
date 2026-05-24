@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - hostile audit, checkpoint, receipts, push, merge-back, stale-plan grep, and clean-tree closeout.
+Closed - repaired on `master` and ready for final push/status verification.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - hostile audit, checkpoint, receipts, push, merge-back, stale-plan grep
 - [x] Phase 2 - reproduce the weak/no-op user-facing slider behavior with a stronger native/runtime witness
 - [x] Phase 3 - repair the `Interior Strength` control so low-to-high edits visibly affect smooth-escape interiors
 - [x] Phase 4 - validate native color/schema/runtime proof and preserve smooth-escape inventory guardrails
-- [ ] Phase 5 - hostile audit, checkpoint, receipts, push, merge-back, stale-plan grep, and clean-tree closeout
+- [x] Phase 5 - hostile audit, checkpoint, receipts, push, merge-back, stale-plan grep, and clean-tree closeout
 
 ## Explicit User Asks
 
@@ -50,6 +50,9 @@ Out of scope:
 - Runtime publish: `artifacts/validation/interior_strength_control_runtime_publish.json` passed `ui_app\build_vsdevcmd.cmd`.
 - Runtime final: `artifacts/pytest/interior_strength_control_runtime.junit.xml` passed `tests/test_fractal_runtime_multibrot_interior_tone.py`; the test now covers no-mouse set-value on a source-stack state and a pixel-delta proof.
 - Inventory final: `artifacts/validation/interior_strength_control_inventory.json` passed `smooth_escape_color_inventory.py` for 18 cases.
+- Hostile audit: `artifacts/validation/interior_strength_control_hostile_audit.json` passed after recording the source-stack bypass and weak proof findings.
+- Checkpoint: `823bc1a` committed the repair through `viewer_host_checkpoint_slice.py` and validation/contract proof receipts were written for that head.
+- Merge-back: `master` fast-forwarded to the repaired commit; stale-plan grep found no forbidden stale closeout phrases.
 - Primary seams: `ui_app/src/escape_time_coloring.h`, `ui_app/tests/test_escape_time_coloring.cpp`, `tests/test_fractal_runtime_multibrot_interior_tone.py`, and any schema/binding files only if live proof shows the control is not actually wired.
 
 ## Hostile Audit
