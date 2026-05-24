@@ -1,14 +1,12 @@
 #pragma once
 
 #include "json_min.h"
+#include "sdf_pack_runtime_types.h"
 
 #include <map>
 #include <string>
 #include <string_view>
 #include <vector>
-
-constexpr int SDF_PACK_MAX_AST_NODES = 64;
-constexpr int SDF_PACK_MAX_PARAMS = 32;
 
 struct SdfPackParam {
     std::string id;
@@ -57,6 +55,12 @@ struct SdfPackSampleResult {
     std::string error;
 };
 
+struct SdfPackLowerResult {
+    SdfPackRuntimeDesc desc;
+    bool ok{false};
+    std::string error;
+};
+
 SdfPackParseResult ParseSdfPackJson(std::string_view text);
 SdfPackParseResult ParseSdfPackFromValue(const json_min::Value& value);
 
@@ -70,4 +74,8 @@ SdfPackSampleResult SampleSdfPackCpu(
     const SdfPack& pack,
     double x,
     double y,
+    const std::map<std::string, double>& overrides);
+
+SdfPackLowerResult LowerSdfPackToRuntimeDesc(
+    const SdfPack& pack,
     const std::map<std::string, double>& overrides);

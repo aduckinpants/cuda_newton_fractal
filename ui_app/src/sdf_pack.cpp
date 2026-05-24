@@ -520,6 +520,233 @@ bool RequiredScalarField(
     return EvalScalarExpr(it->second, params, outValue, outError);
 }
 
+SdfPackScalarExpr SdfConst(double value) {
+    SdfPackScalarExpr expr;
+    expr.kind = SdfPackScalarKind::constant;
+    expr.value = value;
+    expr.param_index = -1;
+    return expr;
+}
+
+SdfPackVec2Expr SdfVec2Const(double x, double y) {
+    SdfPackVec2Expr expr;
+    expr.x = SdfConst(x);
+    expr.y = SdfConst(y);
+    return expr;
+}
+
+bool LowerScalarExpr(
+    const json_min::Value& value,
+    const std::map<std::string, int>& paramIndices,
+    SdfPackScalarExpr* outExpr,
+    std::string* outError) {
+    if (value.is_number()) {
+        if (!std::isfinite(value.as_number())) {
+            if (outError) *outError = "numeric expression must be finite";
+            return false;
+        }
+        if (outExpr) *outExpr = SdfConst(value.as_number());
+        return true;
+    }
+    if (!value.is_object()) {
+        if (outError) *outError = "numeric expression must be a number or param reference";
+        return false;
+    }
+    const json_min::Object& object = value.as_object();
+    std::string paramId;
+    auto paramIt = object.find("param");
+    if (paramIt != object.end()) {
+        if (!paramIt->second.is_string()) {
+            if (outError) *outError = "param expression must name a string param";
+            return false;
+        }
+        paramId = paramIt->second.as_string();
+    } else {
+        std::string op;
+        if (!GetRequiredString(object, "op", &op, outError)) return false;
+        if (op != "param") {
+            if (outError) *outError = "numeric expression object op must be param";
+            return false;
+        }
+        if (!GetRequiredString(object, "name", &paramId, outError)) return false;
+    }
+    auto indexIt = paramIndices.find(paramId);
+    if (indexIt == paramIndices.end()) {
+        if (outError) *outError = "unknown param reference: " + paramId;
+        return false;
+    }
+    if (outExpr) {
+        outExpr->kind = SdfPackScalarKind::param;
+        outExpr->value = 0.0;
+        outExpr->param_index = indexIt->second;
+    }
+    return true;
+}
+
+bool LowerVec2Expr(
+    const json_min::Value& value,
+    const std::map<std::string, int>& paramIndices,
+    const char* label,
+    SdfPackVec2Expr* outExpr,
+    std::string* outError) {
+    if (!value.is_array() || value.as_array().size() != 2) {
+        if (outError) *outError = std::string(label) + " must be a two-value array";
+        return false;
+    }
+    SdfPackVec2Expr expr;
+    if (!LowerScalarExpr(value.as_array()[0], paramIndices, &expr.x, outError)) return false;
+    if (!LowerScalarExpr(value.as_array()[1], paramIndices, &expr.y, outError)) return false;
+    if (outExpr) *outExpr = expr;
+    return true;
+}
+
+bool LowerOptionalVec2Field(
+    const json_min::Object& object,
+    const char* key,
+    const std::map<std::string, int>& paramIndices,
+    SdfPackVec2Expr defaultValue,
+    SdfPackVec2Expr* outExpr,
+    std::string* outError) {
+    auto it = object.find(key);
+    if (it == object.end()) {
+        *outExpr = defaultValue;
+        return true;
+    }
+    return LowerVec2Expr(it->second, paramIndices, key, outExpr, outError);
+}
+
+bool LowerRequiredVec2Field(
+    const json_min::Object& object,
+    const char* key,
+    const std::map<std::string, int>& paramIndices,
+    SdfPackVec2Expr* outExpr,
+    std::string* outError) {
+    auto it = object.find(key);
+    if (it == object.end()) {
+        if (outError) *outError = std::string("Missing vec2 field: ") + key;
+        return false;
+    }
+    return LowerVec2Expr(it->second, paramIndices, key, outExpr, outError);
+}
+
+bool LowerRequiredScalarField(
+    const json_min::Object& object,
+    const char* key,
+    const std::map<std::string, int>& paramIndices,
+    SdfPackScalarExpr* outExpr,
+    std::string* outError) {
+    auto it = object.find(key);
+    if (it == object.end()) {
+        if (outError) *outError = std::string("Missing numeric field: ") + key;
+        return false;
+    }
+    return LowerScalarExpr(it->second, paramIndices, outExpr, outError);
+}
+
+bool AppendRuntimeNode(
+    const SdfPackRuntimeNode& node,
+    SdfPackRuntimeDesc* ioDesc,
+    int* outIndex,
+    std::string* outError) {
+    if (ioDesc->node_count >= SDF_PACK_MAX_AST_NODES) {
+        if (outError) *outError = "SDF AST exceeds node limit";
+        return false;
+    }
+    const int index = ioDesc->node_count++;
+    ioDesc->nodes[index] = node;
+    if (outIndex) *outIndex = index;
+    return true;
+}
+
+bool LowerAstNodeToRuntime(
+    const json_min::Value& value,
+    const std::map<std::string, int>& paramIndices,
+    SdfPackRuntimeDesc* ioDesc,
+    int* outIndex,
+    std::string* outError) {
+    if (!value.is_object()) {
+        if (outError) *outError = "ast node must be an object";
+        return false;
+    }
+    const json_min::Object& object = value.as_object();
+    std::string op;
+    if (!GetRequiredString(object, "op", &op, outError)) return false;
+
+    auto lowerChild = [&](const char* key, int* outChild) -> bool {
+        auto it = object.find(key);
+        if (it == object.end()) {
+            if (outError) *outError = std::string("Missing ast child: ") + key;
+            return false;
+        }
+        return LowerAstNodeToRuntime(it->second, paramIndices, ioDesc, outChild, outError);
+    };
+
+    SdfPackRuntimeNode node;
+    node.center = SdfVec2Const(0.0, 0.0);
+
+    if (op == "circle") {
+        node.op = SdfPackNodeOp::circle;
+        if (!LowerOptionalVec2Field(object, "center", paramIndices, SdfVec2Const(0.0, 0.0), &node.center, outError)) return false;
+        if (!LowerRequiredScalarField(object, "radius", paramIndices, &node.radius, outError)) return false;
+        return AppendRuntimeNode(node, ioDesc, outIndex, outError);
+    }
+    if (op == "box") {
+        node.op = SdfPackNodeOp::box;
+        if (!LowerOptionalVec2Field(object, "center", paramIndices, SdfVec2Const(0.0, 0.0), &node.center, outError)) return false;
+        if (!LowerRequiredVec2Field(object, "half_size", paramIndices, &node.half_size, outError)) return false;
+        return AppendRuntimeNode(node, ioDesc, outIndex, outError);
+    }
+    if (op == "capsule") {
+        node.op = SdfPackNodeOp::capsule;
+        if (!LowerRequiredVec2Field(object, "a", paramIndices, &node.point_a, outError)) return false;
+        if (!LowerRequiredVec2Field(object, "b", paramIndices, &node.point_b, outError)) return false;
+        if (!LowerRequiredScalarField(object, "radius", paramIndices, &node.radius, outError)) return false;
+        return AppendRuntimeNode(node, ioDesc, outIndex, outError);
+    }
+    if (op == "union" || op == "intersect" || op == "subtract" || op == "smooth_union") {
+        if (!lowerChild("a", &node.child_a)) return false;
+        if (!lowerChild("b", &node.child_b)) return false;
+        if (op == "union") {
+            node.op = SdfPackNodeOp::union_op;
+        } else if (op == "intersect") {
+            node.op = SdfPackNodeOp::intersect_op;
+        } else if (op == "subtract") {
+            node.op = SdfPackNodeOp::subtract;
+        } else {
+            node.op = SdfPackNodeOp::smooth_union;
+            if (!LowerRequiredScalarField(object, "k", paramIndices, &node.k, outError)) return false;
+        }
+        return AppendRuntimeNode(node, ioDesc, outIndex, outError);
+    }
+    if (op == "translate") {
+        node.op = SdfPackNodeOp::translate;
+        if (!LowerRequiredVec2Field(object, "offset", paramIndices, &node.offset, outError)) return false;
+        if (!lowerChild("child", &node.child)) return false;
+        return AppendRuntimeNode(node, ioDesc, outIndex, outError);
+    }
+    if (op == "rotate") {
+        node.op = SdfPackNodeOp::rotate;
+        if (!LowerRequiredScalarField(object, "angle", paramIndices, &node.angle, outError)) return false;
+        if (!lowerChild("child", &node.child)) return false;
+        return AppendRuntimeNode(node, ioDesc, outIndex, outError);
+    }
+    if (op == "scale") {
+        node.op = SdfPackNodeOp::scale;
+        if (!LowerRequiredScalarField(object, "factor", paramIndices, &node.factor, outError)) return false;
+        if (!lowerChild("child", &node.child)) return false;
+        return AppendRuntimeNode(node, ioDesc, outIndex, outError);
+    }
+    if (op == "repeat") {
+        node.op = SdfPackNodeOp::repeat;
+        if (!LowerRequiredVec2Field(object, "period", paramIndices, &node.period, outError)) return false;
+        if (!lowerChild("child", &node.child)) return false;
+        return AppendRuntimeNode(node, ioDesc, outIndex, outError);
+    }
+
+    if (outError) *outError = "unknown SDF AST op: " + op;
+    return false;
+}
+
 bool EvalAstNode(
     const json_min::Value& value,
     Vec2 p,
@@ -756,6 +983,41 @@ SdfPackSampleResult SampleSdfPackCpu(
     std::map<std::string, double> params;
     if (!BuildSdfPackParamValues(pack, overrides, &params, &result.error)) return result;
     if (!EvalAstNode(pack.ast, {x, y}, params, &result.distance, &result.error)) return result;
+    result.ok = true;
+    return result;
+}
+
+SdfPackLowerResult LowerSdfPackToRuntimeDesc(
+    const SdfPack& pack,
+    const std::map<std::string, double>& overrides) {
+    SdfPackLowerResult result;
+    if (pack.schema != 1 || pack.kind != "sdf_scene_2d") {
+        result.error = "invalid SDF pack";
+        return result;
+    }
+    if (!pack.ast.is_object()) {
+        result.error = "ast must be an object";
+        return result;
+    }
+
+    std::map<std::string, double> paramValues;
+    if (!BuildSdfPackParamValues(pack, overrides, &paramValues, &result.error)) return result;
+
+    std::map<std::string, int> paramIndices;
+    result.desc.param_count = static_cast<int>(pack.params.size());
+    if (result.desc.param_count > SDF_PACK_MAX_PARAMS) {
+        result.error = "too many params";
+        return result;
+    }
+    for (int i = 0; i < result.desc.param_count; ++i) {
+        const SdfPackParam& param = pack.params[static_cast<size_t>(i)];
+        paramIndices[param.id] = i;
+        result.desc.params[i] = paramValues[param.id];
+    }
+
+    int root = -1;
+    if (!LowerAstNodeToRuntime(pack.ast, paramIndices, &result.desc, &root, &result.error)) return result;
+    result.desc.root_node = root;
     result.ok = true;
     return result;
 }
