@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 - validate, checkpoint, receipts, push, merge-back, and clean-tree closeout.
+Closed - smooth-escape Collatz luma tuning implemented, validated, hostile-audited, checkpointed, receipted, pushed, and merged to master.
 
 ## Phase Checklist
 
@@ -11,7 +11,7 @@ Phase 6 - validate, checkpoint, receipts, push, merge-back, and clean-tree close
 - [x] Phase 3 - repair only Collatz-family smooth-escape signal tuning
 - [x] Phase 4 - publish runtime and prove the published viewer output improves without mouse automation
 - [x] Phase 5 - hostile-audit the touched color seams and docs
-- [ ] Phase 6 - validate, checkpoint, receipts, push, merge-back, and clean-tree closeout
+- [x] Phase 6 - validate, checkpoint, receipts, push, merge-back, and clean-tree closeout
 
 ## Explicit User Asks
 
