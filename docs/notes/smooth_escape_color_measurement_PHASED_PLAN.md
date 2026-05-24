@@ -14,10 +14,10 @@ Closed - smooth-escape color measurement inventory implemented and validated
 
 ## Explicit User Asks
 
-- [active] Continue the five-step plan after diagnostics capture output paths.
-- [active] Treat categorized selector/view presets and camera/dive behavior as deferrable for now.
-- [active] Continue forward with smooth-escape/color work before returning to SDF pack work.
-- [active] Do not change product color behavior in the measurement slice.
+- [done] Continue the five-step plan after diagnostics capture output paths.
+- [done] Treat categorized selector/view presets and camera/dive behavior as deferrable for now.
+- [done] Continue forward with smooth-escape/color work before returning to SDF pack work.
+- [done] Do not change product color behavior in the measurement slice.
 
 ## Scope
 

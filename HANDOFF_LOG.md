@@ -217,3 +217,4 @@
 - `ck:11b4122b` 2026-05-24 14:34 UTC | score 95 — Smooth-escape color measurement closed: added deterministic no-mouse inventory tool, runtime measurement report, stale diagnostics/Lens docs sync, and focused validation.
 - `ck:11b4122b-runtime-proof` 2026-05-24 14:36 UTC | score 95 — Smooth-escape measurement receipt-gate repair: added published-runtime pytest wrapper for inventory tool, updated contract, and revalidated.
 - `ck:11b4122b-parseable-inventory` 2026-05-24 14:38 UTC | score 95 — Smooth-escape measurement parseable inventory proof repaired: full inventory command now runs through logged-command wrapper with out-json evidence.
+- `ck:11b4122b-stale-plan` 2026-05-24 14:39 UTC | score 95 — Smooth-escape measurement stale-plan gate repaired after merge: closed plan no longer lists active asks.
