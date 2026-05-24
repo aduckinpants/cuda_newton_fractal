@@ -46,7 +46,7 @@
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/smooth_escape_interior_tone.contract.json --out-json artifacts/validation/smooth_escape_interior_tone_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
-    "cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label smooth_escape_interior_tone_native_final --log artifacts/logs/smooth_escape_interior_tone_native_final.log --out-json artifacts/validation/smooth_escape_interior_tone_native_final.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner",
     "py -3.14 tools/viewer_host_run_logged_command.py --label smooth_escape_interior_tone_runtime_publish --log artifacts/logs/smooth_escape_interior_tone_runtime_publish.log --out-json artifacts/validation/smooth_escape_interior_tone_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_vsdevcmd.cmd",
     "py -3.14 -m pytest tests/test_fractal_runtime_smooth_escape_color_inventory.py -q --junitxml artifacts/pytest/smooth_escape_interior_tone_runtime.junit.xml",
     "py -3.14 tools/viewer_host_run_logged_command.py --label smooth_escape_interior_tone_inventory --log artifacts/logs/smooth_escape_interior_tone_inventory.log --out-json artifacts/validation/smooth_escape_interior_tone_inventory.json --heartbeat-seconds 30 --timeout-seconds 240 -- py -3.14 tools/smooth_escape_color_inventory.py --out-dir artifacts/smooth_escape_interior_tone/latest --width 96 --height 72 --runtime-lock",
