@@ -212,3 +212,4 @@
 - `ck:2061e36c` 2026-05-24 06:39 UTC | score 95 — SDF field interface extraction repaired and validated.
 - `ck:ff90e1aa` 2026-05-24 13:33 UTC — session-start | branch=codex/lens-semantics-authority | head=0f8fc28 | status=dirty | profile=runtime | intent=lens semantics authority
 - `ck:ff90e1aa` 2026-05-24 14:08 UTC | score 95 — Lens semantics authority closed: explicit per-fractal Lens mask semantics registry, renderer/report routing, stale-output runtime proof hardening, and focused native/runtime rails green.
+- `ck:ff90e1aa-stale-plan` 2026-05-24 14:10 UTC | score 95 — Lens semantics stale-plan gate repaired after push: active plan now says checkpointed, receipted, and pushed instead of ready-for-closeout text.

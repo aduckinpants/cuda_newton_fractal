@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed - Lens semantics authority is implemented, validated, and ready for checkpoint/push closeout
+Closed - Lens semantics authority is implemented, validated, checkpointed, receipted, and pushed
 
 ## Phase Checklist
 
