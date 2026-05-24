@@ -230,3 +230,4 @@
 - `ck:d9c98fa0` 2026-05-24 17:51 UTC — session-start | branch=codex/multibrot-interior-tone | head=08ca494 | status=dirty | profile=runtime | intent=multibrot interior tone regression
 - `ck:d9c98fa0` 2026-05-24 18:33 UTC | score 95 — Escape-time interior color authority repaired: added public smooth-escape Interior Strength control, multi-family interior tone smoke, diagnostics persistence, no-mouse runtime proof, and preserved smooth-escape inventory.
 - `ck:d9c98fa0` 2026-05-24 18:34 UTC | score 95 — Escape-time interior color authority repaired: public smooth-escape Interior Strength control, multi-family interior tone smoke, diagnostics persistence, no-mouse runtime proof, and smooth-escape inventory preserved.
+- `ck:d9c98fa0` 2026-05-24 18:37 UTC | score 95 — Escape-time interior color authority stale-plan cleanup completed on master after receipts and merge-back.

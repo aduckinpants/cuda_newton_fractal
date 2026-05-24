@@ -2,27 +2,27 @@
 
 ## Current Phase
 
-Phase 8 - validate, checkpoint, receipts, push, merge-back, stale-plan grep, and clean-tree closeout.
+Closed - escape-time smooth-escape interiors now have bounded public tone authority, representative default interiors are covered by native/runtime smoke, the slice is checkpointed and receipted, and this plan no longer advertises unresolved closeout work.
 
 ## Phase Checklist
 
-- [x] Phase 1 - open the checked-in plan/contract and lock the initial slice
+- [x] Phase 1 - create the checked-in plan/contract and lock the initial slice
 - [x] Phase 2 - revise the contract to cover escape-time interior-color authority, schema control exposure, state/capture persistence, and multi-fractal smoke rails
 - [x] Phase 3 - add RED native/runtime proof that default smooth-escape interiors are neither forced black nor yellow-dominant across representative escape-time families
 - [x] Phase 4 - add a bounded user-facing smooth-escape interior strength control with binding/state/capture coverage
 - [x] Phase 5 - repair the escape-time smooth-escape interior tone path without changing formulas, exterior coloring, or Color Pipeline source-stack semantics
 - [x] Phase 6 - publish runtime and prove default interior tone plus the new no-mouse control on the published viewer
 - [x] Phase 7 - hostile-audit touched color/schema/state/runtime seams and update this plan with findings
-- [ ] Phase 8 - validate, checkpoint, receipts, push, merge-back, stale-plan grep, and clean-tree closeout
+- [x] Phase 8 - validate, checkpoint, receipts, push, merge-back, stale-plan grep, and clean-tree closeout
 
 ## Explicit User Asks
 
-- [open] Treat the shown default Multibrot yellow/gold filled-set view as a symptom of a broader escape-time interior-coloring regression.
-- [open] Add deeper native/unit smoke coverage so this does not recur for other escape-time families.
-- [open] Provide better user control if smooth-escape interiors are now colored instead of forced black.
-- [open] Preserve the recent smooth-escape high-black, low-luma, and low-unique repairs.
-- [open] Preserve Color Pipeline behavior; do not break source-stack editing or row automation.
-- [open] Do not start palette redesign, histogram/adaptive normalization, selector/preset, camera, SDF, formula, or broad renderer work.
+- [closed] Treat the shown default Multibrot yellow/gold filled-set view as a symptom of a broader escape-time interior-coloring regression.
+- [closed] Add deeper native/unit smoke coverage so this does not recur for other escape-time families.
+- [closed] Provide better user control if smooth-escape interiors are now colored instead of forced black.
+- [closed] Preserve the recent smooth-escape high-black, low-luma, and low-unique repairs.
+- [closed] Preserve Color Pipeline behavior; do not break source-stack editing or row automation.
+- [closed] Do not start palette redesign, histogram/adaptive normalization, selector/preset, camera, SDF, formula, or broad renderer work.
 
 ## Scope
 
@@ -61,6 +61,7 @@ Out of scope:
 - Final native proof: `escape_time_interior_color_native_final`, `escape_time_interior_color_schema_native`, `escape_time_interior_color_capture_native`, `escape_time_interior_color_types_native`, and `escape_time_interior_color_derived_native` passed.
 - Final runtime proof: `escape_time_interior_color_runtime_publish` passed, `tests/test_fractal_runtime_multibrot_interior_tone.py` passed 2 tests with no-mouse automation, and `escape_time_interior_color_inventory` passed.
 - Final audit/tool proof: `escape_time_interior_color_code_quality` passed baseline after the binding refactor; `escape_time_interior_color_diff_check` passed.
+- Checkpoint proof: implementation checkpoint `3d629c8` was committed on `codex/multibrot-interior-tone`, validation and contract-proof receipts were written for that head, the feature branch was pushed, and local `master` fast-forwarded to the repaired head before this stale-plan cleanup.
 - Code seam: `ui_app/src/escape_time_coloring.h` sends non-escaped smooth-escape pixels through the same programmable smooth signal path as escaped pixels; current native tests require "not black" and scale sensitivity, but not bounded interior tone or user authority.
 - Schema seam: `ui/fractal_binding_surface_v1.ui_schema.json` exposes basic Color controls but no smooth-escape interior authority control.
 - Binding seam: `ui_app/src/schema_binding.cpp` binds public `fractal.params.color_*` controls; the new control must use that seam and no-mouse UI automation.
@@ -85,7 +86,7 @@ Out of scope:
 - [x] Finding 1 - the broadened implementation touched `ui_app/src/fractal_derived_fields.cpp` for default reset, but the first broadened contract omitted that file. Repaired by adding the seam to the contract and re-locking `global_active_contract`.
 - [x] Finding 2 - the diagnostics capture test asserted a `0.42f` JSON substring, which can print as a non-exact float. Repaired by using exactly representable `0.5f` while preserving the state-export assertion.
 - [x] Finding 3 - code quality caught a real function-size regression in `BindingContext::BindFloat()` after the new color binding was added. Repaired by extracting `BindColorPanelFloat(...)`; `test_schema_binding` and the code-quality baseline both passed after the refactor.
-- [x] Finding 4 - final validators are green, but checkpoint, receipts, push, merge-back, stale-plan grep, and clean-tree closeout still remain before the slice can be called closed.
+- [x] Finding 4 - the committed implementation plan still described closeout as remaining after the receipts and merge-back. This stale-plan cleanup closes Phase 8 and removes unresolved closeout text on the final head.
 
 ## Action Hostile Review
 
