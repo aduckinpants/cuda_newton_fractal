@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - hostile audit, checkpoint, receipts, merge-back, push, and clean-tree closeout.
+Closed - repaired on `master` and ready for final push/status verification.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - hostile audit, checkpoint, receipts, merge-back, push, and clean-tree 
 - [x] Phase 2 - reproduce the UX policy failure with black-contrast and source-stack witnesses
 - [x] Phase 3 - repair `Interior Strength` semantics to mean black-to-palette interior authority
 - [x] Phase 4 - validate native/runtime/color-inventory proof
-- [ ] Phase 5 - hostile audit, checkpoint, receipts, merge-back, push, and clean-tree closeout
+- [x] Phase 5 - hostile audit, checkpoint, receipts, merge-back, push, and clean-tree closeout
 
 ## Explicit User Asks
 
@@ -46,6 +46,9 @@ Out of scope:
 - Runtime publish: `artifacts/validation/interior_color_policy_runtime_publish.json` passed `ui_app\build_vsdevcmd.cmd`.
 - Runtime final: `artifacts/pytest/interior_color_policy_runtime.junit.xml` passed `tests/test_fractal_runtime_multibrot_interior_tone.py` with four tests, including Smooth Escape and Escape Magnitude Source stack metric cases.
 - Inventory final: `artifacts/validation/interior_color_policy_inventory.json` passed `smooth_escape_color_inventory.py` for 18 cases.
+- Hostile audit: `artifacts/validation/interior_color_policy_hostile_audit.json` passed after recording the contrast endpoint and inconsistent source-row findings.
+- Checkpoint: `ccf1167` committed the repair through `viewer_host_checkpoint_slice.py`, with validation and contract proof receipts written for that head.
+- Merge-back: `master` fast-forwarded to the repaired commit; stale-plan grep found no forbidden stale closeout phrases.
 
 ## Hostile Audit
 
