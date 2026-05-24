@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -31,6 +32,54 @@ def _yellow_fraction(pixels: list[tuple[int, int, int]]) -> float:
     return yellow / len(pixels)
 
 
+def _frame_delta_metrics(
+    left_pixels: list[tuple[int, int, int]],
+    right_pixels: list[tuple[int, int, int]],
+) -> dict[str, float]:
+    assert len(left_pixels) == len(right_pixels)
+    total_delta = 0
+    changed = 0
+    max_delta = 0
+    for left, right in zip(left_pixels, right_pixels):
+        delta = abs(left[0] - right[0]) + abs(left[1] - right[1]) + abs(left[2] - right[2])
+        total_delta += delta
+        if delta:
+            changed += 1
+        max_delta = max(max_delta, delta)
+    return {
+        "avg_abs_rgb_delta_per_channel": total_delta / (len(left_pixels) * 3),
+        "changed_pixel_fraction": changed / len(left_pixels),
+        "max_rgb_sum_delta": float(max_delta),
+    }
+
+
+def _write_state_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
+
+
+def _with_smooth_escape_source_stack(state_text: str) -> str:
+    source_stack = (
+        '    "color_grading": "escape_default",\n'
+        '    "color_source_stack": [\n'
+        '      { "signal": "smooth_escape", "scale": 1.0, "bias": 0.0, "blend_weight": 1.0 }\n'
+        "    ],\n"
+    )
+    if '"color_source_stack"' in state_text:
+        return state_text
+    return state_text.replace('    "color_grading": "escape_default",\n', source_stack)
+
+
+def _with_interior_strength(state_text: str, value: float) -> str:
+    return re.sub(
+        r'("color_smooth_escape_interior_strength"\s*:\s*)[-+0-9.eE]+',
+        rf"\g<1>{value:.6f}",
+        state_text,
+        count=1,
+    )
+
+
 def _capture_default_escape_time_frame(exe_path: Path, out_dir: Path, fractal_type: str) -> dict[str, object]:
     result = subprocess.run(
         [
@@ -44,6 +93,28 @@ def _capture_default_escape_time_frame(exe_path: Path, out_dir: Path, fractal_ty
             "96",
             "--height",
             "72",
+        ],
+        cwd=str(Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    return {
+        "frame_path": out_dir / "frame.bmp",
+        "state_path": out_dir / "state.json",
+    }
+
+
+def _capture_loaded_state(exe_path: Path, state_path: Path, out_dir: Path) -> dict[str, object]:
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(state_path),
+            "--capture-diagnostic",
+            "--out-dir",
+            str(out_dir),
         ],
         cwd=str(Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")),
         text=True,
@@ -90,8 +161,10 @@ def test_smooth_escape_interior_strength_is_no_mouse_runtime_control(tmp_path: P
     exe_path = active_runtime_exe()
     capture = _capture_default_escape_time_frame(exe_path, tmp_path / "multibrot_control_seed", "multibrot")
     state_path = capture["state_path"]
-    state_text = state_path.read_text(encoding="utf-8")
+    state_text = _with_smooth_escape_source_stack(state_path.read_text(encoding="utf-8"))
     assert '"color_smooth_escape_interior_strength": 0.2' in state_text
+    state_path = tmp_path / "multibrot_source_stack_seed" / "state.json"
+    _write_state_text(state_path, state_text)
 
     control_id = "fractal_control.color_smooth_escape_interior_strength.primary"
     with runtime_automation_lock(timeout_seconds=20.0):
@@ -113,3 +186,39 @@ def test_smooth_escape_interior_strength_is_no_mouse_runtime_control(tmp_path: P
             assert edited.get("set_value_consumed") is True
             assert isinstance(edited_hash, str) and edited_hash
             assert edited_hash != baseline_hash
+
+
+def test_smooth_escape_interior_strength_has_visible_source_stack_effect(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("published viewer runtime capture is Windows-only")
+
+    inventory = _load_inventory_module()
+    exe_path = active_runtime_exe()
+    seed_capture = _capture_default_escape_time_frame(exe_path, tmp_path / "multibrot_source_stack_metric_seed", "multibrot")
+    state_text = _with_smooth_escape_source_stack(seed_capture["state_path"].read_text(encoding="utf-8"))
+
+    low_state_path = tmp_path / "interior_strength_low" / "state.json"
+    high_state_path = tmp_path / "interior_strength_high" / "state.json"
+    _write_state_text(low_state_path, _with_interior_strength(state_text, 0.0))
+    _write_state_text(high_state_path, _with_interior_strength(state_text, 1.0))
+
+    low_capture = _capture_loaded_state(exe_path, low_state_path, tmp_path / "interior_strength_low_capture")
+    high_capture = _capture_loaded_state(exe_path, high_state_path, tmp_path / "interior_strength_high_capture")
+    low_frame = inventory.read_bmp_rgb(low_capture["frame_path"])
+    high_frame = inventory.read_bmp_rgb(high_capture["frame_path"])
+    delta = _frame_delta_metrics(low_frame["pixels"], high_frame["pixels"])
+    low_metrics = inventory.compute_frame_metrics(low_frame)
+    high_metrics = inventory.compute_frame_metrics(high_frame)
+
+    assert delta["changed_pixel_fraction"] > 0.25, {
+        "delta": delta,
+        "low": low_metrics,
+        "high": high_metrics,
+    }
+    assert delta["avg_abs_rgb_delta_per_channel"] > 20.0, {
+        "delta": delta,
+        "low": low_metrics,
+        "high": high_metrics,
+    }
+    assert low_metrics["black_pixel_fraction"] < 0.05
+    assert high_metrics["black_pixel_fraction"] < 0.05

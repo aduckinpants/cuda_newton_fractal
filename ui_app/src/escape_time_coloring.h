@@ -1284,8 +1284,7 @@ ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeInteriorStrength(const Kern
 }
 
 ESCAPE_TIME_COLOR_HD inline bool ShouldApplySmoothEscapeInteriorStrength(const KernelParams& params) {
-    return params.color_pipeline.signal == ColorSignal::smooth_escape &&
-        ClampColorPipelineSourceStackCount(params.color_source_stack_count) == 0;
+    return params.color_pipeline.signal == ColorSignal::smooth_escape;
 }
 
 template <typename Color>
