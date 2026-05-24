@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "contract_id": "interior_policy_schema_hardening",
+  "feature_id": "smooth_escape_interior_policy_schema_truth",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/interior_policy_schema_hardening_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/interior_policy_schema_hardening_PHASED_PLAN.md",
+    "docs/contracts/interior_policy_schema_hardening.contract.json",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/tests/test_ui_schema.cpp",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "hostile review recent interior policy work",
+    "close stale public schema/help gaps",
+    "repair missing focused native schema-test target exposed during validation",
+    "do not broaden into palette redesign",
+    "continue toward the next work item after closure"
+  ],
+  "forbidden_operator_prompts": [
+    "change runtime coloring math",
+    "add new color controls",
+    "change fractal formula behavior",
+    "replace the renderer",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "schema_truth_and_focused_native_harness_hardening_only",
+    "posture": "hostile_review_then_repair",
+    "runtime_proof": "not_required_unless_runtime_changes"
+  },
+  "forbidden_defaults": {
+    "runtime_math_changes": "forbidden",
+    "palette_redesign": "forbidden",
+    "general_color_pipeline_redesign": "forbidden",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/interior_policy_schema_hardening.contract.json --out-json artifacts/validation/interior_policy_schema_hardening_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label interior_policy_schema_hardening_native_final --log artifacts/logs/interior_policy_schema_hardening_native_final.log --out-json artifacts/validation/interior_policy_schema_hardening_native_final.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_ui_schema",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/interior_policy_schema_hardening_PHASED_PLAN.md --out-json artifacts/validation/interior_policy_schema_hardening_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/interior_policy_schema_hardening_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label interior_policy_schema_hardening_diff_check --log artifacts/logs/interior_policy_schema_hardening_diff_check.log --out-json artifacts/validation/interior_policy_schema_hardening_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The interior policy schema hardening contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/interior_policy_schema_hardening_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The interior policy schema hardening hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/interior_policy_schema_hardening_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

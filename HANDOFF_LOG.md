@@ -237,3 +237,6 @@
 - `ck:c1475175` 2026-05-24 19:26 UTC — session-start | branch=codex/interior-color-policy-repair | head=cb9367a | status=dirty | profile=runtime | intent=interior color policy repair
 - `ck:c1475175` 2026-05-24 19:40 UTC | score 95 — Interior color policy repaired: Interior Strength now controls black-to-palette interior authority, applies consistently across Smooth Escape source-stack paths, native/runtime/inventory rails green.
 - `ck:c1475175-closeout` 2026-05-24 19:41 UTC | score 95 — Interior color policy repair plan closeout synced on master after receipts, merge-back, hostile audit validation, and stale-plan grep.
+- `ck:6d768f79` 2026-05-24 19:43 UTC — session-start | branch=codex/interior-policy-schema-hardening | head=7718e40 | status=dirty | profile=native | intent=interior policy schema hardening
+- `ck:6d768f79` 2026-05-24 19:48 UTC | score 96 — Interior policy schema hardening: repaired stale Interior Strength help text, added native schema guard, exposed focused test_ui_schema target, and validated contract/plan/native/audit/code-quality/diff rails.
+- `ck:6d768f79` 2026-05-24 19:48 UTC | score 96 — Interior policy schema hardening: repaired stale Interior Strength help text, native schema guard, and focused test_ui_schema target; validations passed.

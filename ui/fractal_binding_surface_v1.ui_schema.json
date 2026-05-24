@@ -1198,7 +1198,7 @@
           "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.2,
           "visible_if": { "op": "eq", "path": "fractal.params.coloring_mode", "value": "smooth_escape" },
           "binding": { "kind": "param", "path": "fractal.params.color_smooth_escape_interior_strength" },
-          "help": "Controls how strongly smooth-escape interiors use the live smooth palette instead of the muted interior anchor."
+          "help": "Blends smooth-escape interiors from pure black at 0 to the active Color Pipeline palette/source color at 1."
         },
         {
           "id": "exposure",

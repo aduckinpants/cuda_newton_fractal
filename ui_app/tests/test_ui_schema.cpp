@@ -935,7 +935,11 @@ int main() {
                     ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 0.2 &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
                     ctrl.visible_if.path == "fractal.params.coloring_mode" &&
-                    ctrl.visible_if.value == "smooth_escape") {
+                    ctrl.visible_if.value == "smooth_escape" &&
+                    ctrl.has_help &&
+                    ctrl.help.find("pure black") != std::string::npos &&
+                    ctrl.help.find("active Color Pipeline") != std::string::npos &&
+                    ctrl.help.find("muted interior anchor") == std::string::npos) {
                     foundSmoothEscapeInteriorStrength = true;
                 }
                 if (ctrl.id == "resolution_aspect_preset" && ctrl.type == "combo" && ctrl.has_binding &&

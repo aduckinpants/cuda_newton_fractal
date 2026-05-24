@@ -66,6 +66,7 @@ if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" goto focused_test_sample_tie
 if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
 if /I "%FOCUSED_TEST%"=="test_fractal_sample_kernel" goto focused_test_fractal_sample_kernel
 if /I "%FOCUSED_TEST%"=="test_runtime_walk_headless" goto focused_test_runtime_walk_headless
+if /I "%FOCUSED_TEST%"=="test_ui_schema" goto focused_test_ui_schema
 if /I "%FOCUSED_TEST%"=="test_safe_mode_schema" goto focused_test_safe_mode_schema
 if /I "%FOCUSED_TEST%"=="test_fractal_parameter_surface_descriptor" goto focused_test_fractal_parameter_surface_descriptor
 if /I "%FOCUSED_TEST%"=="test_fractal_catalog_authority" goto focused_test_fractal_catalog_authority
@@ -727,6 +728,16 @@ call :run_test "%TESTROOT%\test_schema_binding.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_fractal_runtime_validation.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_ui_schema.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_safe_mode_schema.exe" || exit /b 1
+exit /b 0
+
+:focused_test_ui_schema
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\safe_mode_schema.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_ui_schema.cpp ^
+  /Fe:"%TESTROOT%\test_ui_schema.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_ui_schema.exe" || exit /b 1
 exit /b 0
 
 :focused_test_safe_mode_schema
