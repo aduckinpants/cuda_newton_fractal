@@ -213,3 +213,5 @@
 - `ck:ff90e1aa` 2026-05-24 13:33 UTC — session-start | branch=codex/lens-semantics-authority | head=0f8fc28 | status=dirty | profile=runtime | intent=lens semantics authority
 - `ck:ff90e1aa` 2026-05-24 14:08 UTC | score 95 — Lens semantics authority closed: explicit per-fractal Lens mask semantics registry, renderer/report routing, stale-output runtime proof hardening, and focused native/runtime rails green.
 - `ck:ff90e1aa-stale-plan` 2026-05-24 14:10 UTC | score 95 — Lens semantics stale-plan gate repaired after push: active plan now says checkpointed, receipted, and pushed instead of ready-for-closeout text.
+- `ck:11b4122b` 2026-05-24 14:22 UTC — session-start | branch=codex/smooth-escape-color-measurement | head=b9b2ae1 | status=dirty | profile=runtime | intent=smooth-escape color measurement
+- `ck:11b4122b` 2026-05-24 14:34 UTC | score 95 — Smooth-escape color measurement closed: added deterministic no-mouse inventory tool, runtime measurement report, stale diagnostics/Lens docs sync, and focused validation.

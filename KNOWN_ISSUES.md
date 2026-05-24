@@ -138,25 +138,25 @@ Phoenix now exposes `phoenix_p_real` and `phoenix_p_imag` as runtime-backed cont
 
 ---
 
-## P2 - Diagnostics capture is a single rolling bundle
+## ~~P2 - Diagnostics capture is a single rolling bundle~~ RESOLVED
 
-**Status:** open
+**Status:** resolved
 **Area:** tooling
 
-Headless `--capture-diagnostic` always writes to `runtime/diagnostics/last/`. Concurrent or rapid sequential captures overwrite each other. A proper solution should timestamp each bundle or accept an explicit `--out-dir` override.
+Headless `--capture-diagnostic` now writes durable unique diagnostic archives by default, keeps `runtime/diagnostics/last/` as a compatibility mirror, and supports deterministic explicit output through `--diagnostics-out-dir` and `--out-dir`.
 
-**File:** `ui_app/src/diagnostics_capture.cpp`
+**Proof:** `docs/notes/diagnostics_capture_output_paths_PHASED_PLAN.md`
 
 ---
 
-## P2 - Lens SDF downsample/control truth is unresolved
+## ~~P2 - Lens SDF downsample/control truth is unresolved~~ RESOLVED
 
-**Status:** open
+**Status:** resolved
 **Area:** Lens SDF / control surface
 
-The deferred Lens SDF follow-up still needs a truth decision for `lens.downsample`: either wire it as a real render-path control with proof, hide it, or remove it until behavior exists. Do not leave it as a visible ambiguous control.
+`lens.downsample` is now wired into the live Lens SDF path, Lens SDF scalar field authority is extracted, and per-fractal Lens mask semantics are explicit.
 
-**Files:** `ui_app/src/lens_sdf.cpp`, Lens SDF schema/binding surfaces
+**Proof:** `docs/notes/lens_sdf_truth_cleanup_PHASED_PLAN.md`, `docs/notes/sdf_field_interface_extraction_PHASED_PLAN.md`, `docs/notes/lens_semantics_authority_PHASED_PLAN.md`
 
 ---
 

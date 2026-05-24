@@ -39,6 +39,19 @@ Out of scope:
 
 ## Campaign Answer
 
+Current continuation order after the 2026-05-24 reprioritization:
+
+1. Diagnostics capture output paths - closed in `docs/notes/diagnostics_capture_output_paths_PHASED_PLAN.md`.
+2. Smooth-escape/color tuning - active now, starting with measurement-only inventory in `docs/notes/smooth_escape_color_measurement_PHASED_PLAN.md`.
+3. Highest-confidence smooth/color fixes from that measurement - next, only after evidence exists.
+4. Authored SDF pack parser plus CPU reference - later SDF substrate work from `docs/notes/sdf_field_pack_near_term_TODO.md`.
+5. CUDA SDF pack evaluator - after the parser/CPU reference is closed.
+
+Deferred behind that order for now:
+
+- Categorized selector and view presets.
+- Camera and dive behavior.
+
 Before this slice:
 
 - Step 2 was detailed in `docs/notes/sdf_field_pack_near_term_TODO.md`.
@@ -59,6 +72,8 @@ Recommended branch model:
 - Each implementation branch still needs its own checked-in plan/contract, RED, hostile audit, validation, checkpoint, receipts, and merge/push discipline.
 
 ## Step 1 - Diagnostics Capture Output Paths
+
+Status: closed in `docs/notes/diagnostics_capture_output_paths_PHASED_PLAN.md`. The historical problem statement below is kept as the original plan record, not as current open work.
 
 ### Current Problem
 
