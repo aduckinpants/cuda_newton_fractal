@@ -55,6 +55,13 @@ enum class FractalCatalogDefaultParamPolicy : uint8_t {
     custom_workbench,
 };
 
+struct FractalCatalogViewDefaults {
+    Float2 center;
+    float zoom;
+    float rotation_degrees;
+    bool auto_max_iter;
+};
+
 enum class FractalCatalogFormulaGrowthSurface : uint8_t {
     native_2d_formula,
     native_composite_formula,
@@ -89,7 +96,7 @@ struct FractalCatalogEntry {
     FractalCatalogFormulaGrowthSurface formula_growth_surface;
     uint32_t capability_flags;
     uint32_t runtime_flags;
-    bool default_auto_max_iter;
+    FractalCatalogViewDefaults default_view;
 };
 
 inline constexpr uint32_t FractalCatalogRuntimeFlagMask(FractalCatalogRuntimeFlag flag) {
@@ -175,11 +182,43 @@ inline constexpr uint32_t FractalCatalogRuntimeFlagsFor(FractalType fractalType)
                 : 0u);
 }
 
+inline constexpr FractalCatalogViewDefaults FractalCatalogViewDefaultsFor(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::mandelbrot:
+        return {{-0.745f, 0.186f}, 38.0f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::julia:
+        return {{0.0f, 0.0f}, 1.5f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::burning_ship:
+        return {{-1.762f, -0.028f}, 25.0f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::spider:
+        return {{-0.12f, 0.75f}, 4.0f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::celtic_mandelbrot:
+        return {{-0.45f, 0.42f}, 3.2f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::perpendicular_burning_ship:
+        return {{-1.785f, -0.012f}, 18.0f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::multibrot:
+        return {{-0.15f, 0.75f}, 4.5f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::multicorn:
+        return {{-0.3f, 0.0f}, 1.5f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::lambda_map:
+    case FractalType::explaino_lambda:
+        return {{0.5f, 0.0f}, 4.5f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::magnet:
+        return {{-0.08f, 0.0f}, 2.2f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::explaino_rational_escape:
+        return {{0.0f, 0.0f}, 1.8f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    case FractalType::phoenix:
+        return {{0.36f, -0.1f}, 2.8f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    default:
+        return {{0.0f, 0.0f}, 1.0f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
+    }
+}
+
 #define FRACTAL_CATALOG_ENTRY(enum_name, selector, label, category_name, family_name, view_name, defaults_name, growth_name) \
     {FractalType::enum_name, selector, label, FractalCatalogCategory::category_name, FractalCatalogFamily::family_name, \
         FractalCatalogViewPolicy::view_name, FractalCatalogDefaultParamPolicy::defaults_name, \
         FractalCatalogFormulaGrowthSurface::growth_name, FractalCatalogCapabilityFlagsFor(FractalType::enum_name), \
-        FractalCatalogRuntimeFlagsFor(FractalType::enum_name), DefaultAutoMaxIterForFractal(FractalType::enum_name)}
+        FractalCatalogRuntimeFlagsFor(FractalType::enum_name), FractalCatalogViewDefaultsFor(FractalType::enum_name)}
 
 inline constexpr FractalCatalogEntry kFractalCatalog[] = {
     FRACTAL_CATALOG_ENTRY(newton, "newton", "Newton", root_finding, newton, root_basin_unit, root_polynomial, native_2d_formula),
@@ -269,4 +308,9 @@ inline const FractalCatalogEntry* FindFractalCatalogEntryById(std::string_view s
         }
     }
     return nullptr;
+}
+
+inline const FractalCatalogViewDefaults* FindFractalCatalogViewDefaults(FractalType fractalType) {
+    const FractalCatalogEntry* entry = FindFractalCatalogEntry(fractalType);
+    return entry ? &entry->default_view : nullptr;
 }

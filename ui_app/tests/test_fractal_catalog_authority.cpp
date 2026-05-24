@@ -90,8 +90,10 @@ int main() {
         Check(HasFractalCatalogRuntimeFlag(*entry, FractalCatalogRuntimeFlag::perturbation_reference_orbit) ==
                 SupportsPerturbationReferenceOrbit(pair.value),
             "Catalog perturbation eligibility flag must mirror the current perturbation seam");
-        Check(entry->default_auto_max_iter == DefaultAutoMaxIterForFractal(pair.value),
+        Check(entry->default_view.auto_max_iter == DefaultAutoMaxIterForFractal(pair.value),
             "Catalog auto max-iter default must mirror current family rules");
+        Check(FindFractalCatalogViewDefaults(pair.value) == &entry->default_view,
+            "Catalog view default lookup must resolve to the owning catalog row");
         Check(HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::smooth_escape_coloring) ==
                 IsColoringModeAllowedForFractal(pair.value, ColoringMode::smooth_escape),
             "Catalog smooth-escape coloring capability must mirror current family rules");

@@ -2,6 +2,7 @@
 
 #include "explaino_seed.h"
 #include "explaino_seed_curve.h"
+#include "fractal_catalog.h"
 #include "fractal_family_rules.h"
 #include "view_hp_sync.h"
 
@@ -30,109 +31,14 @@ static inline float LerpF(float a, float b, float t) {
     return a + (b - a) * t;
 }
 
-struct FractalViewPresetDefaults {
-    Float2 center;
-    float zoom;
-};
-
-static bool TryResolveEscapeTimeViewPresetDefaults(FractalType fractalType, FractalViewPresetDefaults* outDefaults) {
-    if (!outDefaults) return false;
-    switch (fractalType) {
-    case FractalType::mandelbrot:
-        *outDefaults = {{-0.745f, 0.186f}, 38.0f};
-        return true;
-    case FractalType::julia:
-        *outDefaults = {{0.0f, 0.0f}, 1.5f};
-        return true;
-    case FractalType::burning_ship:
-        *outDefaults = {{-1.762f, -0.028f}, 25.0f};
-        return true;
-    case FractalType::spider:
-        *outDefaults = {{-0.12f, 0.75f}, 4.0f};
-        return true;
-    case FractalType::celtic_mandelbrot:
-        *outDefaults = {{-0.45f, 0.42f}, 3.2f};
-        return true;
-    case FractalType::perpendicular_burning_ship:
-        *outDefaults = {{-1.785f, -0.012f}, 18.0f};
-        return true;
-    case FractalType::multibrot:
-        *outDefaults = {{-0.15f, 0.75f}, 4.5f};
-        return true;
-    case FractalType::multicorn:
-        *outDefaults = {{-0.3f, 0.0f}, 1.5f};
-        return true;
-    case FractalType::lambda_map:
-    case FractalType::explaino_lambda:
-        *outDefaults = {{0.5f, 0.0f}, 4.5f};
-        return true;
-    case FractalType::magnet:
-        *outDefaults = {{-0.08f, 0.0f}, 2.2f};
-        return true;
-    case FractalType::explaino_rational_escape:
-        *outDefaults = {{0.0f, 0.0f}, 1.8f};
-        return true;
-    case FractalType::phoenix:
-        *outDefaults = {{0.36f, -0.1f}, 2.8f};
-        return true;
-    default:
-        return false;
-    }
-}
-
-static FractalViewPresetDefaults ResolveFractalViewPresetDefaults(FractalType fractalType) {
-    FractalViewPresetDefaults defaults{{0.0f, 0.0f}, 1.0f};
-    if (TryResolveEscapeTimeViewPresetDefaults(fractalType, &defaults)) {
-        return defaults;
-    }
-
-    switch (fractalType) {
-    case FractalType::projection_and_flow:
-    case FractalType::explaino_projection_and_flow:
-    case FractalType::counterfactual_pair:
-    case FractalType::explaino_counterfactual_pair:
-        defaults.center = {0.0f, 0.0f};
-        defaults.zoom = 1.0f;
-        break;
-    case FractalType::newton:
-    case FractalType::nova:
-    case FractalType::explaino_all:
-    case FractalType::explaino:
-    case FractalType::explaino_y:
-    case FractalType::explaino_fp:
-    case FractalType::explaino_nova:
-    case FractalType::explaino_dual:
-    case FractalType::explaino_mult:
-    case FractalType::explaino_phoenix:
-    case FractalType::explaino_transcendental:
-    case FractalType::explaino_inertial:
-    case FractalType::explaino_julia:
-    case FractalType::explaino_rational:
-    case FractalType::explaino_collatz:
-    case FractalType::explaino_collatz_direct:
-    case FractalType::explaino_joy:
-    case FractalType::explaino_fold:
-    case FractalType::explaino_bell:
-    case FractalType::explaino_ripple:
-    case FractalType::explaino_splice:
-    case FractalType::explaino_vortex:
-    case FractalType::explaino_tension:
-    case FractalType::explaino_balance_void:
-    case FractalType::collatz:
-    case FractalType::mcmullen:
-    default:
-        break;
-    }
-
-    return defaults;
-}
-
 void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
-    const FractalViewPresetDefaults defaults = ResolveFractalViewPresetDefaults(view.fractal_type);
-    view.auto_max_iter = DefaultAutoMaxIterForFractal(view.fractal_type);
+    const FractalCatalogViewDefaults* catalogDefaults = FindFractalCatalogViewDefaults(view.fractal_type);
+    const FractalCatalogViewDefaults fallback = FractalCatalogViewDefaultsFor(view.fractal_type);
+    const FractalCatalogViewDefaults& defaults = catalogDefaults ? *catalogDefaults : fallback;
+    view.auto_max_iter = defaults.auto_max_iter;
     view.center = defaults.center;
     view.zoom = defaults.zoom;
-    view.rotation_degrees = 0.0f;
+    view.rotation_degrees = defaults.rotation_degrees;
     if (ioDirty) *ioDirty = true;
 }
 

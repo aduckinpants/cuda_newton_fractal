@@ -2,24 +2,24 @@
 
 ## Current Phase
 
-Phase 0 - ready to start after Slice A closes on `master`; this implementation slice is planned but blocked on Slice A completion.
+Closed - catalog-owned view defaults are implemented and validated; `ApplyFractalViewPresetDefaults(...)` now consumes the catalog surface without changing current defaults.
 
 ## Phase Checklist
 
-- [ ] Phase 0 - start from `master` after Slice A is merged, run bootstrap, lock this plan/contract, and verify Slice A catalog authority is present.
-- [ ] Phase 1 - add RED coverage proving current `ApplyFractalViewPresetDefaults(...)` outputs are preserved for every current fractal type.
-- [ ] Phase 2 - move current single-view defaults into the Slice A catalog authority without changing default center, zoom, rotation, or auto-max-iter behavior.
-- [ ] Phase 3 - add the minimal view-preset catalog shape needed for later UI work, while keeping only the current canonical preset active by default.
-- [ ] Phase 4 - prove state load/reset/startup default behavior remains compatible and explicit selector identity does not change.
-- [ ] Phase 5 - hostile-audit for duplicated default authority, stale switch fallbacks, and accidental selector/view UX expansion.
-- [ ] Phase 6 - validate focused native/catalog rails, checkpoint, receipts, push, and clean-tree closeout.
+- [x] Phase 0 - start from `master` after Slice A is merged, run bootstrap, lock this plan/contract, and verify Slice A catalog authority is present.
+- [x] Phase 1 - add RED coverage proving current `ApplyFractalViewPresetDefaults(...)` outputs are preserved for every current fractal type.
+- [x] Phase 2 - move current single-view defaults into the Slice A catalog authority without changing default center, zoom, rotation, or auto-max-iter behavior.
+- [x] Phase 3 - add the minimal view-preset catalog shape needed for later UI work, while keeping only the current canonical preset active by default.
+- [x] Phase 4 - prove state load/reset/startup default behavior remains compatible and explicit selector identity does not change.
+- [x] Phase 5 - hostile-audit for duplicated default authority, stale switch fallbacks, and accidental selector/view UX expansion.
+- [x] Phase 6 - validate focused native/catalog rails, checkpoint, receipts, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
-- [open] Move selector/default authority forward only after the catalog inventory foundation is in place.
-- [open] Keep the work useful for adding many more supported fractals without new scattered default wiring.
-- [open] Preserve current user-facing default views while moving authority.
-- [open] Do not build the categorized selector UI, perturbation zoom, new formulas, Color Pipeline changes, FPS pacing, or capture changes in this slice.
+- [done] Move selector/default authority forward only after the catalog inventory foundation is in place.
+- [done] Keep the work useful for adding many more supported fractals without new scattered default wiring.
+- [done] Preserve current user-facing default views while moving authority.
+- [done] Do not build the categorized selector UI, perturbation zoom, new formulas, Color Pipeline changes, FPS pacing, or capture changes in this slice.
 
 ## Scope
 
@@ -68,17 +68,29 @@ Out of scope:
 
 ## Proof Ledger
 
-Planned proof only; no implementation proof exists yet.
+Proof so far:
+- RED: `fractal_view_defaults_red_derived_fields` failed because `FractalCatalogViewDefaults` / `FindFractalCatalogViewDefaults(...)` did not exist.
+- GREEN: `fractal_view_defaults_final_derived_fields` passed after `ApplyFractalViewPresetDefaults(...)` consumed catalog-owned defaults.
+- GREEN: `fractal_view_defaults_catalog_authority` passed after catalog rows exposed `default_view` and lookup identity.
+- GREEN: `fractal_view_defaults_final_diagnostics_state_io` passed, preserving state load defaults.
+- GREEN: `fractal_view_defaults_final_schema_binding` passed, preserving schema/binding behavior.
+- GREEN: `fractal_view_defaults_catalog_migration_code_quality_preclose` passed baseline audit.
+- GREEN: `fractal_view_defaults_catalog_migration_contract` passed contract validation.
+- GREEN: `viewer_host_assert_phased_plan_sync.py` passed.
+- GREEN: `fractal_view_defaults_catalog_migration_hostile_audit` passed.
+- GREEN: `fractal_view_defaults_catalog_migration_code_quality` passed baseline audit.
+- GREEN: `fractal_view_defaults_catalog_migration_diff_check` passed.
+- GREEN: `fractal_view_defaults_full_native` passed full native helper suite: all helper tests passed.
 
-Expected focused rails:
-- `ui_app/build_tests_vsdevcmd.cmd test_fractal_derived_fields`
-- `ui_app/build_tests_vsdevcmd.cmd test_diagnostics_state_io`
-- `ui_app/build_tests_vsdevcmd.cmd test_schema_binding`
+Final focused rails:
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_view_defaults_final_derived_fields --log artifacts/logs/fractal_view_defaults_final_derived_fields.log --out-json artifacts/validation/fractal_view_defaults_final_derived_fields.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_derived_fields`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_view_defaults_final_diagnostics_state_io --log artifacts/logs/fractal_view_defaults_final_diagnostics_state_io.log --out-json artifacts/validation/fractal_view_defaults_final_diagnostics_state_io.json --heartbeat-seconds 30 --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_diagnostics_state_io`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label fractal_view_defaults_final_schema_binding --log artifacts/logs/fractal_view_defaults_final_schema_binding.log --out-json artifacts/validation/fractal_view_defaults_final_schema_binding.json --heartbeat-seconds 30 --timeout-seconds 240 -- ui_app/build_tests_vsdevcmd.cmd test_schema_binding`
 - contract validation, plan sync, hostile audit, code-quality baseline, and diff hygiene
 
 ## Hostile Audit
 
-- Status: pending
+- Status: complete
 - Did I actually preserve current default views, or did the migration subtly move centers/zooms/auto-max-iter values?
 - Did any caller bypass the catalog and keep a stale switch path alive?
 - Did I accidentally add visible view-preset UI before the internal authority was stable?
@@ -87,13 +99,14 @@ Expected focused rails:
 
 ## Audit Passes
 
-- [open] Pass 1 - audit before/after default preservation for every current fractal type.
-- [open] Pass 2 - audit caller seams for stale duplicate default authority.
-- [open] Pass 3 - clean re-read the repaired state after any audit finding is fixed.
+- [done] Pass 1 - audit before/after default preservation for every current fractal type found and removed a literal fallback duplicate in `ApplyFractalViewPresetDefaults(...)`.
+- [done] Pass 2 - audit caller seams for stale duplicate default authority found no remaining `ResolveFractalViewPresetDefaults`, `TryResolveEscapeTimeViewPresetDefaults`, `FractalViewPresetDefaults`, or `default_auto_max_iter` symbols.
+- [done] Pass 3 - clean re-read after the fallback fix found no visible UI expansion, perturbation work, Color Pipeline changes, FPS changes, capture changes, or new formulas.
 
 ## Audit Findings
 
-- [open] No findings yet; this slice is blocked until Slice A is merged.
+- [done] Preflight finding 1: the initial Slice B contract used a bare multi-target native command that would not produce separate logged proof artifacts. Replaced it with logged single-target native rails before feature edits.
+- [done] Hostile audit finding 2: the first GREEN implementation left a literal fallback default in `ApplyFractalViewPresetDefaults(...)`. Replaced it with `FractalCatalogViewDefaultsFor(...)` so fallback behavior stays on the catalog surface.
 
 ## Notes
 

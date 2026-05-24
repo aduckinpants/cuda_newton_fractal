@@ -1,5 +1,6 @@
 #include "../src/explaino_seed.h"
 #include "../src/explaino_seed_curve.h"
+#include "../src/fractal_catalog.h"
 #include "../src/fractal_family_rules.h"
 #include "../src/fractal_derived_fields.h"
 
@@ -16,6 +17,42 @@ int main() {
         if (view.auto_dive) {
             std::cerr << "ViewState should start with auto_dive disabled\n";
             return 1;
+        }
+    }
+
+    {
+        for (const FractalCatalogEntry& entry : kFractalCatalog) {
+            const FractalCatalogViewDefaults* defaults = FindFractalCatalogViewDefaults(entry.type);
+            if (!defaults) {
+                std::cerr << "Every catalog fractal needs an explicit catalog view default row: "
+                          << entry.selector_id << "\n";
+                return 1;
+            }
+
+            ViewState view{};
+            view.fractal_type = entry.type;
+            view.center = {123.0f, -456.0f};
+            view.zoom = 99.0f;
+            view.rotation_degrees = 37.0f;
+            view.auto_max_iter = !entry.default_view.auto_max_iter;
+
+            bool dirty = false;
+            ApplyFractalViewPresetDefaults(view, &dirty);
+
+            if (!dirty) {
+                std::cerr << "Catalog-backed view defaults should mark dirty for "
+                          << entry.selector_id << "\n";
+                return 1;
+            }
+            if (!NearlyEqual(view.center.x, defaults->center.x) ||
+                !NearlyEqual(view.center.y, defaults->center.y) ||
+                !NearlyEqual(view.zoom, defaults->zoom) ||
+                !NearlyEqual(view.rotation_degrees, defaults->rotation_degrees) ||
+                view.auto_max_iter != defaults->auto_max_iter) {
+                std::cerr << "ApplyFractalViewPresetDefaults must match catalog-owned defaults for "
+                          << entry.selector_id << "\n";
+                return 1;
+            }
         }
     }
 

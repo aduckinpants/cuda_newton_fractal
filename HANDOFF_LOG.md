@@ -195,3 +195,5 @@
 - `ck:df236aee` 2026-05-23 22:30 UTC | score 94 — Closed Slice A fractal catalog authority inventory with focused and full native proof.
 - `ck:df236aee` 2026-05-23 22:32 UTC | score 95 — Closed receipt-proof command repair for Slice A catalog contract.
 - `ck:df236aee` 2026-05-23 23:28 UTC | score 96 — Repaired Slice A catalog sample-probe capability truth after hostile review; full native proof green.
+- `ck:dfa488e7` 2026-05-23 23:31 UTC — session-start | branch=codex/fractal-view-defaults-catalog-migration | head=e89d578 | status=clean | profile=native | intent=fractal view defaults catalog migration
+- `ck:dfa488e7` 2026-05-24 00:12 UTC | score 95 — Migrated fractal view defaults into catalog authority with RED/green coverage, hostile audit, focused rails, and full native proof.
