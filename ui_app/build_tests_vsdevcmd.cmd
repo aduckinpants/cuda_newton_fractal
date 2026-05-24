@@ -78,6 +78,7 @@ if /I "%FOCUSED_TEST%"=="test_explaino_counterfactual_repair" goto focused_test_
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" goto focused_test_generic_equation_pack_workbench_ui
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_live" goto focused_test_generic_equation_pack_live
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack" goto focused_test_generic_equation_pack
+if /I "%FOCUSED_TEST%"=="test_sdf_pack" goto focused_test_sdf_pack
 if /I "%FOCUSED_TEST%"=="test_generic_probe" goto focused_test_generic_probe
 if not "%FOCUSED_TEST%"=="" (
   echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
@@ -555,6 +556,14 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_generic_equation_pack_cuda.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_generic_equation_pack_cuda.exe" || exit /b 1
+exit /b 0
+
+:focused_test_sdf_pack
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\tests\test_sdf_pack.cpp ^
+  /Fe:"%TESTROOT%\test_sdf_pack.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_sdf_pack.exe" || exit /b 1
 exit /b 0
 
 :focused_test_generic_probe
@@ -1201,12 +1210,18 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_generic_equation_pack.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\tests\test_sdf_pack.cpp ^
+  /Fe:"%TESTROOT%\test_sdf_pack.exe"
+if errorlevel 1 exit /b 1
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /D GENERIC_EQUATION_PACK_WORKBENCH_NO_IMGUI /I. /I.\src ^
   .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_equation_pack_workbench.cpp .\tests\test_generic_equation_pack_workbench_ui.cpp ^
   /Fe:"%TESTROOT%\test_generic_equation_pack_workbench_ui.exe"
 if errorlevel 1 exit /b 1
 
 call :run_test "%TESTROOT%\test_generic_equation_pack.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_sdf_pack.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_generic_equation_pack_workbench_ui.exe" || exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^

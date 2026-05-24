@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "pack_id": "sdf_smooth_capsule_union_demo",
+  "name": "Smooth Capsule Union Demo",
+  "kind": "sdf_scene_2d",
+  "params": [
+    { "id": "blend", "type": "float", "default": 0.15, "range": [0.0, 2.0] }
+  ],
+  "controls": [
+    { "param": "blend", "label": "Blend", "ui_min": 0.0, "ui_max": 1.0 }
+  ],
+  "region": {
+    "center": [0.0, 0.0],
+    "half_height": 1.5
+  },
+  "ast": {
+    "op": "smooth_union",
+    "k": { "param": "blend" },
+    "a": { "op": "circle", "center": [0.0, 0.0], "radius": 0.5 },
+    "b": { "op": "capsule", "a": [-1.0, 0.0], "b": [1.0, 0.0], "radius": 0.2 }
+  }
+}

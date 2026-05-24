@@ -242,3 +242,5 @@
 - `ck:6d768f79` 2026-05-24 19:48 UTC | score 96 — Interior policy schema hardening: repaired stale Interior Strength help text, native schema guard, and focused test_ui_schema target; validations passed.
 - `ck:6d768f79` 2026-05-24 19:55 UTC | score 96 — Interior policy schema hardening plan closed on master after fast-forward merge; plan sync, hostile-audit validation, and diff check passed.
 - `ck:6d768f79` 2026-05-24 19:57 UTC | score 96 — Interior policy schema hardening stale-plan cleanup removed ready-for-push wording; plan sync and stale-phrase grep passed.
+- `ck:10ed1176` 2026-05-24 20:00 UTC — session-start | branch=codex/sdf-pack-parser-cpu-reference | head=28f98f4 | status=dirty | profile=native | intent=sdf pack parser cpu reference
+- `ck:10ed1176` 2026-05-24 20:09 UTC | score 96 — SDF pack parser CPU reference implemented: v1 authored pack parser, CPU evaluator, native RED/green tests, example pack, Lens SDF and Generic Equation Pack rails green.
