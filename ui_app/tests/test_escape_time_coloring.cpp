@@ -312,6 +312,117 @@ int main() {
     }
     params.color_smooth_escape_scale = 1.0f;
 
+    {
+        params.color_smooth_escape_scale = 1.0f;
+        params.color_smooth_escape_bias = 0.0f;
+        const float referenceSignal = ResolveSmoothEscapeBaseSignal(
+            FractalType::mandelbrot,
+            18,
+            3.0f,
+            params);
+        const auto requireTargetLift = [&](FractalType fractalType, const char* name) {
+            const float targetSignal = ResolveSmoothEscapeBaseSignal(fractalType, 18, 3.0f, params);
+            if (!(targetSignal > referenceSignal + 0.20f)) {
+                std::cerr << name << " smooth-escape tuning should lift the low-unique signal above the shared baseline\n";
+                return false;
+            }
+            return true;
+        };
+        if (!requireTargetLift(FractalType::nova, "Nova") ||
+            !requireTargetLift(FractalType::mcmullen, "McMullen") ||
+            !requireTargetLift(FractalType::magnet, "Magnet") ||
+            !requireTargetLift(FractalType::explaino_nova, "Explaino-Nova") ||
+            !requireTargetLift(FractalType::explaino_rational_escape, "Explaino-Rational-Escape")) {
+            return 1;
+        }
+
+        KernelParams targetSourceStackParams = params;
+        targetSourceStackParams.color_source_stack_count = 1;
+        targetSourceStackParams.color_source_stack[0].signal = ColorSignal::smooth_escape;
+        targetSourceStackParams.color_source_stack[0].params.scale = 1.0f;
+        targetSourceStackParams.color_source_stack[0].params.bias = 0.0f;
+        targetSourceStackParams.color_source_stack[0].params.blend_weight = 1.0f;
+        const TestColor magnetSourceStackBase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::magnet,
+            ColoringMode::smooth_escape,
+            true,
+            18,
+            100,
+            TestComplex{3.0f, 0.0f},
+            targetSourceStackParams);
+        targetSourceStackParams.color_source_stack[0].params.scale = 1.7f;
+        const TestColor magnetSourceStackScaled = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::magnet,
+            ColoringMode::smooth_escape,
+            true,
+            18,
+            100,
+            TestComplex{3.0f, 0.0f},
+            targetSourceStackParams);
+        if (Equals(magnetSourceStackBase, magnetSourceStackScaled)) {
+            std::cerr << "Low-unique smooth-escape tuning should still react to Source row scale owner fields\n";
+            return 1;
+        }
+
+        const TestColor magnetAngle0 = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::magnet,
+            ColoringMode::smooth_escape,
+            true,
+            501,
+            501,
+            TestComplex{2.0f, 0.0f},
+            params);
+        const TestColor magnetAngle90 = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::magnet,
+            ColoringMode::smooth_escape,
+            true,
+            501,
+            501,
+            TestComplex{0.0f, 2.0f},
+            params);
+        if (Equals(magnetAngle0, magnetAngle90)) {
+            std::cerr << "Magnet smooth-escape tuning should preserve visible angular detail when iteration/magnitude collapse\n";
+            return 1;
+        }
+
+        const TestColor rationalAngle0 = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_rational_escape,
+            ColoringMode::smooth_escape,
+            true,
+            48,
+            100,
+            TestComplex{2.0f, 0.0f},
+            params);
+        const TestColor rationalAngle90 = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_rational_escape,
+            ColoringMode::smooth_escape,
+            true,
+            48,
+            100,
+            TestComplex{0.0f, 2.0f},
+            params);
+        if (Equals(rationalAngle0, rationalAngle90)) {
+            std::cerr << "Explaino-Rational-Escape smooth-escape tuning should preserve visible angular detail when the frame collapses at low proof resolution\n";
+            return 1;
+        }
+
+        KernelParams magnetPhaseOffsetParams = params;
+        magnetPhaseOffsetParams.color_phase_signal_offset = 1.0f;
+        magnetPhaseOffsetParams.color_phase_wrap_cycles = 3.0f;
+        const TestColor magnetPhaseOffsetControl = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::magnet,
+            ColoringMode::smooth_escape,
+            true,
+            501,
+            501,
+            TestComplex{0.0f, 2.0f},
+            magnetPhaseOffsetParams);
+        if (!Equals(magnetAngle90, magnetPhaseOffsetControl)) {
+            std::cerr << "Magnet smooth-escape angle detail must not be owned by phase-signal controls\n";
+            return 1;
+        }
+    }
+
     if (!Equals(ApplyFractalColorGrading(TestColor{100, 150, 200, 255}, params), TestColor{82, 113, 138, 255})) {
         std::cerr << "Fractal color grading should preserve the current exposure/tint/saturation/contrast pipeline\n";
         return 1;

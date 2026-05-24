@@ -342,9 +342,48 @@ ESCAPE_TIME_COLOR_HD inline float ComputeEscapeTimeNu(
     float magnitude,
     const KernelParams& params);
 
-ESCAPE_TIME_COLOR_HD inline bool UsesCollatzSmoothEscapeTuning(FractalType fractalType) {
-    return fractalType == FractalType::collatz ||
-        fractalType == FractalType::explaino_collatz_direct;
+struct SmoothEscapeFamilyTuning {
+    float scale;
+    float bias;
+    bool finite_magnitude_fallback;
+    float angle_mix;
+};
+
+ESCAPE_TIME_COLOR_HD inline SmoothEscapeFamilyTuning ResolveSmoothEscapeFamilyTuning(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::collatz:
+    case FractalType::explaino_collatz_direct:
+        return {4.0f, 0.18f, true, 0.0f};
+    case FractalType::nova:
+    case FractalType::explaino_nova:
+        return {8.0f, 0.10f, false, 0.0f};
+    case FractalType::mcmullen:
+        return {5.0f, 0.08f, false, 0.0f};
+    case FractalType::explaino_rational_escape:
+        return {5.0f, 0.08f, false, 0.30f};
+    case FractalType::magnet:
+        return {5.0f, 0.08f, false, 0.45f};
+    default:
+        return {1.0f, 0.0f, false, 0.0f};
+    }
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeBaseSignal(
+    FractalType fractalType,
+    int iteration,
+    float magnitude,
+    float angle,
+    const KernelParams& params) {
+    const SmoothEscapeFamilyTuning tuning = ResolveSmoothEscapeFamilyTuning(fractalType);
+    const float safeMagnitude = tuning.finite_magnitude_fallback && !isfinite(magnitude) ? 100.0f : magnitude;
+    float angleSignal = 0.0f;
+    if (tuning.angle_mix > 0.0f && isfinite(angle)) {
+        const float twoPi = 6.28318530717958647692f;
+        angleSignal = (angle + 3.14159265358979323846f) / twoPi;
+    }
+    return ComputeEscapeTimeNu(fractalType, iteration, safeMagnitude, params) * 0.025f * tuning.scale +
+        angleSignal * tuning.angle_mix +
+        tuning.bias;
 }
 
 ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeBaseSignal(
@@ -352,18 +391,16 @@ ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeBaseSignal(
     int iteration,
     float magnitude,
     const KernelParams& params) {
-    const float familyScale = UsesCollatzSmoothEscapeTuning(fractalType) ? 4.0f : 1.0f;
-    const float familyBias = UsesCollatzSmoothEscapeTuning(fractalType) ? 0.18f : 0.0f;
-    const float safeMagnitude = UsesCollatzSmoothEscapeTuning(fractalType) && !isfinite(magnitude) ? 100.0f : magnitude;
-    return ComputeEscapeTimeNu(fractalType, iteration, safeMagnitude, params) * 0.025f * familyScale + familyBias;
+    return ResolveSmoothEscapeBaseSignal(fractalType, iteration, magnitude, 0.0f, params);
 }
 
 ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeSignal(
     FractalType fractalType,
     int iteration,
     float magnitude,
+    float angle,
     const KernelParams& params) {
-    return ResolveSmoothEscapeBaseSignal(fractalType, iteration, magnitude, params) *
+    return ResolveSmoothEscapeBaseSignal(fractalType, iteration, magnitude, angle, params) *
         EscapeTimeColorClamp(params.color_smooth_escape_scale, 0.25f, 4.0f) +
         EscapeTimeColorClamp(params.color_smooth_escape_bias, -1.0f, 1.0f);
 }
@@ -372,11 +409,29 @@ ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeSignal(
     FractalType fractalType,
     int iteration,
     float magnitude,
+    const KernelParams& params) {
+    return ResolveSmoothEscapeSignal(fractalType, iteration, magnitude, 0.0f, params);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeSignal(
+    FractalType fractalType,
+    int iteration,
+    float magnitude,
+    float angle,
     const ColorPipelineSourceRuntimeParams& sourceParams,
     const KernelParams& params) {
-    return ResolveSmoothEscapeBaseSignal(fractalType, iteration, magnitude, params) *
+    return ResolveSmoothEscapeBaseSignal(fractalType, iteration, magnitude, angle, params) *
         EscapeTimeColorClamp(sourceParams.scale, 0.25f, 4.0f) +
         EscapeTimeColorClamp(sourceParams.bias, -1.0f, 1.0f);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeSignal(
+    FractalType fractalType,
+    int iteration,
+    float magnitude,
+    const ColorPipelineSourceRuntimeParams& sourceParams,
+    const KernelParams& params) {
+    return ResolveSmoothEscapeSignal(fractalType, iteration, magnitude, 0.0f, sourceParams, params);
 }
 
 ESCAPE_TIME_COLOR_HD inline float ResolveOrbitStripeSignal(float angle, const KernelParams& params) {
@@ -413,9 +468,10 @@ ESCAPE_TIME_COLOR_HD inline float ResolveEscapeFamilySignal(
     int iteration,
     int maxIter,
     float magnitude,
+    float angle,
     const KernelParams& params) {
     if (signal == ColorSignal::smooth_escape) {
-        return ResolveSmoothEscapeSignal(fractalType, iteration, magnitude, params);
+        return ResolveSmoothEscapeSignal(fractalType, iteration, magnitude, angle, params);
     }
     if (signal == ColorSignal::escape_magnitude) {
         return ResolveEscapeMagnitudeSignal(magnitude, params);
@@ -429,10 +485,11 @@ ESCAPE_TIME_COLOR_HD inline float ResolveEscapeFamilySignal(
     int iteration,
     int maxIter,
     float magnitude,
+    float angle,
     const ColorPipelineSourceRuntimeParams& sourceParams,
     const KernelParams& params) {
     if (signal == ColorSignal::smooth_escape) {
-        return ResolveSmoothEscapeSignal(fractalType, iteration, magnitude, sourceParams, params);
+        return ResolveSmoothEscapeSignal(fractalType, iteration, magnitude, angle, sourceParams, params);
     }
     if (signal == ColorSignal::escape_magnitude) {
         return ResolveEscapeMagnitudeSignal(magnitude, sourceParams);
@@ -958,6 +1015,7 @@ ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineSourceStackEntryEscapeSign
         iteration,
         maxIter,
         magnitude,
+        angle,
         entry.params,
         params);
 }
@@ -1039,6 +1097,7 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableEscapeTimeSignal(
         iteration,
         maxIter,
         EscapeTimeColorAbs(z),
+        atan2f(z.y, z.x),
         params);
 }
 

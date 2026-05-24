@@ -43,7 +43,7 @@ Current continuation order after the 2026-05-24 reprioritization:
 
 1. Diagnostics capture output paths - closed in `docs/notes/diagnostics_capture_output_paths_PHASED_PLAN.md`.
 2. Smooth-escape/color tuning - measurement inventory closed in `docs/notes/smooth_escape_color_measurement_PHASED_PLAN.md`; interior-tone repair closed in `docs/notes/smooth_escape_interior_tone_PHASED_PLAN.md`.
-3. Highest-confidence smooth/color fixes from that measurement - Collatz-family luma/fast-escape repair closed in `docs/notes/smooth_escape_collatz_luma_PHASED_PLAN.md`; continue only from measured evidence and keep remaining low-unique rows separate.
+3. Highest-confidence smooth/color fixes from that measurement - Collatz-family luma/fast-escape repair closed in `docs/notes/smooth_escape_collatz_luma_PHASED_PLAN.md`, and remaining low-unique rows closed in `docs/notes/smooth_escape_low_unique_PHASED_PLAN.md`; continue future visual tuning only from fresh measured evidence.
 4. Authored SDF pack parser plus CPU reference - later SDF substrate work from `docs/notes/sdf_field_pack_near_term_TODO.md`.
 5. CUDA SDF pack evaluator - after the parser/CPU reference is closed.
 

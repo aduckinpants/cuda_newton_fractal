@@ -47,10 +47,10 @@ Potential fixes:
 **Status:** partially addressed (cyclic palette landed in 34b7024)
 **Area:** renderer / coloring
 
-The 5-stop cyclic palette is a large improvement over the flat ramp. `docs/notes/smooth_escape_interior_tone_PHASED_PLAN.md` repaired the forced-black smooth-escape interior path, and `docs/notes/smooth_escape_collatz_luma_PHASED_PLAN.md` repaired measured Collatz-family low-luma / fast-escape black output. Remaining work:
+The 5-stop cyclic palette is a large improvement over the flat ramp. `docs/notes/smooth_escape_interior_tone_PHASED_PLAN.md` repaired the forced-black smooth-escape interior path, `docs/notes/smooth_escape_collatz_luma_PHASED_PLAN.md` repaired measured Collatz-family low-luma / fast-escape black output, and `docs/notes/smooth_escape_low_unique_PHASED_PLAN.md` repaired the measured low-unique rows for Nova, McMullen, Magnet, Explaino-Nova, and Explaino-Rational-Escape. Remaining work:
 - The band period (`nu * 0.025`) is a single global constant; escape-time families have different iteration profiles.
 - No histogram equalization or adaptive normalization; at very deep zoom the visible band range collapses.
-- Low-unique-color smooth-escape rows still need bounded tuning for the remaining measured families.
+- Future visual tuning should use fresh measurement evidence rather than assuming the now-repaired low-unique rows are still current.
 
 **File:** `ui_app/src/fractal_renderer.cu` - escape-time coloring block
 
