@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed - checkpointed, receipt-backed, merged to `master`, and ready for push/clean-tree closeout.
+Closed - checkpointed, receipt-backed, and merged to `master`; final git status is the authority for push and clean-tree state.
 
 ## Phase Checklist
 
