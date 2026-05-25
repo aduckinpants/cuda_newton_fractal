@@ -118,7 +118,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\runtime_walk_headless.cpp .\tests\test_runtime_walk_headless.cpp ^
+  .\src\runtime_walk_headless.cpp .\src\sdf_field_signal.cpp .\tests\test_runtime_walk_headless.cpp ^
   /Fe:"%TESTROOT%\test_runtime_walk_headless.exe"
 if errorlevel 1 exit /b 1
 
@@ -706,7 +706,7 @@ exit /b 0
 
 :focused_test_runtime_walk_headless
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\runtime_walk_headless.cpp .\tests\test_runtime_walk_headless.cpp ^
+  .\src\runtime_walk_headless.cpp .\src\sdf_field_signal.cpp .\tests\test_runtime_walk_headless.cpp ^
   /Fe:"%TESTROOT%\test_runtime_walk_headless.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_runtime_walk_headless.exe" || exit /b 1

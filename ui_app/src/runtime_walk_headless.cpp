@@ -10,9 +10,11 @@
 #include "fractal_family_rules.h"
 #include "lens_sdf.h"
 #include "schema_binding.h"
+#include "sdf_field_signal.h"
 #include "view_hp_sync.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
@@ -42,6 +44,24 @@ constexpr ProbeUv kProbeUvs[5] = {
     {0.25f, 0.75f},
     {0.75f, 0.75f},
 };
+
+void AppendFloatArray(std::ostringstream& out, const char* key, const std::array<float, 5>& values, bool trailingComma) {
+    out << "        \"" << key << "\": [";
+    for (int index = 0; index < 5; ++index) {
+        if (index) out << ", ";
+        out << static_cast<double>(values[static_cast<std::size_t>(index)]);
+    }
+    out << "]" << (trailingComma ? "," : "") << "\n";
+}
+
+void AppendBoolArray(std::ostringstream& out, const char* key, const std::array<bool, 5>& values, bool trailingComma) {
+    out << "        \"" << key << "\": [";
+    for (int index = 0; index < 5; ++index) {
+        if (index) out << ", ";
+        out << (values[static_cast<std::size_t>(index)] ? "true" : "false");
+    }
+    out << "]" << (trailingComma ? "," : "") << "\n";
+}
 
 const char* FractalTypeId(FractalType fractalType) {
     switch (fractalType) {
@@ -552,18 +572,31 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
         int nearCount = 0;
         int insideCount = 0;
         constexpr float kNearEpsPx = 2.0f;
+        SdfFieldSignalConfig signalConfig;
+        signalConfig.boundary_band_px = kNearEpsPx;
+        std::array<float, 5> tickSignedPx{};
+        std::array<bool, 5> tickInside{};
+        std::array<float, 5> tickInsideOutside{};
+        std::array<float, 5> tickBoundaryBand{};
+        std::array<float, 5> tickNormalAngle{};
+        std::array<float, 5> tickCurvature{};
         for (int sampleIndex = 0; sampleIndex < 5; ++sampleIndex) {
             int x = static_cast<int>(std::floor(kProbeUvs[sampleIndex].u * static_cast<float>(lensW)));
             int y = static_cast<int>(std::floor(kProbeUvs[sampleIndex].v * static_cast<float>(lensH)));
             x = std::clamp(x, 0, std::max(0, lensW - 1));
             y = std::clamp(y, 0, std::max(0, lensH - 1));
-            float signedPx = 0.0f;
-            bool inside = false;
-            if (SampleSignedDistanceSdfField(lensField.View(), x, y, signedPx, inside)) {
-                minAbsSigned = std::min(minAbsSigned, std::fabs(signedPx));
-                if (std::fabs(signedPx) <= kNearEpsPx) ++nearCount;
+            SdfFieldSignalSample signals;
+            if (SampleSdfFieldSignals(lensField.View(), x, y, signalConfig, signals)) {
+                minAbsSigned = std::min(minAbsSigned, std::fabs(signals.signed_distance_px));
+                if (std::fabs(signals.signed_distance_px) <= kNearEpsPx) ++nearCount;
             }
-            if (inside) ++insideCount;
+            tickSignedPx[static_cast<std::size_t>(sampleIndex)] = signals.signed_distance_px;
+            tickInside[static_cast<std::size_t>(sampleIndex)] = signals.inside;
+            tickInsideOutside[static_cast<std::size_t>(sampleIndex)] = signals.inside_outside;
+            tickBoundaryBand[static_cast<std::size_t>(sampleIndex)] = signals.boundary_band;
+            tickNormalAngle[static_cast<std::size_t>(sampleIndex)] = signals.normal_angle_radians;
+            tickCurvature[static_cast<std::size_t>(sampleIndex)] = signals.curvature_estimate;
+            if (signals.inside) ++insideCount;
         }
 
         const ReferencePoint referencePoint = WorldToReferencePoint(
@@ -580,6 +613,10 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
 
         std::array<float, 5> referenceSignedPx{};
         std::array<bool, 5> referenceInside{};
+        std::array<float, 5> referenceInsideOutside{};
+        std::array<float, 5> referenceBoundaryBand{};
+        std::array<float, 5> referenceNormalAngle{};
+        std::array<float, 5> referenceCurvature{};
         float referenceMinAbsSigned = 1.0e30f;
         int referenceNearCount = 0;
         int referenceInsideCount = 0;
@@ -594,15 +631,18 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
         for (int sampleIndex = 0; sampleIndex < 5; ++sampleIndex) {
             const int x = std::clamp(referencePoint.low_x + offsets[sampleIndex][0], 0, std::max(0, referenceLensW - 1));
             const int y = std::clamp(referencePoint.low_y + offsets[sampleIndex][1], 0, std::max(0, referenceLensH - 1));
-            float signedPx = 0.0f;
-            bool inside = false;
-            if (SampleSignedDistanceSdfField(referenceLensField.View(), x, y, signedPx, inside)) {
-                referenceMinAbsSigned = std::min(referenceMinAbsSigned, std::fabs(signedPx));
-                if (std::fabs(signedPx) <= kNearEpsPx) ++referenceNearCount;
+            SdfFieldSignalSample signals;
+            if (SampleSdfFieldSignals(referenceLensField.View(), x, y, signalConfig, signals)) {
+                referenceMinAbsSigned = std::min(referenceMinAbsSigned, std::fabs(signals.signed_distance_px));
+                if (std::fabs(signals.signed_distance_px) <= kNearEpsPx) ++referenceNearCount;
             }
-            referenceSignedPx[static_cast<std::size_t>(sampleIndex)] = signedPx;
-            referenceInside[static_cast<std::size_t>(sampleIndex)] = inside;
-            if (inside) ++referenceInsideCount;
+            referenceSignedPx[static_cast<std::size_t>(sampleIndex)] = signals.signed_distance_px;
+            referenceInside[static_cast<std::size_t>(sampleIndex)] = signals.inside;
+            referenceInsideOutside[static_cast<std::size_t>(sampleIndex)] = signals.inside_outside;
+            referenceBoundaryBand[static_cast<std::size_t>(sampleIndex)] = signals.boundary_band;
+            referenceNormalAngle[static_cast<std::size_t>(sampleIndex)] = signals.normal_angle_radians;
+            referenceCurvature[static_cast<std::size_t>(sampleIndex)] = signals.curvature_estimate;
+            if (signals.inside) ++referenceInsideCount;
         }
 
         char tickName[32];
@@ -690,6 +730,14 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
         report << "        \"state_json\": \"" << JsonEscape(RelativePathString(outputRoot, std::filesystem::path(tickCapture.state_json_path))) << "\",\n";
         report << "        \"lens_sdf_bmp\": \"" << JsonEscape(RelativePathString(outputRoot, tickLensPath)) << "\"\n";
         report << "      },\n";
+        report << "      \"sdf_samples\": {\n";
+        AppendFloatArray(report, "samples_signed_px", tickSignedPx, true);
+        AppendBoolArray(report, "samples_inside", tickInside, true);
+        AppendFloatArray(report, "samples_inside_outside", tickInsideOutside, true);
+        AppendFloatArray(report, "samples_boundary_band", tickBoundaryBand, true);
+        AppendFloatArray(report, "samples_normal_angle_radians", tickNormalAngle, true);
+        AppendFloatArray(report, "samples_curvature_estimate", tickCurvature, false);
+        report << "      },\n";
         report << "      \"reference_trace\": {\n";
         report << "        \"render_xy\": [" << referencePoint.render_x << ", " << referencePoint.render_y << "],\n";
         report << "        \"low_xy\": [" << referencePoint.low_x << ", " << referencePoint.low_y << "],\n";
@@ -698,18 +746,12 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
         report << "          \"near_count\": " << referenceNearCount << ",\n";
         report << "          \"mixed_inside\": " << ((referenceInsideCount > 0 && referenceInsideCount < 5) ? "true" : "false") << "\n";
         report << "        },\n";
-        report << "        \"samples_signed_px\": [";
-        for (int sampleIndex = 0; sampleIndex < 5; ++sampleIndex) {
-            if (sampleIndex) report << ", ";
-            report << static_cast<double>(referenceSignedPx[static_cast<std::size_t>(sampleIndex)]);
-        }
-        report << "],\n";
-        report << "        \"samples_inside\": [";
-        for (int sampleIndex = 0; sampleIndex < 5; ++sampleIndex) {
-            if (sampleIndex) report << ", ";
-            report << (referenceInside[static_cast<std::size_t>(sampleIndex)] ? "true" : "false");
-        }
-        report << "]\n";
+        AppendFloatArray(report, "samples_signed_px", referenceSignedPx, true);
+        AppendBoolArray(report, "samples_inside", referenceInside, true);
+        AppendFloatArray(report, "samples_inside_outside", referenceInsideOutside, true);
+        AppendFloatArray(report, "samples_boundary_band", referenceBoundaryBand, true);
+        AppendFloatArray(report, "samples_normal_angle_radians", referenceNormalAngle, true);
+        AppendFloatArray(report, "samples_curvature_estimate", referenceCurvature, false);
         report << "      }\n";
         report << "    }";
         if (tickIndex + 1 < request.t_values.size()) report << ",";

@@ -14,7 +14,10 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -74,6 +77,23 @@ StubState g_stub;
 
 std::filesystem::path TestOutputRoot(const char* name) {
     return std::filesystem::temp_directory_path() / "cuda_newton_fractal_clone_runtime_walk_headless_tests" / name;
+}
+
+std::string ReadTextFile(const std::filesystem::path& path) {
+    std::ifstream file(path, std::ios::in | std::ios::binary);
+    std::ostringstream text;
+    text << file.rdbuf();
+    return text.str();
+}
+
+int CountOccurrences(const std::string& text, const char* needle) {
+    int count = 0;
+    std::size_t pos = 0;
+    while ((pos = text.find(needle, pos)) != std::string::npos) {
+        ++count;
+        pos += std::strlen(needle);
+    }
+    return count;
 }
 
 RuntimeWalkBundle MakeBundle() {
@@ -531,8 +551,17 @@ static void TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks() {
     Check(g_stub.last_downsample == 2, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_UsesNormalizedDefaultDownsample");
     Check(g_stub.last_downsample_out_w == 17, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_CeilsLowWidth");
     Check(g_stub.last_downsample_out_h == 13, "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_CeilsLowHeight");
-    Check(std::filesystem::exists(TestOutputRoot("successful_lens_downsample") / "runtime_walk_report.json"),
-        "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_WritesReport");
+    const std::filesystem::path reportPath = TestOutputRoot("successful_lens_downsample") / "runtime_walk_report.json";
+    Check(std::filesystem::exists(reportPath), "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_WritesReport");
+    const std::string report = ReadTextFile(reportPath);
+    Check(CountOccurrences(report, "\"samples_inside_outside\"") >= 2,
+        "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_ReportHasInsideOutsideSignal");
+    Check(CountOccurrences(report, "\"samples_boundary_band\"") >= 2,
+        "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_ReportHasBoundaryBandSignal");
+    Check(CountOccurrences(report, "\"samples_normal_angle_radians\"") >= 2,
+        "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_ReportHasNormalAngleSignal");
+    Check(CountOccurrences(report, "\"samples_curvature_estimate\"") >= 2,
+        "TestSuccessfulRuntimeWalkUsesLensDownsampleForLowMasks_ReportHasCurvatureSignal");
     std::filesystem::remove_all(TestOutputRoot("successful_lens_downsample"));
 }
 

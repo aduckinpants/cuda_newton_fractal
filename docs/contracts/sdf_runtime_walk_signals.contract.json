@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "sdf_runtime_walk_signals",
+  "feature_id": "sdf_runtime_walk_signals",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md",
+    "docs/contracts/sdf_runtime_walk_signals.contract.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/tests/test_runtime_walk_headless.cpp",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "continue into the next measured SDF report consumer seam",
+    "route runtime-walk SDF report sampling through the source-neutral helper",
+    "preserve Lens SDF, flashlight, Color Pipeline, and runtime publish behavior",
+    "keep this headless and no-mouse"
+  ],
+  "forbidden_operator_prompts": [
+    "add live Color Pipeline SDF source rows",
+    "add viewport overlay productization",
+    "add a new FractalType",
+    "replace the renderer",
+    "pass SDF textures into CUDA kernels",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "sdf_runtime_walk_signals_only",
+    "posture": "forward_tdd",
+    "execution": "headless_report_consumer"
+  },
+  "forbidden_defaults": {
+    "live_color_pipeline_sdf": "forbidden",
+    "viewport_overlay": "forbidden",
+    "new_fractal_type": "forbidden",
+    "renderer_rewrite": "forbidden",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_runtime_walk_signals.contract.json --out-json artifacts/validation/sdf_runtime_walk_signals_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md --out-json artifacts/validation/sdf_runtime_walk_signals_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_runtime_walk_signals_test_runtime_walk_headless --log artifacts/logs/sdf_runtime_walk_signals_test_runtime_walk_headless.log --out-json artifacts/validation/sdf_runtime_walk_signals_test_runtime_walk_headless.json --heartbeat-seconds 30 --timeout-seconds 240 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_runtime_walk_headless",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_runtime_walk_signals_test_lens_sdf --log artifacts/logs/sdf_runtime_walk_signals_test_lens_sdf.log --out-json artifacts/validation/sdf_runtime_walk_signals_test_lens_sdf.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_lens_sdf",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_runtime_walk_signals_test_flashlight_probe --log artifacts/logs/sdf_runtime_walk_signals_test_flashlight_probe.log --out-json artifacts/validation/sdf_runtime_walk_signals_test_flashlight_probe.json --heartbeat-seconds 30 --timeout-seconds 240 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_flashlight_probe",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_runtime_walk_signals_runtime_publish --log artifacts/logs/sdf_runtime_walk_signals_runtime_publish.log --out-json artifacts/validation/sdf_runtime_walk_signals_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_runtime_walk_signals_color_pipeline_owner --log artifacts/logs/sdf_runtime_walk_signals_color_pipeline_owner.log --out-json artifacts/validation/sdf_runtime_walk_signals_color_pipeline_owner.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_runtime_walk_signals_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_runtime_walk_signals_diff_check --log artifacts/logs/sdf_runtime_walk_signals_diff_check.log --out-json artifacts/validation/sdf_runtime_walk_signals_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The runtime-walk SDF signal contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_runtime_walk_signals_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The runtime-walk SDF signal hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_runtime_walk_signals_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
