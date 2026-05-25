@@ -2452,3 +2452,128 @@ def test_evaluate_contract_proof_receipt_guard_blocks_viewer_first_missing_publi
 
     assert should_block is True
     assert "published-runtime proof" in reason
+
+
+def test_rearward_review_gate_blocks_begin_slice_without_artifact(tmp_path: Path) -> None:
+    _init_git_repo(tmp_path)
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 tools\\viewer_host_begin_work_slice.py --intent next --profile native --plan docs/notes/next_PHASED_PLAN.md --contract docs/contracts/next.contract.json",
+        },
+        tmp_path,
+    )
+
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "rearward hostile review" in hook["permissionDecisionReason"].lower()
+
+
+def test_rearward_review_gate_allows_read_only_without_artifact(tmp_path: Path) -> None:
+    _init_git_repo(tmp_path)
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {"recipient_name": "functions.shell_command", "command": "rg needle"},
+        tmp_path,
+    )
+
+    assert response["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+
+def test_rearward_review_gate_allows_begin_slice_with_ok_artifact(tmp_path: Path) -> None:
+    _init_git_repo(tmp_path)
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, capture_output=True, text=True).stdout.strip()
+    artifact_path = tmp_path / "artifacts" / "hooks" / "viewer_host_rearward_review" / f"{head}.json"
+    artifact_path.parent.mkdir(parents=True)
+    artifact_path.write_text(json.dumps({"version": 1, "head": head, "status": "ok"}), encoding="utf-8")
+
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 tools\\viewer_host_begin_work_slice.py --intent next --profile native --plan docs/notes/next_PHASED_PLAN.md --contract docs/contracts/next.contract.json",
+        },
+        tmp_path,
+    )
+
+    assert response["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+
+def test_rearward_review_gate_blocks_product_slice_when_review_needs_repair(tmp_path: Path) -> None:
+    _init_git_repo(tmp_path)
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, capture_output=True, text=True).stdout.strip()
+    artifact_path = tmp_path / "artifacts" / "hooks" / "viewer_host_rearward_review" / f"{head}.json"
+    artifact_path.parent.mkdir(parents=True)
+    artifact_path.write_text(json.dumps({"version": 1, "head": head, "status": "needs_repair"}), encoding="utf-8")
+
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 tools\\viewer_host_begin_work_slice.py --intent next --profile native --plan docs/notes/next_PHASED_PLAN.md --contract docs/contracts/next.contract.json",
+        },
+        tmp_path,
+    )
+
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "needs repair" in hook["permissionDecisionReason"].lower()
+
+
+def test_rearward_review_gate_allows_repair_slice_when_review_needs_repair(tmp_path: Path) -> None:
+    _init_git_repo(tmp_path)
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, capture_output=True, text=True).stdout.strip()
+    artifact_path = tmp_path / "artifacts" / "hooks" / "viewer_host_rearward_review" / f"{head}.json"
+    artifact_path.parent.mkdir(parents=True)
+    artifact_path.write_text(json.dumps({"version": 1, "head": head, "status": "needs_repair"}), encoding="utf-8")
+
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": f"py -3.14 tools\\viewer_host_begin_work_slice.py --rearward-repair-for {head} --intent repair --profile native --plan docs/notes/repair_PHASED_PLAN.md --contract docs/contracts/repair.contract.json",
+        },
+        tmp_path,
+    )
+
+    assert response["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+
+def test_rearward_review_gate_blocks_task_complete_without_artifact(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(tmp_path, plan_text=TEST_PLAN_TEXT)
+    current = _snapshot()
+    current["head"] = "abc123"
+
+    response = build_pretool_response(
+        "task_complete",
+        current,
+        current,
+        "session-1",
+        {"recipient_name": "functions.task_complete"},
+        tmp_path,
+    )
+
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "rearward hostile review" in hook["permissionDecisionReason"].lower()
+
+
+def test_rearward_review_gate_allows_task_complete_with_ok_artifact(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(tmp_path, plan_text=TEST_PLAN_TEXT)
+    current = _snapshot()
+    current["head"] = "abc123"
+    artifact_path = tmp_path / "artifacts" / "hooks" / "viewer_host_rearward_review" / "abc123.json"
+    artifact_path.parent.mkdir(parents=True)
+    artifact_path.write_text(json.dumps({"version": 1, "head": "abc123", "status": "ok"}), encoding="utf-8")
+
+    response = build_pretool_response(
+        "task_complete",
+        current,
+        current,
+        "session-1",
+        {"recipient_name": "functions.task_complete"},
+        tmp_path,
+    )
+
+    assert response["hookSpecificOutput"]["permissionDecision"] == "allow"

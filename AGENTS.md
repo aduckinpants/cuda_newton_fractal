@@ -9,21 +9,26 @@ Treat this file as the concise bootstrap surface for any new agent session.
 Do these before making architecture claims or starting broad edits:
 
 1. Run `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8`.
-2. Read `C:\code\salticid-cuda\docs\testing_cheat_sheet.md`.
-3. Read `AGENT_WORKING_PROTOCOL.md`.
-4. Read `AGENT_TERMINAL_PROTOCOL.md`.
-5. Read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, and `KNOWN_ISSUES.md`.
-6. Read the last few entries of `HANDOFF_LOG.md`.
-7. If you are starting a meaningful work slice, append a session-start breadcrumb first:
+2. Run `py -3.14 tools/viewer_host_repo_status.py`.
+3. Run `py -3.14 tools/viewer_host_rearward_review.py` for the current clean `HEAD` before starting new product mutation.
+   - `ok` unlocks normal slice start.
+   - `needs_repair` allows only a repair slice with `py -3.14 tools/viewer_host_begin_work_slice.py --rearward-repair-for <head> ...`.
+   - `blocked_unproven` means the previous head lacks proof; repair proof first instead of opening product work.
+4. Read `C:\code\salticid-cuda\docs\testing_cheat_sheet.md`.
+5. Read `AGENT_WORKING_PROTOCOL.md`.
+6. Read `AGENT_TERMINAL_PROTOCOL.md`.
+7. Read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, and `KNOWN_ISSUES.md`.
+8. Read the last few entries of `HANDOFF_LOG.md`.
+9. If you are starting a meaningful work slice, append a session-start breadcrumb first:
    - `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified> --plan <plan> --contract <contract>`
    - then lock the active contract with `py -3.14 tools/viewer_host_prepare_slice.py --session-id global_active_contract --plan <plan> --contract <contract>` if the begin-slice surface was not used
-8. Create or update a detailed, checklisted phased plan in the repo.
+10. Create or update a detailed, checklisted phased plan in the repo.
    - Prefer the nearest existing plan doc.
    - Otherwise create `docs/notes/<slug>_PHASED_PLAN.md`.
    - Protocol: `docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md`.
    - For new meaningful multi-step plans, prefer the current section set: `## Explicit User Asks`, `## Proof Ledger`, `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings` alongside `## Current Phase` and `## Phase Checklist`.
-9. Read `.github/copilot-instructions.md` after this file, not instead of it.
-10. If the repo is already dirty and `SessionStart` or `UserPromptSubmit` says the session has no checkpoint baseline, do not treat the session as fresh. Run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state`, inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/`, then resume the stranded slice in crash-safe mode.
+11. Read `.github/copilot-instructions.md` after this file, not instead of it.
+12. If the repo is already dirty and `SessionStart` or `UserPromptSubmit` says the session has no checkpoint baseline, do not treat the session as fresh. Run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state`, inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/`, then resume the stranded slice in crash-safe mode.
 
 The VS Code task surface mirrors these commands:
 - `agent: session bootstrap`
@@ -160,8 +165,9 @@ Before ending a meaningful work slice:
    - `py -3.14 tools\viewer_host_write_contract_proof_receipt.py --session-id global_active_contract`
    - or use `py -3.14 tools\viewer_host_checkpoint_slice.py write-receipts --session-id global_active_contract --summary "<what passed>" --command "<validation cmd>" ...`
    - for `viewer_first` runtime-visible slices, the validation receipt must include both runtime publish (`ui_app/build_vsdevcmd.cmd` or `verify: profile runtime|checkpoint`) and published-runtime proof (`tools/viewer_host_runtime_pytest_lane.py` or direct `pytest tests/test_fractal_runtime*.py` / equivalent runtime CLI pytest)
-6. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
-7. Do not say done unless the explicit closure standard above is satisfied end-to-end.
-8. If the current prompt arrived while the repo already differed from the session baseline, resolve that carryover before treating any new request as a fresh slice.
+6. Run `py -3.14 tools/viewer_host_rearward_review.py` on the final clean committed `HEAD`; completion and the next slice are blocked unless the artifact is `ok`.
+7. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
+8. Do not say done unless the explicit closure standard above is satisfied end-to-end.
+9. If the current prompt arrived while the repo already differed from the session baseline, resolve that carryover before treating any new request as a fresh slice.
 
 Do not treat validated-but-undocumented work as finished.

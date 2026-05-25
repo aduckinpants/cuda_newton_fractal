@@ -127,6 +127,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--profile", default="native", choices=PROFILE_CHOICES, help="Expected validation profile/task lane")
     ap.add_argument("--plan", required=True, help="Checked-in phased plan path for this slice")
     ap.add_argument("--contract", required=True, help="Checked-in machine-readable contract path for this slice")
+    ap.add_argument("--rearward-repair-for", help="Current HEAD id when opening a rearward-review repair slice")
     ap.add_argument("--session-id", default=GLOBAL_CONTRACT_SESSION_ID, help="Optional contract-lock session id; defaults to the global active contract state")
     ap.add_argument("--dry-run", action="store_true", help="Print the session-start message, checkpoint-id guidance, and delegated command without appending")
     ns = ap.parse_args(argv)
@@ -141,6 +142,8 @@ def main(argv: list[str] | None = None) -> int:
         intent=ns.intent,
         profile=ns.profile,
     )
+    if ns.rearward_repair_for:
+        message += f" | rearward_repair_for={ns.rearward_repair_for}"
     plan_path = Path(ns.plan)
     if not plan_path.is_absolute():
         plan_path = REPO_ROOT / plan_path

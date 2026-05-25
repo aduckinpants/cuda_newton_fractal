@@ -118,7 +118,24 @@ Allowed raw shell is intentionally narrow:
 If you hit a mutation denial, do not route around it with another raw shell edit path.
 Use the approved wrapper or fix the missing contract/plan state first.
 
-### 2.4 Locked Contract Rule
+### 2.4 Rearward Hostile-Review Gate
+
+Before opening a new meaningful product slice on a clean `HEAD`, run:
+`py -3.14 tools/viewer_host_rearward_review.py`
+
+The command writes `artifacts/hooks/viewer_host_rearward_review/<head>.json`.
+The checkpoint guard blocks `viewer_host_begin_work_slice.py`, mutation wrappers, and final
+completion unless the current clean `HEAD` has an `ok` artifact.
+
+Status handling:
+- `ok` means normal slice start is allowed.
+- `needs_repair` means normal product mutation is blocked; open a repair-only slice with
+  `py -3.14 tools/viewer_host_begin_work_slice.py --rearward-repair-for <head> ...`.
+- `blocked_unproven` means proof is missing or invalid; repair the proof state first.
+
+Read-only exploration remains allowed without a rearward artifact.
+
+### 2.5 Locked Contract Rule
 
 Every meaningful slice now requires a checked-in machine-readable contract file in addition to the phased plan.
 
@@ -134,7 +151,7 @@ If the contract file changes after being locked:
 - closure is blocked
 - run `py -3.14 tools\viewer_host_revise_contract.py --session-id <id> --contract <contract>` to re-lock it explicitly
 
-### 2.5 Validation And Contract-Proof Receipt Gate
+### 2.6 Validation And Contract-Proof Receipt Gate
 
 Clean git state alone is not enough to justify closure after a commit in the same session.
 
@@ -152,7 +169,8 @@ Required flow after the final validation commands pass for the slice:
 2. write a receipt with `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...`
 3. write contract proof with `py -3.14 tools\viewer_host_write_contract_proof_receipt.py --session-id <id>`
    or use the combined wrapper `py -3.14 tools\viewer_host_checkpoint_slice.py write-receipts --session-id <id> ...`
-4. only then use `task_complete` / stop the slice
+4. run `py -3.14 tools\viewer_host_rearward_review.py` on the final clean committed `HEAD`
+5. only then use `task_complete` / stop the slice
 
 Hostile-audit corollary:
 - `py -3.14 tools\viewer_host_checkpoint_slice.py commit ...` and `write-receipts ...` now both fail when the locked plan's hostile audit is still pending
@@ -164,7 +182,7 @@ The checkpoint guard enforces this deterministically:
 - `Stop` blocks ending the slice until the receipt exists
 - for `viewer_first` slices, receipt writing and closure are also denied if the recorded commands omit runtime publish or published-runtime proof
 
-### 2.6 Carryover Prompt Rule
+### 2.7 Carryover Prompt Rule
 
 If a new user prompt arrives while the repository still differs from the session baseline, that is a prior-slice closure problem first.
 
@@ -220,6 +238,7 @@ Public workflow surface:
 | Task | Command | Notes |
 |------|---------|-------|
 | Session bootstrap | `py -3.14 tools\viewer_host_session_bootstrap.py --audit --tail-handoff 8` | Repeatable new-session start surface |
+| Rearward hostile review | `py -3.14 tools\viewer_host_rearward_review.py` | Writes the current-HEAD review artifact that unlocks new mutation or forces a repair-only slice |
 | Begin work slice | `py -3.14 tools\viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified> --plan <plan> --contract <contract>` | Repo-specific adapter that appends a session-start breadcrumb, validates the phased plan + contract, prints the `ck:` token to reuse at checkpoint time, and locks the active contract. |
 | Prepare / lock slice contract | `py -3.14 tools\viewer_host_prepare_slice.py --session-id <session_id> --plan <plan> --contract <contract>` | Validates the phased plan and checked-in contract, then locks the active contract state for mutation enforcement. |
 | Revise locked contract | `py -3.14 tools\viewer_host_revise_contract.py --session-id <session_id> --contract <contract>` | Required after a checked-in contract changes mid-slice. |
@@ -283,7 +302,8 @@ py -3.14 -m pytest tests/<relevant_tests>.py -q
 5. Append `HANDOFF_LOG.md` with the handoff helper before the final commit; for the normal flow, pass `--commit <checkpoint_id>` using the token printed by `viewer_host_begin_work_slice.py`, and reserve `--resolve-last-pending` for legacy pending-entry repair
 6. Commit with clear message explaining what landed and what was validated
 7. Write the validation receipt and contract proof receipt for the final committed `HEAD`
-8. Verify the explicit closure standard: named gap, proving test, green validation, checkpoint commit
+8. Run `py -3.14 tools\viewer_host_rearward_review.py` and require an `ok` artifact for the final committed `HEAD`
+9. Verify the explicit closure standard: named gap, proving test, green validation, checkpoint commit
 
 ---
 
@@ -417,16 +437,18 @@ repo-specific `viewer_host_*` adapter when local repo context is required.
 When beginning work in a new session:
 
 1. Run `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8`
-2. Read `AGENTS.md`
-3. Read `AGENT_WORKING_PROTOCOL.md` (this file)
-4. Read `AGENT_TERMINAL_PROTOCOL.md`
-5. Read `spec_intake/_STATUS.md` for current phase
-6. Read `DEFERRED_THREADS.md` for paused work
-7. Read `KNOWN_ISSUES.md` for known bugs
-8. Read `HANDOFF_LOG.md` (last 5-10 entries) for recent context
-9. Read the relevant spec intake doc for the current initiative
-10. If the slice is meaningful, run `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <profile>`
+2. Run `py -3.14 tools/viewer_host_repo_status.py`
+3. Run `py -3.14 tools/viewer_host_rearward_review.py`; if it reports `needs_repair`, open only a repair slice with `--rearward-repair-for <head>` before new product mutation
+4. Read `AGENTS.md`
+5. Read `AGENT_WORKING_PROTOCOL.md` (this file)
+6. Read `AGENT_TERMINAL_PROTOCOL.md`
+7. Read `spec_intake/_STATUS.md` for current phase
+8. Read `DEFERRED_THREADS.md` for paused work
+9. Read `KNOWN_ISSUES.md` for known bugs
+10. Read `HANDOFF_LOG.md` (last 5-10 entries) for recent context
+11. Read the relevant spec intake doc for the current initiative
+12. If the slice is meaningful, run `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <profile>`
     plus `--plan <plan> --contract <contract>` and verify the active contract lock if the slice will mutate the repo
-11. Create or update the nearest phased plan and assert sync if you touch it
-12. Check repo state with `py -3.14 tools/viewer_host_repo_status.py` — if the worktree is dirty, assess and checkpoint carryover
-13. Identify the bounded next slice and proceed
+13. Create or update the nearest phased plan and assert sync if you touch it
+14. If the worktree is dirty, assess and checkpoint carryover before broadening scope
+15. Identify the bounded next slice and proceed

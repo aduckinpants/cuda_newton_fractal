@@ -22,6 +22,7 @@ try:
         validate_locked_contract_state,
     )
     from tools.viewer_host_contract_proof import build_validation_evidence_entries
+    from tools.viewer_host_rearward_review import load_rearward_review_artifact
     from tools.viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
 except ModuleNotFoundError:
     from viewer_host_contract_state import (
@@ -35,6 +36,7 @@ except ModuleNotFoundError:
         validate_locked_contract_state,
     )
     from viewer_host_contract_proof import build_validation_evidence_entries
+    from viewer_host_rearward_review import load_rearward_review_artifact
     from viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
 
 
@@ -56,6 +58,7 @@ ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS = (
     "blocked action",
 )
 PATCH_FILE_RE = re.compile(r"--patch-file\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))", re.IGNORECASE)
+REARWARD_REPAIR_FOR_RE = re.compile(r"--rearward-repair-for\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))", re.IGNORECASE)
 SALT_NDEPEND_REQUIRED_DEFAULT_KEYS = (
     "salt_ndepend_gate_is_explicit",
     "deterministic_scoped_coverage_is_required",
@@ -243,6 +246,7 @@ def _is_allowed_raw_shell_command(command_text: str) -> bool:
         "git rev-parse",
         "git ls-files",
         "py -3.14 tools\\viewer_host_session_bootstrap.py",
+        "py -3.14 tools\\viewer_host_rearward_review.py",
         "py -3.14 tools\\viewer_host_begin_work_slice.py",
         "py -3.14 tools\\viewer_host_prepare_slice.py",
         "py -3.14 tools\\viewer_host_revise_contract.py",
@@ -933,6 +937,118 @@ def _command_requires_action_hostile_review(command_text: str) -> bool:
     return False
 
 
+def _command_uses_begin_work_slice(command_text: str) -> bool:
+    return "tools\\viewer_host_begin_work_slice.py" in _normalize_text(command_text)
+
+
+def _command_uses_rearward_review(command_text: str) -> bool:
+    return "tools\\viewer_host_rearward_review.py" in _normalize_text(command_text)
+
+
+def _extract_rearward_repair_for_head(command_text: str) -> str:
+    match = REARWARD_REPAIR_FOR_RE.search(command_text)
+    if match is None:
+        return ""
+    return next((group for group in match.groups() if group), "").strip()
+
+
+def _command_requires_rearward_review(payload: dict[str, Any]) -> bool:
+    tool_name = _extract_payload_tool_name(payload, default="")
+    command_text = _extract_payload_command_text(payload)
+    if _is_apply_patch_tool(tool_name):
+        return True
+    if not _is_shell_tool(tool_name):
+        return False
+    normalized = _normalize_text(command_text)
+    if _command_uses_rearward_review(command_text):
+        return False
+    if "tools\\viewer_host_checkpoint_slice.py" in normalized:
+        return False
+    if _command_uses_begin_work_slice(command_text):
+        return True
+    return "tools\\viewer_host_apply_repo_patch.py" in normalized or "tools\\viewer_host_run_repo_mutation.py" in normalized
+
+
+def _rearward_gate_snapshot_is_clean(snapshot: dict[str, Any]) -> bool:
+    if _snapshot_section_has_entries(snapshot, "unstaged") or _snapshot_section_has_entries(snapshot, "staged"):
+        return False
+    untracked = snapshot.get("untracked", {})
+    if not isinstance(untracked, dict):
+        return False
+    return not any(not str(path).replace("\\", "/").startswith("artifacts/") for path in untracked)
+
+
+def evaluate_rearward_review_gate(
+    payload: dict[str, Any] | None,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str]:
+    payload = payload or {}
+    if not _command_requires_rearward_review(payload):
+        return False, ""
+
+    try:
+        snapshot = capture_repo_snapshot(repo_root)
+    except Exception:
+        return False, ""
+    if not _rearward_gate_snapshot_is_clean(snapshot):
+        return False, ""
+
+    head = str(snapshot.get("head", "")).strip()
+    if not head:
+        return False, ""
+    command_text = _extract_payload_command_text(payload)
+    artifact = load_rearward_review_artifact(head, repo_root)
+    if artifact is None:
+        return True, (
+            "Current clean HEAD lacks an ok rearward hostile review artifact. "
+            "Run py -3.14 tools/viewer_host_rearward_review.py before starting new product mutation."
+        )
+
+    artifact_head = str(artifact.get("head", "")).strip()
+    status = str(artifact.get("status", "")).strip()
+    if artifact_head != head:
+        return True, "Rearward hostile review artifact head does not match the current clean HEAD."
+    if status == "ok":
+        return False, ""
+    if status == "needs_repair":
+        repair_head = _extract_rearward_repair_for_head(command_text)
+        if _command_uses_begin_work_slice(command_text) and repair_head == head:
+            return False, ""
+        return True, (
+            "Rearward hostile review for the current clean HEAD needs repair; "
+            f"only a repair slice started with --rearward-repair-for {head} is allowed."
+        )
+    return True, (
+        "Rearward hostile review for the current clean HEAD is blocked/unproven; "
+        "new product mutation is forbidden until the review is repaired and rerun."
+    )
+
+
+def evaluate_rearward_review_completion_gate(
+    current: dict[str, Any],
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str]:
+    if not _rearward_gate_snapshot_is_clean(current):
+        return False, ""
+    head = str(current.get("head", "")).strip()
+    if not head:
+        return False, ""
+    artifact = load_rearward_review_artifact(head, repo_root)
+    if artifact is None:
+        return True, (
+            "Current clean HEAD lacks an ok rearward hostile review artifact. "
+            "Run py -3.14 tools/viewer_host_rearward_review.py before completion."
+        )
+    if str(artifact.get("head", "")).strip() != head:
+        return True, "Rearward hostile review artifact head does not match the current clean HEAD."
+    status = str(artifact.get("status", "")).strip()
+    if status == "ok":
+        return False, ""
+    if status == "needs_repair":
+        return True, "Rearward hostile review for the current clean HEAD needs repair before completion."
+    return True, "Rearward hostile review for the current clean HEAD is blocked/unproven before completion."
+
+
 def _extract_patch_file_path(command_text: str, repo_root: Path) -> Path | None:
     match = PATCH_FILE_RE.search(command_text)
     if match is None:
@@ -1272,7 +1388,11 @@ def _evaluate_mutation_guard(payload: dict[str, Any], session_id: str, repo_root
         return False, ""
     if _is_wrapper_shell_command(command_text):
         normalized = _normalize_text(command_text)
-        if "tools\\viewer_host_prepare_slice.py" in normalized or "tools\\viewer_host_revise_contract.py" in normalized:
+        if (
+            "tools\\viewer_host_prepare_slice.py" in normalized
+            or "tools\\viewer_host_revise_contract.py" in normalized
+            or "tools\\viewer_host_begin_work_slice.py" in normalized
+        ):
             return False, ""
         drift_reason = _contract_drift_reason(session_id, repo_root)
         if drift_reason:
@@ -1354,6 +1474,8 @@ def build_pretool_response(
         else:
             salt_ndepend_payload = {}
         if not should_block:
+            should_block, reason = evaluate_rearward_review_completion_gate(current, repo_root)
+        if not should_block:
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
@@ -1414,6 +1536,15 @@ def build_general_pretool_response(
 ) -> dict[str, Any]:
     payload = payload or {}
     banner = build_strict_banner(load_active_contract_state(session_id, repo_root))
+    rearward_block, rearward_reason = evaluate_rearward_review_gate(payload, repo_root)
+    if rearward_block:
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": banner + " " + rearward_reason,
+            }
+        }
     mutation_block, mutation_reason = _evaluate_mutation_guard(payload, session_id, repo_root)
     if mutation_block:
         return {

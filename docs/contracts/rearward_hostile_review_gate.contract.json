@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "contract_id": "rearward_hostile_review_gate",
+  "feature_id": "rearward_hostile_review_gate",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/rearward_hostile_review_gate_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/rearward_hostile_review_gate_PHASED_PLAN.md",
+    "docs/contracts/rearward_hostile_review_gate.contract.json",
+    "tools/viewer_host_rearward_review.py",
+    "tools/viewer_host_checkpoint_guard.py",
+    "tools/viewer_host_begin_work_slice.py",
+    "tests/test_viewer_host_checkpoint_guard.py",
+    "tests/test_viewer_host_rearward_review.py",
+    "AGENTS.md",
+    "AGENT_WORKING_PROTOCOL.md",
+    ".github/copilot-instructions.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "automate rearward hostile review before new implementation mutation",
+    "hard-gate mutation on an ok rearward review artifact",
+    "allow repair-only slices when the rearward review finds stale or unproven closure",
+    "preserve existing checkpoint, receipt, contract, explicit-ask, and hostile-audit rules"
+  ],
+  "forbidden_operator_prompts": [
+    "weaken existing checkpoint guards",
+    "weaken validation or contract proof receipt requirements",
+    "block read-only exploration",
+    "start GPU Lens SDF implementation in this workflow slice"
+  ],
+  "required_defaults": {
+    "rearward_review_gate": "hard",
+    "read_only_exploration": "allowed",
+    "repair_slice_escape_hatch": "required",
+    "existing_guard_rules": "preserved"
+  },
+  "forbidden_defaults": {
+    "advisory_only_rearward_review": "forbidden",
+    "product_mutation_without_ok_artifact": "forbidden",
+    "physical_mouse": "forbidden",
+    "gpu_lens_sdf_in_this_slice": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 -m pytest tests/test_viewer_host_rearward_review.py tests/test_viewer_host_checkpoint_guard.py -q",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/rearward_hostile_review_gate.contract.json --out-json artifacts/validation/rearward_hostile_review_gate_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/rearward_hostile_review_gate_PHASED_PLAN.md --out-json artifacts/validation/rearward_hostile_review_gate_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/rearward_hostile_review_gate_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label rearward_hostile_review_gate_diff_check --log artifacts/logs/rearward_hostile_review_gate_diff_check.log --out-json artifacts/validation/rearward_hostile_review_gate_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The rearward hostile review gate contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/rearward_hostile_review_gate_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The rearward hostile review gate hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/rearward_hostile_review_gate_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

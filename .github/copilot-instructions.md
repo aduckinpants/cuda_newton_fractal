@@ -7,6 +7,9 @@
 - Then read `AGENT_TERMINAL_PROTOCOL.md` before running heavy build/test/runtime commands.
 - Use `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8` or the
     VS Code task `agent: session bootstrap` as the repeatable new-session bootstrap.
+- Run `py -3.14 tools/viewer_host_repo_status.py`, then `py -3.14 tools/viewer_host_rearward_review.py`
+    before new product mutation. An `ok` rearward artifact unlocks normal work; `needs_repair`
+    permits only `viewer_host_begin_work_slice.py --rearward-repair-for <head> ...`.
 - Then read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`,
     and the last few entries of `HANDOFF_LOG.md` for current state.
 - If `SessionStart` or `UserPromptSubmit` reports a dirty repo with no checkpoint baseline, do not treat the session as fresh. Run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state`, inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/`, and only then retry the stranded slice in crash-safe mode.
@@ -26,6 +29,9 @@
 - For any meaningful slice, append a session-start breadcrumb first with
     `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified> --plan <plan> --contract <contract>`
     or the VS Code task `agent: begin work slice`.
+- `viewer_host_begin_work_slice.py`, mutation wrappers, and completion are blocked on a clean
+    `HEAD` until `artifacts/hooks/viewer_host_rearward_review/<head>.json` exists with status `ok`.
+    Read-only exploration remains allowed.
 - Treat the checked-in phased plan plus checked-in contract as binding. Do not improvise around them without explicitly revising and re-locking the contract.
 - Raw repo mutation is forbidden. Use the approved `viewer_host_*` wrapper surfaces for meaningful edits, receipts, and checkpoint flow.
 - Do not rely on chat history as the durable plan. Reuse the nearest phased plan or create
@@ -44,6 +50,8 @@
 - Treat the workspace checkpoint guard hook as mandatory enforcement, not advice: if it blocks `task_complete` or stop because repo state differs from the session baseline, resolve the repo state before trying to end the slice.
 - Treat the always-on strict banner as expected repo state. The banner is not just prose: if the hook denies the action, fix the contract/receipt state or route through the approved wrapper.
 - If repo closure still requires a checkpoint commit or validation receipt, surface that requirement explicitly instead of silently stopping on a validated dirty slice.
+- After final receipts for a committed slice, run `py -3.14 tools/viewer_host_rearward_review.py`
+    and do not claim closure unless the final `HEAD` review is `ok`.
 - For viewer-first features, helper-only or CLI-only proof is not enough. Closure requires a validation receipt that records both runtime publish and runtime viewer-path proof, plus a machine-written contract proof receipt; the checkpoint guard denies viewer-first receipts missing either command class.
 - Prefer the public validation task surface instead of reconstructing command bundles from memory:
     the `verify: profile ...` VS Code tasks.
