@@ -782,6 +782,9 @@ int main() {
         bool foundVortexStrengthUiRange = false;
         bool foundTensionStrengthUiRange = false;
         bool foundLensDownsampleSdfFieldVisibility = false;
+        bool foundLensSdfOverlayMode = false;
+        bool foundLensSdfOverlayOpacity = false;
+        bool foundLensSdfOverlayBand = false;
 
         if (!LoadAndValidateSchemaFile(schemaPath)) {
             return 1;
@@ -885,6 +888,35 @@ int main() {
                     ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
                     ctrl.visible_if.path == "fractal.lens.downsample_applicable" && ctrl.visible_if.value == "true") {
                     foundLensDownsampleSdfFieldVisibility = true;
+                }
+                if (ctrl.id == "lens_sdf_overlay_mode" && ctrl.type == "combo" && ctrl.value_type == "enum" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.lens.sdf_overlay_mode" &&
+                    ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "off") {
+                    bool foundOff = false;
+                    bool foundBoundary = false;
+                    bool foundBand = false;
+                    bool foundFieldDebug = false;
+                    for (const UISchemaOption& option : ctrl.options) {
+                        foundOff = foundOff || option.id == "off";
+                        foundBoundary = foundBoundary || option.id == "boundary";
+                        foundBand = foundBand || option.id == "band";
+                        foundFieldDebug = foundFieldDebug || option.id == "field_debug";
+                    }
+                    foundLensSdfOverlayMode = foundOff && foundBoundary && foundBand && foundFieldDebug;
+                }
+                if (ctrl.id == "lens_sdf_overlay_opacity" && ctrl.type == "slider_float" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.lens.sdf_overlay_opacity" &&
+                    ctrl.has_min && ctrl.min == 0.0 && ctrl.has_max && ctrl.max == 1.0 &&
+                    ctrl.has_visible_if && ctrl.visible_if.path == "fractal.lens.sdf_overlay_active" &&
+                    ctrl.visible_if.value == "true") {
+                    foundLensSdfOverlayOpacity = true;
+                }
+                if (ctrl.id == "lens_sdf_overlay_band_px" && ctrl.type == "slider_float" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.lens.sdf_overlay_band_px" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    ctrl.visible_if.path == "fractal.lens.sdf_overlay_mode" &&
+                    ctrl.visible_if.value == "boundary,band") {
+                    foundLensSdfOverlayBand = true;
                 }
                 if (ctrl.id == "fractal_type") {
                     if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino_all") {
@@ -1357,6 +1389,10 @@ int main() {
         }
         if (!foundLensDownsampleSdfFieldVisibility) {
             std::cerr << "Lens Downsample must be visible when the shared Lens SDF field is applicable, not only when Lens visualization is enabled\n";
+            return 1;
+        }
+        if (!foundLensSdfOverlayMode || !foundLensSdfOverlayOpacity || !foundLensSdfOverlayBand) {
+            std::cerr << "Did not find the normal viewport SDF overlay mode, opacity, and band controls in schema\n";
             return 1;
         }
         if (!foundResolutionAspectPresetDefault || !foundResolutionLongEdgeDefault || !foundRenderWidthDefault || !foundRenderHeightDefault) {

@@ -653,9 +653,13 @@ static bool RunInLoopFindingCapture(
 
 // --- Image window helpers ---
 
+static bool LensSdfOverlayEnabled(const LensSettings& lens);
+static uint8_t OverlayByte(float value);
+
 static void RenderFractalViewport(
     const ImGuiIO& io, const RenderSettings& render,
     const RenderedFrameState& renderedFrame,
+    const LensSettings& lens,
     ViewState& view, bool& dirty, bool& interactionChanged,
     const RuntimeWalkViewerPlaybackState* runtimeWalkPlayback,
     const RuntimeWalkOverlayPath* runtimeWalkPath,
@@ -681,6 +685,11 @@ static void RenderFractalViewport(
         ImVec2 rectMax = ImGui::GetItemRectMax();
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         drawList->AddImage((ImTextureID)g_fractalSRV, rectMin, rectMax);
+        if (LensSdfOverlayEnabled(lens) && g_lensSdfSRV) {
+            const uint8_t alpha = OverlayByte(lens.sdf_overlay_opacity);
+            drawList->AddImage((ImTextureID)g_lensSdfSRV, rectMin, rectMax,
+                ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), IM_COL32(255, 255, 255, alpha));
+        }
         if (runtimeWalkPlayback && runtimeWalkPath && runtimeWalkGradientOverlay) {
             DrawRuntimeWalkViewerViewportOverlay(
                 *runtimeWalkPlayback,
@@ -746,6 +755,58 @@ static void RenderAuxImageWindow(const char* title, ID3D11ShaderResourceView* sr
     ImGui::End();
 }
 
+static bool LensSdfOverlayEnabled(const LensSettings& lens) {
+    return lens.sdf_overlay_mode != LensSdfOverlayMode::off;
+}
+
+static uint8_t OverlayByte(float value) {
+    value = ClampF(value, 0.0f, 1.0f);
+    return static_cast<uint8_t>(value * 255.0f + 0.5f);
+}
+
+static uint32_t PackOverlayRgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    return static_cast<uint32_t>(r) |
+        (static_cast<uint32_t>(g) << 8) |
+        (static_cast<uint32_t>(b) << 16) |
+        (static_cast<uint32_t>(a) << 24);
+}
+
+static void BuildLensSdfViewportOverlayRgba(
+    const SdfFieldView& field,
+    const LensSettings& lens,
+    float debugMaxAbsPx,
+    std::vector<uint32_t>& outRgba) {
+    if (lens.sdf_overlay_mode == LensSdfOverlayMode::field_debug) {
+        BuildSignedDistanceSdfRgba(field, debugMaxAbsPx, outRgba);
+        return;
+    }
+    if (!field.signed_distance_px || field.width <= 0 || field.height <= 0 ||
+        field.signed_distance_count != static_cast<size_t>(field.width) * static_cast<size_t>(field.height)) {
+        outRgba.clear();
+        return;
+    }
+    const float bandPx = fmaxf(0.25f, lens.sdf_overlay_band_px);
+    outRgba.resize(field.signed_distance_count);
+    for (size_t index = 0; index < field.signed_distance_count; ++index) {
+        const float signedPx = field.signed_distance_px[index];
+        const float distance = fabsf(signedPx);
+        if (lens.sdf_overlay_mode == LensSdfOverlayMode::boundary) {
+            const float edge = 1.0f - ClampF(distance / bandPx, 0.0f, 1.0f);
+            outRgba[index] = PackOverlayRgba(255, 232, 96, OverlayByte(edge));
+        } else if (lens.sdf_overlay_mode == LensSdfOverlayMode::band) {
+            const float edge = 1.0f - ClampF(distance / (bandPx * 4.0f), 0.0f, 1.0f);
+            const uint8_t alpha = OverlayByte(edge * 0.85f);
+            if (signedPx < 0.0f) {
+                outRgba[index] = PackOverlayRgba(48, 176, 255, alpha);
+            } else {
+                outRgba[index] = PackOverlayRgba(255, 128, 48, alpha);
+            }
+        } else {
+            outRgba[index] = 0u;
+        }
+    }
+}
+
 // --- Render dispatch helper ---
 
 static void DispatchRenderFrame(
@@ -766,6 +827,8 @@ static void DispatchRenderFrame(
     lensSdfProbe = {};
     lensSdfProbe.enabled = lens.enabled;
     lensSdfProbe.backend_used = "none";
+    lensSdfProbe.overlay_mode = LensSdfOverlayModeId(lens.sdf_overlay_mode) ? LensSdfOverlayModeId(lens.sdf_overlay_mode) : "off";
+    lensSdfProbe.overlay_opacity = lens.sdf_overlay_opacity;
     InvalidateRenderedFrame(&renderedFrame);
     if (IsExplainoFamily(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);
@@ -785,7 +848,8 @@ static void DispatchRenderFrame(
 
     uint8_t* maskPtr = nullptr;
     const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
-    const bool needsLensSdfField = lens.enabled || colorPipelineNeedsSdf;
+    const bool lensSdfOverlayEnabled = LensSdfOverlayEnabled(lens);
+    const bool needsLensSdfField = lens.enabled || colorPipelineNeedsSdf || lensSdfOverlayEnabled;
     if (needsLensSdfField) {
         maskBuffer.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
         maskPtr = maskBuffer.data();
@@ -840,11 +904,16 @@ static void DispatchRenderFrame(
                     lensSdfField,
                     &backendReport)) {
                 const float lowMaxAbsPx = 48.0f / static_cast<float>(NormalizeLensDownsamplePow2(lens.downsample));
-                BuildSignedDistanceSdfRgba(lensSdfField.View(), lowMaxAbsPx, lensSdfRgba);
+                if (lensSdfOverlayEnabled) {
+                    BuildLensSdfViewportOverlayRgba(lensSdfField.View(), lens, lowMaxAbsPx, lensSdfRgba);
+                } else {
+                    BuildSignedDistanceSdfRgba(lensSdfField.View(), lowMaxAbsPx, lensSdfRgba);
+                }
                 if (lensSdfRgba.size() == static_cast<size_t>(lensSdfField.width) * static_cast<size_t>(lensSdfField.height)) {
                     EnsureLensSdfTexture(lensSdfField.width, lensSdfField.height);
                     UploadLensSdfRGBA(lensSdfRgba.data(), lensSdfField.width, lensSdfField.height);
                     lensSdfProbe.valid = true;
+                    lensSdfProbe.overlay_active = lensSdfOverlayEnabled;
                     lensSdfProbe.width = lensSdfField.width;
                     lensSdfProbe.height = lensSdfField.height;
                     lensSdfProbe.pixel_scale = lensSdfField.pixel_scale;
@@ -3066,7 +3135,7 @@ static void RunViewerFrame(
     }
 
     bool viewportInteractionChanged = false;
-    RenderFractalViewport(io, render, renderedFrame, view, dirty, viewportInteractionChanged,
+    RenderFractalViewport(io, render, renderedFrame, lens, view, dirty, viewportInteractionChanged,
         runtimeWalkViewerSession.loaded ? &runtimeWalkPlayback : nullptr,
         runtimeWalkViewerSession.loaded ? &runtimeWalkOverlayPath : nullptr,
         runtimeWalkViewerSession.loaded ? &runtimeWalkGradientOverlay : nullptr);

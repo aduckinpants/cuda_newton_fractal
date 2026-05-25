@@ -49,6 +49,9 @@ struct ViewerUiAutomationLensSdfProbe {
     int width = 0;
     int height = 0;
     float pixel_scale = 1.0f;
+    std::string overlay_mode = "off";
+    bool overlay_active = false;
+    float overlay_opacity = 0.55f;
 };
 
 struct ViewerUiAutomationEnumCommandReport {

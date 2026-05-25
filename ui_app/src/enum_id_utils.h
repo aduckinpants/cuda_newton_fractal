@@ -195,6 +195,13 @@ inline constexpr EnumIdPair<SampleTier> kSampleTierIds[] = {
     {SampleTier::standard, "standard"},
 };
 
+
+inline constexpr EnumIdPair<LensSdfOverlayMode> kLensSdfOverlayModeIds[] = {
+    {LensSdfOverlayMode::off, "off"},
+    {LensSdfOverlayMode::boundary, "boundary"},
+    {LensSdfOverlayMode::band, "band"},
+    {LensSdfOverlayMode::field_debug, "field_debug"},
+};
 } // namespace enum_id_utils
 
 inline const char* PolyKindId(PolyKind value) {
@@ -323,4 +330,12 @@ inline const char* SampleTierId(SampleTier value) {
 
 inline bool TryParseSampleTierId(std::string_view id, SampleTier* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kSampleTierIds, outValue);
+}
+
+inline const char* LensSdfOverlayModeId(LensSdfOverlayMode value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kLensSdfOverlayModeIds);
+}
+
+inline bool TryParseLensSdfOverlayModeId(std::string_view id, LensSdfOverlayMode* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kLensSdfOverlayModeIds, outValue);
 }

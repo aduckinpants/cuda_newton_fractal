@@ -928,6 +928,9 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (render && path == "fractal.render.sample_tier") {
         return EnumIdOrEmpty(SampleTierId(render->sample_tier));
     }
+    if (lens && path == "fractal.lens.sdf_overlay_mode") {
+        return EnumIdOrEmpty(LensSdfOverlayModeId(lens->sdf_overlay_mode));
+    }
     if (view && path == "fractal.view.param_anim_target") {
         return std::string(view->param_anim_target);
     }
@@ -991,6 +994,9 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     if (render && path == "fractal.render.sample_tier") {
         return ParseAndAssignEnumId(id, &render->sample_tier, TryParseSampleTierId);
     }
+    if (lens && path == "fractal.lens.sdf_overlay_mode") {
+        return ParseAndAssignEnumId(id, &lens->sdf_overlay_mode, TryParseLensSdfOverlayModeId);
+    }
     if (view && path == "fractal.view.param_anim_target") {
         if (id.size() >= sizeof(view->param_anim_target)) return false;
         std::memcpy(view->param_anim_target, id.c_str(), id.size() + 1);
@@ -1020,8 +1026,13 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
             params->poly_kind == PolyKind::custom;
         return true;
     }
+    if (path == "fractal.lens.sdf_overlay_active") {
+        out = lens && lens->sdf_overlay_mode != LensSdfOverlayMode::off;
+        return true;
+    }
     if (path == "fractal.lens.downsample_applicable") {
-        out = (lens && lens->enabled) || (params && SchemaColorPipelineUsesSdfSource(*params));
+        out = (lens && (lens->enabled || lens->sdf_overlay_mode != LensSdfOverlayMode::off)) ||
+            (params && SchemaColorPipelineUsesSdfSource(*params));
         return true;
     }
     bool* ptr = nullptr;
@@ -1221,6 +1232,10 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
     if (render) {
         if (path == "fractal.render.preview_target_fps") { *outPtr = &render->preview_target_fps; return true; }
         if (path == "fractal.render.preview_min_scale") { *outPtr = &render->preview_min_scale; return true; }
+    }
+    if (lens) {
+        if (path == "fractal.lens.sdf_overlay_opacity") { *outPtr = &lens->sdf_overlay_opacity; return true; }
+        if (path == "fractal.lens.sdf_overlay_band_px") { *outPtr = &lens->sdf_overlay_band_px; return true; }
     }
     return false;
 }

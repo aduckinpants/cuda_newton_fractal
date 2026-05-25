@@ -234,6 +234,9 @@ void TestRenderAndStatsDefaults() {
 
     const LensSettings lens{};
     Check(!lens.enabled && lens.downsample == 2, "LensSettings defaults to disabled two-times downsample");
+    Check(lens.sdf_overlay_mode == LensSdfOverlayMode::off && Near(lens.sdf_overlay_opacity, 0.55f) &&
+            Near(lens.sdf_overlay_band_px, 1.5f),
+        "LensSettings SDF overlay defaults to off with stable presentation controls");
 
     const RenderStats stats{};
     Check(Near(stats.last_render_ms, 0.0f) && stats.last_iters_avg == 0 && stats.last_iters_sum == 0 &&

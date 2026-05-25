@@ -76,6 +76,9 @@ void ResetRuntimeStateForCurrentFractal(
 
     lens.enabled = false;
     lens.downsample = 2;
+    lens.sdf_overlay_mode = LensSdfOverlayMode::off;
+    lens.sdf_overlay_opacity = 0.55f;
+    lens.sdf_overlay_band_px = 1.5f;
 
     if (ioDirty) *ioDirty = true;
 }

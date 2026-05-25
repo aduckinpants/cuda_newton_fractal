@@ -130,3 +130,5 @@
 - `ck:0bf868b1` 2026-05-25 15:44 UTC | score 95 — Repaired Lens Downsample visibility for SDF Source rows: added shared applicability predicate, no-mouse int-combo automation proof, stale Source catalog native test repair, single full runtime pytest proof.
 - `ck:23898d60` 2026-05-25 15:47 UTC — session-start | branch=codex/color-pipeline-sdf-source-rows | head=a3e6613 | status=clean | profile=checkpoint | intent=sync SDF roadmap after live Color Pipeline SDF rows
 - `ck:23898d60` 2026-05-25 15:55 UTC | score 95 — Synced SDF roadmap after GPU Lens SDF and live Color Pipeline SDF source rows shipped; viewport overlay remains the next product slice.
+- `ck:d368cba3` 2026-05-25 16:01 UTC — session-start | branch=codex/color-pipeline-sdf-source-rows | head=c763028 | status=dirty | profile=runtime | intent=productize normal viewport SDF overlay
+- `ck:d368cba3` 2026-05-25 16:23 UTC | score 95 — Added normal viewport SDF overlay controls and no-mouse proof while preserving Color Pipeline SDF rows, Capture Finding parity, and Lens Downsample authority.

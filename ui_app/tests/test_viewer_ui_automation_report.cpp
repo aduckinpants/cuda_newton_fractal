@@ -72,6 +72,12 @@ void TestVisibleControlLookupAndFailClosedErrors() {
         "ready color pipeline control set fails closed when requested control is absent");
 }
 
+void TestLensSdfProbeDefaults() {
+    ViewerUiAutomationLensSdfProbe probe{};
+    Check(probe.overlay_mode == "off" && !probe.overlay_active && probe.overlay_opacity > 0.5f,
+        "lens SDF automation probe reports stable overlay defaults");
+}
+
 void TestRenderPacingProbeReportsTimingAndDecision() {
     RenderSettings render{};
     render.resolution = {2048, 1536};
@@ -118,6 +124,7 @@ void TestRenderedFrameProbeHash() {
 int main() {
     TestJsonStringEscaping();
     TestVisibleControlLookupAndFailClosedErrors();
+    TestLensSdfProbeDefaults();
     TestRenderPacingProbeReportsTimingAndDecision();
     TestRenderedFrameProbeHash();
     if (g_failed != 0) {

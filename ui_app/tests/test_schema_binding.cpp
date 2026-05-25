@@ -1977,6 +1977,21 @@ int main() {
             std::cerr << "Expected lens-only bool bindings to succeed without view/render contexts\n";
             return 1;
         }
+        float* lensFloatValue = nullptr;
+        if (!lensOnly.BindFloat("fractal.lens.sdf_overlay_opacity", &lensFloatValue) ||
+            lensFloatValue != &lens.sdf_overlay_opacity) {
+            std::cerr << "Expected lens-only overlay opacity binding to succeed without view/render contexts\n";
+            return 1;
+        }
+        if (lensOnly.GetEnumId("fractal.lens.sdf_overlay_mode") != "off") {
+            std::cerr << "Expected lens-only overlay mode enum binding to expose the default off id\n";
+            return 1;
+        }
+        if (!lensOnly.SetEnumId("fractal.lens.sdf_overlay_mode", "field_debug") ||
+            lens.sdf_overlay_mode != LensSdfOverlayMode::field_debug) {
+            std::cerr << "Expected lens-only overlay mode enum binding to accept field_debug\n";
+            return 1;
+        }
     }
 
     {
@@ -4473,6 +4488,20 @@ int main() {
         params.color_source_stack[0].signal = ColorSignal::sdf_boundary_band;
         if (!ctx.EvalVisibleIf(lensDownsampleApplicable)) {
             std::cerr << "Lens Downsample must be applicable when Source stack rows use SDF\n";
+            return 1;
+        }
+        params.color_source_stack_count = 0;
+        lens.sdf_overlay_mode = LensSdfOverlayMode::field_debug;
+        if (!ctx.EvalVisibleIf(lensDownsampleApplicable)) {
+            std::cerr << "Lens Downsample must be applicable when the normal viewport SDF overlay uses the field\n";
+            return 1;
+        }
+        UISchemaPredicate lensOverlayActive;
+        lensOverlayActive.op = "eq";
+        lensOverlayActive.path = "fractal.lens.sdf_overlay_active";
+        lensOverlayActive.value = "true";
+        if (!ctx.EvalVisibleIf(lensOverlayActive)) {
+            std::cerr << "Lens overlay active predicate must become true for non-off overlay modes\n";
             return 1;
         }
 

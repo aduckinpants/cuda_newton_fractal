@@ -512,9 +512,19 @@ struct RenderSettings {
     ResolvedEvalMode resolved_eval{};  // filled by resolver before dispatch
 };
 
+enum class LensSdfOverlayMode : int {
+    off = 0,
+    boundary = 1,
+    band = 2,
+    field_debug = 3,
+};
+
 struct LensSettings {
     bool enabled{false};
     int downsample{2};
+    LensSdfOverlayMode sdf_overlay_mode{LensSdfOverlayMode::off};
+    float sdf_overlay_opacity{0.55f};
+    float sdf_overlay_band_px{1.5f};
 };
 
 inline int ComputeRenderStatsPixelCount(int width, int height) {

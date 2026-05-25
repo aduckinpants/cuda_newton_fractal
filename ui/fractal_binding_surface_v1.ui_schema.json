@@ -513,6 +513,38 @@
           "binding": { "kind": "param", "path": "fractal.lens.enabled" }
         },
         {
+          "id": "lens_sdf_overlay_mode",
+          "type": "combo",
+          "label": "SDF Overlay",
+          "value_type": "enum",
+          "default": "off",
+          "options": [
+            { "id": "off", "label": "Off" },
+            { "id": "boundary", "label": "Boundary" },
+            { "id": "band", "label": "Band" },
+            { "id": "field_debug", "label": "Field Debug" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.lens.sdf_overlay_mode" }
+        },
+        {
+          "id": "lens_sdf_overlay_opacity",
+          "type": "slider_float",
+          "label": "Overlay Opacity",
+          "value_type": "float",
+          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.55,
+          "binding": { "kind": "param", "path": "fractal.lens.sdf_overlay_opacity" },
+          "visible_if": { "op": "eq", "path": "fractal.lens.sdf_overlay_active", "value": true }
+        },
+        {
+          "id": "lens_sdf_overlay_band_px",
+          "type": "slider_float",
+          "label": "Overlay Band",
+          "value_type": "float",
+          "min": 0.25, "max": 16.0, "step": 0.25, "default": 1.5,
+          "binding": { "kind": "param", "path": "fractal.lens.sdf_overlay_band_px" },
+          "visible_if": { "op": "in", "path": "fractal.lens.sdf_overlay_mode", "value": "boundary,band" }
+        },
+        {
           "id": "lens_downsample",
           "type": "combo",
           "label": "Lens Downsample",

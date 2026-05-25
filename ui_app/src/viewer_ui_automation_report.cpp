@@ -69,6 +69,11 @@ void WriteLensSdfReportFields(
     out << "  \"lens_sdf_width\": " << lensSdfProbe.width << ",\n";
     out << "  \"lens_sdf_height\": " << lensSdfProbe.height << ",\n";
     out << "  \"lens_sdf_pixel_scale\": " << std::setprecision(12) << lensSdfProbe.pixel_scale << ",\n";
+    out << "  \"lens_sdf_overlay_mode\": ";
+    WriteAutomationReportString(out, lensSdfProbe.overlay_mode);
+    out << ",\n";
+    out << "  \"lens_sdf_overlay_active\": " << (lensSdfProbe.overlay_active ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_overlay_opacity\": " << std::setprecision(12) << lensSdfProbe.overlay_opacity << ",\n";
 }
 
 } // namespace
