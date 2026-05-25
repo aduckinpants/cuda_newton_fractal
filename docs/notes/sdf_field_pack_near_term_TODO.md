@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, but it is not yet a live viewport product feature.
+headless/native substrate and live viewer Color Pipeline input, but it is not yet a normal viewport overlay or SDF-native fractal feature.
 
 Shipped since this roadmap was first written:
 
@@ -13,11 +13,13 @@ Shipped since this roadmap was first written:
 - CUDA SDF pack evaluator plus descriptor hardening.
 - Source-neutral SDF signal sampling consumed by flashlight probe/report and
   runtime-walk headless/report outputs.
+- CUDA-backed Lens SDF field generation for the live client, with CPU fallback/reference.
+- Live Color Pipeline SDF source rows for signed distance, inside/outside, boundary band, normal angle, and curvature.
+- Capture Finding parity for active SDF Color Pipeline source-row pixels.
+- Shared Lens Downsample visibility/control authority when Color Pipeline SDF rows use the field.
 
 Still deferred:
 
-- CUDA-backed Lens SDF field generation for the live client.
-- Live Color Pipeline SDF source rows.
 - Normal viewport SDF overlay productization.
 - SDF-native selectable fractal lanes.
 - Authored SDF pack UI/live viewport integration.
@@ -415,7 +417,7 @@ Current state:
 - Shipped as native/headless evaluator substrate and hardening. See
   `docs/notes/sdf_pack_cuda_evaluator_PHASED_PLAN.md`.
 
-### Immediate Next Code Slice - CUDA Lens SDF Backend - Deferred
+### Slice 5 - CUDA Lens SDF Backend - Shipped
 
 Difficulty: medium/high.
 Reward: high performance unblock.
@@ -472,9 +474,8 @@ Current state:
 
 - Probe/report consumption is partially shipped: flashlight probe/report and
   runtime-walk headless/report paths consume source-neutral SDF signal samples.
-- Live Color Pipeline SDF source rows remain deferred.
-- See `docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md` and
-  `docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md`.
+- Live Color Pipeline SDF source rows are shipped on `codex/color-pipeline-sdf-source-rows` and proved by `tests/test_fractal_runtime_color_pipeline_sdf_rows.py`.
+- See `docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md`, `docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md`, and `docs/notes/color_pipeline_sdf_source_rows_PHASED_PLAN.md`.
 
 ### Slice 7 - Viewport Overlay Productization - Deferred
 
@@ -584,9 +585,9 @@ Recommended immediate ordering:
 5. Authored SDF pack parser / CPU reference. Shipped.
 6. CUDA SDF pack evaluator and hardening. Shipped.
 7. Headless/report SDF signal consumption. Partially shipped for flashlight and runtime-walk reports.
-8. CUDA Lens SDF backend. Deferred and now the next code slice.
-9. Live Color Pipeline SDF rows. Deferred.
-10. Viewport overlay. Deferred.
+8. CUDA Lens SDF backend. Shipped.
+9. Live Color Pipeline SDF rows. Shipped.
+10. Viewport overlay. Deferred and now the next code slice.
 11. First SDF-native fractal lane. Deferred.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that

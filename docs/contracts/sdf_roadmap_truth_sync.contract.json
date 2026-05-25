@@ -16,12 +16,12 @@
   "required_operator_inputs": [
     "dogfood rearward hostile review after the gate slice",
     "sync SDF roadmap truth for shipped parser CPU reference, CUDA evaluator, hardening, and headless/report signal consumers",
-    "keep live Color Pipeline SDF rows, viewport overlay, SDF-native lanes, and GPU Lens SDF deferred"
+    "record GPU Lens SDF backend and live Color Pipeline SDF source rows as shipped on the current branch while keeping viewport overlay, authored-pack UI/live viewport integration, and SDF-native lanes deferred"
   ],
   "forbidden_operator_prompts": [
     "change product code in this docs-only truth sync",
     "implement GPU Lens SDF in this slice",
-    "claim live Color Pipeline SDF rows are shipped",
+    "claim live Color Pipeline SDF rows are not shipped on this branch",
     "claim viewport overlay is shipped",
     "claim SDF-native fractal lanes are shipped"
   ],
@@ -31,10 +31,10 @@
     "cuda_sdf_pack_evaluator": "shipped",
     "cuda_hardening": "shipped",
     "headless_report_signal_consumers": "partially_shipped",
-    "live_color_pipeline_rows": "deferred",
+    "live_color_pipeline_rows": "shipped_on_color_pipeline_sdf_source_rows",
     "viewport_overlay": "deferred",
     "sdf_native_lanes": "deferred",
-    "gpu_lens_sdf": "deferred_to_next_code_slice"
+    "gpu_lens_sdf": "shipped"
   },
   "forbidden_defaults": {
     "product_mutation": "forbidden",

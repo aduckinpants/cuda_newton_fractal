@@ -130,7 +130,7 @@ Timing rule:
 
 ## 5. Lens SDF Follow-Ups
 
-Status: partially shipped substrate with live product follow-ups still deferred.
+Status: partially shipped substrate with viewport/product follow-ups still deferred.
 
 Shipped since the original deferred note:
 - `lens.downsample` control truth is repaired.
@@ -139,12 +139,15 @@ Shipped since the original deferred note:
 - Authored SDF pack parser and CPU reference are shipped.
 - CUDA SDF pack evaluator and hardening are shipped.
 - Flashlight probe/report and runtime-walk headless/report consumers now use source-neutral SDF signal sampling.
+- CUDA-backed Lens SDF field producer is shipped with CPU fallback/reference and backend reporting.
+- Live Color Pipeline SDF source rows are shipped for signed distance, inside/outside, boundary band, normal angle, and curvature.
+- Capture Finding parity for active SDF Color Pipeline source-row pixels is shipped.
+- Shared Lens Downsample visibility/control authority is shipped when Color Pipeline SDF rows use the field.
 
 Deferred follow-ups:
-- Add a CUDA-backed Lens SDF field producer beside CPU chamfer, with CPU kept as fallback/reference until measured client proof says the GPU path is safe.
-- Add live Color Pipeline SDF source rows for signed distance, inside/outside, boundary band, normal angle, and curvature.
 - Productize normal viewport SDF overlays for boundary, band, and field-debug modes.
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.
+- Add authored SDF pack UI/live viewport integration after the normal field consumers are stable.
 - Keep treating Lens SDF as the first mask-derived SDF field producer, not as the place to embed authored SDF packs.
 - Use `docs/notes/sdf_field_pack_near_term_TODO.md` as the detailed implementation sequencing surface.
 
@@ -152,7 +155,7 @@ Resume constraints:
 - Do not mix this with organized selector/common-fractal implementation unless the selector slice directly surfaces stale Lens controls.
 - Do not merge Salticid's analytic SDF operator pack wholesale into this repo. Port only bounded, reviewed pieces when a slice explicitly needs them.
 - Keep mask-derived Lens SDF and authored analytic SDF pack authority separate; they meet at the field interface.
-- Do not claim live Color Pipeline SDF rows, viewport overlay, or SDF-native lanes are shipped until the normal viewer path proves them.
+- Do not claim viewport overlay, authored-pack live viewport integration, or SDF-native lanes are shipped until the normal viewer path proves them.
 
 ## 6. CUDA-Resident sample_fn + Optimization Staging + Reflexive Sidecar
 
