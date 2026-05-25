@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed - Color Pipeline SDF Source Rows.
+Closed - Capture Finding SDF Color Pipeline parity repair.
 
 ## Phase Checklist
 
@@ -12,6 +12,7 @@ Closed - Color Pipeline SDF Source Rows.
 - [x] Phase 4 - add the Lens SDF-backed post-render Color Pipeline consumer without touching the core fractal kernel math
 - [x] Phase 5 - publish runtime and prove no-mouse SDF source rows change the live frame while preserving Lens/Color Pipeline behavior
 - [x] Phase 6 - hostile audit, repair findings, checkpoint, receipts, rearward review, push
+- [x] Phase 7 - repair UI Capture Finding to archive the same SDF Color Pipeline postprocessed frame as the live viewport and headless capture paths
 
 ## Explicit User Asks
 
@@ -20,6 +21,7 @@ Closed - Color Pipeline SDF Source Rows.
 - [done] Keep the work modular and avoid a renderer monolith.
 - [done] Do not expose visible Color Pipeline rows that do nothing.
 - [done] Do not use OS mouse automation.
+- [done] Repair the user-reported regression where the normal viewer Capture Finding button archives a base iteration-banded frame instead of the visible SDF Signed Distance Color Pipeline frame.
 
 ## Scope
 
@@ -31,6 +33,7 @@ In scope:
 - Apply SDF source coloring through a bounded post-render consumer that reuses the current Color Pipeline shape, palette, and grading stack semantics.
 - Fail closed for mixed SDF/non-SDF Source stacks unless the live consumer can honestly resolve every enabled Source row.
 - Preserve the existing Lens aux visualization and GPU/CPU backend reporting.
+- Repair the normal in-loop viewer Capture Finding action so manual captures preserve SDF Color Pipeline source-row pixels.
 
 Out of scope:
 
@@ -64,22 +67,31 @@ Out of scope:
   - `test_escape_time_coloring`: all passed
   - runtime publish: `ui_app/build_vsdevcmd.cmd` succeeded
   - published runtime pytest: 1 passed with JUnit at `artifacts/pytest/color_pipeline_sdf_source_rows_runtime.junit.xml`
+- RED 2: user-reported manual capture `D:\salt-fractal\cuda_newton_fractal_clone\findings\manual_capture\2026-05-25\093737_476__explaino_all` shows the live viewport using SDF Signed Distance while the captured finding frame is the base iteration-banded output.
+- RED 3: `color_pipeline_sdf_capture_finding_red` failed because the in-process automation report did not expose `capture_finding`, proving the schema action button path had no no-mouse click proof.
+- GREEN 3: `color_pipeline_sdf_capture_finding_runtime_pytest` passed after schema action click automation and the in-loop Capture Finding SDF postprocess repair.
+- Preservation runtime proof: `color_pipeline_sdf_source_rows_runtime_pytest` passed both the original SDF source-row sensitivity test and the new Capture Finding parity test.
 
 ## Hostile Audit
 
 - Status: complete
-- Required posture: assume the rows are catalog-only, the rendered frame is still using the old smooth-escape source, the Lens SDF field is stale or missing when Lens UI is off, mixed Source stacks silently degrade to zeros, or the implementation regresses existing Color Pipeline rows until focused proof disproves each risk.
+- Required posture: assume the rows are catalog-only, the rendered frame is still using the old smooth-escape source, the Lens SDF field is stale or missing when Lens UI is off, mixed Source stacks silently degrade to zeros, the UI Capture Finding path still archives pre-postprocess pixels, or the implementation regresses existing Color Pipeline rows until focused proof disproves each risk.
 
 ## Audit Passes
 
 - [done] Pass 1 - re-read Color Pipeline catalog/bridge/state IO for fake runtime-backed row exposure.
 - [done] Pass 2 - clean re-read of live render order and Lens SDF generation for stale or missing field consumption.
 - [done] Pass 3 - clean re-read after repair with preservation rails for Lens SDF, existing Color Pipeline rows, runtime publish, and no-mouse proof.
+- [done] Pass 4 - re-read the normal viewer Capture Finding path and prove it archives the same SDF Color Pipeline postprocessed pixels as the visible frame.
+- [done] Pass 5 - re-read the no-mouse harness seam and prove schema action buttons are now visible/consumable without OS cursor input.
+- [done] Pass 6 - clean re-read after repair found no SDF/non-SDF stack fallback, Lens SDF producer, or existing source-row sensitivity regression in the focused runtime proof.
 
 ## Audit Findings
 
 - [done] Headless capture path rendered through `RenderFractalCUDA(...)` without requesting a mask or applying the SDF Color Pipeline postprocess. This would have let no-mouse headless proof disagree with the live render path. Fixed by adding `RenderHeadlessFractalFrame(...)` and rerunning the published runtime pytest with all five SDF rows.
 - [done] Contract runtime proof node id and command were stale after the runtime test was broadened from one SDF row to all five rows. Fixed the contract and reran the pytest with the required JUnit artifact.
+- [done] Finding 3: the normal viewer Capture Finding action called `RenderFractalCUDA(...)` directly and could archive pre-SDF-postprocess pixels even when the live viewport used an SDF Source row; fixed by routing in-loop finding capture through `RenderHeadlessFractalFrame(...)` with the live Lens settings.
+- [done] Finding 4: schema action buttons were not emitted as automation rects and could not consume in-process click commands, leaving the real Capture Finding button path unproved; fixed by wiring schema action button rect reporting and click consumption through `BindingContext`.
 - [clean] Clean re-read found no mixed-stack silent fallback: native window and postprocess tests fail closed for SDF/non-SDF Source mixtures.
 - [clean] Clean re-read confirmed the repaired state did not expose another Lens SDF producer regression in focused CPU/CUDA Lens SDF, flashlight, and runtime-walk rails.
 

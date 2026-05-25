@@ -473,7 +473,8 @@ static bool RenderHeadlessFractalFrame(
     const RenderSettings& render,
     std::vector<uint32_t>& outRgba,
     RenderStats* outStats,
-    std::string* outError) {
+    std::string* outError,
+    const LensSettings* lensForSdf = nullptr) {
     outRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     std::vector<uint8_t> mask;
     uint8_t* maskPtr = nullptr;
@@ -494,12 +495,13 @@ static bool RenderHeadlessFractalFrame(
     }
 
     const LensSettings defaultLens{};
+    const LensSettings& lensSettings = lensForSdf ? *lensForSdf : defaultLens;
     SdfFieldResult lensSdfField;
     if (!ComputeLensSdfFieldForMaskWithBackend(
             maskPtr,
             render.resolution.x,
             render.resolution.y,
-            defaultLens.downsample,
+            lensSettings.downsample,
             LensSdfBackend::auto_backend,
             lensSdfField,
             nullptr)) {
@@ -615,6 +617,7 @@ static void RunInLoopDiagnosticCapture(
 static bool RunInLoopFindingCapture(
     const std::string& exeDir, ViewState& view, KernelParams& params,
     const RenderSettings& render,
+    const LensSettings& lens,
     const RenderedFrameState& renderedFrame,
     const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
@@ -631,10 +634,10 @@ static bool RunInLoopFindingCapture(
     RenderSettings findingRender = BuildFindingArchiveCaptureRenderForSource(render, captureSourceResolution);
     std::vector<uint32_t> findingRgba;
     findingRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
-    const char* err = nullptr;
     RenderStats findingStats{};
-    if (!RenderFractalCUDA(view, params, findingRender, findingRgba.data(), nullptr, &findingStats, &err)) {
-        findingStatus = std::string("Capture finding failed: ") + (err ? err : "unknown error");
+    std::string renderError;
+    if (!RenderHeadlessFractalFrame(view, params, findingRender, findingRgba, &findingStats, &renderError, &lens)) {
+        findingStatus = std::string("Capture finding failed: ") + (renderError.empty() ? "unknown error" : renderError);
         return invalidateCaches;
     } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, findingStats,
             findingRgba.data(), findingRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow,
@@ -949,6 +952,14 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema,
                     }
                     ImGui::PushID(ctrl.id.c_str());
                     bool pressed = ImGui::Button(ctrl.label.c_str());
+                    if (bind.note_ui_automation_rect) {
+                        bind.note_ui_automation_rect(bind.ui_automation_user_data, ctrl.id.c_str());
+                    }
+                    if (!pressed && bind.ui_automation_click_control_id && bind.ui_automation_click_consumed &&
+                        !*bind.ui_automation_click_consumed && *bind.ui_automation_click_control_id == ctrl.id) {
+                        pressed = true;
+                        *bind.ui_automation_click_consumed = true;
+                    }
                     ImGui::PopID();
                     if (pressed) {
                         if (ctrl.binding.path == "fractal.actions.render_once") a.renderOnce = true;
@@ -1056,6 +1067,10 @@ static UiActionFlags RenderControlsWindow(
         bind.ui_automation_set_control_value = colorPipelineWindow.ui_automation_set_control_value;
         bind.ui_automation_set_consumed = &colorPipelineWindow.ui_automation_set_consumed;
         bind.ui_automation_set_error = &colorPipelineWindow.ui_automation_set_error;
+    }
+    if (colorPipelineWindow.ui_automation_click_pending) {
+        bind.ui_automation_click_control_id = &colorPipelineWindow.ui_automation_click_control_id;
+        bind.ui_automation_click_consumed = &colorPipelineWindow.ui_automation_click_consumed;
     }
     Float2 uiCenterBefore = view.center;
     float uiZoomBefore = view.zoom;
@@ -2034,7 +2049,7 @@ static bool DeferSidecarRefreshDuringPreview(
 
 static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFlags& actions,
                                      ViewState& view, KernelParams& params,
-                                     const RenderSettings& render, const RenderStats& stats,
+                                     const RenderSettings& render, const LensSettings& lens, const RenderStats& stats,
                                      const std::vector<uint32_t>& rgba,
                                      const RenderedFrameState& renderedFrame,
                                      const ColorPipelineWindowState& colorPipelineWindow,
@@ -2056,7 +2071,7 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
     }
 
     if (actions.captureFinding) {
-        if (RunInLoopFindingCapture(exeDir, view, params, render, renderedFrame, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus, lastFindingPath)) {
+        if (RunInLoopFindingCapture(exeDir, view, params, render, lens, renderedFrame, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus, lastFindingPath)) {
             ioSidecarStateValid = false;
             ioSidecarBudgetStateValid = false;
         }
@@ -3024,7 +3039,7 @@ static void RunViewerFrame(
         actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
         rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, renderedFrame, stats, lensSdfProbe, dirty);
 
-    RunPendingInLoopCaptures(exeDir, actions, view, params, render, stats, rgba,
+    RunPendingInLoopCaptures(exeDir, actions, view, params, render, lens, stats, rgba,
         renderedFrame, colorPipelineWindow, sidecarState, sidecarStateValid,
         sidecarControllerPolicy,
         sidecarMutationHistory, sidecarMutationHistoryValid,

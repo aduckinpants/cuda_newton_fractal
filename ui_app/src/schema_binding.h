@@ -18,6 +18,8 @@ struct BindingContext {
     double ui_automation_set_control_value = 0.0;
     bool* ui_automation_set_consumed = nullptr;
     std::string* ui_automation_set_error = nullptr;
+    const std::string* ui_automation_click_control_id = nullptr;
+    bool* ui_automation_click_consumed = nullptr;
 
     std::string GetEnumId(const std::string& path) const;
     bool SetEnumId(const std::string& path, const std::string& id);
