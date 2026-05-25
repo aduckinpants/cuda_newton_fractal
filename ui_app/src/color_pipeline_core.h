@@ -231,6 +231,46 @@ inline FunctionDescriptor MakeColorPipelineFunction(
     return descriptor;
 }
 
+enum class ColorPipelineSourceSignalKind {
+    scalar,
+    phase,
+    categorical,
+};
+
+inline const char* ColorPipelineSourceSignalKindId(ColorPipelineSourceSignalKind value) {
+    switch (value) {
+    case ColorPipelineSourceSignalKind::scalar:
+        return "scalar";
+    case ColorPipelineSourceSignalKind::phase:
+        return "phase";
+    case ColorPipelineSourceSignalKind::categorical:
+        return "categorical";
+    }
+    return "scalar";
+}
+
+inline ColorPipelineSourceSignalKind ColorPipelineSourceSignalKindForSignal(ColorSignal value) {
+    switch (value) {
+    case ColorSignal::phase_angle:
+    case ColorSignal::orbit_stripe:
+    case ColorSignal::sdf_normal_angle:
+        return ColorPipelineSourceSignalKind::phase;
+    case ColorSignal::root_index:
+    case ColorSignal::sdf_inside_outside:
+        return ColorPipelineSourceSignalKind::categorical;
+    case ColorSignal::iteration_count:
+    case ColorSignal::smooth_escape:
+    case ColorSignal::iteration_bands:
+    case ColorSignal::escape_magnitude:
+    case ColorSignal::root_proximity:
+    case ColorSignal::sdf_signed_distance:
+    case ColorSignal::sdf_boundary_band:
+    case ColorSignal::sdf_curvature:
+        return ColorPipelineSourceSignalKind::scalar;
+    }
+    return ColorPipelineSourceSignalKind::scalar;
+}
+
 inline const char* AdvancedColorSignalFunctionId(ColorSignal value) {
     switch (value) {
     case ColorSignal::smooth_escape:
@@ -311,6 +351,21 @@ inline bool TryParseAdvancedColorSignalFunctionId(const std::string& functionId,
         return true;
     }
     return false;
+}
+
+inline ColorPipelineSourceSignalKind ColorPipelineSourceSignalKindForFunctionId(const char* functionId) {
+    if (!functionId) {
+        return ColorPipelineSourceSignalKind::scalar;
+    }
+    ColorSignal signal = ColorSignal::smooth_escape;
+    if (!TryParseAdvancedColorSignalFunctionId(functionId, &signal)) {
+        return ColorPipelineSourceSignalKind::scalar;
+    }
+    return ColorPipelineSourceSignalKindForSignal(signal);
+}
+
+inline bool ColorPipelineSourceFunctionIsPhaseSignal(const char* functionId) {
+    return ColorPipelineSourceSignalKindForFunctionId(functionId) == ColorPipelineSourceSignalKind::phase;
 }
 
 inline const char* AdvancedColorPaletteFunctionId(ColorPalette value) {

@@ -213,6 +213,69 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
         "TestLaneCatalogFiltersRuntimeBackedRows_UnknownCatalogMissing");
 }
 
+void TestSourceSignalKindMetadata() {
+    using color_pipeline_core::ColorPipelineSourceSignalKind;
+    Check(std::string(color_pipeline_core::ColorPipelineSourceSignalKindId(ColorPipelineSourceSignalKind::scalar)) == "scalar",
+        "TestSourceSignalKindMetadata_ScalarId");
+    Check(std::string(color_pipeline_core::ColorPipelineSourceSignalKindId(ColorPipelineSourceSignalKind::phase)) == "phase",
+        "TestSourceSignalKindMetadata_PhaseId");
+    Check(std::string(color_pipeline_core::ColorPipelineSourceSignalKindId(ColorPipelineSourceSignalKind::categorical)) == "categorical",
+        "TestSourceSignalKindMetadata_CategoricalId");
+
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForSignal(ColorSignal::sdf_normal_angle) ==
+            ColorPipelineSourceSignalKind::phase,
+        "TestSourceSignalKindMetadata_SdfNormalAngleIsPhase");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("sdf_normal_angle") ==
+            ColorPipelineSourceSignalKind::phase,
+        "TestSourceSignalKindMetadata_SdfNormalAngleFunctionIsPhase");
+    Check(color_pipeline_core::ColorPipelineSourceFunctionIsPhaseSignal("sdf_normal_angle"),
+        "TestSourceSignalKindMetadata_SdfNormalAnglePhasePredicate");
+
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForSignal(ColorSignal::phase_angle) ==
+            ColorPipelineSourceSignalKind::phase,
+        "TestSourceSignalKindMetadata_PhaseOrbitIsPhase");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("orbit_stripe") ==
+            ColorPipelineSourceSignalKind::phase,
+        "TestSourceSignalKindMetadata_OrbitStripeIsPhase");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForSignal(ColorSignal::root_index) ==
+            ColorPipelineSourceSignalKind::categorical,
+        "TestSourceSignalKindMetadata_RootIndexIsCategorical");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("sdf_inside_outside") ==
+            ColorPipelineSourceSignalKind::categorical,
+        "TestSourceSignalKindMetadata_SdfInsideOutsideIsCategorical");
+
+    const ColorSignal scalarSignals[] = {
+        ColorSignal::smooth_escape,
+        ColorSignal::iteration_count,
+        ColorSignal::iteration_bands,
+        ColorSignal::escape_magnitude,
+        ColorSignal::root_proximity,
+        ColorSignal::sdf_signed_distance,
+        ColorSignal::sdf_boundary_band,
+        ColorSignal::sdf_curvature,
+    };
+    for (ColorSignal signal : scalarSignals) {
+        Check(color_pipeline_core::ColorPipelineSourceSignalKindForSignal(signal) ==
+                ColorPipelineSourceSignalKind::scalar,
+            "TestSourceSignalKindMetadata_ExpectedScalarSignal");
+    }
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("smooth_escape_ramp") ==
+            ColorPipelineSourceSignalKind::scalar,
+        "TestSourceSignalKindMetadata_SmoothEscapeFunctionIsScalar");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("sdf_signed_distance") ==
+            ColorPipelineSourceSignalKind::scalar,
+        "TestSourceSignalKindMetadata_SdfSignedDistanceFunctionIsScalar");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("sdf_boundary_band") ==
+            ColorPipelineSourceSignalKind::scalar,
+        "TestSourceSignalKindMetadata_SdfBoundaryBandFunctionIsScalar");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("sdf_curvature") ==
+            ColorPipelineSourceSignalKind::scalar,
+        "TestSourceSignalKindMetadata_SdfCurvatureFunctionIsScalar");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("missing_source") ==
+            ColorPipelineSourceSignalKind::scalar,
+        "TestSourceSignalKindMetadata_UnknownDefaultsScalar");
+}
+
 void TestRowBuildersAndDefaults() {
     const ColorPipelineLaneCatalog* source = color_pipeline_core::FindColorPipelineLaneCatalog("source");
     const ColorPipelineLaneCatalog* shape = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
@@ -672,6 +735,7 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
 int main() {
     TestFunctionIdMappingsRoundTrip();
     TestLaneCatalogFiltersRuntimeBackedRows();
+    TestSourceSignalKindMetadata();
     TestRowBuildersAndDefaults();
     TestRowFunctionSwitchPreservesSharedParams();
     TestImportAndApplySupportedParams();

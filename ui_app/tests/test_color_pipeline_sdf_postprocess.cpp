@@ -1,4 +1,5 @@
 #include "../src/color_pipeline_sdf_postprocess.h"
+#include "../src/color_pipeline_core.h"
 
 #include <cmath>
 #include <cstdio>
@@ -112,6 +113,36 @@ void TestBoundaryBandWidthChangesPostprocessFrame() {
         "TestBoundaryBandWidthChangesPostprocessFrame_WidthChangesFrame");
 }
 
+void TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources() {
+    const SdfFieldResult field = MakeTestField();
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams baseNormalAngle = SdfParams(ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel);
+    KernelParams offsetNormalAngle = baseNormalAngle;
+    offsetNormalAngle.color_source_stack[0].params.bias = 0.25f;
+
+    std::vector<std::uint32_t> basePixels(16, 0x12345678u);
+    std::vector<std::uint32_t> offsetPixels(16, 0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, baseNormalAngle, basePixels.data(), &error),
+        "TestNormalAnglePhaseOffsetChangesFrame_BaseSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, offsetNormalAngle, offsetPixels.data(), &error),
+        "TestNormalAnglePhaseOffsetChangesFrame_OffsetSucceeds");
+    Check(HashFrame(basePixels) != HashFrame(offsetPixels),
+        "TestNormalAnglePhaseOffsetChangesFrame_PhaseOffsetMovesFrame");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForSignal(ColorSignal::sdf_normal_angle) ==
+            color_pipeline_core::ColorPipelineSourceSignalKind::phase,
+        "TestNormalAnglePhaseOffsetChangesFrame_NormalAngleClassifiedPhase");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForSignal(ColorSignal::sdf_signed_distance) ==
+            color_pipeline_core::ColorPipelineSourceSignalKind::scalar,
+        "TestNormalAnglePhaseOffsetChangesFrame_SignedDistanceRemainsScalar");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForSignal(ColorSignal::sdf_boundary_band) ==
+            color_pipeline_core::ColorPipelineSourceSignalKind::scalar,
+        "TestNormalAnglePhaseOffsetChangesFrame_BoundaryBandRemainsScalar");
+}
+
 void TestMixedSourceStackFailsClosed() {
     const SdfFieldResult field = MakeTestField();
     RenderSettings render{};
@@ -136,6 +167,7 @@ void TestMixedSourceStackFailsClosed() {
 int main() {
     TestEachSdfSourceSignalPostprocessesFrame();
     TestBoundaryBandWidthChangesPostprocessFrame();
+    TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources();
     TestMixedSourceStackFailsClosed();
 
     std::printf("test_color_pipeline_sdf_postprocess: passed=%d failed=%d\n", g_passed, g_failed);

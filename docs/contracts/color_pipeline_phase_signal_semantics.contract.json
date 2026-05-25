@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_phase_signal_semantics",
+  "feature_id": "color_pipeline_phase_signal_semantics",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/color_pipeline_phase_signal_semantics_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/color_pipeline_phase_signal_semantics_PHASED_PLAN.md",
+    "docs/contracts/color_pipeline_phase_signal_semantics.contract.json",
+    "HANDOFF_LOG.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_sdf_postprocess.cpp",
+    "ui_app/src/color_pipeline_sdf_postprocess.h",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "tests",
+    "tests/test_fractal_runtime_capture_replay_authority.py",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "tests/test_fractal_runtime_sdf_viewport_overlay.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "classify SDF normal angle as circular phase data",
+    "keep signed distance, boundary band, curvature, smooth escape, and root proximity non-phase",
+    "add a compact diagnostic matrix for phase-wrap seam behavior",
+    "preserve capture/replay authority and existing SDF Color Pipeline behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "add SDF-native selectable fractal lanes in this slice",
+    "add authored SDF pack live viewport integration in this slice",
+    "redesign phase-safe Color Pipeline shape lanes in this slice",
+    "add vector normal source rows in this slice",
+    "replace the renderer in this slice",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "sdf_normal_angle_signal_kind": "phase",
+    "sdf_signed_distance_signal_kind": "scalar",
+    "sdf_boundary_band_signal_kind": "scalar",
+    "sdf_curvature_signal_kind": "scalar",
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "sdf_native_lane": "forbidden",
+    "authored_pack_live_integration": "forbidden",
+    "phase_shape_redesign": "forbidden",
+    "vector_normal_sources": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_phase_signal_test_core --log artifacts/logs/color_pipeline_phase_signal_test_core.log --out-json artifacts/validation/color_pipeline_phase_signal_test_core.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_phase_signal_test_sdf_postprocess --log artifacts/logs/color_pipeline_phase_signal_test_sdf_postprocess.log --out-json artifacts/validation/color_pipeline_phase_signal_test_sdf_postprocess.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_phase_signal_runtime_publish --log artifacts/logs/color_pipeline_phase_signal_runtime_publish.log --out-json artifacts/validation/color_pipeline_phase_signal_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_phase_signal_runtime_pytest --log artifacts/logs/color_pipeline_phase_signal_runtime_pytest.log --out-json artifacts/validation/color_pipeline_phase_signal_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_phase_signal_semantics.py tests/test_fractal_runtime_capture_replay_authority.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py tests/test_fractal_runtime_sdf_viewport_overlay.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_phase_signal_semantics.contract.json --out-json artifacts/validation/color_pipeline_phase_signal_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_phase_signal_semantics_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_phase_signal_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_phase_signal_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_phase_signal_diff_check --log artifacts/logs/color_pipeline_phase_signal_diff_check.log --out-json artifacts/validation/color_pipeline_phase_signal_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The phase signal semantics contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_phase_signal_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The phase signal semantics hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_phase_signal_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
