@@ -130,7 +130,7 @@ Timing rule:
 
 ## 5. Lens SDF Follow-Ups
 
-Status: partially shipped substrate. Capture/replay authority, phase-signal metadata, and Color Pipeline fractal-switch preservation are shipped; forward SDF feature work is paused for Color Pipeline composition/preset UX review.
+Status: partially shipped substrate. Capture/replay authority, phase-signal metadata, and Color Pipeline fractal-switch preservation are shipped; forward SDF feature work is paused for the active Color Pipeline composition/preset UX review in `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md`.
 
 Shipped since the original deferred note:
 - `lens.downsample` control truth is repaired.
@@ -151,6 +151,7 @@ Shipped since the original deferred note:
 
 Active follow-up:
 - Pause forward SDF feature work until the next Color Pipeline composition/preset UX step is reviewed.
+- The active review identifies effective Source-stack summaries as the smallest trust repair, keeps full-field `sdf_normal_angle` as a diagnostic phase source, and slots boundary-masked normal-angle plus SDF mask/gate operands as later Color Pipeline composition steps.
 
 Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.

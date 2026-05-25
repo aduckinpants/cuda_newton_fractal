@@ -104,6 +104,22 @@ Next correct step:
 
 ---
 
+## P1 - Color Pipeline composition and effective-source UX are underdeveloped
+
+**Status:** active planning in `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md`
+**Area:** advanced color / SDF source rows / presets
+
+The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows, but the authoring model still exposes implementation seams too directly. In particular, captures/reports can be misread when legacy top-level fields like `color_signal` are treated as the effective source even though a non-empty `color_source_stack` is the real render authority.
+
+Current review direction:
+- Add effective Source-stack summary/report clarity first.
+- Preserve full-field `sdf_normal_angle` as a diagnostic phase view.
+- Add a later boundary-masked normal-angle beauty mode rather than deleting the diagnostic behavior.
+- Treat SDF fields as typed Source signals now, with SDF masks/gates as the next plausible composition operand.
+- Keep full preset manager UI, authored SDF pack viewport integration, and SDF-native lanes as separate slices.
+
+---
+
 ## P1 - Advanced color reset and mode controls can desync live color state
 
 **Status:** resolved by `ck:80387857`

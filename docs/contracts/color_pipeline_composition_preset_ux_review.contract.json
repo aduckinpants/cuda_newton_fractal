@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_composition_preset_ux_review",
+  "feature_id": "color_pipeline_composition_preset_ux_review",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes",
+    "docs/contracts",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "record SDF normal-angle diagnostic versus beauty-mode follow-up without calling the existing visual effect a kernel bug",
+    "review Color Pipeline function-library shape and identify bounded follow-up slices",
+    "evaluate SDF fields as reusable Color Pipeline operands without adding SDF-native lanes in this slice",
+    "keep shipped SDF rows, capture/replay authority, phase metadata, and fractal-switch preservation intact"
+  ],
+  "forbidden_operator_prompts": [
+    "implement a full Color Pipeline preset manager in this slice",
+    "implement a Factorio-style composition UI in this slice",
+    "add SDF-native selectable fractal lanes in this slice",
+    "add authored SDF pack live viewport integration in this slice",
+    "add arbitrary shader/function execution in this slice",
+    "replace the renderer in this slice",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "sdf_normal_angle_full_field_diagnostic_preserved": true,
+    "effective_source_stack_authority_documented": true,
+    "broad_color_pipeline_redesign": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "full_preset_manager": "forbidden",
+    "factorio_style_composition_ui": "forbidden",
+    "sdf_native_lane": "forbidden",
+    "authored_pack_live_integration": "forbidden",
+    "arbitrary_shader_execution": "forbidden",
+    "renderer_replacement": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_composition_preset_ux_review.contract.json --out-json artifacts/validation/color_pipeline_composition_preset_ux_review_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_composition_preset_ux_review_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_composition_preset_ux_review_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_composition_preset_ux_review_diff_check --log artifacts/logs/color_pipeline_composition_preset_ux_review_diff_check.log --out-json artifacts/validation/color_pipeline_composition_preset_ux_review_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Color Pipeline composition/preset UX review contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_composition_preset_ux_review_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Color Pipeline composition/preset UX review hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_composition_preset_ux_review_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

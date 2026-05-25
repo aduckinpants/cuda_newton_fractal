@@ -1,19 +1,20 @@
 # Advanced Color Preset Pit Of Success
 
-> COME BACK AND REFINE THIS BEFORE WORKING IT.
+> Historical planning surface. The active refinement lane is now
+> `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md`.
 > 
 > This is intentionally a design-only planning slice for now. Do not start preset implementation until the Slice 1 UI integration harness is real, trusted, and mandatory workflow proof for user-facing UI behavior changes.
 
 ## Current Phase
 
-Phase 0 parked - design placeholder only, gated on the UI integration harness becoming mandatory before any preset code work begins
+Phase 0 parked - design placeholder only. Do not implement from this document directly; refine through the active Color Pipeline composition/preset UX review first.
 
 ## Phase Checklist
 
 - [ ] Phase 1 - define the preset product invariants, normalization rules, and safety defaults around authored draft preservation versus live-supported projection
 - [ ] Phase 2 - define preset v0 as a deterministic default-preset path with minimal or no UI chrome if UI exposure would slow the safety work down
 - [ ] Phase 3 - define the future composition model and simple chain rule so later add/blend/compose behavior can land without chaos
-- [ ] Phase 4 - reopen this slice only after the Slice 1 harness can write truthful REDs and receipts for preset behavior through the real app/runtime path
+- [ ] Phase 4 - reopen this slice only after the active composition/preset UX review selects preset implementation as the next bounded code slice
 
 ## Explicit User Asks
 
@@ -68,6 +69,6 @@ The local hypothesis is that presets should preserve authored draft intent separ
   - do not force a full preset UI in v0 if a safe default-preset path is enough
   - do not implement future composition-chain math here until the simple rules are refined against real harness-backed tests
 
-## Resume Point
+## Next Use
 
-Do not implement from this document yet. Reopen it only after Slice 1 Phase 4 is complete, then refine the plan around harness-backed REDs for authored draft preservation, support-gap normalization, and deterministic future chain behavior.
+Do not implement from this document yet. The current active planning surface is `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md`, which must first settle effective Source-stack summaries, authored intent versus live projection, and the small function-library/composition follow-up order.
