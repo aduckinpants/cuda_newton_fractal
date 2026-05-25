@@ -130,7 +130,7 @@ Timing rule:
 
 ## 5. Lens SDF Follow-Ups
 
-Status: partially shipped substrate with capture/replay authority and later phase-signal/authored/SDF-native product follow-ups still deferred.
+Status: partially shipped substrate. Capture/replay authority and phase-signal metadata are shipped; forward SDF feature work is paused behind the Color Pipeline fractal-switch preservation regression and later Color Pipeline composition UX review.
 
 Shipped since the original deferred note:
 - `lens.downsample` control truth is repaired.
@@ -145,12 +145,13 @@ Shipped since the original deferred note:
 - Shared Lens Downsample visibility/control authority is shipped when Color Pipeline SDF rows use the field.
 - Normal viewport SDF overlays for boundary, band, and field-debug modes are shipped.
 - SDF Source row tuning controls, `sdf_boundary_band` boundary width, and the Color Pipeline Source-section SDF Field Downsample alias are shipped.
+- Capture/replay authority is shipped: `state.json` serializes Lens replay settings, explicit state loading accepts arbitrary JSON filenames, and a fast SDF/non-SDF replay matrix is in place.
+- Color Pipeline phase-signal metadata is shipped: `sdf_normal_angle` is classified as phase-like while signed distance, boundary band, and curvature remain scalar.
 
 Active follow-up:
-- Repair capture/replay authority so `state.json` fully reproduces Lens-backed SDF Color Pipeline captures, including arbitrary explicit `--load-state-json` filenames and a fast replay smoke matrix.
+- Pause forward SDF feature work until the Color Pipeline fractal-switch preservation regression is repaired and the next Color Pipeline composition/preset UX step is reviewed.
 
 Still deferred follow-ups:
-- Add Color Pipeline phase-signal metadata for `sdf_normal_angle` after replay authority is green.
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.
 - Add authored SDF pack UI/live viewport integration after the normal field consumers are stable.
 - Keep treating Lens SDF as the first mask-derived SDF field producer, not as the place to embed authored SDF packs.

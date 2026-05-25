@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, and SDF Source row customization. The active near-term gap is capture/replay authority for Lens-backed SDF Color Pipeline captures; SDF-native fractal lanes remain deferred.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, and phase-signal metadata. Forward SDF feature work is paused behind the Color Pipeline fractal-switch preservation regression and later Color Pipeline composition UX review; SDF-native fractal lanes remain deferred.
 
 Shipped since this roadmap was first written:
 
@@ -19,14 +19,15 @@ Shipped since this roadmap was first written:
 - Shared Lens Downsample visibility/control authority when Color Pipeline SDF rows use the field.
 - Normal viewport SDF overlay productization for boundary, band, and field-debug modes.
 - SDF Source row customization: visible Scale/Bias/Blend Weight controls, `sdf_boundary_band` boundary width, and a Source-section alias for shared SDF Field Downsample.
+- Capture/replay authority: top-level Lens state in `state.json`, arbitrary explicit `--load-state-json` filenames, and a fast SDF/non-SDF replay smoke matrix.
+- Phase-signal metadata: `sdf_normal_angle` is classified as phase-like, while signed distance, boundary band, and curvature remain scalar.
 
 Active next slice:
 
-- Capture/replay authority smoke matrix: serialize/load top-level Lens state, accept arbitrary explicit `--load-state-json` filenames, and prove small SDF/non-SDF captures replay to identical frame hashes from emitted `state.json`.
+- Color Pipeline fractal-switch preservation regression: keep authored/live Color Pipeline edits when switching to a fractal that still supports them, and only project to a supported default when the active pipeline is actually unsupported.
 
 Still deferred:
 
-- Color Pipeline phase-signal metadata for `sdf_normal_angle`.
 - SDF-native selectable fractal lanes.
 - Authored SDF pack UI/live viewport integration.
 
@@ -598,9 +599,10 @@ Recommended immediate ordering:
 9. Live Color Pipeline SDF rows. Shipped.
 10. Viewport overlay. Shipped.
 11. SDF Source row customization and Source-section field-resolution UX. Shipped.
-12. Capture/replay authority smoke matrix. Active.
-13. Color Pipeline phase-signal metadata. Deferred until replay authority is green.
-14. First SDF-native fractal lane. Deferred.
+12. Capture/replay authority smoke matrix. Shipped.
+13. Color Pipeline phase-signal metadata. Shipped.
+14. Color Pipeline fractal-switch preservation regression. Active before forward SDF feature work resumes.
+15. First SDF-native fractal lane. Deferred.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
 blocks all other product polish. It also keeps the first implementation wins

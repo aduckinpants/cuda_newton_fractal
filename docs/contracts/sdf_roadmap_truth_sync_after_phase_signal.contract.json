@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "contract_id": "sdf_roadmap_truth_sync_after_phase_signal",
+  "feature_id": "sdf_roadmap_truth_sync_after_phase_signal",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_roadmap_truth_sync_after_phase_signal_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_roadmap_truth_sync_after_phase_signal_PHASED_PLAN.md",
+    "docs/contracts/sdf_roadmap_truth_sync_after_phase_signal.contract.json",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "sync SDF roadmap docs after capture replay authority shipped",
+    "sync SDF roadmap docs after phase-signal metadata shipped",
+    "pause forward SDF work behind the Color Pipeline fractal-switch preservation regression"
+  ],
+  "forbidden_operator_prompts": [
+    "change product code in this docs-only slice",
+    "start authored SDF UI in this slice",
+    "start SDF-native fractal lanes in this slice",
+    "start Color Pipeline composition UI implementation in this slice"
+  ],
+  "required_defaults": {
+    "capture_replay_authority_status": "shipped",
+    "phase_signal_metadata_status": "shipped",
+    "forward_sdf_work_status": "paused_behind_color_pipeline_regression"
+  },
+  "forbidden_defaults": {
+    "product_code_mutation": "forbidden",
+    "authored_sdf_ui": "forbidden",
+    "sdf_native_lanes": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_roadmap_truth_sync_after_phase_signal.contract.json --out-json artifacts/validation/sdf_roadmap_truth_sync_after_phase_signal_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_roadmap_truth_sync_after_phase_signal_PHASED_PLAN.md --out-json artifacts/validation/sdf_roadmap_truth_sync_after_phase_signal_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_roadmap_truth_sync_after_phase_signal_stale_grep --log artifacts/logs/sdf_roadmap_truth_sync_after_phase_signal_stale_grep.log --out-json artifacts/validation/sdf_roadmap_truth_sync_after_phase_signal_stale_grep.json --heartbeat-seconds 30 --timeout-seconds 120 -- powershell -NoProfile -Command '$patterns=\"Active follow-up: capture/replay|capture/replay authority smoke matrix for Lens-backed|Deferred: phase-signal metadata|Deferred until replay authority is green|Add Color Pipeline phase-signal metadata for `sdf_normal_angle` after replay authority is green|Repair capture/replay authority so `state.json` fully reproduces\"; rg -n $patterns spec_intake/_STATUS.md DEFERRED_THREADS.md docs/notes/sdf_field_pack_near_term_TODO.md; if ($LASTEXITCODE -eq 1) { exit 0 }; exit $LASTEXITCODE'",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_roadmap_truth_sync_after_phase_signal_diff_check --log artifacts/logs/sdf_roadmap_truth_sync_after_phase_signal_diff_check.log --out-json artifacts/validation/sdf_roadmap_truth_sync_after_phase_signal_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF roadmap truth-sync contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_roadmap_truth_sync_after_phase_signal_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF roadmap truth-sync hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_roadmap_truth_sync_after_phase_signal_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
