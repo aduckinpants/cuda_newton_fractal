@@ -24,6 +24,8 @@ struct SdfFieldSignalSample {
     float curvature_estimate{0.0f};
 };
 
+float ResolveSdfBoundaryBandFromSignedDistancePx(float signed_distance_px, const SdfFieldSignalConfig& config);
+
 bool SampleSdfFieldSignals(
     const SdfFieldView& field,
     int x,

@@ -188,6 +188,51 @@ void TestBoundaryBandWidthStillAffectsMixedSdfStack() {
         "TestBoundaryBandWidthStillAffectsMixedSdfStack_BoundaryConfigNotLost");
 }
 
+void TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood() {
+    const SdfFieldResult field = MakeTestField();
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams params = SdfParams(ColorSignal::sdf_signed_distance);
+    params.color_source_stack_count = 3;
+    params.color_source_stack[0].signal = ColorSignal::sdf_signed_distance;
+    params.color_source_stack[0].params.scale = 0.05f;
+    params.color_source_stack[0].params.bias = 0.5f;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    params.color_source_stack[1].signal = ColorSignal::sdf_inside_outside;
+    params.color_source_stack[1].params.blend_weight = 0.25f;
+    params.color_source_stack[2].signal = ColorSignal::sdf_boundary_band;
+    params.color_source_stack[2].params.blend_weight = 0.5f;
+    params.color_source_stack[2].params.sdf_boundary_width_px = 4.0f;
+
+    std::vector<std::uint32_t> pixels(16, 0x12345678u);
+    std::string error;
+    SdfColorPipelinePostprocessStats stats{};
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, pixels.data(), &error, &stats),
+        "TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood_PostprocessSucceeds");
+    Check(stats.direct_sample_count == 16,
+        "TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood_DirectSamplesEveryPixel");
+    Check(stats.neighborhood_sample_count == 0,
+        "TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood_NoNeighborhoodSamples");
+}
+
+void TestNormalAngleRequiresNeighborhoodSamples() {
+    const SdfFieldResult field = MakeTestField();
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams params = SdfParams(ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel);
+    std::vector<std::uint32_t> pixels(16, 0x12345678u);
+    std::string error;
+    SdfColorPipelinePostprocessStats stats{};
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, pixels.data(), &error, &stats),
+        "TestNormalAngleRequiresNeighborhoodSamples_PostprocessSucceeds");
+    Check(stats.direct_sample_count == 0,
+        "TestNormalAngleRequiresNeighborhoodSamples_NoDirectOnlySamples");
+    Check(stats.neighborhood_sample_count == 16,
+        "TestNormalAngleRequiresNeighborhoodSamples_NeighborhoodSamplesEveryPixel");
+}
+
 } // namespace
 
 int main() {
@@ -196,6 +241,8 @@ int main() {
     TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources();
     TestMixedSourceStackFailsClosed();
     TestBoundaryBandWidthStillAffectsMixedSdfStack();
+    TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood();
+    TestNormalAngleRequiresNeighborhoodSamples();
 
     std::printf("test_color_pipeline_sdf_postprocess: passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;

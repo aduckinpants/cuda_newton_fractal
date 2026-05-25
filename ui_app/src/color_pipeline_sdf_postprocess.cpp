@@ -25,6 +25,10 @@ int ClampIntLocal(int value, int lo, int hi) {
     return value;
 }
 
+bool SdfSignalNeedsNeighborhood(ColorSignal signal) {
+    return signal == ColorSignal::sdf_normal_angle || signal == ColorSignal::sdf_curvature;
+}
+
 SdfFieldSignalKind SignalKindForColorSignal(ColorSignal signal) {
     switch (signal) {
     case ColorSignal::sdf_inside_outside:
@@ -72,6 +76,20 @@ bool EntryNeedsDistinctSignalSample(
     return !BoundaryBandConfigMatches(SignalConfigForSourceEntry(entry), cachedConfig);
 }
 
+bool SampleSdfCenterValue(const SdfFieldView& field, int fx, int fy, float* outValue) {
+    if (!outValue || !field.signed_distance_px || fx < 0 || fy < 0 || fx >= field.width || fy >= field.height) {
+        return false;
+    }
+    const std::size_t index = static_cast<std::size_t>(fy) * static_cast<std::size_t>(field.width) +
+        static_cast<std::size_t>(fx);
+    const float value = field.signed_distance_px[index];
+    if (!std::isfinite(value)) {
+        return false;
+    }
+    *outValue = value;
+    return true;
+}
+
 bool ResolveSdfSourceValue(
     const SdfFieldView& field,
     int fx,
@@ -89,10 +107,89 @@ bool ResolveSdfSourceValue(
     return true;
 }
 
+bool ResolveDirectSdfSourceValueFromCenter(
+    float center,
+    const ColorPipelineSourceStackEntry& entry,
+    float* outValue) {
+    if (!outValue || SdfSignalNeedsNeighborhood(entry.signal)) {
+        return false;
+    }
+    float value = center;
+    if (entry.signal == ColorSignal::sdf_inside_outside) {
+        value = center < 0.0f ? 1.0f : 0.0f;
+    } else if (entry.signal == ColorSignal::sdf_boundary_band) {
+        value = ResolveSdfBoundaryBandFromSignedDistancePx(center, SignalConfigForSourceEntry(entry));
+    } else if (entry.signal != ColorSignal::sdf_signed_distance) {
+        return false;
+    }
+    *outValue = value * entry.params.scale + entry.params.bias;
+    return true;
+}
+
 ColorPipelineSourceStackEntry FlatSdfSourceEntry(const KernelParams& params) {
     ColorPipelineSourceStackEntry entry;
     entry.signal = params.color_pipeline.signal;
     return entry;
+}
+
+bool ResolveDirectSdfPipelineSignal(
+    const SdfFieldView& field,
+    int fx,
+    int fy,
+    const KernelParams& params,
+    float* outSignal,
+    std::string* outError) {
+    if (!outSignal) {
+        if (outError) *outError = "SDF Color Pipeline postprocess requires output storage";
+        return false;
+    }
+    float center = 0.0f;
+    if (!SampleSdfCenterValue(field, fx, fy, &center)) {
+        if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
+        return false;
+    }
+
+    const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
+    if (sourceStackCount <= 0) {
+        if (!IsColorPipelineSdfSourceSignal(params.color_pipeline.signal)) {
+            if (outError) *outError = "SDF Color Pipeline postprocess was requested without an SDF source signal";
+            return false;
+        }
+        if (!ResolveDirectSdfSourceValueFromCenter(center, FlatSdfSourceEntry(params), outSignal)) {
+            if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
+            return false;
+        }
+        return true;
+    }
+
+    const ColorPipelineSourceStackEntry& first = params.color_source_stack[0];
+    if (!IsColorPipelineSdfSourceSignal(first.signal)) {
+        if (outError) *outError = "SDF Color Pipeline source stack contains a non-SDF first Source row";
+        return false;
+    }
+    float signal = 0.0f;
+    if (!ResolveDirectSdfSourceValueFromCenter(center, first, &signal)) {
+        if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
+        return false;
+    }
+    for (int index = 1; index < sourceStackCount; ++index) {
+        const ColorPipelineSourceStackEntry& entry = params.color_source_stack[index];
+        if (!IsColorPipelineSdfSourceSignal(entry.signal)) {
+            if (outError) *outError = "SDF Color Pipeline source stack mixes SDF and non-SDF Source rows";
+            return false;
+        }
+        float nextSignal = 0.0f;
+        if (!ResolveDirectSdfSourceValueFromCenter(center, entry, &nextSignal)) {
+            if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
+            return false;
+        }
+        signal = EscapeTimeColorLerp(
+            signal,
+            nextSignal,
+            EscapeTimeColorClamp(entry.params.blend_weight, 0.0f, 1.0f));
+    }
+    *outSignal = signal;
+    return true;
 }
 
 bool ResolveSdfPipelineSignal(
@@ -208,12 +305,28 @@ bool ColorPipelineSourceStackIsSdfOnly(const KernelParams& params, std::string* 
     return hasSdf;
 }
 
+bool ColorPipelineSdfPostprocessCanUseDirectSamples(const KernelParams& params) {
+    const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
+    if (sourceStackCount > 0) {
+        for (int index = 0; index < sourceStackCount; ++index) {
+            const ColorSignal signal = params.color_source_stack[index].signal;
+            if (!IsColorPipelineSdfSourceSignal(signal) || SdfSignalNeedsNeighborhood(signal)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return IsColorPipelineSdfSourceSignal(params.color_pipeline.signal) &&
+        !SdfSignalNeedsNeighborhood(params.color_pipeline.signal);
+}
+
 bool ApplyLensSdfColorPipelinePostprocess(
     const SdfFieldView& field,
     const RenderSettings& render,
     const KernelParams& params,
     std::uint32_t* ioRgba,
-    std::string* outError) {
+    std::string* outError,
+    SdfColorPipelinePostprocessStats* outStats) {
     if (!ioRgba || render.resolution.x <= 0 || render.resolution.y <= 0) {
         if (outError) *outError = "SDF Color Pipeline postprocess received an invalid render target";
         return false;
@@ -222,10 +335,14 @@ bool ApplyLensSdfColorPipelinePostprocess(
         if (outError) *outError = "SDF Color Pipeline postprocess requires a valid Lens SDF field";
         return false;
     }
+    if (outStats) {
+        *outStats = {};
+    }
     if (!ColorPipelineSourceStackIsSdfOnly(params, outError)) {
         return false;
     }
 
+    const bool useDirectSamples = ColorPipelineSdfPostprocessCanUseDirectSamples(params);
     const int width = render.resolution.x;
     const int height = render.resolution.y;
     for (int y = 0; y < height; ++y) {
@@ -233,8 +350,18 @@ bool ApplyLensSdfColorPipelinePostprocess(
         for (int x = 0; x < width; ++x) {
             const int fx = ClampIntLocal((static_cast<long long>(x) * field.width) / width, 0, field.width - 1);
             float signal = 0.0f;
-            if (!ResolveSdfPipelineSignal(field, fx, fy, params, &signal, outError)) {
+            const bool resolved = useDirectSamples
+                ? ResolveDirectSdfPipelineSignal(field, fx, fy, params, &signal, outError)
+                : ResolveSdfPipelineSignal(field, fx, fy, params, &signal, outError);
+            if (!resolved) {
                 return false;
+            }
+            if (outStats) {
+                if (useDirectSamples) {
+                    ++outStats->direct_sample_count;
+                } else {
+                    ++outStats->neighborhood_sample_count;
+                }
             }
             const float shapedSignal = ApplyColorPipelineShapeValue(signal, params);
             Rgba8 color = SampleProgrammableEscapeTimePalette<Rgba8>(shapedSignal, true, params);

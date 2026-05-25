@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, and Color Pipeline fractal-switch preservation. Forward SDF feature work is paused for Color Pipeline composition/preset UX review in `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md`; SDF-native fractal lanes remain deferred.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, and realtime pacing telemetry. The active measured follow-up is SDF postprocess signal specialization in `docs/notes/sdf_postprocess_signal_specialization_PHASED_PLAN.md`; broader composition UX and SDF-native fractal lanes remain deferred behind that FPS work.
 
 Shipped since this roadmap was first written:
 
@@ -22,12 +22,13 @@ Shipped since this roadmap was first written:
 - Capture/replay authority: top-level Lens state in `state.json`, arbitrary explicit `--load-state-json` filenames, and a fast SDF/non-SDF replay smoke matrix.
 - Phase-signal metadata: `sdf_normal_angle` is classified as phase-like, while signed distance, boundary band, and curvature remain scalar.
 - Color Pipeline fractal-switch preservation: compatible fractal selector changes keep supported live/source-stack Color Pipeline state, while unsupported switches project to target defaults and clear stale source rows.
+- SDF realtime pacing telemetry: live reports now split base render, SDF field, SDF postprocess, and SDF total timing; pacing now reacts to visible SDF frame cost.
 
 Active next slice:
 
-- Color Pipeline composition/preset UX review: decide the next bounded step for draft labels, function library shape, effective Source-stack authority summaries, and chain composition workflow before returning to forward SDF feature work.
-- The current review preserves full-field `sdf_normal_angle` as diagnostic phase output and identifies boundary-masked normal-angle as the later beauty-mode follow-up.
-- SDF fields remain Source signals today. The next plausible composition expansion is SDF-backed masks/gates for Source rows, not SDF-native fractal lanes or authored SDF pack UI.
+- SDF postprocess signal specialization: scalar-only SDF Source rows should not pay for normal/curvature neighborhood sampling. This is the smallest measured performance step after the realtime pacing repair.
+- Per-row SDF downsample and GPU Color Pipeline postprocess remain follow-ups until scalar CPU authority is specialized and proven.
+- Color Pipeline composition/preset UX, boundary-masked normal-angle, and SDF-backed masks/gates remain planned product work after the current FPS slice.
 
 Still deferred:
 
@@ -605,8 +606,9 @@ Recommended immediate ordering:
 12. Capture/replay authority smoke matrix. Shipped.
 13. Color Pipeline phase-signal metadata. Shipped.
 14. Color Pipeline fractal-switch preservation regression. Shipped.
-15. Color Pipeline composition/preset UX review. Active before any additional forward SDF feature work; see `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md`.
-16. First SDF-native fractal lane. Deferred.
+15. SDF realtime pacing telemetry. Shipped.
+16. SDF postprocess signal specialization. Active measured FPS follow-up before broader SDF UX/function-library growth.
+17. First SDF-native fractal lane. Deferred.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
 blocks all other product polish. It also keeps the first implementation wins

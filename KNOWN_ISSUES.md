@@ -99,6 +99,8 @@ Later pacing/capture work repaired several concrete bugs: unknown-timing downsca
 Next correct step:
 - Add a persistent no-mouse telemetry harness that records input mutation time, render start/end, report publish time, preview scale, target/live dimensions, and settle timing in one viewer process.
 - Do not change pacing policy again until that harness shows the actual failure mode.
+- For SDF Color Pipeline workloads specifically, the active measured follow-up is postprocess optimization: scalar-only SDF Source rows should not compute normal/curvature neighborhoods, and per-row downsample/GPU postprocess remain separate later slices.
+- Do not treat SDF postprocess cost as a fractal kernel problem; the current telemetry distinguishes base render, field generation, and postprocess cost.
 
 **Files:** `ui_app/src/viewer_render_pacing.*`, `ui_app/src/main.cpp`, `tests/test_fractal_runtime_resolution_pacing.py`
 

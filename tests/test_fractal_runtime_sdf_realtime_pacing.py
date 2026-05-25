@@ -23,6 +23,17 @@ def _serialize_runtime_automation():
         yield
 
 
+def _capture_sdf_scalar_source_stack(*, exe_path: Path, state_path: Path) -> dict[str, object]:
+    return run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--color-pipeline-action",
+        "select_function:source:0:sdf_signed_distance",
+        "--capture-diagnostic",
+    )
+
+
 def _capture_sdf_heavy_source_stack(*, exe_path: Path, state_path: Path) -> dict[str, object]:
     return run_headless_capture(
         str(exe_path),
@@ -137,6 +148,14 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         "240",
     )
     seed_state_path = write_state_bundle(tmp_path / "sdf_realtime_seed", neutral_capture["state"])
+    scalar_stack_capture = _capture_sdf_scalar_source_stack(exe_path=exe_path, state_path=seed_state_path)
+    scalar_state = json.loads(json.dumps(scalar_stack_capture["state"]))
+    _configure_sdf_heavy_realtime_state(scalar_state)
+    scalar_params = scalar_state["params"]
+    assert isinstance(scalar_params, dict)
+    scalar_params["color_signal"] = "sdf_signed_distance"
+    scalar_state_path = write_state_bundle(tmp_path / "sdf_scalar_realtime_pacing", scalar_state)
+
     sdf_stack_capture = _capture_sdf_heavy_source_stack(exe_path=exe_path, state_path=seed_state_path)
     state = json.loads(json.dumps(sdf_stack_capture["state"]))
     _configure_sdf_heavy_realtime_state(state)
@@ -144,12 +163,18 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
 
     with PersistentRuntimeViewerAutomation(
         exe_path=exe_path,
-        state_path=state_path,
+        state_path=scalar_state_path,
         report_path=tmp_path / "sdf_realtime_pacing_report.json",
         command_path=tmp_path / "sdf_realtime_pacing_command.json",
     ) as viewer:
         viewer.wait_for_control("fractal_control.center_x.primary", timeout_seconds=20.0)
-        baseline = viewer.wait_for_report(timeout_seconds=60.0)
+        scalar_baseline = viewer.wait_for_report(timeout_seconds=60.0)
+        _assert_sdf_timing_payload(scalar_baseline)
+        assert scalar_baseline.get("render_pacing_preview_active") is False, scalar_baseline
+        assert int(scalar_baseline["lens_sdf_width"]) == int(scalar_baseline["rendered_frame_width"]), scalar_baseline
+        assert int(scalar_baseline["lens_sdf_height"]) == int(scalar_baseline["rendered_frame_height"]), scalar_baseline
+
+        baseline = viewer.load_state_json(state_path, expected_fractal_type="multibrot", timeout_seconds=60.0)
         _assert_sdf_timing_payload(baseline)
         assert baseline.get("render_pacing_preview_active") is False, baseline
         slow_threshold_ms = (1000.0 / 240.0) * 2.0
@@ -161,7 +186,7 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
             timeout_seconds=90.0,
         )
         _assert_sdf_timing_payload(edited)
-        assert edited.get("ui_automation_command_sequence") == 1, edited
+        assert edited.get("ui_automation_command_sequence") == viewer.sequence, edited
         assert edited.get("render_pacing_preview_active") is True, edited
         assert int(edited["rendered_frame_width"]) < int(edited["target_render_width"]), edited
         assert int(edited["rendered_frame_height"]) < int(edited["target_render_height"]), edited
@@ -171,7 +196,7 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
 
         settled = _wait_for_pacing_payload(
             viewer,
-            lambda payload: payload.get("ui_automation_command_sequence") == 1
+            lambda payload: payload.get("ui_automation_command_sequence") == viewer.sequence
             and payload.get("render_pacing_preview_active") is False
             and float(payload.get("render_pacing_preview_scale", 0.0)) == 1.0,
             timeout_seconds=45.0,

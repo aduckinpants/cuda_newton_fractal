@@ -36,6 +36,16 @@ bool SampleRawClamped(const SdfFieldView& field, int x, int y, float& outValue) 
 
 } // namespace
 
+float ResolveSdfBoundaryBandFromSignedDistancePx(float signed_distance_px, const SdfFieldSignalConfig& config) {
+    const float safeBandPx = std::isfinite(config.boundary_band_px) && config.boundary_band_px > 0.000001f
+        ? config.boundary_band_px
+        : 0.000001f;
+    float boundaryBand = 1.0f - (std::fabs(signed_distance_px) / safeBandPx);
+    if (boundaryBand < 0.0f) boundaryBand = 0.0f;
+    if (boundaryBand > 1.0f) boundaryBand = 1.0f;
+    return boundaryBand;
+}
+
 bool SampleSdfFieldSignals(
     const SdfFieldView& field,
     int x,
@@ -57,13 +67,7 @@ bool SampleSdfFieldSignals(
         return false;
     }
 
-    const float safeBandPx = std::isfinite(config.boundary_band_px) && config.boundary_band_px > 0.000001f
-        ? config.boundary_band_px
-        : 0.000001f;
-    const float absCenter = std::fabs(center);
-    float boundaryBand = 1.0f - (absCenter / safeBandPx);
-    if (boundaryBand < 0.0f) boundaryBand = 0.0f;
-    if (boundaryBand > 1.0f) boundaryBand = 1.0f;
+    const float boundaryBand = ResolveSdfBoundaryBandFromSignedDistancePx(center, config);
 
     const float gradX = 0.5f * (right - left);
     const float gradY = 0.5f * (down - up);
