@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_signal_consumption",
+  "feature_id": "sdf_field_signal_consumption",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md",
+    "docs/contracts/sdf_field_signal_consumption.contract.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "continue from SDF CUDA hardening into the next measured SDF seam",
+    "let probe/report surfaces consume source-neutral SDF field signals",
+    "preserve Color Pipeline behavior while preparing the SDF signal substrate",
+    "keep this headless and no-mouse"
+  ],
+  "forbidden_operator_prompts": [
+    "add a live viewport SDF renderer",
+    "add a new FractalType",
+    "add authored-pack viewport rendering",
+    "replace the renderer",
+    "change Lens SDF field semantics",
+    "change Color Pipeline runtime behavior before the signal seam is proven",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "sdf_field_signal_consumption_only",
+    "posture": "forward_tdd",
+    "execution": "headless_signal_substrate"
+  },
+  "forbidden_defaults": {
+    "live_viewport_integration": "forbidden",
+    "new_fractal_type": "forbidden",
+    "renderer_rewrite": "forbidden",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_signal_consumption.contract.json --out-json artifacts/validation/sdf_field_signal_consumption_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_signal_consumption_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_signal_consumption_test_lens_sdf --log artifacts/logs/sdf_field_signal_consumption_test_lens_sdf.log --out-json artifacts/validation/sdf_field_signal_consumption_test_lens_sdf.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_lens_sdf",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_signal_consumption_test_flashlight_probe --log artifacts/logs/sdf_field_signal_consumption_test_flashlight_probe.log --out-json artifacts/validation/sdf_field_signal_consumption_test_flashlight_probe.json --heartbeat-seconds 30 --timeout-seconds 240 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_flashlight_probe",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_signal_consumption_color_pipeline_owner --log artifacts/logs/sdf_field_signal_consumption_color_pipeline_owner.log --out-json artifacts/validation/sdf_field_signal_consumption_color_pipeline_owner.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_signal_consumption_runtime_publish --log artifacts/logs/sdf_field_signal_consumption_runtime_publish.log --out-json artifacts/validation/sdf_field_signal_consumption_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_signal_consumption_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_signal_consumption_diff_check --log artifacts/logs/sdf_field_signal_consumption_diff_check.log --out-json artifacts/validation/sdf_field_signal_consumption_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field signal consumption contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_signal_consumption_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF field signal consumption hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_signal_consumption_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

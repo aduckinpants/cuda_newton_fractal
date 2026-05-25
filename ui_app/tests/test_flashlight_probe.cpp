@@ -2,6 +2,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <sstream>
+#include <string>
 
 static int g_passed = 0;
 static int g_failed = 0;
@@ -60,12 +62,32 @@ static void TestFlashlightManifoldAtDeterministic() {
     Check(a.dy_world == b.dy_world, "TestFlashlightManifoldAtDeterministic_SameDy");
 }
 
+static void TestAppendFlashlightSdfSignalJsonFields() {
+    SdfFieldSignalSample signals;
+    signals.inside_outside = 1.0f;
+    signals.boundary_band = 0.5f;
+    signals.normal_angle_radians = 1.25f;
+    signals.curvature_estimate = -0.125f;
+
+    std::ostringstream json;
+    json << "{\"signed_px\": -1";
+    AppendFlashlightSdfSignalJsonFields(json, signals);
+    json << "}";
+    const std::string text = json.str();
+
+    Check(text.find("\"inside_outside\": 1") != std::string::npos, "TestAppendFlashlightSdfSignalJsonFields_InsideOutside");
+    Check(text.find("\"boundary_band\": 0.5") != std::string::npos, "TestAppendFlashlightSdfSignalJsonFields_BoundaryBand");
+    Check(text.find("\"normal_angle_radians\": 1.25") != std::string::npos, "TestAppendFlashlightSdfSignalJsonFields_NormalAngle");
+    Check(text.find("\"curvature_estimate\": -0.125") != std::string::npos, "TestAppendFlashlightSdfSignalJsonFields_Curvature");
+}
+
 int main() {
     TestNormalizeFlashlightProbeConfig();
     TestFlashlightFnv1a32();
     TestComputeConversationSpectrum8();
     TestNormalizeFlashlightLensDownsamplePow2();
     TestFlashlightManifoldAtDeterministic();
+    TestAppendFlashlightSdfSignalJsonFields();
 
     std::printf("test_flashlight_probe: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

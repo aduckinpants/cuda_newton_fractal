@@ -13,6 +13,7 @@
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "lens_sdf.h"
+#include "sdf_field_signal.h"
 #include "view_hp_sync.h"
 
 namespace {
@@ -298,6 +299,13 @@ FlashlightManifoldStep FlashlightManifoldAt(
     return step;
 }
 
+void AppendFlashlightSdfSignalJsonFields(std::ostream& json, const SdfFieldSignalSample& signals) {
+    json << ", \"inside_outside\": " << static_cast<double>(signals.inside_outside)
+         << ", \"boundary_band\": " << static_cast<double>(signals.boundary_band)
+         << ", \"normal_angle_radians\": " << static_cast<double>(signals.normal_angle_radians)
+         << ", \"curvature_estimate\": " << static_cast<double>(signals.curvature_estimate);
+}
+
 int RunFlashlightProbe(const std::string& exeDir,
     const FlashlightProbeConfig& rawConfig,
     ViewState& view,
@@ -502,8 +510,13 @@ int RunFlashlightProbe(const std::string& exeDir,
         int nearCount = 0;
         int insideCount = 0;
         constexpr float kNearEpsPx = 2.0f;
+        SdfFieldSignalConfig signalConfig;
+        signalConfig.boundary_band_px = kNearEpsPx;
         std::array<float, 5> referenceSignedPx{};
         std::array<uint8_t, 5> referenceInside{};
+        std::array<float, 5> referenceBoundaryBand{};
+        std::array<float, 5> referenceNormalAngle{};
+        std::array<float, 5> referenceCurvature{};
         float referenceMinAbsSigned = 1.0e30f;
         int referenceNearCount = 0;
         int referenceInsideCount = 0;
@@ -520,17 +533,19 @@ int RunFlashlightProbe(const std::string& exeDir,
             for (int i = 0; i < 5; ++i) {
                 const int x = std::clamp(referencePoint.low_x + offsets[i][0], 0, std::max(0, referenceLensW - 1));
                 const int y = std::clamp(referencePoint.low_y + offsets[i][1], 0, std::max(0, referenceLensH - 1));
-                float signedPx = 0.0f;
-                bool inside = false;
-                const bool ok = SampleSignedDistanceSdfField(referenceLensField.View(), x, y, signedPx, inside);
-                referenceSignedPx[static_cast<std::size_t>(i)] = signedPx;
-                referenceInside[static_cast<std::size_t>(i)] = inside ? 1u : 0u;
+                SdfFieldSignalSample signals;
+                const bool ok = SampleSdfFieldSignals(referenceLensField.View(), x, y, signalConfig, signals);
+                referenceSignedPx[static_cast<std::size_t>(i)] = signals.signed_distance_px;
+                referenceInside[static_cast<std::size_t>(i)] = signals.inside ? 1u : 0u;
+                referenceBoundaryBand[static_cast<std::size_t>(i)] = signals.boundary_band;
+                referenceNormalAngle[static_cast<std::size_t>(i)] = signals.normal_angle_radians;
+                referenceCurvature[static_cast<std::size_t>(i)] = signals.curvature_estimate;
                 if (ok) {
-                    const float absSigned = std::fabs(signedPx);
+                    const float absSigned = std::fabs(signals.signed_distance_px);
                     referenceMinAbsSigned = std::min(referenceMinAbsSigned, absSigned);
                     if (absSigned <= kNearEpsPx) ++referenceNearCount;
                 }
-                if (inside) ++referenceInsideCount;
+                if (signals.inside) ++referenceInsideCount;
             }
         }
 
@@ -569,6 +584,24 @@ int RunFlashlightProbe(const std::string& exeDir,
             if (i) json << ", ";
             json << (referenceInside[static_cast<std::size_t>(i)] ? "true" : "false");
         }
+        json << "],\n";
+        json << "        \"samples_boundary_band\": [";
+        for (int i = 0; i < 5; ++i) {
+            if (i) json << ", ";
+            json << static_cast<double>(referenceBoundaryBand[static_cast<std::size_t>(i)]);
+        }
+        json << "],\n";
+        json << "        \"samples_normal_angle_radians\": [";
+        for (int i = 0; i < 5; ++i) {
+            if (i) json << ", ";
+            json << static_cast<double>(referenceNormalAngle[static_cast<std::size_t>(i)]);
+        }
+        json << "],\n";
+        json << "        \"samples_curvature_estimate\": [";
+        for (int i = 0; i < 5; ++i) {
+            if (i) json << ", ";
+            json << static_cast<double>(referenceCurvature[static_cast<std::size_t>(i)]);
+        }
         json << "]\n";
         json << "      },\n";
         json << "      \"render\": {\n";
@@ -590,28 +623,28 @@ int RunFlashlightProbe(const std::string& exeDir,
             x = std::clamp(x, 0, std::max(0, lensW - 1));
             y = std::clamp(y, 0, std::max(0, lensH - 1));
 
-            float signedPx = 0.0f;
-            bool inside = false;
-            const bool ok = SampleSignedDistanceSdfField(lensField.View(), x, y, signedPx, inside);
+            SdfFieldSignalSample signals;
+            const bool ok = SampleSdfFieldSignals(lensField.View(), x, y, signalConfig, signals);
             if (i == 0) {
-                signed0 = signedPx;
-                inside0 = inside;
+                signed0 = signals.signed_distance_px;
+                inside0 = signals.inside;
                 sampled0 = ok;
             }
             if (ok) {
-                const float absSigned = std::fabs(signedPx);
+                const float absSigned = std::fabs(signals.signed_distance_px);
                 minAbsSigned = std::min(minAbsSigned, absSigned);
                 if (absSigned <= kNearEpsPx) ++nearCount;
             }
-            if (inside) ++insideCount;
+            if (signals.inside) ++insideCount;
 
             json << "        {\"u\": " << static_cast<double>(kProbeUvs[i].u)
                  << ", \"v\": " << static_cast<double>(kProbeUvs[i].v)
                  << ", \"x\": " << x
                  << ", \"y\": " << y
-                 << ", \"signed_px\": " << static_cast<double>(signedPx)
-                 << ", \"inside\": " << (inside ? "true" : "false")
-                 << ", \"ok\": " << (ok ? "true" : "false") << "}";
+                 << ", \"signed_px\": " << static_cast<double>(signals.signed_distance_px)
+                 << ", \"inside\": " << (signals.inside ? "true" : "false");
+            AppendFlashlightSdfSignalJsonFields(json, signals);
+            json << ", \"ok\": " << (ok ? "true" : "false") << "}";
             if (i + 1 < 5) json << ",";
             json << "\n";
         }

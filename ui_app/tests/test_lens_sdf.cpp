@@ -1,4 +1,5 @@
 #include "../src/lens_sdf.h"
+#include "../src/sdf_field_signal.h"
 
 #include <cmath>
 #include <iostream>
@@ -110,6 +111,39 @@ int main() {
         }
         if (!fieldCenterInside || fieldCornerInside || !(fieldCenter < 0.0f) || !(fieldCorner > 2.7f && fieldCorner < 2.9f)) {
             std::cerr << "Scalar SDF field should preserve inside/outside sign and diagonal distance\n";
+            return 1;
+        }
+        SdfFieldSignalConfig signalConfig;
+        signalConfig.boundary_band_px = 3.0f;
+        SdfFieldSignalSample centerSignals;
+        SdfFieldSignalSample rightSignals;
+        if (!SampleSdfFieldSignals(view, 2, 2, signalConfig, centerSignals) ||
+            !SampleSdfFieldSignals(view, 3, 2, signalConfig, rightSignals)) {
+            std::cerr << "SdfFieldView should produce reusable signal samples\n";
+            return 1;
+        }
+        if (!centerSignals.inside || centerSignals.inside_outside != 1.0f ||
+            std::fabs(centerSignals.signed_distance_px - fieldCenter) > 0.0001f) {
+            std::cerr << "SDF signal sample should preserve signed distance and inside/outside authority\n";
+            return 1;
+        }
+        if (!(centerSignals.boundary_band > 0.6f && centerSignals.boundary_band < 0.7f) ||
+            !(rightSignals.boundary_band > 0.6f && rightSignals.boundary_band < 0.7f)) {
+            std::cerr << "SDF signal sample should expose a normalized boundary band\n";
+            return 1;
+        }
+        if (!std::isfinite(rightSignals.normal_angle_radians) || std::fabs(rightSignals.normal_angle_radians) > 0.0001f) {
+            std::cerr << "SDF signal sample should expose an approximate outward normal angle\n";
+            return 1;
+        }
+        if (!std::isfinite(centerSignals.curvature_estimate) || !(centerSignals.curvature_estimate > 0.0f)) {
+            std::cerr << "SDF signal sample should expose a finite curvature estimate\n";
+            return 1;
+        }
+        if (ResolveSdfFieldSignalValue(centerSignals, SdfFieldSignalKind::signed_distance_px) != centerSignals.signed_distance_px ||
+            ResolveSdfFieldSignalValue(centerSignals, SdfFieldSignalKind::inside_outside) != centerSignals.inside_outside ||
+            ResolveSdfFieldSignalValue(centerSignals, SdfFieldSignalKind::boundary_band) != centerSignals.boundary_band) {
+            std::cerr << "SDF signal resolver should return the requested signal value\n";
             return 1;
         }
         std::vector<uint32_t> rgbaFromField;

@@ -1,0 +1,34 @@
+#pragma once
+
+#include "lens_sdf.h"
+
+enum class SdfFieldSignalKind {
+    signed_distance_px,
+    inside_outside,
+    boundary_band,
+    normal_angle_radians,
+    curvature_estimate,
+};
+
+struct SdfFieldSignalConfig {
+    float boundary_band_px{2.0f};
+};
+
+struct SdfFieldSignalSample {
+    bool ok{false};
+    float signed_distance_px{0.0f};
+    bool inside{false};
+    float inside_outside{0.0f};
+    float boundary_band{0.0f};
+    float normal_angle_radians{0.0f};
+    float curvature_estimate{0.0f};
+};
+
+bool SampleSdfFieldSignals(
+    const SdfFieldView& field,
+    int x,
+    int y,
+    const SdfFieldSignalConfig& config,
+    SdfFieldSignalSample& outSample);
+
+float ResolveSdfFieldSignalValue(const SdfFieldSignalSample& sample, SdfFieldSignalKind kind);

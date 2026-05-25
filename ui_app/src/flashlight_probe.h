@@ -1,10 +1,12 @@
 #pragma once
 
 #include "fractal_types.h"
+#include "sdf_field_signal.h"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <iosfwd>
 #include <string>
 
 struct FlashlightProbeConfig {
@@ -42,6 +44,7 @@ FlashlightManifoldStep FlashlightManifoldAt(
     double radius,
     double zoomRadius,
     double aspect);
+void AppendFlashlightSdfSignalJsonFields(std::ostream& json, const SdfFieldSignalSample& signals);
 
 int RunFlashlightProbe(const std::string& exeDir,
     const FlashlightProbeConfig& config,

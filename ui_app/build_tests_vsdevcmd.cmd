@@ -108,7 +108,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\flashlight_probe.cpp .\src\lens_sdf.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_flashlight_probe.cpp .\tests\test_flashlight_render_stub.cpp .\tests\test_flashlight_capture_stub.cpp ^
+  .\src\flashlight_probe.cpp .\src\lens_sdf.cpp .\src\sdf_field_signal.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_flashlight_probe.cpp .\tests\test_flashlight_render_stub.cpp .\tests\test_flashlight_capture_stub.cpp ^
   /Fe:"%TESTROOT%\test_flashlight_probe.exe"
 if errorlevel 1 exit /b 1
 
@@ -200,7 +200,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\lens_sdf.cpp .\tests\test_lens_sdf.cpp ^
+  .\src\lens_sdf.cpp .\src\sdf_field_signal.cpp .\tests\test_lens_sdf.cpp ^
   /Fe:"%TESTROOT%\test_lens_sdf.exe"
 if errorlevel 1 exit /b 1
 
@@ -358,7 +358,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp .\src\fractal_parameter_surface_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp .\src\explaino_exploration_advisor.cpp .\src\flashlight_probe.cpp .\src\runtime_walk.cpp .\src\lens_sdf.cpp .\src\headless_modes.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp .\src\fractal_parameter_surface_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp .\src\explaino_exploration_advisor.cpp .\src\flashlight_probe.cpp .\src\runtime_walk.cpp .\src\lens_sdf.cpp .\src\sdf_field_signal.cpp .\src\headless_modes.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_headless_modes.cpp .\tests\test_flashlight_render_stub.cpp .\tests\test_flashlight_capture_stub.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_headless_modes.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
@@ -615,7 +615,7 @@ exit /b 0
 
 :focused_test_flashlight_probe
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\flashlight_probe.cpp .\src\lens_sdf.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_flashlight_probe.cpp .\tests\test_flashlight_render_stub.cpp .\tests\test_flashlight_capture_stub.cpp ^
+  .\src\flashlight_probe.cpp .\src\lens_sdf.cpp .\src\sdf_field_signal.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_flashlight_probe.cpp .\tests\test_flashlight_render_stub.cpp .\tests\test_flashlight_capture_stub.cpp ^
   /Fe:"%TESTROOT%\test_flashlight_probe.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_flashlight_probe.exe" || exit /b 1
@@ -639,7 +639,7 @@ exit /b 0
 
 :focused_test_lens_sdf
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\lens_sdf.cpp .\tests\test_lens_sdf.cpp ^
+  .\src\lens_sdf.cpp .\src\sdf_field_signal.cpp .\tests\test_lens_sdf.cpp ^
   /Fe:"%TESTROOT%\test_lens_sdf.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_lens_sdf.exe" || exit /b 1
