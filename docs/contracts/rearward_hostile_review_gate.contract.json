@@ -43,7 +43,7 @@
     "gpu_lens_sdf_in_this_slice": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 -m pytest tests/test_viewer_host_rearward_review.py tests/test_viewer_host_checkpoint_guard.py -q",
+    "py -3.14 -m pytest tests/test_viewer_host_rearward_review.py tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/rearward_hostile_review_gate_workflow.junit.xml",
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/rearward_hostile_review_gate.contract.json --out-json artifacts/validation/rearward_hostile_review_gate_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/rearward_hostile_review_gate_PHASED_PLAN.md --out-json artifacts/validation/rearward_hostile_review_gate_hostile_audit.json",

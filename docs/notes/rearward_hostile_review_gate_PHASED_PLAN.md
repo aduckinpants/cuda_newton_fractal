@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Validated - the workflow-only rearward hostile review gate is implemented, audited, and ready for wrapper closure.
+Validated - the workflow-only rearward hostile review gate is implemented, audited, and contract-proof evidence is parseable.
 
 ## Phase Checklist
 
@@ -42,7 +42,8 @@ Out of scope:
 - Repo status authority: `py -3.14 tools/viewer_host_repo_status.py` reported no staged, unstaged, or untracked files before this slice.
 - Gap authority: the existing workflow enforces hostile audit before closeout, but it does not hard-block the next implementation turn until the previous committed head has been reread through a rearward review artifact.
 - RED authority: `py -3.14 -m pytest tests/test_viewer_host_rearward_review.py tests/test_viewer_host_checkpoint_guard.py -q` failed on the placeholder review tool and old begin-slice guard path, proving the missing artifact and gate behavior.
-- GREEN authority: the same focused rail passed with `87 passed` after adding `tools/viewer_host_rearward_review.py`, begin-slice `--rearward-repair-for`, mutation/completion guard checks, and workflow docs.
+- GREEN authority: `py -3.14 -m pytest tests/test_viewer_host_rearward_review.py tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/rearward_hostile_review_gate_workflow.junit.xml` passed with `87 passed` after adding `tools/viewer_host_rearward_review.py`, begin-slice `--rearward-repair-for`, mutation/completion guard checks, and workflow docs.
+- Receipt repair authority: first receipt generation exposed that the focused pytest command lacked a machine-parseable JUnit artifact, so the contract and proof ledger now require the same focused rail with `--junitxml`.
 - Contract authority: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/rearward_hostile_review_gate.contract.json --out-json artifacts/validation/rearward_hostile_review_gate_contract.json` passed.
 - Plan-sync authority: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile-audit authority: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/rearward_hostile_review_gate_PHASED_PLAN.md --out-json artifacts/validation/rearward_hostile_review_gate_hostile_audit.json` passed.
@@ -59,10 +60,12 @@ Out of scope:
 - [done] Pass 1 - found and repaired a real guard-order defect: the first completion gate preempted the older missing-validation-receipt denial.
 - [done] Pass 2 - re-read the guard integration after the focused GREEN rail and confirmed read-only commands still allow while begin-slice mutation requires an ok artifact or exact repair head.
 - [done] Pass 3 - re-read the existing checkpoint, receipt, contract, explicit-ask, and hostile-audit closure order and confirmed the rearward completion gate runs only after those blockers are clear.
+- [done] Pass 4 - attempted receipt writing and repaired the contract evidence gap when proof generation rejected the non-JUnit pytest command.
 
 ## Audit Findings
 
 - [done] Real defect found and repaired: the first completion integration made rearward review denial fire before the established validation-receipt denial, which would have obscured the primary proof blocker.
+- [done] Real closeout defect found and repaired: contract-proof receipt generation rejected the focused pytest command because it had no JUnit artifact.
 - [done] No additional real defect found after the focused re-audit and validation pass.
 
 ## Action Hostile Review

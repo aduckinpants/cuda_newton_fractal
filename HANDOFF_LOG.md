@@ -257,3 +257,4 @@
 - `ck:977fbe5b` 2026-05-25 01:44 UTC | score 96 — Runtime-walk SDF signal consumption implemented: runtime-walk headless report sampling now uses SampleSdfFieldSignals for tick and reference SDF arrays, report payload carries signed distance, inside, inside/outside, boundary band, normal angle, and curvature arrays, and preservation rails passed.
 - `ck:8db3bea3` 2026-05-25 05:59 UTC — session-start | branch=codex/rearward-hostile-review-gate | head=08378f9 | status=dirty | profile=native | intent=rearward hostile review gate
 - `ck:8db3bea3` 2026-05-25 06:21 UTC | score 96 — Rearward hostile review gate implemented, audited, and focused workflow rails green.
+- `ck:8db3bea3` 2026-05-25 06:23 UTC | score 97 — Rearward gate contract proof evidence repaired with JUnit pytest artifact and validators rerun.
