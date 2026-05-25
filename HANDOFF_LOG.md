@@ -258,3 +258,5 @@
 - `ck:8db3bea3` 2026-05-25 05:59 UTC — session-start | branch=codex/rearward-hostile-review-gate | head=08378f9 | status=dirty | profile=native | intent=rearward hostile review gate
 - `ck:8db3bea3` 2026-05-25 06:21 UTC | score 96 — Rearward hostile review gate implemented, audited, and focused workflow rails green.
 - `ck:8db3bea3` 2026-05-25 06:23 UTC | score 97 — Rearward gate contract proof evidence repaired with JUnit pytest artifact and validators rerun.
+- `ck:425509a1` 2026-05-25 06:27 UTC — session-start | branch=master | head=f6c23ce | status=dirty | profile=native | intent=sdf roadmap truth sync
+- `ck:425509a1` 2026-05-25 06:31 UTC | score 96 — SDF roadmap truth sync repaired stale shipped-vs-deferred status for parser, CUDA, hardening, and report consumers.

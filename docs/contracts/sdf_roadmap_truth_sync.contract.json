@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "contract_id": "sdf_roadmap_truth_sync",
+  "feature_id": "sdf_roadmap_truth_sync",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_roadmap_truth_sync_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_roadmap_truth_sync_PHASED_PLAN.md",
+    "docs/contracts/sdf_roadmap_truth_sync.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "DEFERRED_THREADS.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "dogfood rearward hostile review after the gate slice",
+    "sync SDF roadmap truth for shipped parser CPU reference, CUDA evaluator, hardening, and headless/report signal consumers",
+    "keep live Color Pipeline SDF rows, viewport overlay, SDF-native lanes, and GPU Lens SDF deferred"
+  ],
+  "forbidden_operator_prompts": [
+    "change product code in this docs-only truth sync",
+    "implement GPU Lens SDF in this slice",
+    "claim live Color Pipeline SDF rows are shipped",
+    "claim viewport overlay is shipped",
+    "claim SDF-native fractal lanes are shipped"
+  ],
+  "required_defaults": {
+    "scope": "docs_only_truth_sync",
+    "parser_cpu_reference": "shipped",
+    "cuda_sdf_pack_evaluator": "shipped",
+    "cuda_hardening": "shipped",
+    "headless_report_signal_consumers": "partially_shipped",
+    "live_color_pipeline_rows": "deferred",
+    "viewport_overlay": "deferred",
+    "sdf_native_lanes": "deferred",
+    "gpu_lens_sdf": "deferred_to_next_code_slice"
+  },
+  "forbidden_defaults": {
+    "product_mutation": "forbidden",
+    "future_only_parser_or_cuda_language": "forbidden",
+    "live_sdf_consumer_overclaim": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_roadmap_truth_sync.contract.json --out-json artifacts/validation/sdf_roadmap_truth_sync_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_roadmap_truth_sync_PHASED_PLAN.md --out-json artifacts/validation/sdf_roadmap_truth_sync_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_roadmap_truth_sync_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_roadmap_truth_sync_diff_check --log artifacts/logs/sdf_roadmap_truth_sync_diff_check.log --out-json artifacts/validation/sdf_roadmap_truth_sync_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF roadmap truth-sync contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_roadmap_truth_sync_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF roadmap truth-sync hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_roadmap_truth_sync_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

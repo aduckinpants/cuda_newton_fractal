@@ -1,7 +1,26 @@
 # SDF Field Pack Near-Term TODO
 
-Status: planning surface only. Nothing in this file means the SDF field-pack
-system is shipped.
+Status: living roadmap. The SDF field-pack system is partially shipped as
+headless/native substrate, but it is not yet a live viewport product feature.
+
+Shipped since this roadmap was first written:
+
+- Lens SDF downsample/control truth.
+- Reusable scalar `SdfFieldResult` / `SdfFieldView` authority for mask-derived
+  Lens SDF fields.
+- Family-aware Lens SDF semantics authority.
+- Authored `sdf.pack` parser and CPU reference evaluator.
+- CUDA SDF pack evaluator plus descriptor hardening.
+- Source-neutral SDF signal sampling consumed by flashlight probe/report and
+  runtime-walk headless/report outputs.
+
+Still deferred:
+
+- CUDA-backed Lens SDF field generation for the live client.
+- Live Color Pipeline SDF source rows.
+- Normal viewport SDF overlay productization.
+- SDF-native selectable fractal lanes.
+- Authored SDF pack UI/live viewport integration.
 
 This document slots the SDF composition / field-pack idea into the current
 viewer-host roadmap. It is meant to let a future session start from repo truth
@@ -23,7 +42,8 @@ Authored SDF Packs
   -> AST-defined field compositions lowered to CPU/CUDA evaluators
 
 Consumers
-  -> Lens overlay, Color Pipeline signals, probes, capture, and later SDF-native fractal lanes
+  -> shipped headless/report probes now; live Color Pipeline, Lens overlay,
+     capture integration, and later SDF-native fractal lanes remain deferred
 ```
 
 Do not put authored SDF packs directly inside the current Lens SDF aux-window
@@ -230,9 +250,9 @@ Performance expectation:
 - Deep scene graphs, 3D raymarching, and unbounded user expressions need a
   separate performance and pacing plan.
 
-## Recommended Slice Order
+## Recommended Slice Order And Current State
 
-### Slice 1 - Lens SDF Truth Cleanup
+### Slice 1 - Lens SDF Truth Cleanup - Shipped
 
 Difficulty: low/medium.
 Reward: medium trust, required substrate cleanup.
@@ -269,7 +289,11 @@ Exit criteria:
 - duplicate downsample logic is reduced or explicitly justified
 - current Lens SDF remains mask-derived and behavior-compatible by default
 
-### Slice 2 - SDF Field Interface Extraction
+Current state:
+
+- Shipped. See `docs/notes/lens_sdf_truth_cleanup_PHASED_PLAN.md`.
+
+### Slice 2 - SDF Field Interface Extraction - Shipped
 
 Difficulty: medium.
 Reward: high foundation.
@@ -298,7 +322,11 @@ Exit criteria:
 - downstream code can consume a field without parsing debug colors
 - sign convention is documented and tested
 
-### Slice 3 - Lens Semantics Authority
+Current state:
+
+- Shipped. See `docs/notes/sdf_field_interface_extraction_PHASED_PLAN.md`.
+
+### Slice 3 - Lens Semantics Authority - Shipped
 
 Difficulty: medium.
 Reward: medium/high correctness.
@@ -325,7 +353,11 @@ Exit criteria:
 
 - Lens SDF, probes, and reports can use one semantic vocabulary
 
-### Slice 4 - Authored SDF Pack Parser And CPU Reference
+Current state:
+
+- Shipped. See `docs/notes/lens_semantics_authority_PHASED_PLAN.md`.
+
+### Slice 4 - Authored SDF Pack Parser And CPU Reference - Shipped
 
 Difficulty: medium/high.
 Reward: high strategic.
@@ -353,7 +385,11 @@ Exit criteria:
 
 - authored SDF packs have a deterministic source-of-truth schema
 
-### Slice 5 - CUDA SDF Pack Evaluator
+Current state:
+
+- Shipped. See `docs/notes/sdf_pack_parser_cpu_reference_PHASED_PLAN.md`.
+
+### Slice 5 - CUDA SDF Pack Evaluator And Hardening - Shipped
 
 Difficulty: medium/high.
 Reward: high, unlocks live potential.
@@ -374,7 +410,35 @@ Exit criteria:
 
 - SDF packs are real GPU field execution, not docs-only expressions
 
-### Slice 6 - Color Pipeline And Probe Consumption
+Current state:
+
+- Shipped as native/headless evaluator substrate and hardening. See
+  `docs/notes/sdf_pack_cuda_evaluator_PHASED_PLAN.md`.
+
+### Immediate Next Code Slice - CUDA Lens SDF Backend - Deferred
+
+Difficulty: medium/high.
+Reward: high performance unblock.
+
+Goal:
+
+- Add a CUDA-backed Lens SDF field producer beside the current CPU chamfer path.
+- Keep CPU chamfer as fallback/reference until measured client proof says the
+  GPU path is safe as default.
+
+Required proof:
+
+- deterministic native parity tests for mask shapes and odd dimensions
+- semantic sign/boundary agreement with CPU reference
+- live/headless backend reporting
+- bounded performance witness before claiming client improvement
+
+Exit criteria:
+
+- Lens SDF generation can report a CUDA backend when available without changing
+  base fractal rendering or the existing RGBA visualization contract.
+
+### Slice 6 - Color Pipeline And Probe Consumption - Partially Shipped
 
 Difficulty: medium.
 Reward: high user-facing reuse.
@@ -404,7 +468,15 @@ Exit criteria:
 
 - SDF fields become a reusable color/probe substrate
 
-### Slice 7 - Viewport Overlay Productization
+Current state:
+
+- Probe/report consumption is partially shipped: flashlight probe/report and
+  runtime-walk headless/report paths consume source-neutral SDF signal samples.
+- Live Color Pipeline SDF source rows remain deferred.
+- See `docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md` and
+  `docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md`.
+
+### Slice 7 - Viewport Overlay Productization - Deferred
 
 Difficulty: medium/high.
 Reward: high product value.
@@ -431,7 +503,11 @@ Exit criteria:
 
 - Lens SDF stops being aux-window-only
 
-### Slice 8 - First SDF-Native Fractal Lane
+Current state:
+
+- Deferred. No normal viewport overlay productization is shipped yet.
+
+### Slice 8 - First SDF-Native Fractal Lane - Deferred
 
 Difficulty: medium/high.
 Reward: high proof of concept.
@@ -464,6 +540,10 @@ Exit criteria:
 
 - SDF can honestly drive a selectable fractal subtype without a renderer
   monolith rewrite
+
+Current state:
+
+- Deferred. No SDF-native selectable fractal lane is shipped yet.
 
 ## Open Design Questions
 
@@ -498,14 +578,16 @@ Never use physical cursor automation for this work.
 Recommended immediate ordering:
 
 1. Diagnostics capture output path cleanup.
-2. Lens SDF truth cleanup.
-3. SDF field interface extraction.
-4. Lens semantics authority.
-5. Authored SDF pack parser / CPU reference.
-6. CUDA SDF pack evaluator.
-7. Color Pipeline/probe consumption.
-8. Viewport overlay.
-9. First SDF-native fractal lane.
+2. Lens SDF truth cleanup. Shipped.
+3. SDF field interface extraction. Shipped.
+4. Lens semantics authority. Shipped.
+5. Authored SDF pack parser / CPU reference. Shipped.
+6. CUDA SDF pack evaluator and hardening. Shipped.
+7. Headless/report SDF signal consumption. Partially shipped for flashlight and runtime-walk reports.
+8. CUDA Lens SDF backend. Deferred and now the next code slice.
+9. Live Color Pipeline SDF rows. Deferred.
+10. Viewport overlay. Deferred.
+11. First SDF-native fractal lane. Deferred.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
 blocks all other product polish. It also keeps the first implementation wins
