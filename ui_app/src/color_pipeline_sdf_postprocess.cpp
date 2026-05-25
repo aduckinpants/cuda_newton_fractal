@@ -39,14 +39,33 @@ SdfFieldSignalKind SignalKindForColorSignal(ColorSignal signal) {
     }
 }
 
-float ResolveSdfSourceValue(
-    const SdfFieldSignalSample& sample,
-    const ColorPipelineSourceStackEntry& entry) {
+SdfFieldSignalConfig SignalConfigForSourceEntry(const ColorPipelineSourceStackEntry& entry) {
+    SdfFieldSignalConfig config{};
+    if (entry.signal == ColorSignal::sdf_boundary_band) {
+        config.boundary_band_px = EscapeTimeColorClamp(entry.params.sdf_boundary_width_px, 0.25f, 16.0f);
+    }
+    return config;
+}
+
+bool ResolveSdfSourceValue(
+    const SdfFieldView& field,
+    int fx,
+    int fy,
+    const ColorPipelineSourceStackEntry& entry,
+    float* outValue) {
+    if (!outValue) {
+        return false;
+    }
+    SdfFieldSignalSample sample;
+    if (!SampleSdfFieldSignals(field, fx, fy, SignalConfigForSourceEntry(entry), sample)) {
+        return false;
+    }
     float value = ResolveSdfFieldSignalValue(sample, SignalKindForColorSignal(entry.signal));
     if (entry.signal == ColorSignal::sdf_normal_angle) {
         value = (value + 3.14159265358979323846f) / kTwoPi;
     }
-    return value * entry.params.scale + entry.params.bias;
+    *outValue = value * entry.params.scale + entry.params.bias;
+    return true;
 }
 
 ColorPipelineSourceStackEntry FlatSdfSourceEntry(const KernelParams& params) {
@@ -56,7 +75,9 @@ ColorPipelineSourceStackEntry FlatSdfSourceEntry(const KernelParams& params) {
 }
 
 bool ResolveSdfPipelineSignal(
-    const SdfFieldSignalSample& sample,
+    const SdfFieldView& field,
+    int fx,
+    int fy,
     const KernelParams& params,
     float* outSignal,
     std::string* outError) {
@@ -71,7 +92,10 @@ bool ResolveSdfPipelineSignal(
             if (outError) *outError = "SDF Color Pipeline postprocess was requested without an SDF source signal";
             return false;
         }
-        *outSignal = ResolveSdfSourceValue(sample, FlatSdfSourceEntry(params));
+        if (!ResolveSdfSourceValue(field, fx, fy, FlatSdfSourceEntry(params), outSignal)) {
+            if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
+            return false;
+        }
         return true;
     }
 
@@ -80,14 +104,22 @@ bool ResolveSdfPipelineSignal(
         if (outError) *outError = "SDF Color Pipeline source stack contains a non-SDF first Source row";
         return false;
     }
-    float signal = ResolveSdfSourceValue(sample, first);
+    float signal = 0.0f;
+    if (!ResolveSdfSourceValue(field, fx, fy, first, &signal)) {
+        if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
+        return false;
+    }
     for (int index = 1; index < sourceStackCount; ++index) {
         const ColorPipelineSourceStackEntry& entry = params.color_source_stack[index];
         if (!IsColorPipelineSdfSourceSignal(entry.signal)) {
             if (outError) *outError = "SDF Color Pipeline source stack mixes SDF and non-SDF Source rows";
             return false;
         }
-        const float nextSignal = ResolveSdfSourceValue(sample, entry);
+        float nextSignal = 0.0f;
+        if (!ResolveSdfSourceValue(field, fx, fy, entry, &nextSignal)) {
+            if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
+            return false;
+        }
         signal = EscapeTimeColorLerp(
             signal,
             nextSignal,
@@ -168,18 +200,12 @@ bool ApplyLensSdfColorPipelinePostprocess(
 
     const int width = render.resolution.x;
     const int height = render.resolution.y;
-    const SdfFieldSignalConfig signalConfig{};
     for (int y = 0; y < height; ++y) {
         const int fy = ClampIntLocal((static_cast<long long>(y) * field.height) / height, 0, field.height - 1);
         for (int x = 0; x < width; ++x) {
             const int fx = ClampIntLocal((static_cast<long long>(x) * field.width) / width, 0, field.width - 1);
-            SdfFieldSignalSample sample;
-            if (!SampleSdfFieldSignals(field, fx, fy, signalConfig, sample)) {
-                if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
-                return false;
-            }
             float signal = 0.0f;
-            if (!ResolveSdfPipelineSignal(sample, params, &signal, outError)) {
+            if (!ResolveSdfPipelineSignal(field, fx, fy, params, &signal, outError)) {
                 return false;
             }
             const float shapedSignal = ApplyColorPipelineShapeValue(signal, params);

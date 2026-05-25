@@ -130,7 +130,7 @@ Timing rule:
 
 ## 5. Lens SDF Follow-Ups
 
-Status: partially shipped substrate with viewport/product follow-ups still deferred.
+Status: partially shipped substrate with SDF Source customization and later authored/SDF-native product follow-ups still deferred.
 
 Shipped since the original deferred note:
 - `lens.downsample` control truth is repaired.
@@ -143,9 +143,12 @@ Shipped since the original deferred note:
 - Live Color Pipeline SDF source rows are shipped for signed distance, inside/outside, boundary band, normal angle, and curvature.
 - Capture Finding parity for active SDF Color Pipeline source-row pixels is shipped.
 - Shared Lens Downsample visibility/control authority is shipped when Color Pipeline SDF rows use the field.
+- Normal viewport SDF overlays for boundary, band, and field-debug modes are shipped.
 
-Deferred follow-ups:
-- Productize normal viewport SDF overlays for boundary, band, and field-debug modes.
+Active follow-up:
+- Expose SDF Source row tuning controls, add `sdf_boundary_band` boundary width, and surface the shared field-resolution control in the Color Pipeline Source section.
+
+Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.
 - Add authored SDF pack UI/live viewport integration after the normal field consumers are stable.
 - Keep treating Lens SDF as the first mask-derived SDF field producer, not as the place to embed authored SDF packs.
@@ -155,7 +158,7 @@ Resume constraints:
 - Do not mix this with organized selector/common-fractal implementation unless the selector slice directly surfaces stale Lens controls.
 - Do not merge Salticid's analytic SDF operator pack wholesale into this repo. Port only bounded, reviewed pieces when a slice explicitly needs them.
 - Keep mask-derived Lens SDF and authored analytic SDF pack authority separate; they meet at the field interface.
-- Do not claim viewport overlay, authored-pack live viewport integration, or SDF-native lanes are shipped until the normal viewer path proves them.
+- Do not claim authored-pack live viewport integration or SDF-native lanes are shipped until the normal viewer path proves them.
 
 ## 6. CUDA-Resident sample_fn + Optimization Staging + Reflexive Sidecar
 

@@ -133,3 +133,5 @@
 - `ck:d368cba3` 2026-05-25 16:01 UTC — session-start | branch=codex/color-pipeline-sdf-source-rows | head=c763028 | status=dirty | profile=runtime | intent=productize normal viewport SDF overlay
 - `ck:d368cba3` 2026-05-25 16:23 UTC | score 95 — Added normal viewport SDF overlay controls and no-mouse proof while preserving Color Pipeline SDF rows, Capture Finding parity, and Lens Downsample authority.
 - `ck:d368cba3` 2026-05-25 16:39 UTC | score 95 — Corrected SDF viewport overlay validation contract to use logged parseable proof commands and reran the full proof ladder.
+- `ck:7c6cf1d9` 2026-05-25 17:06 UTC — session-start | branch=codex/color-pipeline-sdf-source-rows | head=d0af8b6 | status=dirty | profile=runtime | intent=customize SDF Color Pipeline source rows
+- `color_pipeline_sdf_source_customization` 2026-05-25 17:55 UTC | score 5 — Closed SDF Source customization: visible SDF row params, boundary width, Source-section downsample alias, Lens automation collapse repair, focused native/runtime proof green.

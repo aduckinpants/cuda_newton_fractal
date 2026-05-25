@@ -647,6 +647,7 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
     double stripePhase = entry.params.stripe_phase;
     double proximityScale = entry.params.proximity_scale;
     double proximityBias = entry.params.proximity_bias;
+    double sdfBoundaryWidthPx = entry.params.sdf_boundary_width_px;
     double blendWeight = entry.params.blend_weight;
     if (!GetOptionalNumber(entryValue, "scale", &scale, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "bias", &bias, nullptr, outError) ||
@@ -660,6 +661,7 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
         !GetOptionalNumber(entryValue, "stripe_phase", &stripePhase, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "proximity_scale", &proximityScale, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "proximity_bias", &proximityBias, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "sdf_boundary_width_px", &sdfBoundaryWidthPx, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "blend_weight", &blendWeight, nullptr, outError)) {
         return false;
     }
@@ -681,6 +683,7 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
     entry.params.stripe_phase = static_cast<float>(stripePhase);
     entry.params.proximity_scale = static_cast<float>(proximityScale);
     entry.params.proximity_bias = static_cast<float>(proximityBias);
+    entry.params.sdf_boundary_width_px = static_cast<float>(sdfBoundaryWidthPx);
     entry.params.blend_weight = static_cast<float>(blendWeight);
     *outEntry = entry;
     return true;
@@ -1422,7 +1425,8 @@ bool ParseColorPipelineDraftRow(const json_min::Value& rowObject,
             const std::string& missingPath = descriptor->parameters[index].path;
             if (missingPath == "palette.blend_weight" ||
                 missingPath == "palette.blend_mode" ||
-                missingPath == "signal.blend_weight") {
+                missingPath == "signal.blend_weight" ||
+                missingPath == "signal.boundary_width_px") {
                 continue;
             }
             if (outError) *outError = "Missing color_pipeline_draft parameter path '" + descriptor->parameters[index].path + "' for function '" + functionId + "'";

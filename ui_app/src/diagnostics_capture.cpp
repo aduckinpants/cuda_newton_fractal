@@ -295,6 +295,7 @@ void WriteColorSourceStackJson(std::ostringstream& js, const KernelParams& param
         js << "        \"stripe_phase\": " << static_cast<double>(sourceEntry.params.stripe_phase) << ",\n";
         js << "        \"proximity_scale\": " << static_cast<double>(sourceEntry.params.proximity_scale) << ",\n";
         js << "        \"proximity_bias\": " << static_cast<double>(sourceEntry.params.proximity_bias) << ",\n";
+        js << "        \"sdf_boundary_width_px\": " << static_cast<double>(sourceEntry.params.sdf_boundary_width_px) << ",\n";
         js << "        \"blend_weight\": " << static_cast<double>(sourceEntry.params.blend_weight) << "\n";
         js << "      }" << (index + 1 < sourceStackCount ? "," : "") << "\n";
     }

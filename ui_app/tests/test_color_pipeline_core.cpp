@@ -29,6 +29,13 @@ bool HasFunction(const ColorPipelineLaneCatalog& catalog, const char* id) {
     return color_pipeline_core::FindColorPipelineFunctionDescriptor(catalog, id) != nullptr;
 }
 
+bool HasParam(const FunctionDescriptor& function, const char* path) {
+    for (const FunctionParamDescriptor& param : function.parameters) {
+        if (param.path == path) return true;
+    }
+    return false;
+}
+
 bool CatalogIdsEqual(const ColorPipelineLaneCatalog& catalog, std::initializer_list<const char*> expected) {
     if (catalog.functions.size() != expected.size()) {
         return false;
@@ -624,25 +631,39 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
     Check(source != nullptr, "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SourceCatalogPresent");
     if (!source) return;
 
-    const char* sdfSourceIds[] = {
-        "sdf_signed_distance",
-        "sdf_inside_outside",
-        "sdf_boundary_band",
-        "sdf_normal_angle",
-        "sdf_curvature",
+    struct ExpectedSdfSource {
+        const char* id;
+        double scale;
+        double bias;
     };
-    for (const char* id : sdfSourceIds) {
-        Check(HasFunction(*source, id), "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SourceCatalogIncludesSdfRow");
-        Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("source", id),
+    const ExpectedSdfSource sdfSourceIds[] = {
+        {"sdf_signed_distance", 0.05, 0.5},
+        {"sdf_inside_outside", 1.0, 0.0},
+        {"sdf_boundary_band", 1.0, 0.0},
+        {"sdf_normal_angle", 1.0, 0.0},
+        {"sdf_curvature", 0.25, 0.5},
+    };
+    for (const ExpectedSdfSource& expected : sdfSourceIds) {
+        const FunctionDescriptor* descriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*source, expected.id);
+        Check(descriptor != nullptr, "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SourceCatalogIncludesSdfRow");
+        if (!descriptor) continue;
+        Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("source", expected.id),
             "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowRuntimeBacked");
+        Check(HasParam(*descriptor, "signal.scale") && HasParam(*descriptor, "signal.bias") &&
+                HasParam(*descriptor, "signal.blend_weight"),
+            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowsExposeCommonLiveParams");
+        Check((std::string(expected.id) == "sdf_boundary_band") == HasParam(*descriptor, "signal.boundary_width_px"),
+            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_BoundaryWidthIsBoundaryBandOnly");
 
         ColorPipelineRowState row;
         std::string error;
-        Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, id, 41, &row, &error) &&
-                row.function_id == id &&
-                row.parameter_values.size() >= 3 &&
-                RowNumber(row, "signal.blend_weight", 1.0),
-            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowBuildsWithControls");
+        Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, expected.id, 41, &row, &error) &&
+                row.function_id == expected.id &&
+                RowNumber(row, "signal.scale", expected.scale) &&
+                RowNumber(row, "signal.bias", expected.bias) &&
+                RowNumber(row, "signal.blend_weight", 1.0) &&
+                (std::string(expected.id) != "sdf_boundary_band" || RowNumber(row, "signal.boundary_width_px", 2.0)),
+            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowBuildsWithVisibleTuningControls");
     }
 }
 

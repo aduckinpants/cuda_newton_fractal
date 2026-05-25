@@ -130,6 +130,24 @@ def _capture_sdf_source_row(
     )
 
 
+def _capture_all_sdf_source_rows(
+    *,
+    exe_path: Path,
+    state_path: Path,
+) -> dict[str, object]:
+    args: list[str] = [
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--color-pipeline-action",
+        f"select_function:source:0:{SDF_SOURCE_ROWS[0][0]}",
+    ]
+    for function_id, *_ in SDF_SOURCE_ROWS[1:]:
+        args.extend(["--color-pipeline-action", f"add_row:source:{function_id}"])
+    args.append("--capture-diagnostic")
+    return run_headless_capture(*args)
+
+
 def _assert_sdf_capture_state(
     capture: dict[str, object],
     *,
@@ -309,6 +327,109 @@ def test_capture_finding_preserves_sdf_source_row_pixels_no_mouse(tmp_path: Path
             shutil.rmtree(ui_finding_dir, ignore_errors=True)
         shutil.rmtree(headless_group_root, ignore_errors=True)
         DIAGNOSTICS_FRAME_FILE.unlink(missing_ok=True)
+
+def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline SDF runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    neutral_state = json.loads(json.dumps(neutral_capture["state"]))
+    seed_state_path = write_state_bundle(tmp_path / "sdf_source_visible_seed", neutral_state)
+    all_rows_capture = _capture_all_sdf_source_rows(
+        exe_path=exe_path,
+        state_path=seed_state_path,
+    )
+    all_rows_state = json.loads(json.dumps(all_rows_capture["state"]))
+    all_rows_state_path = write_state_bundle(tmp_path / "sdf_source_visible_all_rows", all_rows_state)
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=all_rows_state_path,
+        report_path=tmp_path / "sdf_source_visible_all_rows_report.json",
+        command_path=tmp_path / "sdf_source_visible_all_rows_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        viewer.wait_for_report(timeout_seconds=30.0)
+        for function_id, *_ in SDF_SOURCE_ROWS:
+            for path in ("signal.scale", "signal.bias", "signal.blend_weight"):
+                viewer.wait_for_control(
+                    f"color_pipeline.source.{function_id}.{path}.primary",
+                    timeout_seconds=20.0,
+                )
+        viewer.wait_for_control(
+            "color_pipeline.source.sdf_boundary_band.signal.boundary_width_px.primary",
+            timeout_seconds=20.0,
+        )
+        viewer.wait_for_control("color_pipeline.source.sdf_field.downsample.primary", timeout_seconds=20.0)
+
+    boundary_capture = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=seed_state_path,
+        function_id="sdf_boundary_band",
+        scale=1.0,
+        bias=0.0,
+    )
+    sdf_state = json.loads(json.dumps(boundary_capture["state"]))
+    lens = sdf_state.setdefault("lens", {})
+    assert isinstance(lens, dict)
+    lens["enabled"] = False
+    lens["downsample"] = 2
+    state_path = write_state_bundle(tmp_path / "sdf_source_visible", sdf_state)
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "sdf_source_visible_report.json",
+        command_path=tmp_path / "sdf_source_visible_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        ready_report = viewer.wait_for_report(timeout_seconds=30.0)
+        base_hash = ready_report.get("rendered_frame_hash")
+        assert isinstance(base_hash, str), ready_report
+        for path in ("signal.scale", "signal.bias", "signal.blend_weight", "signal.boundary_width_px"):
+            viewer.wait_for_control(
+                f"color_pipeline.source.sdf_boundary_band.{path}.primary",
+                timeout_seconds=20.0,
+            )
+        viewer.wait_for_control("color_pipeline.source.sdf_field.downsample.primary", timeout_seconds=20.0)
+
+        scale_report = viewer.set_control_value(
+            "color_pipeline.source.sdf_boundary_band.signal.scale.primary",
+            1.5,
+            timeout_seconds=40.0,
+        )
+        assert scale_report.get("rendered_frame_hash") != base_hash, scale_report
+        bias_report = viewer.set_control_value(
+            "color_pipeline.source.sdf_boundary_band.signal.bias.primary",
+            0.35,
+            timeout_seconds=40.0,
+        )
+        assert bias_report.get("rendered_frame_hash") != scale_report.get("rendered_frame_hash"), bias_report
+        width_report = viewer.set_control_value(
+            "color_pipeline.source.sdf_boundary_band.signal.boundary_width_px.primary",
+            6.0,
+            timeout_seconds=40.0,
+        )
+        assert width_report.get("rendered_frame_hash") != bias_report.get("rendered_frame_hash"), width_report
+        downsample_report = viewer.set_control_value(
+            "color_pipeline.source.sdf_field.downsample.primary",
+            4.0,
+            timeout_seconds=40.0,
+        )
+
+    assert downsample_report.get("lens_sdf_enabled") is False, downsample_report
+    assert downsample_report.get("lens_sdf_valid") is True, downsample_report
+    assert downsample_report.get("lens_sdf_pixel_scale") == pytest.approx(4.0), downsample_report
+
 
 def test_lens_downsample_visible_and_authoritative_for_sdf_source_without_lens_visualization_no_mouse(tmp_path: Path) -> None:
     if sys.platform != "win32":

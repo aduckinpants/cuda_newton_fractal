@@ -112,6 +112,10 @@ inline std::string BuildColorPipelineRowRemoveControlId(
     return std::string("color_pipeline.") + laneId + "." + std::to_string(rowId) + ".remove";
 }
 
+inline std::string BuildColorPipelineSdfFieldDownsampleControlId() {
+    return "color_pipeline.source.sdf_field.downsample.primary";
+}
+
 inline const char* ColorPipelineWindowDraftRecipesIntroText() {
     return "Draft Source / Shape / Palette / Grading recipes here. The legacy Color panel still shows the simple mode and grading mirrors during the schedule-editor transition.";
 }
@@ -1144,6 +1148,13 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "smooth_escape_ramp") {
         return path == "signal.scale" || path == "signal.bias" || path == "signal.blend_weight";
     }
+    if (IsSdfColorPipelineSourceFunctionId(functionId)) {
+        if (functionId == "sdf_boundary_band") {
+            return path == "signal.scale" || path == "signal.bias" ||
+                path == "signal.blend_weight" || path == "signal.boundary_width_px";
+        }
+        return path == "signal.scale" || path == "signal.bias" || path == "signal.blend_weight";
+    }
     if (functionId == "heatmap") {
         return path == "palette.cycle_scale" || path == "palette.saturation" ||
             path == "palette.blend_weight" || path == "palette.blend_mode";
@@ -1209,6 +1220,14 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
             path == "palette.blend_weight" || path == "palette.blend_mode";
     }
     return false;
+}
+
+inline bool IsRenderableColorPipelineParam(
+    const char* laneId,
+    const char* functionId,
+    const char* path) {
+    (void)laneId;
+    return functionId && path && IsLiveColorPipelineParamPath(functionId, path);
 }
 
 inline bool CollectRenderableColorPipelineParamIndexes(
@@ -1357,8 +1376,14 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
             SetColorPipelineParamNumber(ioRow, "signal.bias", sourceEntry.params.bias, outError);
     }
     if (IsSdfColorPipelineSourceFunctionId(ioRow->function_id)) {
-        return SetColorPipelineParamNumber(ioRow, "signal.scale", sourceEntry.params.scale, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.bias", sourceEntry.params.bias, outError);
+        if (!SetColorPipelineParamNumber(ioRow, "signal.scale", sourceEntry.params.scale, outError) ||
+            !SetColorPipelineParamNumber(ioRow, "signal.bias", sourceEntry.params.bias, outError)) {
+            return false;
+        }
+        if (ioRow->function_id == "sdf_boundary_band") {
+            return SetColorPipelineParamNumber(ioRow, "signal.boundary_width_px", sourceEntry.params.sdf_boundary_width_px, outError);
+        }
+        return true;
     }
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", sourceEntry.params.phase_offset, outError) &&
@@ -1465,6 +1490,7 @@ inline bool ColorPipelineSourceRuntimeParamsEqual(
         std::fabs(left.stripe_phase - right.stripe_phase) <= 1.0e-6f &&
         std::fabs(left.proximity_scale - right.proximity_scale) <= 1.0e-6f &&
         std::fabs(left.proximity_bias - right.proximity_bias) <= 1.0e-6f &&
+        std::fabs(left.sdf_boundary_width_px - right.sdf_boundary_width_px) <= 1.0e-6f &&
         std::fabs(left.blend_weight - right.blend_weight) <= 1.0e-6f;
 }
 
@@ -1611,6 +1637,14 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
         }
         entry.params.scale = static_cast<float>(scale);
         entry.params.bias = static_cast<float>(bias);
+        if (row.function_id == "sdf_boundary_band") {
+            double boundaryWidthPx = entry.params.sdf_boundary_width_px;
+            if (!TryGetColorPipelineParamNumber(row, "signal.boundary_width_px", &boundaryWidthPx, outError) ||
+                !ValidateColorPipelineParamRange("signal.boundary_width_px", boundaryWidthPx, 0.25, 16.0, outError)) {
+                return false;
+            }
+            entry.params.sdf_boundary_width_px = static_cast<float>(boundaryWidthPx);
+        }
     } else if (row.function_id == "phase_orbit") {
         double phaseOffset = 0.0;
         double wrapCycles = 0.0;
@@ -1670,6 +1704,39 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
 
     *outEntry = entry;
     return true;
+}
+
+inline bool ColorPipelineSourceDraftUsesSdf(const ColorPipelineWindowState& state) {
+    const ColorPipelineLaneState* sourceLane = nullptr;
+    for (const ColorPipelineLaneState& lane : state.lanes) {
+        if (lane.lane_id == "source") {
+            sourceLane = &lane;
+            break;
+        }
+    }
+    if (!sourceLane) {
+        return false;
+    }
+    for (const ColorPipelineRowState& row : sourceLane->rows) {
+        if (row.enabled && IsSdfColorPipelineSourceFunctionId(row.function_id)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool ColorPipelineSdfFieldDownsampleControlVisible(
+    const ColorPipelineWindowState& state,
+    const LensSettings* lens) {
+    return lens && ColorPipelineSourceDraftUsesSdf(state);
+}
+
+inline int NormalizeColorPipelineSdfFieldDownsampleValue(int value) {
+    if (value <= 1) return 1;
+    if (value <= 2) return 2;
+    if (value <= 4) return 4;
+    if (value <= 8) return 8;
+    return 16;
 }
 
 inline bool TryBuildColorPipelinePaletteStackEntryFromRow(
@@ -3718,6 +3785,54 @@ inline bool TryApplyColorPipelineUiAutomationSetValue(
     return true;
 }
 
+inline bool ApplyColorPipelineSdfFieldDownsampleValue(
+    ColorPipelineWindowState* ioState,
+    LensSettings* liveLens,
+    int requestedValue,
+    bool* ioDirty = nullptr,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    if (!liveLens) {
+        if (ioState) {
+            ioState->ui_automation_set_error = "SDF Field Downsample requires live Lens settings";
+        }
+        return false;
+    }
+    const int nextValue = NormalizeColorPipelineSdfFieldDownsampleValue(requestedValue);
+    if (liveLens->downsample != nextValue) {
+        liveLens->downsample = nextValue;
+        if (ioDirty) {
+            *ioDirty = true;
+        }
+        if (ioInteraction) {
+            ioInteraction->interacted = true;
+        }
+    }
+    if (ioState) {
+        ioState->ui_automation_set_error.clear();
+    }
+    return true;
+}
+
+#ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
+inline bool TryApplyColorPipelineSdfFieldDownsampleAutomation(
+    ColorPipelineWindowState* ioState,
+    LensSettings* liveLens,
+    bool* ioDirty = nullptr,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    const std::string controlId = BuildColorPipelineSdfFieldDownsampleControlId();
+    if (!ioState || !ioState->ui_automation_set_pending || ioState->ui_automation_set_consumed ||
+        ioState->ui_automation_set_control_id != controlId) {
+        return false;
+    }
+    const int requestedValue = static_cast<int>(std::lround(ioState->ui_automation_set_control_value));
+    if (!ApplyColorPipelineSdfFieldDownsampleValue(ioState, liveLens, requestedValue, ioDirty, ioInteraction)) {
+        return false;
+    }
+    ioState->ui_automation_set_consumed = true;
+    return true;
+}
+#endif
+
 inline bool ShouldAutoApplySupportedColorPipelineDraft(
     const ColorPipelineWindowState& state,
     const ColorPipelineDraftApplyState& applyState,
@@ -4036,11 +4151,60 @@ inline void RenderColorPipelineWindowSummary(
     }
 }
 
+inline void RenderColorPipelineSdfFieldDownsampleAlias(
+    ColorPipelineWindowState* ioState,
+    LensSettings* liveLens,
+    bool* ioDirty = nullptr,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    if (!ioState || !ColorPipelineSdfFieldDownsampleControlVisible(*ioState, liveLens)) {
+        return;
+    }
+    const std::string controlId = BuildColorPipelineSdfFieldDownsampleControlId();
+    int value = NormalizeColorPipelineSdfFieldDownsampleValue(liveLens->downsample);
+    const int values[] = {1, 2, 4, 8, 16};
+    const char* labels[] = {"1x (Full)", "2x", "4x", "8x", "16x"};
+    int currentIndex = 0;
+    for (int index = 0; index < 5; ++index) {
+        if (values[index] == value) {
+            currentIndex = index;
+            break;
+        }
+    }
+    bool changed = false;
+    if (ImGui::BeginCombo("SDF Field Downsample", labels[currentIndex])) {
+        for (int index = 0; index < 5; ++index) {
+            const bool selected = (index == currentIndex);
+            if (ImGui::Selectable(labels[index], selected)) {
+                value = values[index];
+                changed = true;
+                currentIndex = index;
+            }
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    NoteColorPipelineUiAutomationRect(ioState, controlId.c_str());
+    const bool automationChanged = TryApplyColorPipelineSdfFieldDownsampleAutomation(
+        ioState,
+        liveLens,
+        ioDirty,
+        ioInteraction);
+    if (changed) {
+        ApplyColorPipelineSdfFieldDownsampleValue(ioState, liveLens, value, ioDirty, ioInteraction);
+    }
+    if ((changed || automationChanged) && ioInteraction) {
+        ioInteraction->interacted = true;
+    }
+}
+
 inline void RenderColorPipelineWindowLane(
     ColorPipelineWindowState* ioState,
     std::size_t laneIndex,
     FractalType liveFractalType,
     KernelParams* liveParams,
+    LensSettings* liveLens = nullptr,
     bool* ioDirty = nullptr,
     ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
     if (!ioState || laneIndex >= ioState->lanes.size()) {
@@ -4066,6 +4230,10 @@ inline void RenderColorPipelineWindowLane(
             ioInteraction->interacted = true;
         }
         AddColorPipelineLaneRow(ioState, laneIndex, catalog->default_function_id);
+    }
+
+    if (lane.lane_id == "source") {
+        RenderColorPipelineSdfFieldDownsampleAlias(ioState, liveLens, ioDirty, ioInteraction);
     }
 
     for (std::size_t rowIndex = 0; rowIndex < lane.rows.size(); ++rowIndex) {
@@ -4205,6 +4373,7 @@ inline bool RenderColorPipelineWindow(
     ColorPipelineWindowState* ioState,
     FractalType liveFractalType,
     KernelParams* liveParams,
+    LensSettings* liveLens = nullptr,
     bool* ioDirty = nullptr,
     bool* ioInteracted = nullptr) {
     if (!ioState) {
@@ -4234,7 +4403,7 @@ inline bool RenderColorPipelineWindow(
         ColorPipelineRenderInteractionState interactionState;
         RenderColorPipelineWindowSummary(ioState, liveFractalType, liveParams, ioDirty, &interactionState);
         for (std::size_t laneIndex = 0; laneIndex < ioState->lanes.size(); ++laneIndex) {
-            RenderColorPipelineWindowLane(ioState, laneIndex, liveFractalType, liveParams, ioDirty, &interactionState);
+            RenderColorPipelineWindowLane(ioState, laneIndex, liveFractalType, liveParams, liveLens, ioDirty, &interactionState);
             ImGui::Spacing();
         }
         const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
@@ -4260,7 +4429,7 @@ inline bool RenderColorPipelineWindow(
 }
 
 inline bool RenderColorPipelineWindow(ColorPipelineWindowState* ioState) {
-    return RenderColorPipelineWindow(ioState, FractalType::explaino, nullptr);
+    return RenderColorPipelineWindow(ioState, FractalType::explaino, nullptr, nullptr);
 }
 #endif
 

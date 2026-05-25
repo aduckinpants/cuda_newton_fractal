@@ -117,6 +117,7 @@ struct ColorPipelineSourceRuntimeParams {
     float stripe_phase{0.0f};
     float proximity_scale{1.0f};
     float proximity_bias{0.0f};
+    float sdf_boundary_width_px{2.0f};
     float blend_weight{1.0f};
 };
 

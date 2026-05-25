@@ -998,6 +998,28 @@ struct UiActionFlags {
     bool interactionChanged = false;
 };
 
+static bool IsLensSchemaAutomationControlId(const std::string& controlId) {
+    return controlId.rfind("fractal_control.lens", 0) == 0;
+}
+
+static bool ShouldSchemaPanelDefaultOpen(
+    const UISchemaPanel& panel,
+    const BindingContext& bind,
+    const ColorPipelineWindowState& colorPipelineWindow) {
+    if (panel.id == "lens" && bind.lens && !bind.lens->enabled &&
+        bind.lens->sdf_overlay_mode == LensSdfOverlayMode::off) {
+        const bool lensAutomationPending =
+            (colorPipelineWindow.ui_automation_set_pending &&
+                IsLensSchemaAutomationControlId(colorPipelineWindow.ui_automation_set_control_id)) ||
+            (colorPipelineWindow.ui_automation_click_pending &&
+                IsLensSchemaAutomationControlId(colorPipelineWindow.ui_automation_click_control_id));
+        if (!colorPipelineWindow.force_open_for_automation && !lensAutomationPending) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static UiActionFlags RenderSchemaPanels(const UISchema& schema,
     BindingContext& bind,
     bool canLoadFits,
@@ -1006,7 +1028,10 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema,
     bool& dirty) {
     UiActionFlags a;
     for (const auto& panel : schema.panels) {
-        if (ImGui::CollapsingHeader(panel.label.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+        const ImGuiTreeNodeFlags panelFlags = ShouldSchemaPanelDefaultOpen(panel, bind, colorPipelineWindow)
+            ? ImGuiTreeNodeFlags_DefaultOpen
+            : 0;
+        if (ImGui::CollapsingHeader(panel.label.c_str(), panelFlags)) {
             bool prevWasSeedButton = false;
             for (const auto& ctrl : panel.controls) {
                 if (ctrl.type == "button" && ctrl.has_binding && ctrl.binding.kind == "action") {
@@ -1705,6 +1730,9 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
         &dirty);
     if (applyCliRc != 0) {
         return applyCliRc;
+    }
+    if (cli.open_color_pipeline_window_on_startup) {
+        colorPipelineWindow.open = true;
     }
     if (cli.have_ui_automation_click_control_id) {
         ArmUiAutomationClick(colorPipelineWindow, cli.ui_automation_click_control_id);
@@ -3044,7 +3072,7 @@ static void RunViewerFrame(
         ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, actions.interactionChanged);
     }
 
-    RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &dirty, &actions.interactionChanged);
+    RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &lens, &dirty, &actions.interactionChanged);
     {
         GenericEquationPackWorkbenchSetValueAutomation equationPackSetValue;
         if (colorPipelineWindow.ui_automation_set_pending) {

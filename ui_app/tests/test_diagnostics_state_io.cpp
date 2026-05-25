@@ -4300,7 +4300,7 @@ int main() {
     "color_palette": "cyclic_escape",
     "color_grading": "escape_default",
     "color_source_stack": [
-      { "signal": "sdf_boundary_band", "scale": 0.75, "bias": 0.25, "blend_weight": 1.0 }
+      { "signal": "sdf_boundary_band", "scale": 0.75, "bias": 0.25, "blend_weight": 1.0, "sdf_boundary_width_px": 5.5 }
     ],
     "nova_alpha": 0.5,
     "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
@@ -4325,6 +4325,7 @@ int main() {
             p.color_source_stack[0].signal != ColorSignal::sdf_boundary_band ||
             !NearlyEqual(p.color_source_stack[0].params.scale, 0.75, 0.001) ||
             !NearlyEqual(p.color_source_stack[0].params.bias, 0.25, 0.001) ||
+            !NearlyEqual(p.color_source_stack[0].params.sdf_boundary_width_px, 5.5, 0.001) ||
             p.color_pipeline.signal != ColorSignal::sdf_boundary_band ||
             p.color_pipeline.palette != ColorPalette::cyclic_escape ||
             p.color_pipeline.grading != ColorGradingPreset::escape_default ||
@@ -4335,7 +4336,8 @@ int main() {
             windowState.live_snapshot.lanes[0].rows.size() != 1 ||
             windowState.live_snapshot.lanes[0].rows[0].function_id != "sdf_boundary_band" ||
             !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.scale", 0.75, 0.001) ||
-            !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.bias", 0.25, 0.001)) {
+            !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.bias", 0.25, 0.001) ||
+            !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.boundary_width_px", 5.5, 0.001)) {
             std::cerr << "Expected SDF Source stacks to round-trip through diagnostics state load with a live SDF Source lane and owner params\n";
             return 1;
         }

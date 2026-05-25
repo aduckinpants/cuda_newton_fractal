@@ -523,6 +523,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineSourceScaleParam("Band Scale", "Scale the boundary-band signal before palette lookup.", -2.0, 2.0, 0.01, 1.0),
                 MakeColorPipelineSourceBiasParam("Band Bias", "Shift the boundary-band signal before palette lookup.", -2.0, 2.0, 0.01, 0.0),
+                MakeColorPipelineFloatParam("signal.boundary_width_px", "Boundary Width", "Set the SDF-field pixel radius used for the boundary-band source.", 0.25, 16.0, 0.25, 2.0),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(

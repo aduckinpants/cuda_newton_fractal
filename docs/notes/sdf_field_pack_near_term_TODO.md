@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate and live viewer Color Pipeline input, but it is not yet a normal viewport overlay or SDF-native fractal feature.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, and normal viewport overlay. The active near-term gap is SDF Source row customization and Source-section field-resolution UX; SDF-native fractal lanes remain deferred.
 
 Shipped since this roadmap was first written:
 
@@ -17,10 +17,14 @@ Shipped since this roadmap was first written:
 - Live Color Pipeline SDF source rows for signed distance, inside/outside, boundary band, normal angle, and curvature.
 - Capture Finding parity for active SDF Color Pipeline source-row pixels.
 - Shared Lens Downsample visibility/control authority when Color Pipeline SDF rows use the field.
+- Normal viewport SDF overlay productization for boundary, band, and field-debug modes.
+
+Active next slice:
+
+- SDF Source row customization: visible Scale/Bias/Blend Weight controls, `sdf_boundary_band` boundary width, and a Source-section alias for shared SDF Field Downsample.
 
 Still deferred:
 
-- Normal viewport SDF overlay productization.
 - SDF-native selectable fractal lanes.
 - Authored SDF pack UI/live viewport integration.
 
@@ -44,8 +48,9 @@ Authored SDF Packs
   -> AST-defined field compositions lowered to CPU/CUDA evaluators
 
 Consumers
-  -> shipped headless/report probes now; live Color Pipeline, Lens overlay,
-     capture integration, and later SDF-native fractal lanes remain deferred
+  -> shipped headless/report probes, live Color Pipeline, Lens overlay,
+     and capture integration now; authored-pack UI and later SDF-native
+     fractal lanes remain deferred
 ```
 
 Do not put authored SDF packs directly inside the current Lens SDF aux-window
@@ -475,9 +480,11 @@ Current state:
 - Probe/report consumption is partially shipped: flashlight probe/report and
   runtime-walk headless/report paths consume source-neutral SDF signal samples.
 - Live Color Pipeline SDF source rows are shipped on `codex/color-pipeline-sdf-source-rows` and proved by `tests/test_fractal_runtime_color_pipeline_sdf_rows.py`.
-- See `docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md`, `docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md`, and `docs/notes/color_pipeline_sdf_source_rows_PHASED_PLAN.md`.
+- Normal viewport SDF overlays are shipped and proved by `tests/test_fractal_runtime_sdf_viewport_overlay.py`.
+- The active customization follow-up is `docs/notes/color_pipeline_sdf_source_customization_PHASED_PLAN.md`.
+- See `docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md`, `docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md`, `docs/notes/color_pipeline_sdf_source_rows_PHASED_PLAN.md`, and `docs/notes/sdf_viewport_overlay_productization_PHASED_PLAN.md`.
 
-### Slice 7 - Viewport Overlay Productization - Deferred
+### Slice 7 - Viewport Overlay Productization - Shipped
 
 Difficulty: medium/high.
 Reward: high product value.
@@ -506,7 +513,7 @@ Exit criteria:
 
 Current state:
 
-- Deferred. No normal viewport overlay productization is shipped yet.
+- Shipped. Normal viewport SDF overlays for boundary, band, and field-debug modes are proved by `tests/test_fractal_runtime_sdf_viewport_overlay.py`.
 
 ### Slice 8 - First SDF-Native Fractal Lane - Deferred
 
@@ -587,8 +594,9 @@ Recommended immediate ordering:
 7. Headless/report SDF signal consumption. Partially shipped for flashlight and runtime-walk reports.
 8. CUDA Lens SDF backend. Shipped.
 9. Live Color Pipeline SDF rows. Shipped.
-10. Viewport overlay. Deferred and now the next code slice.
-11. First SDF-native fractal lane. Deferred.
+10. Viewport overlay. Shipped.
+11. SDF Source row customization and Source-section field-resolution UX. Active.
+12. First SDF-native fractal lane. Deferred.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
 blocks all other product polish. It also keeps the first implementation wins
