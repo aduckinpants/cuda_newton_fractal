@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "contract_id": "capture_replay_authority_smoke_matrix",
+  "feature_id": "capture_replay_authority_smoke_matrix",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/capture_replay_authority_smoke_matrix_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/capture_replay_authority_smoke_matrix_PHASED_PLAN.md",
+    "docs/contracts/capture_replay_authority_smoke_matrix.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "DEFERRED_THREADS.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_capture.h",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/diagnostics_state_io.h",
+    "ui_app/src/finding_archive_actions.cpp",
+    "ui_app/src/finding_archive_actions.h",
+    "ui_app/src/finding_state_actions.cpp",
+    "ui_app/src/finding_state_actions.h",
+    "ui_app/src/viewer_state_init.cpp",
+    "ui_app/src/viewer_state_init.h",
+    "ui_app/src/main.cpp",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_finding_state_actions.cpp",
+    "ui_app/tests/test_viewer_state_init.cpp",
+    "tests/runtime_harness.py",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "pause forward SDF feature work until replay authority is repaired",
+    "persist Lens settings needed to reproduce SDF Color Pipeline captures",
+    "allow explicit --load-state-json to load any valid state JSON filename",
+    "add a fast data-driven capture/replay smoke matrix"
+  ],
+  "forbidden_operator_prompts": [
+    "add SDF-native selectable fractal lanes in this slice",
+    "add authored SDF pack live viewport integration in this slice",
+    "redesign phase-safe Color Pipeline shape lanes in this slice",
+    "replace the renderer in this slice",
+    "use physical mouse automation",
+    "use 4K renders for the replay smoke matrix"
+  ],
+  "required_defaults": {
+    "state_json_is_replay_authority": true,
+    "lens_enabled_default": false,
+    "lens_downsample_default": 2,
+    "sdf_overlay_mode_default": "off",
+    "smoke_matrix_max_dimension": 256,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "sdf_native_lane": "forbidden",
+    "authored_pack_live_integration": "forbidden",
+    "phase_shape_redesign": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "large_4k_replay_matrix": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label capture_replay_authority_test_diagnostics_state_io --log artifacts/logs/capture_replay_authority_test_diagnostics_state_io.log --out-json artifacts/validation/capture_replay_authority_test_diagnostics_state_io.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_diagnostics_state_io",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label capture_replay_authority_test_finding_state_actions --log artifacts/logs/capture_replay_authority_test_finding_state_actions.log --out-json artifacts/validation/capture_replay_authority_test_finding_state_actions.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_finding_state_actions",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label capture_replay_authority_test_viewer_state_init --log artifacts/logs/capture_replay_authority_test_viewer_state_init.log --out-json artifacts/validation/capture_replay_authority_test_viewer_state_init.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_state_init",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label capture_replay_authority_test_lens_sdf --log artifacts/logs/capture_replay_authority_test_lens_sdf.log --out-json artifacts/validation/capture_replay_authority_test_lens_sdf.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_lens_sdf",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label capture_replay_authority_runtime_publish --log artifacts/logs/capture_replay_authority_runtime_publish.log --out-json artifacts/validation/capture_replay_authority_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label capture_replay_authority_runtime_pytest --log artifacts/logs/capture_replay_authority_runtime_pytest.log --out-json artifacts/validation/capture_replay_authority_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_capture_replay_authority.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py tests/test_fractal_runtime_sdf_viewport_overlay.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/capture_replay_authority_smoke_matrix.contract.json --out-json artifacts/validation/capture_replay_authority_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/capture_replay_authority_smoke_matrix_PHASED_PLAN.md --out-json artifacts/validation/capture_replay_authority_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/capture_replay_authority_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label capture_replay_authority_diff_check --log artifacts/logs/capture_replay_authority_diff_check.log --out-json artifacts/validation/capture_replay_authority_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The capture replay authority contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/capture_replay_authority_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The capture replay authority hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/capture_replay_authority_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

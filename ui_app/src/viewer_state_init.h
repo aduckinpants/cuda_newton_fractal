@@ -12,6 +12,7 @@ struct ColorPipelineWindowState;
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render,
+                      LensSettings* ioLens,
                       SidecarAutoDemoControllerPolicy* ioSidecarControllerPolicy,
                       SidecarOrientationVector* outLoadedOrientation,
                       bool* outHasLoadedOrientation,

@@ -130,7 +130,7 @@ Timing rule:
 
 ## 5. Lens SDF Follow-Ups
 
-Status: partially shipped substrate with SDF Source customization and later authored/SDF-native product follow-ups still deferred.
+Status: partially shipped substrate with capture/replay authority and later phase-signal/authored/SDF-native product follow-ups still deferred.
 
 Shipped since the original deferred note:
 - `lens.downsample` control truth is repaired.
@@ -144,11 +144,13 @@ Shipped since the original deferred note:
 - Capture Finding parity for active SDF Color Pipeline source-row pixels is shipped.
 - Shared Lens Downsample visibility/control authority is shipped when Color Pipeline SDF rows use the field.
 - Normal viewport SDF overlays for boundary, band, and field-debug modes are shipped.
+- SDF Source row tuning controls, `sdf_boundary_band` boundary width, and the Color Pipeline Source-section SDF Field Downsample alias are shipped.
 
 Active follow-up:
-- Expose SDF Source row tuning controls, add `sdf_boundary_band` boundary width, and surface the shared field-resolution control in the Color Pipeline Source section.
+- Repair capture/replay authority so `state.json` fully reproduces Lens-backed SDF Color Pipeline captures, including arbitrary explicit `--load-state-json` filenames and a fast replay smoke matrix.
 
 Still deferred follow-ups:
+- Add Color Pipeline phase-signal metadata for `sdf_normal_angle` after replay authority is green.
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.
 - Add authored SDF pack UI/live viewport integration after the normal field consumers are stable.
 - Keep treating Lens SDF as the first mask-derived SDF field producer, not as the place to embed authored SDF packs.

@@ -25,6 +25,14 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     ViewState* ioView,
     KernelParams* ioParams,
     RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    LensSettings* outLens,
+    std::string* outError);
+
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
     SidecarOrientationVector* outOrientation,
     bool* outHasOrientation,
     std::string* outError);
@@ -64,6 +72,20 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     ColorPipelineWindowState* outColorPipelineWindow,
     std::string* outError);
 
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    LensSettings* outLens,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError);
+
 bool LoadDiagnosticsStateFile(const std::string& path,
     ViewState* ioView,
     KernelParams* ioParams,
@@ -81,6 +103,14 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     ViewState* ioView,
     KernelParams* ioParams,
     RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    LensSettings* outLens,
+    std::string* outError);
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
     SidecarOrientationVector* outOrientation,
     bool* outHasOrientation,
     std::string* outError);
@@ -117,6 +147,20 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     bool* outHasControllerPolicy,
     SidecarAutoDemoMutationHistory* outMutationHistory,
     bool* outHasMutationHistory,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError);
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    LensSettings* outLens,
     ColorPipelineWindowState* outColorPipelineWindow,
     std::string* outError);
 

@@ -527,6 +527,7 @@ static bool RenderHeadlessFractalFrame(
 static int RunHeadlessDiagnosticCapture(
     const std::string& exeDir, const ViewerCliArgs& cli, const ViewState& view,
     const KernelParams& params, const RenderSettings& render,
+    const LensSettings& lens,
     const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
@@ -536,7 +537,7 @@ static int RunHeadlessDiagnosticCapture(
     std::vector<uint32_t> headlessRgba;
     RenderStats headlessStats{};
     std::string renderError;
-    if (!RenderHeadlessFractalFrame(view, params, diagnosticRender, headlessRgba, &headlessStats, &renderError)) {
+    if (!RenderHeadlessFractalFrame(view, params, diagnosticRender, headlessRgba, &headlessStats, &renderError, &lens)) {
         WriteHeadlessErrorFile(exeDir, "capture_diagnostic_error.txt",
             renderError.empty() ? "RenderFractalCUDA failed during headless diagnostic capture." : renderError);
         return 1;
@@ -544,10 +545,10 @@ static int RunHeadlessDiagnosticCapture(
     std::string captureError;
     DiagnosticsCaptureResult captureResult;
     const bool captureOk = cli.have_diagnostics_out_dir
-        ? CaptureDiagnosticsBundleToDir(cli.diagnostics_out_dir, view, params, diagnosticRender, headlessStats,
-            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &captureResult, &captureError)
-        : CaptureDiagnosticsLastBundle(exeDir, view, params, diagnosticRender, headlessStats,
-            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &captureResult, &captureError);
+        ? CaptureDiagnosticsBundleToDirWithLens(cli.diagnostics_out_dir, view, params, diagnosticRender, headlessStats,
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &lens, &captureResult, &captureError)
+        : CaptureDiagnosticsLastBundleWithLens(exeDir, view, params, diagnosticRender, headlessStats,
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &lens, &captureResult, &captureError);
     if (!captureOk) {
         WriteHeadlessErrorFile(exeDir, "capture_diagnostic_error.txt",
             captureError.empty() ? "CaptureDiagnosticsBundle failed during headless diagnostic capture." : captureError);
@@ -559,6 +560,7 @@ static int RunHeadlessDiagnosticCapture(
 static int RunHeadlessFindingCapture(
     const std::string& exeDir, const ViewerCliArgs& cli,
     const ViewState& view, const KernelParams& params, const RenderSettings& render,
+    const LensSettings& lens,
     const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
@@ -568,7 +570,7 @@ static int RunHeadlessFindingCapture(
     std::vector<uint32_t> headlessRgba;
     RenderStats headlessStats{};
     std::string renderError;
-    if (!RenderHeadlessFractalFrame(view, params, findingRender, headlessRgba, &headlessStats, &renderError)) {
+    if (!RenderHeadlessFractalFrame(view, params, findingRender, headlessRgba, &headlessStats, &renderError, &lens)) {
         WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt",
             renderError.empty() ? "RenderFractalCUDA failed during headless finding capture." : renderError);
         return 1;
@@ -577,8 +579,9 @@ static int RunHeadlessFindingCapture(
     std::string findingError;
     const std::string findingGroup = cli.have_finding_group ? cli.finding_group : "manual_capture";
     const std::string findingWhy = cli.have_finding_why ? cli.finding_why : "Headless finding capture.";
-    if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, headlessStats,
+    if (!CaptureAndArchiveFindingBundleWithLens(exeDir, view, params, findingRender, headlessStats,
             headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow,
+            &lens,
             findingGroup, findingWhy, &findingDir, &findingError)) {
         WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt",
             findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
@@ -591,7 +594,7 @@ static int RunHeadlessFindingCapture(
 
 static void RunInLoopDiagnosticCapture(
     const std::string& exeDir, const ViewState& view, const KernelParams& params,
-    const RenderSettings& render, const RenderStats& stats,
+    const RenderSettings& render, const LensSettings& lens, const RenderStats& stats,
     const std::vector<uint32_t>& rgba, const RenderedFrameState& renderedFrame,
     const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
@@ -605,8 +608,8 @@ static void RunInLoopDiagnosticCapture(
         findingStatus = "Capture diagnostic failed: " + captureError;
     } else {
         DiagnosticsCaptureResult captureResult;
-        if (!CaptureDiagnosticsLastBundle(exeDir, view, params, captureRender, stats,
-                rgba.data(), rgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &captureResult, &captureError)) {
+        if (!CaptureDiagnosticsLastBundleWithLens(exeDir, view, params, captureRender, stats,
+                rgba.data(), rgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &lens, &captureResult, &captureError)) {
             findingStatus = "Capture diagnostic failed: " + captureError;
         } else {
             findingStatus = "Diagnostic captured.";
@@ -639,8 +642,9 @@ static bool RunInLoopFindingCapture(
     if (!RenderHeadlessFractalFrame(view, params, findingRender, findingRgba, &findingStats, &renderError, &lens)) {
         findingStatus = std::string("Capture finding failed: ") + (renderError.empty() ? "unknown error" : renderError);
         return invalidateCaches;
-    } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, findingStats,
+    } else if (!CaptureAndArchiveFindingBundleWithLens(exeDir, view, params, findingRender, findingStats,
             findingRgba.data(), findingRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow,
+            &lens,
             "manual_capture", "Manual viewer capture.",
             &findingDir, &captureError)) {
         findingStatus = "Capture finding failed: " + captureError;
@@ -1357,6 +1361,7 @@ static void DispatchUiActions(HWND hwnd,
                     &hasLoadedControllerPolicy,
                     &loadedMutationHistory,
                     &hasLoadedMutationHistory,
+                    &lens,
                     &loadedColorPipelineWindow,
                     &resolvedStatePath,
                     &loadError)) {
@@ -1579,8 +1584,8 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     const SidecarAutoDemoMutationHistory* mutationHistory =
         sidecarMutationHistoryValid ? &sidecarMutationHistory : nullptr;
     if (cli.validate_ui_only) return 0;
-    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, cli, view, params, render, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
-    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
+    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, cli, view, params, render, lens, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
+    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, lens, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
     return -1;
 }
 
@@ -1720,6 +1725,7 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
         view,
         params,
         render,
+        &lens,
         &sidecarControllerPolicy,
         &loadedOrientationBaseline,
         &loadedOrientationBaselineValid,
@@ -1970,11 +1976,12 @@ static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
         if (loadState->is_string() && !loadState->as_string().empty()) {
             std::string loadError;
             std::string loadedStatePath;
-            if (LoadFindingSelectionIntoRuntime(
+            if (LoadExplicitStateJsonIntoRuntime(
                     loadState->as_string(),
                     &view,
                     &params,
                     &render,
+                    &lens,
                     &colorPipelineWindow,
                     &loadedStatePath,
                     &loadError)) {
@@ -2164,7 +2171,7 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
     const SidecarAutoDemoMutationHistory* mutationHistory =
         sidecarMutationHistoryValid ? &sidecarMutationHistory : nullptr;
     if (actions.captureDiagnostic) {
-        RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus);
+        RunInLoopDiagnosticCapture(exeDir, view, params, render, lens, stats, rgba, renderedFrame, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus);
     }
 
     if (actions.captureFinding) {

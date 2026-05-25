@@ -56,6 +56,24 @@ bool CaptureAndArchiveFindingBundle(
     std::string* outFindingDir,
     std::string* outError);
 
+bool CaptureAndArchiveFindingBundleWithLens(
+    const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    const LensSettings* lens,
+    const std::string& group,
+    const std::string& why,
+    std::string* outFindingDir,
+    std::string* outError);
+
 bool CaptureAndArchiveFindingBundle(
     const std::string& exeDir,
     const ViewState& view,

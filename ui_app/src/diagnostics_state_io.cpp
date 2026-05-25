@@ -122,6 +122,71 @@ bool GetOptionalBool(const json_min::Value& object, const char* key, bool* outVa
     return true;
 }
 
+bool ParseOptionalLensDownsample(const json_min::Value& lensObject, LensSettings* ioLens, std::string* outError) {
+    double downsampleRaw = static_cast<double>(ioLens->downsample);
+    bool hasDownsample = false;
+    if (!GetOptionalNumber(lensObject, "downsample", &downsampleRaw, &hasDownsample, outError)) return false;
+    if (hasDownsample) {
+        if (!std::isfinite(downsampleRaw) ||
+            std::floor(downsampleRaw) != downsampleRaw ||
+            downsampleRaw < 1.0 ||
+            downsampleRaw > static_cast<double>(INT_MAX)) {
+            if (outError) *outError = "Invalid lens.downsample field";
+            return false;
+        }
+        ioLens->downsample = static_cast<int>(downsampleRaw);
+    }
+    return true;
+}
+
+bool ParseOptionalLensOverlayMode(const json_min::Value& lensObject, LensSettings* ioLens, std::string* outError) {
+    std::string overlayModeId;
+    if (TryGetOptionalString(lensObject, "sdf_overlay_mode", &overlayModeId)) {
+        if (!TryParseLensSdfOverlayModeId(overlayModeId, &ioLens->sdf_overlay_mode)) {
+            if (outError) *outError = "Unknown lens.sdf_overlay_mode: " + overlayModeId;
+            return false;
+        }
+    } else if (const json_min::Value* overlayModeValue = lensObject.get("sdf_overlay_mode")) {
+        if (!overlayModeValue->is_string()) {
+            if (outError) *outError = "Invalid lens.sdf_overlay_mode field";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ParseOptionalLensFloat(const json_min::Value& lensObject, const char* key, float* outValue, std::string* outError) {
+    double rawValue = static_cast<double>(*outValue);
+    if (!GetOptionalNumber(lensObject, key, &rawValue, nullptr, outError)) return false;
+    if (!std::isfinite(rawValue)) {
+        if (outError) *outError = "Invalid nonfinite Lens field";
+        return false;
+    }
+    *outValue = static_cast<float>(rawValue);
+    return true;
+}
+
+bool ParseOptionalLensState(const json_min::Value& root, LensSettings* outLens, std::string* outError) {
+    if (!outLens) return true;
+    LensSettings lens{};
+    const json_min::Value* lensObject = root.get("lens");
+    if (!lensObject) {
+        *outLens = lens;
+        return true;
+    }
+    if (!lensObject->is_object()) {
+        if (outError) *outError = "lens must be an object";
+        return false;
+    }
+    if (!GetOptionalBool(*lensObject, "enabled", &lens.enabled, nullptr, outError)) return false;
+    if (!ParseOptionalLensDownsample(*lensObject, &lens, outError)) return false;
+    if (!ParseOptionalLensOverlayMode(*lensObject, &lens, outError)) return false;
+    if (!ParseOptionalLensFloat(*lensObject, "sdf_overlay_opacity", &lens.sdf_overlay_opacity, outError)) return false;
+    if (!ParseOptionalLensFloat(*lensObject, "sdf_overlay_band_px", &lens.sdf_overlay_band_px, outError)) return false;
+    *outLens = lens;
+    return true;
+}
+
 bool ParseFixedFloatArray(const json_min::Value& value, const char* fieldName, float* outValues, size_t expectedCount, std::string* outError) {
     if (!value.is_array()) {
         if (outError) *outError = std::string(fieldName) + " must be an array";
@@ -1733,6 +1798,16 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     ViewState* ioView,
     KernelParams* ioParams,
     RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    LensSettings* outLens,
+    std::string* outError) {
+    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outLens, outColorPipelineWindow, outError);
+}
+
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
     SidecarOrientationVector* outOrientation,
     bool* outHasOrientation,
     std::string* outError) {
@@ -1811,6 +1886,35 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     bool* outHasMutationHistory,
     ColorPipelineWindowState* outColorPipelineWindow,
     std::string* outError) {
+    return LoadDiagnosticsStateJson(
+        text,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        outControllerPolicy,
+        outHasControllerPolicy,
+        outMutationHistory,
+        outHasMutationHistory,
+        nullptr,
+        outColorPipelineWindow,
+        outError);
+}
+
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    LensSettings* outLens,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError) {
     if (outError) outError->clear();
     if (outOrientation) *outOrientation = {};
     if (outHasOrientation) *outHasOrientation = false;
@@ -1819,6 +1923,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (outMutationHistory) outMutationHistory->clear();
     if (outHasMutationHistory) *outHasMutationHistory = false;
     if (outColorPipelineWindow) *outColorPipelineWindow = {};
+    if (outLens) *outLens = {};
     if (!ioView || !ioParams || !ioRender) {
         if (outError) *outError = "LoadDiagnosticsStateJson requires non-null output pointers";
         return false;
@@ -1838,6 +1943,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!ParseOptionalSidecarOrientation(root, outOrientation, outHasOrientation, outError)) return false;
     if (!ParseOptionalSidecarAutoDemoPolicy(root, outControllerPolicy, outHasControllerPolicy, outError)) return false;
     if (!ParseOptionalSidecarMutationHistory(root, outMutationHistory, outHasMutationHistory, outError)) return false;
+    LensSettings nextLens{};
+    if (!ParseOptionalLensState(root, outLens ? &nextLens : nullptr, outError)) return false;
     int stateVersion = 0;
     if (!ParseIntField(root, "state_version", &stateVersion, outError)) return false;
     if (stateVersion != 1 && stateVersion != 2 && stateVersion != 3) {
@@ -2555,6 +2662,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     *ioView = nextView;
     *ioParams = nextParams;
     *ioRender = nextRender;
+    if (outLens) *outLens = nextLens;
     if (outColorPipelineWindow) *outColorPipelineWindow = std::move(nextColorPipelineWindow);
     return true;
 }
@@ -2580,6 +2688,16 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     ViewState* ioView,
     KernelParams* ioParams,
     RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    LensSettings* outLens,
+    std::string* outError) {
+    return LoadDiagnosticsStateFile(path, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outLens, outColorPipelineWindow, outError);
+}
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
     SidecarOrientationVector* outOrientation,
     bool* outHasOrientation,
     std::string* outError) {
@@ -2658,6 +2776,35 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     bool* outHasMutationHistory,
     ColorPipelineWindowState* outColorPipelineWindow,
     std::string* outError) {
+    return LoadDiagnosticsStateFile(
+        path,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        outControllerPolicy,
+        outHasControllerPolicy,
+        outMutationHistory,
+        outHasMutationHistory,
+        nullptr,
+        outColorPipelineWindow,
+        outError);
+}
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    LensSettings* outLens,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError) {
     if (outError) outError->clear();
     std::string text;
     if (!ReadTextFile(std::filesystem::path(path), &text, outError)) return false;
@@ -2672,6 +2819,7 @@ bool LoadDiagnosticsStateFile(const std::string& path,
         outHasControllerPolicy,
         outMutationHistory,
         outHasMutationHistory,
+        outLens,
         outColorPipelineWindow,
         outError);
 }

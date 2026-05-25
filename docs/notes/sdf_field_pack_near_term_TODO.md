@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, and normal viewport overlay. The active near-term gap is SDF Source row customization and Source-section field-resolution UX; SDF-native fractal lanes remain deferred.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, and SDF Source row customization. The active near-term gap is capture/replay authority for Lens-backed SDF Color Pipeline captures; SDF-native fractal lanes remain deferred.
 
 Shipped since this roadmap was first written:
 
@@ -18,13 +18,15 @@ Shipped since this roadmap was first written:
 - Capture Finding parity for active SDF Color Pipeline source-row pixels.
 - Shared Lens Downsample visibility/control authority when Color Pipeline SDF rows use the field.
 - Normal viewport SDF overlay productization for boundary, band, and field-debug modes.
+- SDF Source row customization: visible Scale/Bias/Blend Weight controls, `sdf_boundary_band` boundary width, and a Source-section alias for shared SDF Field Downsample.
 
 Active next slice:
 
-- SDF Source row customization: visible Scale/Bias/Blend Weight controls, `sdf_boundary_band` boundary width, and a Source-section alias for shared SDF Field Downsample.
+- Capture/replay authority smoke matrix: serialize/load top-level Lens state, accept arbitrary explicit `--load-state-json` filenames, and prove small SDF/non-SDF captures replay to identical frame hashes from emitted `state.json`.
 
 Still deferred:
 
+- Color Pipeline phase-signal metadata for `sdf_normal_angle`.
 - SDF-native selectable fractal lanes.
 - Authored SDF pack UI/live viewport integration.
 
@@ -595,8 +597,10 @@ Recommended immediate ordering:
 8. CUDA Lens SDF backend. Shipped.
 9. Live Color Pipeline SDF rows. Shipped.
 10. Viewport overlay. Shipped.
-11. SDF Source row customization and Source-section field-resolution UX. Active.
-12. First SDF-native fractal lane. Deferred.
+11. SDF Source row customization and Source-section field-resolution UX. Shipped.
+12. Capture/replay authority smoke matrix. Active.
+13. Color Pipeline phase-signal metadata. Deferred until replay authority is green.
+14. First SDF-native fractal lane. Deferred.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
 blocks all other product polish. It also keeps the first implementation wins

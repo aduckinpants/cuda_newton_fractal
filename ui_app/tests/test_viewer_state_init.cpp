@@ -22,6 +22,21 @@ bool DiagnosticsStateFileHasExplicitExplainoRoots(const std::string&, bool* outH
     return true;
 }
 
+bool LoadDiagnosticsStateFile(const std::string&, ViewState*, KernelParams*,
+    RenderSettings*, SidecarOrientationVector* outOrientation, bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy, bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory, bool* outHasMutationHistory,
+    LensSettings*, ColorPipelineWindowState*, std::string*) {
+    if (!gLoadStateShouldSucceed) return false;
+    if (outOrientation) *outOrientation = gLoadedOrientationStub;
+    if (outHasOrientation) *outHasOrientation = gLoadStateHasOrientation;
+    if (outControllerPolicy) *outControllerPolicy = gLoadedControllerPolicyStub;
+    if (outHasControllerPolicy) *outHasControllerPolicy = gLoadStateHasControllerPolicy;
+    if (outMutationHistory) *outMutationHistory = gLoadedMutationHistoryStub;
+    if (outHasMutationHistory) *outHasMutationHistory = gLoadStateHasMutationHistory;
+    return true;
+}
+
 bool LoadFindingSelectionIntoRuntime(const std::string&, ViewState*, KernelParams*,
     RenderSettings*, SidecarOrientationVector* outOrientation, bool* outHasOrientation,
     SidecarAutoDemoControllerPolicy* outControllerPolicy, bool* outHasControllerPolicy,
@@ -364,6 +379,7 @@ static void TestLoadStateReturnsPersistedOrientationBaseline() {
         view,
         params,
         render,
+        nullptr,
         &controllerPolicy,
         &loadedOrientation,
         &hasLoadedOrientation,
@@ -418,6 +434,7 @@ static void TestFractalOverrideClearsLoadedOrientationBaseline() {
         view,
         params,
         render,
+        nullptr,
         &controllerPolicy,
         &loadedOrientation,
         &hasLoadedOrientation,
@@ -468,6 +485,7 @@ static void TestLegacyLoadStateResetsControllerPolicy() {
         view,
         params,
         render,
+        nullptr,
         &controllerPolicy,
         &loadedOrientation,
         &hasLoadedOrientation,

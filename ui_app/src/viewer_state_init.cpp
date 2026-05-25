@@ -11,6 +11,8 @@
 #include "fractal_family_rules.h"
 #include "view_hp_sync.h"
 
+#include <filesystem>
+
 namespace {
 
 bool CliOverridesLoadedStateSnapshot(const ViewerCliArgs& cli) {
@@ -52,6 +54,7 @@ bool CliOverridesExplainoRuntimeAuthority(const ViewerCliArgs& cli) {
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render,
+                      LensSettings* ioLens,
                       SidecarAutoDemoControllerPolicy* ioSidecarControllerPolicy,
                       SidecarOrientationVector* outLoadedOrientation,
                       bool* outHasLoadedOrientation,
@@ -80,8 +83,9 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         SidecarAutoDemoMutationHistory loadedMutationHistory;
         bool hasLoadedMutationHistory = false;
         ColorPipelineWindowState loadedColorPipelineWindow;
-        if (!LoadFindingSelectionIntoRuntime(
-                cli.load_state_json,
+        loadedStatePath = std::filesystem::path(cli.load_state_json).lexically_normal().string();
+        if (!LoadDiagnosticsStateFile(
+                loadedStatePath,
                 &view,
                 &params,
                 &render,
@@ -91,14 +95,18 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                 &hasLoadedControllerPolicy,
                 &loadedMutationHistory,
                 &hasLoadedMutationHistory,
+                ioLens,
                 &loadedColorPipelineWindow,
-                &loadedStatePath,
                 &loadError)) {
             return 1;
         }
         if (!DiagnosticsStateFileHasExplicitExplainoRoots(loadedStatePath, &loadedExplicitExplainoRoots, &loadError)) {
             return 1;
         }
+        if (IsExplainoFamily(view.fractal_type) && !loadedExplicitExplainoRoots) {
+            UpdateExplainoPolynomial(view, params, nullptr);
+        }
+        SyncViewUiFromHp(view);
         loadedState = true;
         if (outResolvedLoadedStatePath) *outResolvedLoadedStatePath = loadedStatePath;
         if (ioSidecarControllerPolicy) {
@@ -192,5 +200,5 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render, bool* dirty) {
-    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, dirty);
+    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, dirty);
 }

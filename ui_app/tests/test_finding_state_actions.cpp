@@ -917,6 +917,97 @@ int main() {
         }
     }
 
+    {
+        const fs::path explicitDir = tempRoot / "explicit_state_filename";
+        fs::create_directories(explicitDir);
+        const fs::path arbitraryStatePath = explicitDir / "normal_angle_only_state.json";
+        WriteTextFile(arbitraryStatePath, R"({
+    "state_version": 3,
+    "fractal_type": "multibrot",
+    "view": {
+        "center_x": 0.25,
+        "center_y": -0.5,
+        "zoom": 2.0,
+        "rotation_degrees": 0.0,
+        "center_hp_x": 0.25,
+        "center_hp_y": -0.5,
+        "log2_zoom": 1.0,
+        "explaino_phase": 0.0,
+        "explaino_seed_drift": 0.0,
+        "explaino_seed_tween": true
+    },
+    "params": {
+        "max_iter": 128,
+        "epsilon": 0.000001,
+        "exposure": 1.0,
+        "poly_kind": 0,
+        "coloring_mode": "smooth_escape",
+        "color_signal": "smooth_escape",
+        "color_shape": "identity",
+        "color_palette": "cyclic_escape",
+        "color_grading": "escape_default",
+        "nova_alpha": 0.5,
+        "phoenix_p_real": 0.0,
+        "phoenix_p_imag": 0.0,
+        "multibrot_power": 3,
+        "multibrot_power_float": 3.0,
+        "multibrot_power_imag": 0.0,
+        "explaino_seed": 0.0,
+        "explaino_warp_strength": 0.0,
+        "explaino_root_count": 0,
+        "poly_coeffs": [-1.0, 0.0, 0.0, 1.0, 0.0]
+    },
+    "render": {
+        "width": 192,
+        "height": 144,
+        "block_size": 256,
+        "device_id": 0
+    }
+})");
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        ColorPipelineWindowState colorPipelineWindow{};
+        std::string resolvedStatePath;
+        std::string error;
+        if (!LoadExplicitStateJsonIntoRuntime(
+                arbitraryStatePath.string(),
+                &view,
+                &params,
+                &render,
+                &lens,
+                &colorPipelineWindow,
+                &resolvedStatePath,
+                &error)) {
+            std::cerr << "Expected explicit state-json load to accept arbitrary valid JSON filename: " << error << "\n";
+            return 1;
+        }
+        if (resolvedStatePath.find("normal_angle_only_state.json") == std::string::npos ||
+            view.fractal_type != FractalType::multibrot ||
+            params.max_iter != 128 ||
+            render.resolution.x != 192 ||
+            render.resolution.y != 144) {
+            std::cerr << "Expected explicit arbitrary state-json load to apply runtime state\n";
+            return 1;
+        }
+
+        ViewState findingView{};
+        KernelParams findingParams{};
+        RenderSettings findingRender{};
+        resolvedStatePath.clear();
+        error.clear();
+        if (LoadFindingSelectionIntoRuntime(arbitraryStatePath.string(), &findingView, &findingParams, &findingRender, &resolvedStatePath, &error)) {
+            std::cerr << "Expected finding-picker load path to keep rejecting arbitrary filenames\n";
+            return 1;
+        }
+        if (error.find("Select either state.json or finding.json") == std::string::npos) {
+            std::cerr << "Unexpected finding-picker arbitrary filename rejection: " << error << "\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_finding_state_actions: all passed\n";
     return 0;
 }

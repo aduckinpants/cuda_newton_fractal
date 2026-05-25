@@ -5568,6 +5568,122 @@ int main() {
         }
       }
 
+      {
+        ViewState lensView{};
+        lensView.fractal_type = FractalType::multibrot;
+        KernelParams lensParams{};
+        lensParams.coloring_mode = ColoringMode::smooth_escape;
+        lensParams.color_pipeline = {ColorSignal::sdf_signed_distance, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        lensParams.color_source_stack_count = 1;
+        lensParams.color_source_stack[0].signal = ColorSignal::sdf_signed_distance;
+        lensParams.color_source_stack[0].params.scale = 0.05f;
+        lensParams.color_source_stack[0].params.bias = 0.5f;
+        RenderSettings lensRender{};
+        lensRender.resolution = {64, 48};
+        RenderStats lensStats{};
+        std::vector<std::uint32_t> lensRgba(static_cast<std::size_t>(lensRender.resolution.x) *
+            static_cast<std::size_t>(lensRender.resolution.y), 0xff102030u);
+        LensSettings lens{};
+        lens.enabled = true;
+        lens.downsample = 4;
+        lens.sdf_overlay_mode = LensSdfOverlayMode::field_debug;
+        lens.sdf_overlay_opacity = 0.375f;
+        lens.sdf_overlay_band_px = 6.25f;
+
+        DiagnosticsCaptureResult capture{};
+        std::string error;
+        if (!CaptureDiagnosticsBundleToDirWithLens(
+                (tempRoot / "lens_state_roundtrip").string(),
+                lensView,
+                lensParams,
+                lensRender,
+                lensStats,
+                lensRgba.data(),
+                lensRgba.size(),
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr,
+                &lens,
+                &capture,
+                &error)) {
+          std::cerr << "Expected Lens-aware diagnostics capture to serialize: " << error << "\n";
+          return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson) || stateJson.find("\"lens\"") == std::string::npos) {
+          std::cerr << "Expected diagnostics state.json to serialize Lens replay authority\n";
+          return 1;
+        }
+
+        ViewState loadedView{};
+        KernelParams loadedParams{};
+        RenderSettings loadedRender{};
+        ColorPipelineWindowState loadedDraft{};
+        LensSettings loadedLens{};
+        error.clear();
+        if (!LoadDiagnosticsStateJson(stateJson, &loadedView, &loadedParams, &loadedRender, &loadedDraft, &loadedLens, &error)) {
+          std::cerr << "Expected Lens-aware diagnostics state to reload: " << error << "\n";
+          return 1;
+        }
+        if (!loadedLens.enabled ||
+            loadedLens.downsample != 4 ||
+            loadedLens.sdf_overlay_mode != LensSdfOverlayMode::field_debug ||
+            !NearlyEqual(loadedLens.sdf_overlay_opacity, 0.375, 0.001) ||
+            !NearlyEqual(loadedLens.sdf_overlay_band_px, 6.25, 0.001)) {
+          std::cerr << "Expected diagnostics state reload to preserve Lens replay authority\n";
+          return 1;
+        }
+
+        LensSettings oldStateLens{};
+        oldStateLens.enabled = true;
+        oldStateLens.downsample = 16;
+        oldStateLens.sdf_overlay_mode = LensSdfOverlayMode::band;
+        oldStateLens.sdf_overlay_opacity = 0.1f;
+        oldStateLens.sdf_overlay_band_px = 11.0f;
+        const std::string oldStateText = R"({
+      "state_version": 3,
+      "fractal_type": "multibrot",
+      "view": {
+      "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+      "rotation_degrees": 0.0,
+      "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+      "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+      },
+      "params": {
+      "max_iter": 64, "epsilon": 1e-06, "exposure": 1.0,
+      "poly_kind": 0,
+      "coloring_mode": "smooth_escape",
+      "color_signal": "smooth_escape",
+      "color_shape": "identity",
+      "color_palette": "cyclic_escape",
+      "color_grading": "escape_default",
+      "nova_alpha": 0.5,
+      "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+      "multibrot_power": 3,
+      "multibrot_power_float": 3.0,
+      "multibrot_power_imag": 0.0,
+      "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+      "poly_coeffs": [-1, 0, 0, 1, 0]
+      },
+      "render": { "width": 64, "height": 48, "block_size": 256, "device_id": 0 }
+    })";
+        if (!LoadDiagnosticsStateJson(oldStateText, &loadedView, &loadedParams, &loadedRender, &loadedDraft, &oldStateLens, &error)) {
+          std::cerr << "Expected old Lens-less diagnostics state to reload with defaults: " << error << "\n";
+          return 1;
+        }
+        const LensSettings defaultLens{};
+        if (oldStateLens.enabled != defaultLens.enabled ||
+            oldStateLens.downsample != defaultLens.downsample ||
+            oldStateLens.sdf_overlay_mode != defaultLens.sdf_overlay_mode ||
+            !NearlyEqual(oldStateLens.sdf_overlay_opacity, defaultLens.sdf_overlay_opacity, 0.001) ||
+            !NearlyEqual(oldStateLens.sdf_overlay_band_px, defaultLens.sdf_overlay_band_px, 0.001)) {
+          std::cerr << "Expected Lens-less old state to reset Lens settings to defaults instead of leaking prior runtime Lens values\n";
+          return 1;
+        }
+      }
+
     std::cout << "test_diagnostics_state_io: all passed\n";
     return 0;
 }

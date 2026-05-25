@@ -557,6 +557,19 @@ void WriteColorPipelineDraftJson(std::ostringstream& js, const ColorPipelineWind
     js << "  }";
 }
 
+void WriteLensStateJson(std::ostringstream& js, const LensSettings& lens) {
+    const char* overlayModeId = LensSdfOverlayModeId(lens.sdf_overlay_mode);
+    js << "  \"lens\": {\n";
+    js << "    \"enabled\": " << (lens.enabled ? "true" : "false") << ",\n";
+    js << "    \"downsample\": " << lens.downsample << ",\n";
+    js << "    \"sdf_overlay_mode\": ";
+    WriteJsonEscapedString(js, overlayModeId ? overlayModeId : "off");
+    js << ",\n";
+    js << "    \"sdf_overlay_opacity\": " << static_cast<double>(lens.sdf_overlay_opacity) << ",\n";
+    js << "    \"sdf_overlay_band_px\": " << static_cast<double>(lens.sdf_overlay_band_px) << "\n";
+    js << "  }";
+}
+
 std::string BuildStateJson(
     const ViewState& view,
     const KernelParams& params,
@@ -565,7 +578,8 @@ std::string BuildStateJson(
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
-    const ColorPipelineWindowState* colorPipelineWindow) {
+    const ColorPipelineWindowState* colorPipelineWindow,
+    const LensSettings* lens) {
     ColoringMode mirroredColoringMode = ColoringMode::root_basin;
     const bool hasLegacyColoringMirror = TryMirroredColoringModeForPipeline(params.color_pipeline, &mirroredColoringMode);
 
@@ -721,6 +735,10 @@ std::string BuildStateJson(
         js << ",\n";
         WriteColorPipelineDraftJson(js, *colorPipelineWindow);
     }
+    if (lens) {
+        js << ",\n";
+        WriteLensStateJson(js, *lens);
+    }
     js << "}\n";
     return js.str();
 }
@@ -783,6 +801,7 @@ bool CaptureDiagnosticsBundleToDirWithDraft(const std::string& outputDir,
     const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     const ColorPipelineWindowState* colorPipelineWindow,
+    const LensSettings* lens,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
     if (outError) outError->clear();
@@ -814,7 +833,8 @@ bool CaptureDiagnosticsBundleToDirWithDraft(const std::string& outputDir,
         sidecarOrientation,
         sidecarControllerPolicy,
         sidecarMutationHistory,
-        colorPipelineWindow);
+        colorPipelineWindow,
+        lens);
     if (!WriteTextFile(statePath, stateJson, outError)) {
         return false;
     }
@@ -1001,6 +1021,37 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const ColorPipelineWindowState* colorPipelineWindow,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
+    return CaptureDiagnosticsLastBundleWithLens(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        sidecarMutationHistory,
+        colorPipelineWindow,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsLastBundleWithLens(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    const LensSettings* lens,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
     DiagnosticsCaptureResult archiveResult{};
     if (!CaptureDiagnosticsBundleToDirWithDraft(
             BuildUniqueDiagnosticsBundleDir(exeDir).string(),
@@ -1014,6 +1065,7 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
             sidecarControllerPolicy,
             sidecarMutationHistory,
             colorPipelineWindow,
+            lens,
             &archiveResult,
             outError)) {
         return false;
@@ -1032,6 +1084,7 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
             sidecarControllerPolicy,
             sidecarMutationHistory,
             colorPipelineWindow,
+            lens,
             &mirrorResult,
             outError)) {
         return false;
@@ -1162,6 +1215,37 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
     const ColorPipelineWindowState* colorPipelineWindow,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
+    return CaptureDiagnosticsBundleToDirWithLens(
+        outputDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        sidecarMutationHistory,
+        colorPipelineWindow,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDirWithLens(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    const LensSettings* lens,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
     return CaptureDiagnosticsBundleToDirWithDraft(
         outputDir,
         view,
@@ -1174,6 +1258,7 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
         sidecarControllerPolicy,
         sidecarMutationHistory,
         colorPipelineWindow,
+        lens,
         outResult,
         outError);
 }
