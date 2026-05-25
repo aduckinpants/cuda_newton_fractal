@@ -42,6 +42,7 @@ Out of scope:
 - Forward SDF feature work is now explicitly paused behind the Color Pipeline fractal-switch preservation regression and later Color Pipeline composition/preset UX review.
 - Targeted stale grep passed: `artifacts/validation/sdf_roadmap_truth_sync_after_phase_signal_stale_grep.json`.
 - Contract validation, phased-plan sync, hostile-audit validation, stale grep, and diff hygiene passed before checkpoint; receipt, rearward-review, push, and clean-tree proof are managed by the repo closure workflow after the checkpoint commit.
+- Rearward repair pass removed stale closeout wording that the rearward-review gate flagged in this plan.
 
 ## Hostile Audit
 
@@ -59,7 +60,7 @@ Out of scope:
 
 - [done] Real stale-doc finding repaired: `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, and `docs/notes/sdf_field_pack_near_term_TODO.md` still described capture/replay authority as active future work after the replay authority slice had shipped.
 - [done] Real stale-doc finding repaired: the same docs still described `sdf_normal_angle` phase-signal metadata as deferred after the phase semantics slice had shipped.
-- [done] Real continuity risk repaired: the current next SDF roadmap step now points to the Color Pipeline fractal-switch preservation regression before forward SDF feature work resumes.
+- [done] Real continuity risk repaired: the current next SDF roadmap step now points to the Color Pipeline fractal-switch preservation regression before any additional forward SDF feature work.
 - [done] Clean re-read confirmed the repaired state: authored SDF UI/live viewport integration, SDF-native selectable lanes, and broader Color Pipeline composition redesign remain deferred and were not implemented in this docs-only slice.
 
 ## Action Hostile Review

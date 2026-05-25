@@ -601,7 +601,7 @@ Recommended immediate ordering:
 11. SDF Source row customization and Source-section field-resolution UX. Shipped.
 12. Capture/replay authority smoke matrix. Shipped.
 13. Color Pipeline phase-signal metadata. Shipped.
-14. Color Pipeline fractal-switch preservation regression. Active before forward SDF feature work resumes.
+14. Color Pipeline fractal-switch preservation regression. Active before any additional forward SDF feature work.
 15. First SDF-native fractal lane. Deferred.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
