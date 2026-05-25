@@ -121,3 +121,4 @@
 - `ck:bba83541` 2026-05-25 06:49 UTC — session-start | branch=codex/live-gpu-lens-sdf-integration | head=a24f6a2 | status=dirty | profile=runtime | intent=live gpu lens sdf integration
 - `ck:bba83541` 2026-05-25 07:11 UTC | score 96 — Live GPU Lens SDF integration implemented: viewer Lens SDF now routes through auto backend with CUDA reporting, checkbox no-mouse automation repaired, runtime proof reports cuda_jfa with valid downsample dimensions and unchanged base frame, and focused native/runtime rails passed.
 - `ck:bba83541` 2026-05-25 07:12 UTC | score 96 — Live GPU Lens SDF integration checkpoint completed with auto-rotated handoff archive tracked under the slice contract.
+- `ck:bba83541` 2026-05-25 07:15 UTC | score 96 — Live GPU Lens SDF integration receipt command normalized so contract proof parses the runtime JUnit evidence without quote corruption.
