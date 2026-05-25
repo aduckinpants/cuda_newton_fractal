@@ -15,7 +15,9 @@ struct Rgba8 {
     unsigned char w;
 };
 
-constexpr float kTwoPi = 6.28318530717958647692f;
+constexpr float kPi = 3.14159265358979323846f;
+constexpr float kTwoPi = 2.0f * kPi;
+constexpr float kBoundaryBandConfigEpsilon = 1.0e-6f;
 
 int ClampIntLocal(int value, int lo, int hi) {
     if (value < lo) return lo;
@@ -47,6 +49,29 @@ SdfFieldSignalConfig SignalConfigForSourceEntry(const ColorPipelineSourceStackEn
     return config;
 }
 
+float ResolveSdfSourceValueFromSample(
+    const SdfFieldSignalSample& sample,
+    const ColorPipelineSourceStackEntry& entry) {
+    float value = ResolveSdfFieldSignalValue(sample, SignalKindForColorSignal(entry.signal));
+    if (entry.signal == ColorSignal::sdf_normal_angle) {
+        value = (value + kPi) / kTwoPi;
+    }
+    return value * entry.params.scale + entry.params.bias;
+}
+
+bool BoundaryBandConfigMatches(const SdfFieldSignalConfig& left, const SdfFieldSignalConfig& right) {
+    return std::fabs(left.boundary_band_px - right.boundary_band_px) <= kBoundaryBandConfigEpsilon;
+}
+
+bool EntryNeedsDistinctSignalSample(
+    const ColorPipelineSourceStackEntry& entry,
+    const SdfFieldSignalConfig& cachedConfig) {
+    if (entry.signal != ColorSignal::sdf_boundary_band) {
+        return false;
+    }
+    return !BoundaryBandConfigMatches(SignalConfigForSourceEntry(entry), cachedConfig);
+}
+
 bool ResolveSdfSourceValue(
     const SdfFieldView& field,
     int fx,
@@ -60,11 +85,7 @@ bool ResolveSdfSourceValue(
     if (!SampleSdfFieldSignals(field, fx, fy, SignalConfigForSourceEntry(entry), sample)) {
         return false;
     }
-    float value = ResolveSdfFieldSignalValue(sample, SignalKindForColorSignal(entry.signal));
-    if (entry.signal == ColorSignal::sdf_normal_angle) {
-        value = (value + 3.14159265358979323846f) / kTwoPi;
-    }
-    *outValue = value * entry.params.scale + entry.params.bias;
+    *outValue = ResolveSdfSourceValueFromSample(sample, entry);
     return true;
 }
 
@@ -104,22 +125,29 @@ bool ResolveSdfPipelineSignal(
         if (outError) *outError = "SDF Color Pipeline source stack contains a non-SDF first Source row";
         return false;
     }
-    float signal = 0.0f;
-    if (!ResolveSdfSourceValue(field, fx, fy, first, &signal)) {
+    const SdfFieldSignalConfig cachedConfig = SignalConfigForSourceEntry(first);
+    SdfFieldSignalSample cachedSample;
+    if (!SampleSdfFieldSignals(field, fx, fy, cachedConfig, cachedSample)) {
         if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
         return false;
     }
+    float signal = ResolveSdfSourceValueFromSample(cachedSample, first);
     for (int index = 1; index < sourceStackCount; ++index) {
         const ColorPipelineSourceStackEntry& entry = params.color_source_stack[index];
         if (!IsColorPipelineSdfSourceSignal(entry.signal)) {
             if (outError) *outError = "SDF Color Pipeline source stack mixes SDF and non-SDF Source rows";
             return false;
         }
-        float nextSignal = 0.0f;
-        if (!ResolveSdfSourceValue(field, fx, fy, entry, &nextSignal)) {
-            if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
-            return false;
+        const SdfFieldSignalSample* sample = &cachedSample;
+        SdfFieldSignalSample distinctSample;
+        if (EntryNeedsDistinctSignalSample(entry, cachedConfig)) {
+            if (!SampleSdfFieldSignals(field, fx, fy, SignalConfigForSourceEntry(entry), distinctSample)) {
+                if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
+                return false;
+            }
+            sample = &distinctSample;
         }
+        const float nextSignal = ResolveSdfSourceValueFromSample(*sample, entry);
         signal = EscapeTimeColorLerp(
             signal,
             nextSignal,

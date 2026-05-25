@@ -162,6 +162,32 @@ void TestMixedSourceStackFailsClosed() {
         "TestMixedSourceStackFailsClosed_PostprocessRejects");
 }
 
+void TestBoundaryBandWidthStillAffectsMixedSdfStack() {
+    const SdfFieldResult field = MakeTestField();
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams narrow = SdfParams(ColorSignal::sdf_signed_distance);
+    narrow.color_source_stack_count = 2;
+    narrow.color_source_stack[1].signal = ColorSignal::sdf_boundary_band;
+    narrow.color_source_stack[1].params.blend_weight = 0.75f;
+    narrow.color_source_stack[1].params.sdf_boundary_width_px = 0.5f;
+
+    KernelParams wide = narrow;
+    wide.color_source_stack[1].params.sdf_boundary_width_px = 6.0f;
+
+    std::vector<std::uint32_t> narrowPixels(16, 0x12345678u);
+    std::vector<std::uint32_t> widePixels(16, 0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, narrow, narrowPixels.data(), &error),
+        "TestBoundaryBandWidthStillAffectsMixedSdfStack_NarrowSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, wide, widePixels.data(), &error),
+        "TestBoundaryBandWidthStillAffectsMixedSdfStack_WideSucceeds");
+    Check(HashFrame(narrowPixels) != HashFrame(widePixels),
+        "TestBoundaryBandWidthStillAffectsMixedSdfStack_BoundaryConfigNotLost");
+}
+
 } // namespace
 
 int main() {
@@ -169,6 +195,7 @@ int main() {
     TestBoundaryBandWidthChangesPostprocessFrame();
     TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources();
     TestMixedSourceStackFailsClosed();
+    TestBoundaryBandWidthStillAffectsMixedSdfStack();
 
     std::printf("test_color_pipeline_sdf_postprocess: passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;

@@ -44,11 +44,16 @@ struct ViewerUiAutomationRenderPacingProbe {
 struct ViewerUiAutomationLensSdfProbe {
     bool enabled = false;
     bool valid = false;
+    bool color_pipeline_active = false;
     std::string backend_used = "none";
     bool fallback_used = false;
     int width = 0;
     int height = 0;
     float pixel_scale = 1.0f;
+    float base_render_ms = 0.0f;
+    float field_ms = 0.0f;
+    float postprocess_ms = 0.0f;
+    float total_ms = 0.0f;
     std::string overlay_mode = "off";
     bool overlay_active = false;
     float overlay_opacity = 0.55f;

@@ -76,6 +76,21 @@ void TestLensSdfProbeDefaults() {
     ViewerUiAutomationLensSdfProbe probe{};
     Check(probe.overlay_mode == "off" && !probe.overlay_active && probe.overlay_opacity > 0.5f,
         "lens SDF automation probe reports stable overlay defaults");
+    Check(!probe.color_pipeline_active && probe.base_render_ms == 0.0f &&
+            probe.field_ms == 0.0f && probe.postprocess_ms == 0.0f && probe.total_ms == 0.0f,
+        "lens SDF automation probe reports stable timing defaults");
+}
+
+void TestLensSdfProbeTimingFields() {
+    ViewerUiAutomationLensSdfProbe probe{};
+    probe.color_pipeline_active = true;
+    probe.base_render_ms = 3.0f;
+    probe.field_ms = 2.0f;
+    probe.postprocess_ms = 7.5f;
+    probe.total_ms = probe.field_ms + probe.postprocess_ms;
+    Check(probe.color_pipeline_active && probe.base_render_ms == 3.0f &&
+            probe.field_ms == 2.0f && probe.postprocess_ms == 7.5f && probe.total_ms == 9.5f,
+        "lens SDF automation probe carries separate field/postprocess timing");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {
@@ -125,6 +140,7 @@ int main() {
     TestJsonStringEscaping();
     TestVisibleControlLookupAndFailClosedErrors();
     TestLensSdfProbeDefaults();
+    TestLensSdfProbeTimingFields();
     TestRenderPacingProbeReportsTimingAndDecision();
     TestRenderedFrameProbeHash();
     if (g_failed != 0) {

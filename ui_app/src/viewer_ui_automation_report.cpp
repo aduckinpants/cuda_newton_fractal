@@ -62,6 +62,7 @@ void WriteLensSdfReportFields(
     const ViewerUiAutomationLensSdfProbe& lensSdfProbe) {
     out << "  \"lens_sdf_enabled\": " << (lensSdfProbe.enabled ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_valid\": " << (lensSdfProbe.valid ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_color_pipeline_active\": " << (lensSdfProbe.color_pipeline_active ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_backend_used\": ";
     WriteAutomationReportString(out, lensSdfProbe.backend_used);
     out << ",\n";
@@ -69,6 +70,10 @@ void WriteLensSdfReportFields(
     out << "  \"lens_sdf_width\": " << lensSdfProbe.width << ",\n";
     out << "  \"lens_sdf_height\": " << lensSdfProbe.height << ",\n";
     out << "  \"lens_sdf_pixel_scale\": " << std::setprecision(12) << lensSdfProbe.pixel_scale << ",\n";
+    out << "  \"base_render_ms\": " << std::setprecision(12) << lensSdfProbe.base_render_ms << ",\n";
+    out << "  \"lens_sdf_field_ms\": " << std::setprecision(12) << lensSdfProbe.field_ms << ",\n";
+    out << "  \"lens_sdf_postprocess_ms\": " << std::setprecision(12) << lensSdfProbe.postprocess_ms << ",\n";
+    out << "  \"lens_sdf_total_ms\": " << std::setprecision(12) << lensSdfProbe.total_ms << ",\n";
     out << "  \"lens_sdf_overlay_mode\": ";
     WriteAutomationReportString(out, lensSdfProbe.overlay_mode);
     out << ",\n";

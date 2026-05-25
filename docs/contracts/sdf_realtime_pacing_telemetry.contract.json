@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "contract_id": "sdf_realtime_pacing_telemetry",
+  "feature_id": "sdf_realtime_pacing_telemetry",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_realtime_pacing_telemetry_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes",
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/src/viewer_render_pacing.h",
+    "ui_app/src/viewer_render_pacing.cpp",
+    "ui_app/src/color_pipeline_sdf_postprocess.h",
+    "ui_app/src/color_pipeline_sdf_postprocess.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_viewer_render_pacing.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "measure SDF field and SDF postprocess cost in the live viewer report",
+    "make realtime pacing react to visible-frame SDF cost instead of base render cost only",
+    "prove SDF-heavy camera/control interaction enters preview with no physical mouse automation",
+    "preserve full-quality settle and capture-quality rendering",
+    "keep per-function SDF downsample as a follow-up unless this slice proves it is strictly required"
+  ],
+  "forbidden_operator_prompts": [
+    "implement per-function SDF downsample in this slice",
+    "rewrite the Color Pipeline postprocess on GPU in this slice",
+    "implement boundary-masked normal-angle in this slice",
+    "implement a Color Pipeline preset manager in this slice",
+    "add SDF-native fractal lanes in this slice",
+    "add authored SDF pack live viewport integration in this slice",
+    "use physical mouse automation",
+    "downgrade capture-quality rendering"
+  ],
+  "required_defaults": {
+    "physical_mouse_automation": false,
+    "capture_quality_downgraded": false,
+    "full_quality_settle_preserved": true,
+    "per_function_sdf_downsample_implemented": false
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "capture_quality_downgrade": "forbidden",
+    "per_function_sdf_downsample": "deferred",
+    "gpu_postprocess_rewrite": "deferred",
+    "preset_manager": "forbidden",
+    "sdf_native_lane": "forbidden",
+    "authored_pack_live_integration": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pacing_report_native --log artifacts/logs/sdf_pacing_report_native.log --out-json artifacts/validation/sdf_pacing_report_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pacing_native --log artifacts/logs/sdf_pacing_native.log --out-json artifacts/validation/sdf_pacing_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_render_pacing",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pacing_postprocess_native --log artifacts/logs/sdf_pacing_postprocess_native.log --out-json artifacts/validation/sdf_pacing_postprocess_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pacing_runtime_publish --log artifacts/logs/sdf_pacing_runtime_publish.log --out-json artifacts/validation/sdf_pacing_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pacing_runtime_pytest --log artifacts/logs/sdf_pacing_runtime_pytest.log --out-json artifacts/validation/sdf_pacing_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_realtime_pacing_telemetry.contract.json --out-json artifacts/validation/sdf_pacing_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_realtime_pacing_telemetry_PHASED_PLAN.md --out-json artifacts/validation/sdf_pacing_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pacing_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pacing_diff_check --log artifacts/logs/sdf_pacing_diff_check.log --out-json artifacts/validation/sdf_pacing_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF realtime pacing telemetry contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_pacing_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF realtime pacing hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_pacing_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

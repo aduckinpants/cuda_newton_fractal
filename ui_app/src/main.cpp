@@ -830,6 +830,7 @@ static void DispatchRenderFrame(
 
     lensSdfProbe = {};
     lensSdfProbe.enabled = lens.enabled;
+    lensSdfProbe.color_pipeline_active = ColorPipelineUsesSdfSource(params);
     lensSdfProbe.backend_used = "none";
     lensSdfProbe.overlay_mode = LensSdfOverlayModeId(lens.sdf_overlay_mode) ? LensSdfOverlayModeId(lens.sdf_overlay_mode) : "off";
     lensSdfProbe.overlay_opacity = lens.sdf_overlay_opacity;
@@ -889,6 +890,7 @@ static void DispatchRenderFrame(
         ImGui::End();
     } else {
         stats = newStats;
+        lensSdfProbe.base_render_ms = newStats.last_render_ms;
         MarkRenderedFrameReady(dispatchRender, &renderedFrame);
         bool postprocessOk = true;
         std::string postprocessError;
@@ -899,6 +901,7 @@ static void DispatchRenderFrame(
             }
             SdfFieldResult lensSdfField;
             LensSdfBackendReport backendReport{};
+            const auto fieldStart = std::chrono::steady_clock::now();
             if (ComputeLensSdfFieldForMaskWithBackend(
                     maskPtr,
                     dispatchRender.resolution.x,
@@ -907,29 +910,49 @@ static void DispatchRenderFrame(
                     LensSdfBackend::auto_backend,
                     lensSdfField,
                     &backendReport)) {
+                const auto fieldEnd = std::chrono::steady_clock::now();
+                lensSdfProbe.field_ms = static_cast<float>(
+                    std::chrono::duration<double, std::milli>(fieldEnd - fieldStart).count());
                 const float lowMaxAbsPx = 48.0f / static_cast<float>(NormalizeLensDownsamplePow2(lens.downsample));
-                if (lensSdfOverlayEnabled) {
-                    BuildLensSdfViewportOverlayRgba(lensSdfField.View(), lens, lowMaxAbsPx, lensSdfRgba);
-                } else {
-                    BuildSignedDistanceSdfRgba(lensSdfField.View(), lowMaxAbsPx, lensSdfRgba);
+                lensSdfProbe.valid = true;
+                lensSdfProbe.overlay_active = lensSdfOverlayEnabled;
+                lensSdfProbe.width = lensSdfField.width;
+                lensSdfProbe.height = lensSdfField.height;
+                lensSdfProbe.pixel_scale = lensSdfField.pixel_scale;
+                if (lens.enabled || lensSdfOverlayEnabled) {
+                    if (lensSdfOverlayEnabled) {
+                        BuildLensSdfViewportOverlayRgba(lensSdfField.View(), lens, lowMaxAbsPx, lensSdfRgba);
+                    } else {
+                        BuildSignedDistanceSdfRgba(lensSdfField.View(), lowMaxAbsPx, lensSdfRgba);
+                    }
+                    if (lensSdfRgba.size() == static_cast<size_t>(lensSdfField.width) * static_cast<size_t>(lensSdfField.height)) {
+                        EnsureLensSdfTexture(lensSdfField.width, lensSdfField.height);
+                        UploadLensSdfRGBA(lensSdfRgba.data(), lensSdfField.width, lensSdfField.height);
+                    } else {
+                        lensSdfProbe.valid = false;
+                    }
                 }
-                if (lensSdfRgba.size() == static_cast<size_t>(lensSdfField.width) * static_cast<size_t>(lensSdfField.height)) {
-                    EnsureLensSdfTexture(lensSdfField.width, lensSdfField.height);
-                    UploadLensSdfRGBA(lensSdfRgba.data(), lensSdfField.width, lensSdfField.height);
-                    lensSdfProbe.valid = true;
-                    lensSdfProbe.overlay_active = lensSdfOverlayEnabled;
-                    lensSdfProbe.width = lensSdfField.width;
-                    lensSdfProbe.height = lensSdfField.height;
-                    lensSdfProbe.pixel_scale = lensSdfField.pixel_scale;
+                if (colorPipelineNeedsSdf) {
+                    const auto postprocessStart = std::chrono::steady_clock::now();
+                    if (!ApplyLensSdfColorPipelinePostprocess(
+                            lensSdfField.View(),
+                            dispatchRender,
+                            params,
+                            rgba.data(),
+                            &postprocessError)) {
+                        postprocessOk = false;
+                    }
+                    const auto postprocessEnd = std::chrono::steady_clock::now();
+                    lensSdfProbe.postprocess_ms = static_cast<float>(
+                        std::chrono::duration<double, std::milli>(postprocessEnd - postprocessStart).count());
                 }
-                if (colorPipelineNeedsSdf &&
-                    !ApplyLensSdfColorPipelinePostprocess(
-                        lensSdfField.View(),
-                        dispatchRender,
-                        params,
-                        rgba.data(),
-                        &postprocessError)) {
-                    postprocessOk = false;
+                lensSdfProbe.total_ms = lensSdfProbe.field_ms + lensSdfProbe.postprocess_ms;
+                if (std::isfinite(lensSdfProbe.total_ms) && lensSdfProbe.total_ms > 0.0f) {
+                    if (std::isfinite(stats.last_render_ms) && stats.last_render_ms >= 0.0f) {
+                        stats.last_render_ms += lensSdfProbe.total_ms;
+                    } else {
+                        stats.last_render_ms = lensSdfProbe.total_ms;
+                    }
                 }
                 lensSdfProbe.fallback_used = backendReport.fallback_used;
                 if (backendReport.used == LensSdfBackend::cuda_jfa) {
