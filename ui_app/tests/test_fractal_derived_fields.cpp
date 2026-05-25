@@ -1330,6 +1330,102 @@ int main() {
         }
     }
 
+    // Fractal switches should not destroy compatible Color Pipeline customizations.
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::multibrot;
+        ApplyFractalPresetDefaults(view, params, nullptr);
+
+        params.coloring_mode = ColoringMode::phase;
+        params.color_pipeline = {ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+        params.exposure = 1.7f;
+        params.color_source_stack_count = 2;
+        params.color_source_stack[0].signal = ColorSignal::sdf_normal_angle;
+        params.color_source_stack[0].params.scale = -0.40f;
+        params.color_source_stack[0].params.bias = 0.18f;
+        params.color_source_stack[0].params.blend_weight = 1.0f;
+        params.color_source_stack[1].signal = ColorSignal::sdf_signed_distance;
+        params.color_source_stack[1].params.scale = 1.65f;
+        params.color_source_stack[1].params.bias = 0.97f;
+        params.color_source_stack[1].params.blend_weight = 0.25f;
+        params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_offset = 0.33f;
+        params.color_shape_scale = 1.75f;
+        params.color_palette_stack_count = 1;
+        params.color_palette_stack[0].palette = ColorPalette::phase_wheel;
+        params.color_palette_stack[0].params.phase_offset = 0.42f;
+        params.color_palette_stack[0].params.saturation = 1.35f;
+        params.color_grading_stack_count = 1;
+        params.color_grading_stack[0].grading = ColorGradingPreset::phase_default;
+        params.color_grading_stack[0].params.exposure = 1.25f;
+        params.color_grading_stack[0].params.contrast = 1.80f;
+
+        view.fractal_type = FractalType::mandelbrot;
+        bool dirty = false;
+        ApplyFractalPresetDefaultsForFractalSwitch(view, params, &dirty);
+
+        if (!dirty || params.max_iter != 1200) {
+            std::cerr << "Fractal switch should still apply target fractal numeric defaults\n";
+            return 1;
+        }
+        if (params.color_pipeline.signal != ColorSignal::sdf_normal_angle ||
+            params.color_pipeline.palette != ColorPalette::phase_wheel ||
+            params.color_pipeline.grading != ColorGradingPreset::phase_default ||
+            params.coloring_mode != ColoringMode::phase ||
+            !NearlyEqual(params.exposure, 1.7f) ||
+            params.color_source_stack_count != 2 ||
+            params.color_source_stack[0].signal != ColorSignal::sdf_normal_angle ||
+            !NearlyEqual(params.color_source_stack[0].params.scale, -0.40f) ||
+            !NearlyEqual(params.color_source_stack[0].params.bias, 0.18f) ||
+            params.color_source_stack[1].signal != ColorSignal::sdf_signed_distance ||
+            !NearlyEqual(params.color_source_stack[1].params.scale, 1.65f) ||
+            !NearlyEqual(params.color_source_stack[1].params.blend_weight, 0.25f) ||
+            params.color_shape != ColorPipelineShape::offset_scale ||
+            !NearlyEqual(params.color_shape_offset, 0.33f) ||
+            !NearlyEqual(params.color_shape_scale, 1.75f) ||
+            params.color_palette_stack_count != 1 ||
+            params.color_palette_stack[0].palette != ColorPalette::phase_wheel ||
+            !NearlyEqual(params.color_palette_stack[0].params.phase_offset, 0.42f) ||
+            params.color_grading_stack_count != 1 ||
+            params.color_grading_stack[0].grading != ColorGradingPreset::phase_default ||
+            !NearlyEqual(params.color_grading_stack[0].params.contrast, 1.80f)) {
+            std::cerr << "Compatible fractal switch should preserve Color Pipeline live/source-stack params\n";
+            return 1;
+        }
+    }
+
+    // Unsupported source signals should still fall back to the target fractal default.
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::newton;
+        ApplyFractalPresetDefaults(view, params, nullptr);
+
+        params.coloring_mode = ColoringMode::joy_basins;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::joy_basins);
+        params.color_source_stack_count = 1;
+        params.color_source_stack[0].signal = ColorSignal::root_index;
+        params.color_source_stack[0].params.blend_weight = 1.0f;
+
+        view.fractal_type = FractalType::multibrot;
+        ApplyFractalPresetDefaultsForFractalSwitch(view, params, nullptr);
+        if (params.color_pipeline.signal != DefaultColorPipelineForFractal(FractalType::multibrot).signal ||
+            params.color_pipeline.palette != DefaultColorPipelineForFractal(FractalType::multibrot).palette ||
+            params.color_pipeline.grading != DefaultColorPipelineForFractal(FractalType::multibrot).grading ||
+            params.color_source_stack_count != 0) {
+            std::cerr << "Unsupported Color Pipeline switch should project to target fractal defaults"
+                      << " signal=" << static_cast<int>(params.color_pipeline.signal)
+                      << " default_signal=" << static_cast<int>(DefaultColorPipelineForFractal(FractalType::multibrot).signal)
+                      << " palette=" << static_cast<int>(params.color_pipeline.palette)
+                      << " default_palette=" << static_cast<int>(DefaultColorPipelineForFractal(FractalType::multibrot).palette)
+                      << " grading=" << static_cast<int>(params.color_pipeline.grading)
+                      << " default_grading=" << static_cast<int>(DefaultColorPipelineForFractal(FractalType::multibrot).grading)
+                      << " stack_count=" << params.color_source_stack_count << "\n";
+            return 1;
+        }
+    }
+
     // Explaino-Halley must get preset defaults (custom poly, basin coloring)
     {
         ViewState view{};

@@ -815,6 +815,45 @@ void TestMixedSdfAndNonSdfSourceRowsFailClosed() {
         "TestMixedSdfAndNonSdfSourceRowsFailClosed_ApplyRejectsBeforeMutation");
 }
 
+void TestDraftEditsSurviveCompatibleFractalSwitchSync() {
+    ColorPipelineWindowState state{};
+    KernelParams params{};
+    params.coloring_mode = ColoringMode::phase;
+    params.color_pipeline = {ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+    params.color_source_stack_count = 1;
+    params.color_source_stack[0].signal = ColorSignal::sdf_normal_angle;
+    params.color_source_stack[0].params.scale = -0.40f;
+    params.color_source_stack[0].params.bias = 0.18f;
+    params.color_shape = ColorPipelineShape::offset_scale;
+    params.color_shape_offset = 0.25f;
+    params.color_shape_scale = 1.5f;
+
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::multibrot, &params),
+        "TestDraftEditsSurviveCompatibleFractalSwitchSync_InitialLiveSync");
+    ColorPipelineLaneState* shapeLane = FindLane(&state, "shape");
+    Check(shapeLane && !shapeLane->rows.empty() &&
+            SetRowNumber(shapeLane->rows[0], "shape.scale", 2.25),
+        "TestDraftEditsSurviveCompatibleFractalSwitchSync_ConfiguresDraftEdit");
+    Check(HasColorPipelineDraftEdits(state),
+        "TestDraftEditsSurviveCompatibleFractalSwitchSync_DraftEditDetectedBeforeSwitch");
+
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::mandelbrot, &params),
+        "TestDraftEditsSurviveCompatibleFractalSwitchSync_SyncAfterCompatibleSwitch");
+    shapeLane = FindLane(&state, "shape");
+    const ColorPipelineLaneState* sourceLane = FindLane(state, "source");
+    Check(state.live_snapshot.valid &&
+            state.live_snapshot.fractal_type == FractalType::mandelbrot &&
+            state.live_snapshot.pipeline.signal == ColorSignal::sdf_normal_angle &&
+            sourceLane &&
+            !sourceLane->rows.empty() &&
+            sourceLane->rows[0].function_id == "sdf_normal_angle" &&
+            shapeLane &&
+            !shapeLane->rows.empty() &&
+            RowNumber(shapeLane->rows[0], "shape.scale", 2.25) &&
+            HasColorPipelineDraftEdits(state),
+        "TestDraftEditsSurviveCompatibleFractalSwitchSync_PreservesAuthoredDraftInsteadOfAdoptingLiveDefaults");
+}
+
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -873,6 +912,7 @@ int main() {
     TestCandidateDraftOnlyTruthAndCopySurfaces();
     TestSdfSourceRowsApplyThroughDraftLiveBridge();
     TestMixedSdfAndNonSdfSourceRowsFailClosed();
+    TestDraftEditsSurviveCompatibleFractalSwitchSync();
     TestWindowUtilityContracts();
 
     std::printf("test_color_pipeline_window: passed=%d failed=%d\n", g_passed, g_failed);

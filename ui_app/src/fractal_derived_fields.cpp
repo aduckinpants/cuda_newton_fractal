@@ -112,6 +112,10 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.color_phase_signal_offset = 0.0f;
     params.color_phase_wrap_cycles = 1.0f;
     params.color_phase_palette_offset = 0.0f;
+    params.color_source_stack_count = 0;
+    for (ColorPipelineSourceStackEntry& sourceEntry : params.color_source_stack) {
+        sourceEntry = {};
+    }
     params.color_shape = ColorPipelineShape::identity;
     params.color_shape_stack_count = 0;
     for (ColorPipelineShapeStackEntry& shapeEntry : params.color_shape_stack) {
@@ -155,6 +159,236 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
 static void ApplyDefaultColoringSelection(FractalType fractalType, KernelParams& params) {
     params.coloring_mode = DefaultColoringModeForFractal(fractalType);
     params.color_pipeline = DefaultColorPipelineForFractal(fractalType);
+}
+
+struct ColorPipelineRuntimeSnapshot {
+    ColoringMode coloring_mode{ColoringMode::root_basin};
+    ColorPipelineSelection color_pipeline{};
+    float exposure{1.0f};
+    float color_saturation{1.15f};
+    float color_contrast{1.10f};
+    float color_glow{0.25f};
+    float color_balance_void{0.0f};
+    float color_chroma_tension{0.0f};
+    float color_accent_bias{0.0f};
+    float color_tint_r{1.0f};
+    float color_tint_g{1.0f};
+    float color_tint_b{1.0f};
+    float color_phase_signal_offset{0.0f};
+    float color_phase_wrap_cycles{1.0f};
+    float color_phase_palette_offset{0.0f};
+    int color_source_stack_count{0};
+    ColorPipelineSourceStackEntry color_source_stack[kColorPipelineMaxSourceStackCount]{};
+    ColorPipelineShape color_shape{ColorPipelineShape::identity};
+    int color_shape_stack_count{0};
+    ColorPipelineShapeStackEntry color_shape_stack[kColorPipelineMaxShapeStackCount]{};
+    int color_root_basin_pair_count{0};
+    ColorPipelineSelection color_root_basin_pairs[kColorPipelineMaxRootBasinPairCount]{};
+    int color_palette_stack_count{0};
+    ColorPipelinePaletteStackEntry color_palette_stack[kColorPipelineMaxPaletteStackCount]{};
+    int color_grading_stack_count{0};
+    ColorPipelineGradingStackEntry color_grading_stack[kColorPipelineMaxGradingStackCount]{};
+    float color_shape_offset{0.0f};
+    float color_shape_scale{1.0f};
+    float color_shape_repeat_frequency{8.0f};
+    float color_shape_repeat_phase{0.0f};
+    int color_shape_posterize_steps{6};
+    float color_shape_posterize_mix{1.0f};
+    float color_shape_bias{0.5f};
+    float color_shape_gain{0.5f};
+    float color_shape_window_center{0.5f};
+    float color_shape_window_width{1.0f};
+    float color_shape_window_softness{0.0f};
+    int color_iteration_band_count{8};
+    float color_iteration_band_softness{0.35f};
+    float color_iteration_band_emphasis{1.0f};
+    float color_iteration_band_palette_offset{0.0f};
+    float color_smooth_escape_scale{1.0f};
+    float color_smooth_escape_bias{0.0f};
+    float color_smooth_escape_interior_strength{0.2f};
+    float color_escape_magnitude_scale{1.0f};
+    float color_escape_magnitude_bias{0.0f};
+    float color_orbit_stripe_frequency{1.0f};
+    float color_orbit_stripe_phase{0.0f};
+    float color_root_proximity_scale{1.0f};
+    float color_root_proximity_bias{0.0f};
+    float color_heatmap_cycle_scale{1.0f};
+    float color_heatmap_saturation{1.0f};
+    float color_explaino_palette_seed_scale{1.0f};
+    float color_explaino_palette_seed_phase{0.0f};
+    float color_explaino_palette_colorfulness{1.0f};
+    float color_contrast_lift_exposure{1.0f};
+    float color_contrast_lift_saturation{1.0f};
+};
+
+static int ClampColorPipelineCount(int count, int maxCount) {
+    if (count < 0) return 0;
+    if (count > maxCount) return maxCount;
+    return count;
+}
+
+static ColorPipelineRuntimeSnapshot CaptureColorPipelineRuntimeSnapshot(const KernelParams& params) {
+    ColorPipelineRuntimeSnapshot snapshot{};
+    snapshot.coloring_mode = params.coloring_mode;
+    snapshot.color_pipeline = params.color_pipeline;
+    snapshot.exposure = params.exposure;
+    snapshot.color_saturation = params.color_saturation;
+    snapshot.color_contrast = params.color_contrast;
+    snapshot.color_glow = params.color_glow;
+    snapshot.color_balance_void = params.color_balance_void;
+    snapshot.color_chroma_tension = params.color_chroma_tension;
+    snapshot.color_accent_bias = params.color_accent_bias;
+    snapshot.color_tint_r = params.color_tint_r;
+    snapshot.color_tint_g = params.color_tint_g;
+    snapshot.color_tint_b = params.color_tint_b;
+    snapshot.color_phase_signal_offset = params.color_phase_signal_offset;
+    snapshot.color_phase_wrap_cycles = params.color_phase_wrap_cycles;
+    snapshot.color_phase_palette_offset = params.color_phase_palette_offset;
+    snapshot.color_source_stack_count = ClampColorPipelineCount(params.color_source_stack_count, kColorPipelineMaxSourceStackCount);
+    for (int index = 0; index < snapshot.color_source_stack_count; ++index) {
+        snapshot.color_source_stack[index] = params.color_source_stack[index];
+    }
+    snapshot.color_shape = params.color_shape;
+    snapshot.color_shape_stack_count = ClampColorPipelineCount(params.color_shape_stack_count, kColorPipelineMaxShapeStackCount);
+    for (int index = 0; index < snapshot.color_shape_stack_count; ++index) {
+        snapshot.color_shape_stack[index] = params.color_shape_stack[index];
+    }
+    snapshot.color_root_basin_pair_count = ClampColorPipelineCount(params.color_root_basin_pair_count, kColorPipelineMaxRootBasinPairCount);
+    for (int index = 0; index < snapshot.color_root_basin_pair_count; ++index) {
+        snapshot.color_root_basin_pairs[index] = params.color_root_basin_pairs[index];
+    }
+    snapshot.color_palette_stack_count = ClampColorPipelineCount(params.color_palette_stack_count, kColorPipelineMaxPaletteStackCount);
+    for (int index = 0; index < snapshot.color_palette_stack_count; ++index) {
+        snapshot.color_palette_stack[index] = params.color_palette_stack[index];
+    }
+    snapshot.color_grading_stack_count = ClampColorPipelineCount(params.color_grading_stack_count, kColorPipelineMaxGradingStackCount);
+    for (int index = 0; index < snapshot.color_grading_stack_count; ++index) {
+        snapshot.color_grading_stack[index] = params.color_grading_stack[index];
+    }
+    snapshot.color_shape_offset = params.color_shape_offset;
+    snapshot.color_shape_scale = params.color_shape_scale;
+    snapshot.color_shape_repeat_frequency = params.color_shape_repeat_frequency;
+    snapshot.color_shape_repeat_phase = params.color_shape_repeat_phase;
+    snapshot.color_shape_posterize_steps = params.color_shape_posterize_steps;
+    snapshot.color_shape_posterize_mix = params.color_shape_posterize_mix;
+    snapshot.color_shape_bias = params.color_shape_bias;
+    snapshot.color_shape_gain = params.color_shape_gain;
+    snapshot.color_shape_window_center = params.color_shape_window_center;
+    snapshot.color_shape_window_width = params.color_shape_window_width;
+    snapshot.color_shape_window_softness = params.color_shape_window_softness;
+    snapshot.color_iteration_band_count = params.color_iteration_band_count;
+    snapshot.color_iteration_band_softness = params.color_iteration_band_softness;
+    snapshot.color_iteration_band_emphasis = params.color_iteration_band_emphasis;
+    snapshot.color_iteration_band_palette_offset = params.color_iteration_band_palette_offset;
+    snapshot.color_smooth_escape_scale = params.color_smooth_escape_scale;
+    snapshot.color_smooth_escape_bias = params.color_smooth_escape_bias;
+    snapshot.color_smooth_escape_interior_strength = params.color_smooth_escape_interior_strength;
+    snapshot.color_escape_magnitude_scale = params.color_escape_magnitude_scale;
+    snapshot.color_escape_magnitude_bias = params.color_escape_magnitude_bias;
+    snapshot.color_orbit_stripe_frequency = params.color_orbit_stripe_frequency;
+    snapshot.color_orbit_stripe_phase = params.color_orbit_stripe_phase;
+    snapshot.color_root_proximity_scale = params.color_root_proximity_scale;
+    snapshot.color_root_proximity_bias = params.color_root_proximity_bias;
+    snapshot.color_heatmap_cycle_scale = params.color_heatmap_cycle_scale;
+    snapshot.color_heatmap_saturation = params.color_heatmap_saturation;
+    snapshot.color_explaino_palette_seed_scale = params.color_explaino_palette_seed_scale;
+    snapshot.color_explaino_palette_seed_phase = params.color_explaino_palette_seed_phase;
+    snapshot.color_explaino_palette_colorfulness = params.color_explaino_palette_colorfulness;
+    snapshot.color_contrast_lift_exposure = params.color_contrast_lift_exposure;
+    snapshot.color_contrast_lift_saturation = params.color_contrast_lift_saturation;
+    return snapshot;
+}
+
+static bool CanRestoreColorPipelineRuntimeSnapshot(FractalType fractalType, const ColorPipelineRuntimeSnapshot& snapshot) {
+    if (!IsColorPipelineAllowedForFractal(fractalType, snapshot.color_pipeline)) {
+        return false;
+    }
+    for (int index = 0; index < snapshot.color_source_stack_count; ++index) {
+        if (!IsColorSignalAllowedForFractal(fractalType, snapshot.color_source_stack[index].signal)) {
+            return false;
+        }
+    }
+    for (int index = 0; index < snapshot.color_root_basin_pair_count; ++index) {
+        if (!IsColorPipelineAllowedForFractal(fractalType, snapshot.color_root_basin_pairs[index])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void RestoreColorPipelineRuntimeSnapshot(const ColorPipelineRuntimeSnapshot& snapshot, KernelParams& params) {
+    ColoringMode mirroredMode = snapshot.coloring_mode;
+    if (TryMirroredColoringModeForPipeline(snapshot.color_pipeline, &mirroredMode)) {
+        params.coloring_mode = mirroredMode;
+    } else {
+        params.coloring_mode = snapshot.coloring_mode;
+    }
+    params.color_pipeline = snapshot.color_pipeline;
+    params.exposure = snapshot.exposure;
+    params.color_saturation = snapshot.color_saturation;
+    params.color_contrast = snapshot.color_contrast;
+    params.color_glow = snapshot.color_glow;
+    params.color_balance_void = snapshot.color_balance_void;
+    params.color_chroma_tension = snapshot.color_chroma_tension;
+    params.color_accent_bias = snapshot.color_accent_bias;
+    params.color_tint_r = snapshot.color_tint_r;
+    params.color_tint_g = snapshot.color_tint_g;
+    params.color_tint_b = snapshot.color_tint_b;
+    params.color_phase_signal_offset = snapshot.color_phase_signal_offset;
+    params.color_phase_wrap_cycles = snapshot.color_phase_wrap_cycles;
+    params.color_phase_palette_offset = snapshot.color_phase_palette_offset;
+    params.color_source_stack_count = snapshot.color_source_stack_count;
+    for (int index = 0; index < kColorPipelineMaxSourceStackCount; ++index) {
+        params.color_source_stack[index] = snapshot.color_source_stack[index];
+    }
+    params.color_shape = snapshot.color_shape;
+    params.color_shape_stack_count = snapshot.color_shape_stack_count;
+    for (int index = 0; index < kColorPipelineMaxShapeStackCount; ++index) {
+        params.color_shape_stack[index] = snapshot.color_shape_stack[index];
+    }
+    params.color_root_basin_pair_count = snapshot.color_root_basin_pair_count;
+    for (int index = 0; index < kColorPipelineMaxRootBasinPairCount; ++index) {
+        params.color_root_basin_pairs[index] = snapshot.color_root_basin_pairs[index];
+    }
+    params.color_palette_stack_count = snapshot.color_palette_stack_count;
+    for (int index = 0; index < kColorPipelineMaxPaletteStackCount; ++index) {
+        params.color_palette_stack[index] = snapshot.color_palette_stack[index];
+    }
+    params.color_grading_stack_count = snapshot.color_grading_stack_count;
+    for (int index = 0; index < kColorPipelineMaxGradingStackCount; ++index) {
+        params.color_grading_stack[index] = snapshot.color_grading_stack[index];
+    }
+    params.color_shape_offset = snapshot.color_shape_offset;
+    params.color_shape_scale = snapshot.color_shape_scale;
+    params.color_shape_repeat_frequency = snapshot.color_shape_repeat_frequency;
+    params.color_shape_repeat_phase = snapshot.color_shape_repeat_phase;
+    params.color_shape_posterize_steps = snapshot.color_shape_posterize_steps;
+    params.color_shape_posterize_mix = snapshot.color_shape_posterize_mix;
+    params.color_shape_bias = snapshot.color_shape_bias;
+    params.color_shape_gain = snapshot.color_shape_gain;
+    params.color_shape_window_center = snapshot.color_shape_window_center;
+    params.color_shape_window_width = snapshot.color_shape_window_width;
+    params.color_shape_window_softness = snapshot.color_shape_window_softness;
+    params.color_iteration_band_count = snapshot.color_iteration_band_count;
+    params.color_iteration_band_softness = snapshot.color_iteration_band_softness;
+    params.color_iteration_band_emphasis = snapshot.color_iteration_band_emphasis;
+    params.color_iteration_band_palette_offset = snapshot.color_iteration_band_palette_offset;
+    params.color_smooth_escape_scale = snapshot.color_smooth_escape_scale;
+    params.color_smooth_escape_bias = snapshot.color_smooth_escape_bias;
+    params.color_smooth_escape_interior_strength = snapshot.color_smooth_escape_interior_strength;
+    params.color_escape_magnitude_scale = snapshot.color_escape_magnitude_scale;
+    params.color_escape_magnitude_bias = snapshot.color_escape_magnitude_bias;
+    params.color_orbit_stripe_frequency = snapshot.color_orbit_stripe_frequency;
+    params.color_orbit_stripe_phase = snapshot.color_orbit_stripe_phase;
+    params.color_root_proximity_scale = snapshot.color_root_proximity_scale;
+    params.color_root_proximity_bias = snapshot.color_root_proximity_bias;
+    params.color_heatmap_cycle_scale = snapshot.color_heatmap_cycle_scale;
+    params.color_heatmap_saturation = snapshot.color_heatmap_saturation;
+    params.color_explaino_palette_seed_scale = snapshot.color_explaino_palette_seed_scale;
+    params.color_explaino_palette_seed_phase = snapshot.color_explaino_palette_seed_phase;
+    params.color_explaino_palette_colorfulness = snapshot.color_explaino_palette_colorfulness;
+    params.color_contrast_lift_exposure = snapshot.color_contrast_lift_exposure;
+    params.color_contrast_lift_saturation = snapshot.color_contrast_lift_saturation;
 }
 
 static void ApplyNewtonLikePresetDefaults(FractalType fractalType, KernelParams& params) {
@@ -462,6 +696,15 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
     }
 
     MarkDirty(ioDirty);
+}
+
+void ApplyFractalPresetDefaultsForFractalSwitch(const ViewState& view, KernelParams& params, bool* ioDirty) {
+    const ColorPipelineRuntimeSnapshot previousColor = CaptureColorPipelineRuntimeSnapshot(params);
+    const bool canPreserveColor = CanRestoreColorPipelineRuntimeSnapshot(view.fractal_type, previousColor);
+    ApplyFractalPresetDefaults(view, params, ioDirty);
+    if (canPreserveColor) {
+        RestoreColorPipelineRuntimeSnapshot(previousColor, params);
+    }
 }
 
 struct ExplainoSeedShape {

@@ -959,7 +959,7 @@ static void ApplyFractalTypeAndPolyCoherence(ViewState& view, KernelParams& para
     if (view.fractal_type != lastFractalType) {
         lastFractalType = view.fractal_type;
         ApplyFractalViewPresetDefaults(view, &dirty);
-        ApplyFractalPresetDefaults(view, params, &dirty);
+        ApplyFractalPresetDefaultsForFractalSwitch(view, params, &dirty);
         if (IsExplainoFamily(view.fractal_type)) {
             UpdateExplainoPolynomial(view, params, nullptr);
         }

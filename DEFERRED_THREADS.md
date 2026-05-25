@@ -130,7 +130,7 @@ Timing rule:
 
 ## 5. Lens SDF Follow-Ups
 
-Status: partially shipped substrate. Capture/replay authority and phase-signal metadata are shipped; forward SDF feature work is paused behind the Color Pipeline fractal-switch preservation regression and later Color Pipeline composition UX review.
+Status: partially shipped substrate. Capture/replay authority, phase-signal metadata, and Color Pipeline fractal-switch preservation are shipped; forward SDF feature work is paused for Color Pipeline composition/preset UX review.
 
 Shipped since the original deferred note:
 - `lens.downsample` control truth is repaired.
@@ -147,9 +147,10 @@ Shipped since the original deferred note:
 - SDF Source row tuning controls, `sdf_boundary_band` boundary width, and the Color Pipeline Source-section SDF Field Downsample alias are shipped.
 - Capture/replay authority is shipped: `state.json` serializes Lens replay settings, explicit state loading accepts arbitrary JSON filenames, and a fast SDF/non-SDF replay matrix is in place.
 - Color Pipeline phase-signal metadata is shipped: `sdf_normal_angle` is classified as phase-like while signed distance, boundary band, and curvature remain scalar.
+- Color Pipeline fractal-switch preservation is shipped: compatible fractal selector changes keep supported live/source-stack Color Pipeline state, while unsupported switches project to target defaults.
 
 Active follow-up:
-- Pause forward SDF feature work until the Color Pipeline fractal-switch preservation regression is repaired and the next Color Pipeline composition/preset UX step is reviewed.
+- Pause forward SDF feature work until the next Color Pipeline composition/preset UX step is reviewed.
 
 Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.

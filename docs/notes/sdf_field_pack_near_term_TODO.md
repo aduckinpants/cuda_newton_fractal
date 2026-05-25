@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, and phase-signal metadata. Forward SDF feature work is paused behind the Color Pipeline fractal-switch preservation regression and later Color Pipeline composition UX review; SDF-native fractal lanes remain deferred.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, and Color Pipeline fractal-switch preservation. Forward SDF feature work is paused for Color Pipeline composition/preset UX review; SDF-native fractal lanes remain deferred.
 
 Shipped since this roadmap was first written:
 
@@ -21,10 +21,11 @@ Shipped since this roadmap was first written:
 - SDF Source row customization: visible Scale/Bias/Blend Weight controls, `sdf_boundary_band` boundary width, and a Source-section alias for shared SDF Field Downsample.
 - Capture/replay authority: top-level Lens state in `state.json`, arbitrary explicit `--load-state-json` filenames, and a fast SDF/non-SDF replay smoke matrix.
 - Phase-signal metadata: `sdf_normal_angle` is classified as phase-like, while signed distance, boundary band, and curvature remain scalar.
+- Color Pipeline fractal-switch preservation: compatible fractal selector changes keep supported live/source-stack Color Pipeline state, while unsupported switches project to target defaults and clear stale source rows.
 
 Active next slice:
 
-- Color Pipeline fractal-switch preservation regression: keep authored/live Color Pipeline edits when switching to a fractal that still supports them, and only project to a supported default when the active pipeline is actually unsupported.
+- Color Pipeline composition/preset UX review: decide the next bounded step for draft labels, function library shape, and chain composition workflow before returning to forward SDF feature work.
 
 Still deferred:
 
@@ -601,8 +602,9 @@ Recommended immediate ordering:
 11. SDF Source row customization and Source-section field-resolution UX. Shipped.
 12. Capture/replay authority smoke matrix. Shipped.
 13. Color Pipeline phase-signal metadata. Shipped.
-14. Color Pipeline fractal-switch preservation regression. Active before any additional forward SDF feature work.
-15. First SDF-native fractal lane. Deferred.
+14. Color Pipeline fractal-switch preservation regression. Shipped.
+15. Color Pipeline composition/preset UX review. Active before any additional forward SDF feature work.
+16. First SDF-native fractal lane. Deferred.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
 blocks all other product polish. It also keeps the first implementation wins
