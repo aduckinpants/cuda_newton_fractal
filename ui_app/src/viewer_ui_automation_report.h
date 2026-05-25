@@ -41,6 +41,16 @@ struct ViewerUiAutomationRenderPacingProbe {
     int pacing_render_height = 0;
 };
 
+struct ViewerUiAutomationLensSdfProbe {
+    bool enabled = false;
+    bool valid = false;
+    std::string backend_used = "none";
+    bool fallback_used = false;
+    int width = 0;
+    int height = 0;
+    float pixel_scale = 1.0f;
+};
+
 struct ViewerUiAutomationEnumCommandReport {
     std::string requested_enum_path;
     std::string requested_enum_id;
@@ -75,5 +85,6 @@ void WriteColorPipelineUiAutomationReport(
     const RenderStats& stats,
     const ViewerRenderPacingDecision& renderPacing,
     const ViewerUiAutomationFrameProbe& frameProbe,
+    const ViewerUiAutomationLensSdfProbe& lensSdfProbe,
     const ViewerUiAutomationEnumCommandReport& enumCommandReport,
     std::int64_t uiAutomationCommandSequence);

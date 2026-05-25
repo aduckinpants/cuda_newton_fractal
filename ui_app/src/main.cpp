@@ -699,11 +699,16 @@ static void DispatchRenderFrame(
     std::vector<uint32_t>& rgba, std::vector<uint8_t>& maskBuffer,
     std::vector<uint32_t>& lensSdfRgba,
     const GenericEquationPackWorkbenchState* equationPackWorkbench,
-    RenderedFrameState& renderedFrame, RenderStats& stats, bool& dirtyOut) {
+    RenderedFrameState& renderedFrame, RenderStats& stats,
+    ViewerUiAutomationLensSdfProbe& lensSdfProbe,
+    bool& dirtyOut) {
 
     if (!ShouldDispatchRender(autoRefresh, dirty, renderOnce, captureDiag, captureFinding, renderPacing.full_quality_due))
         return;
 
+    lensSdfProbe = {};
+    lensSdfProbe.enabled = lens.enabled;
+    lensSdfProbe.backend_used = "none";
     InvalidateRenderedFrame(&renderedFrame);
     if (IsExplainoFamily(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);
@@ -762,12 +767,32 @@ static void DispatchRenderFrame(
         if (lens.enabled && maskPtr) {
             EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
             UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
-            int lensSdfW = 0;
-            int lensSdfH = 0;
-            if (ComputeLensSdfRgbaForMask(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y,
-                    lens.downsample, 48.0f, lensSdfRgba, lensSdfW, lensSdfH)) {
-                EnsureLensSdfTexture(lensSdfW, lensSdfH);
-                UploadLensSdfRGBA(lensSdfRgba.data(), lensSdfW, lensSdfH);
+            SdfFieldResult lensSdfField;
+            LensSdfBackendReport backendReport{};
+            if (ComputeLensSdfFieldForMaskWithBackend(
+                    maskPtr,
+                    dispatchRender.resolution.x,
+                    dispatchRender.resolution.y,
+                    lens.downsample,
+                    LensSdfBackend::auto_backend,
+                    lensSdfField,
+                    &backendReport)) {
+                const float lowMaxAbsPx = 48.0f / static_cast<float>(NormalizeLensDownsamplePow2(lens.downsample));
+                BuildSignedDistanceSdfRgba(lensSdfField.View(), lowMaxAbsPx, lensSdfRgba);
+                if (lensSdfRgba.size() == static_cast<size_t>(lensSdfField.width) * static_cast<size_t>(lensSdfField.height)) {
+                    EnsureLensSdfTexture(lensSdfField.width, lensSdfField.height);
+                    UploadLensSdfRGBA(lensSdfRgba.data(), lensSdfField.width, lensSdfField.height);
+                    lensSdfProbe.valid = true;
+                    lensSdfProbe.width = lensSdfField.width;
+                    lensSdfProbe.height = lensSdfField.height;
+                    lensSdfProbe.pixel_scale = lensSdfField.pixel_scale;
+                }
+                lensSdfProbe.fallback_used = backendReport.fallback_used;
+                if (backendReport.used == LensSdfBackend::cuda_jfa) {
+                    lensSdfProbe.backend_used = "cuda_jfa";
+                } else if (backendReport.used == LensSdfBackend::cpu_chamfer) {
+                    lensSdfProbe.backend_used = "cpu_chamfer";
+                }
             }
         }
     }
@@ -2730,6 +2755,7 @@ static void RunViewerFrame(
     std::vector<uint32_t>& rgba,
     std::vector<uint8_t>& maskBuffer,
     std::vector<uint32_t>& lensSdfRgba,
+    ViewerUiAutomationLensSdfProbe& lensSdfProbe,
     PolyKind& lastPolyKind,
     FractalType& lastFractalType,
     std::string& findingStatus,
@@ -2917,7 +2943,7 @@ static void RunViewerFrame(
     DispatchRenderFrame(view, params, render, lens, renderPacing,
         forceFullQualityRender, view.auto_refresh, dirty,
         actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
-        rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, renderedFrame, stats, dirty);
+        rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, renderedFrame, stats, lensSdfProbe, dirty);
 
     RunPendingInLoopCaptures(exeDir, actions, view, params, render, stats, rgba,
         renderedFrame, colorPipelineWindow, sidecarState, sidecarStateValid,
@@ -2977,6 +3003,7 @@ static void RunViewerFrame(
             stats,
             renderPacing,
             frameProbe,
+            lensSdfProbe,
             uiAutomationCommandState.enum_report,
             uiAutomationCommandState.last_sequence);
     }
@@ -3087,6 +3114,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<uint32_t> rgba;
     std::vector<uint8_t> maskBuffer;
     std::vector<uint32_t> lensSdfRgba;
+    ViewerUiAutomationLensSdfProbe lensSdfProbe;
     RenderedFrameState renderedFrame{};
     ViewerRenderPacingState renderPacingState{};
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
@@ -3174,6 +3202,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             rgba,
             maskBuffer,
             lensSdfRgba,
+            lensSdfProbe,
             lastPolyKind,
             lastFractalType,
             findingStatus,

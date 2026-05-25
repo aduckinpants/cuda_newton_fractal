@@ -4412,6 +4412,36 @@ int main() {
         EndFrame();
 
         BeginFrame();
+        bool boolAutomationDirty = false;
+        bool boolAutomationInteracted = false;
+        bool boolAutomationConsumed = false;
+        std::string boolAutomationError;
+        const std::string boolAutomationControlId = "fractal_control.lens_enabled.primary";
+        UISchemaControl lensEnabledControl = MakeBoundControl(
+            "lens_enabled",
+            "checkbox",
+            "Lens Enabled",
+            "bool",
+            "param",
+            "fractal.lens.enabled");
+        ctx.ui_automation_set_control_id = &boolAutomationControlId;
+        ctx.ui_automation_set_control_value = 1.0;
+        ctx.ui_automation_set_consumed = &boolAutomationConsumed;
+        ctx.ui_automation_set_error = &boolAutomationError;
+        if (!RenderControlFromSchema(lensEnabledControl, ctx, &boolAutomationDirty, nullptr, &boolAutomationInteracted)) {
+            std::cerr << "Visible schema-driven set-value automation should apply through the bool edit path\n";
+            return 1;
+        }
+        if (!boolAutomationConsumed || !boolAutomationDirty || !boolAutomationInteracted || !boolAutomationError.empty() || !lens.enabled) {
+            std::cerr << "Schema-driven bool set-value automation should consume, dirty, interact, and write lens.enabled\n";
+            return 1;
+        }
+        ctx.ui_automation_set_control_id = nullptr;
+        ctx.ui_automation_set_consumed = nullptr;
+        ctx.ui_automation_set_error = nullptr;
+        EndFrame();
+
+        BeginFrame();
         bool novaAlphaDirty = false;
         bool novaAlphaInteracted = false;
         bool novaAlphaConsumed = false;

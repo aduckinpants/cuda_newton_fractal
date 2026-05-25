@@ -1639,6 +1639,12 @@ bool TryApplyPrimaryUiAutomationSetValue(
         applied = ApplyFloatControlEdit(binding, ctx, range, ctx.ui_automation_set_control_value);
     } else if (control.value_type == "double") {
         applied = ApplyDoubleControlEdit(binding, ctx, range, ctx.ui_automation_set_control_value);
+    } else if (control.value_type == "bool") {
+        bool* boolValue = nullptr;
+        if (ctx.BindBool(binding.path, &boolValue) && boolValue) {
+            *boolValue = ctx.ui_automation_set_control_value >= 0.5;
+            applied = true;
+        }
     }
     if (!applied) {
         if (ctx.ui_automation_set_error) {
@@ -1717,9 +1723,12 @@ bool RenderCheckboxControl(
 
     const bool changed = ImGui::Checkbox(control.label.c_str(), value);
     MaybeNotePrimaryUiAutomationRect(ctx, control);
-    MarkDirtyIfChanged(changed, ioDirty);
-    MarkCurrentItemInteraction(changed, ioInteracted);
-    return changed;
+    const NumericControlRange range{};
+    const bool automationChanged = TryApplyPrimaryUiAutomationSetValue(ctx, control, binding, range, ioDirty, ioInteracted);
+    const bool anyChanged = changed || automationChanged;
+    MarkDirtyIfChanged(anyChanged, ioDirty);
+    MarkCurrentItemInteraction(anyChanged, ioInteracted);
+    return anyChanged;
 }
 
 bool RenderIntControl(

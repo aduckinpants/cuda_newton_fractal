@@ -57,6 +57,20 @@ void WriteRenderPacingAndFrameReportFields(
     out << ",\n";
 }
 
+void WriteLensSdfReportFields(
+    std::ostream& out,
+    const ViewerUiAutomationLensSdfProbe& lensSdfProbe) {
+    out << "  \"lens_sdf_enabled\": " << (lensSdfProbe.enabled ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_valid\": " << (lensSdfProbe.valid ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_backend_used\": ";
+    WriteAutomationReportString(out, lensSdfProbe.backend_used);
+    out << ",\n";
+    out << "  \"lens_sdf_fallback_used\": " << (lensSdfProbe.fallback_used ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_width\": " << lensSdfProbe.width << ",\n";
+    out << "  \"lens_sdf_height\": " << lensSdfProbe.height << ",\n";
+    out << "  \"lens_sdf_pixel_scale\": " << std::setprecision(12) << lensSdfProbe.pixel_scale << ",\n";
+}
+
 } // namespace
 
 std::string JsonEscapeAutomationReportString(const std::string& value) {
@@ -189,6 +203,7 @@ void WriteColorPipelineUiAutomationReport(
     const RenderStats& stats,
     const ViewerRenderPacingDecision& renderPacing,
     const ViewerUiAutomationFrameProbe& frameProbe,
+    const ViewerUiAutomationLensSdfProbe& lensSdfProbe,
     const ViewerUiAutomationEnumCommandReport& enumCommandReport,
     std::int64_t uiAutomationCommandSequence) {
     if (reportPath.empty() || !hwnd) {
@@ -373,6 +388,7 @@ void WriteColorPipelineUiAutomationReport(
     }
     const ViewerUiAutomationRenderPacingProbe pacingProbe = BuildViewerUiAutomationRenderPacingProbe(render, stats, renderPacing);
     WriteRenderPacingAndFrameReportFields(out, pacingProbe, frameProbe);
+    WriteLensSdfReportFields(out, lensSdfProbe);
     out << "  \"lane_rows\": [";
     bool firstLaneRow = true;
     for (const ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {

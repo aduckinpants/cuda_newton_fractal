@@ -54,6 +54,15 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -c .\src\generic_sample_core.cu -o "%BUILDROOT%\generic_sample_core.obj"
 if errorlevel 1 exit /b 1
 
+REM Compile CUDA Lens SDF backend used by live auto Lens routing.
+echo [build_vsdevcmd] Compiling CUDA Lens SDF backend
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  -c .\src\lens_sdf_cuda.cu -o "%BUILDROOT%\lens_sdf_cuda.obj"
+if errorlevel 1 exit /b 1
+
 REM Compile app + ImGui sources
 echo [build_vsdevcmd] Compiling app and ImGui sources
 cl /nologo /EHsc /MD /std:c++17 /O2 ^
@@ -117,7 +126,7 @@ exit /b 0
 link /nologo /SUBSYSTEM:WINDOWS /OUT:"%~1" ^
   "%BUILDROOT%\main.obj" "%BUILDROOT%\viewer_ui_automation_report.obj" "%BUILDROOT%\json_min.obj" "%BUILDROOT%\ui_schema.obj" "%BUILDROOT%\view_hp_sync.obj" "%BUILDROOT%\explaino_seed.obj" "%BUILDROOT%\explaino_seed_dynamics.obj" "%BUILDROOT%\fractal_derived_fields.obj" "%BUILDROOT%\diagnostics_capture.obj" "%BUILDROOT%\diagnostics_state_io.obj" "%BUILDROOT%\finding_state_actions.obj" "%BUILDROOT%\finding_archive_actions.obj" "%BUILDROOT%\finding_capture_state.obj" "%BUILDROOT%\fractal_probe_contract.obj" "%BUILDROOT%\fractal_probe_runner.obj" "%BUILDROOT%\generic_equation_pack.obj" "%BUILDROOT%\generic_equation_pack_live.obj" "%BUILDROOT%\generic_equation_pack_workbench.obj" "%BUILDROOT%\function_descriptor.obj" "%BUILDROOT%\fractal_parameter_surface_descriptor.obj" "%BUILDROOT%\explaino_sidecar_model.obj" "%BUILDROOT%\explaino_sidecar_measurement.obj" "%BUILDROOT%\explaino_sidecar_budget.obj" "%BUILDROOT%\explaino_sidecar_lens.obj" "%BUILDROOT%\explaino_sidecar_energy.obj" "%BUILDROOT%\explaino_sidecar_action.obj" "%BUILDROOT%\explaino_sidecar_trace.obj" "%BUILDROOT%\explaino_sidecar_controller.obj" "%BUILDROOT%\explaino_sidecar_refresh.obj" "%BUILDROOT%\explaino_sidecar_divergence.obj" "%BUILDROOT%\explaino_sidecar_completeness.obj" "%BUILDROOT%\explaino_sidecar_cuda_sample_host.obj" "%BUILDROOT%\explaino_sidecar_window.obj" "%BUILDROOT%\explaino_exploration_advisor.obj" "%BUILDROOT%\flashlight_probe.obj" "%BUILDROOT%\sdf_field_signal.obj" "%BUILDROOT%\runtime_walk.obj" "%BUILDROOT%\runtime_walk_bootstrap.obj" "%BUILDROOT%\runtime_walk_field_slime.obj" "%BUILDROOT%\runtime_walk_headless.obj" "%BUILDROOT%\runtime_walk_viewer.obj" "%BUILDROOT%\runtime_walk_viewer_import.obj" "%BUILDROOT%\runtime_walk_viewer_session.obj" "%BUILDROOT%\runtime_walk_viewer_imgui.obj" "%BUILDROOT%\render_capture_guard.obj" "%BUILDROOT%\schema_startup_policy.obj" "%BUILDROOT%\sweep_player.obj" "%BUILDROOT%\safe_mode_schema.obj" "%BUILDROOT%\schema_binding.obj" "%BUILDROOT%\lens_sdf.obj" "%BUILDROOT%\runtime_reset.obj" "%BUILDROOT%\viewer_render_pacing.obj" "%BUILDROOT%\viewer_shutdown.obj" "%BUILDROOT%\viewer_sweep.obj" "%BUILDROOT%\sample_tier_resolver.obj" "%BUILDROOT%\viewer_cli.obj" "%BUILDROOT%\viewer_schema_load.obj" "%BUILDROOT%\viewer_state_init.obj" "%BUILDROOT%\param_anim_dynamics.obj" "%BUILDROOT%\headless_modes.obj" "%BUILDROOT%\viewport_interaction.obj" "%BUILDROOT%\cli_args.obj" ^
   "%BUILDROOT%\imgui.obj" "%BUILDROOT%\imgui_draw.obj" "%BUILDROOT%\imgui_tables.obj" "%BUILDROOT%\imgui_widgets.obj" ^
-  "%BUILDROOT%\imgui_impl_win32.obj" "%BUILDROOT%\imgui_impl_dx11.obj" "%BUILDROOT%\fractal_renderer.obj" "%BUILDROOT%\fractal_sample_core.obj" "%BUILDROOT%\generic_sample_core.obj" ^
+  "%BUILDROOT%\imgui_impl_win32.obj" "%BUILDROOT%\imgui_impl_dx11.obj" "%BUILDROOT%\fractal_renderer.obj" "%BUILDROOT%\fractal_sample_core.obj" "%BUILDROOT%\generic_sample_core.obj" "%BUILDROOT%\lens_sdf_cuda.obj" ^
   /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib ^
   d3d11.lib dxgi.lib d3dcompiler.lib user32.lib gdi32.lib shell32.lib >"%~2" 2>&1
 set LINK_EXIT=%ERRORLEVEL%

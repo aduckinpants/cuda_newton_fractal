@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "contract_id": "live_gpu_lens_sdf_integration",
+  "feature_id": "live_gpu_lens_sdf_integration",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/live_gpu_lens_sdf_integration_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/live_gpu_lens_sdf_integration_PHASED_PLAN.md",
+    "docs/contracts/live_gpu_lens_sdf_integration.contract.json",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/build_vsdevcmd.cmd",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "route live Lens SDF generation through the explicit auto backend",
+    "prefer CUDA when available and report backend_used",
+    "preserve current Lens UI controls and RGBA visualization",
+    "prove no-mouse runtime Lens SDF backend reporting on the published runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "add Color Pipeline SDF rows in this slice",
+    "add viewport overlay productization in this slice",
+    "add SDF-native fractal lanes in this slice",
+    "use physical mouse automation",
+    "claim client performance improvement without a bounded witness"
+  ],
+  "required_defaults": {
+    "live_lens_sdf_backend": "auto",
+    "cuda_failure": "fallback_to_cpu_chamfer",
+    "public_compute_lens_sdf_field_for_mask": "cpu_chamfer",
+    "physical_mouse": "forbidden"
+  },
+  "forbidden_defaults": {
+    "color_pipeline_sdf_rows": "forbidden",
+    "viewport_overlay": "forbidden",
+    "sdf_native_lane": "forbidden",
+    "performance_claim_without_witness": "forbidden",
+    "base_fractal_frame_mutation_by_lens_backend": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label live_gpu_lens_sdf_integration_runtime_publish --log artifacts/logs/live_gpu_lens_sdf_integration_runtime_publish.log --out-json artifacts/validation/live_gpu_lens_sdf_integration_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label live_gpu_lens_sdf_integration_runtime_pytest --log artifacts/logs/live_gpu_lens_sdf_integration_runtime_pytest.log --out-json artifacts/validation/live_gpu_lens_sdf_integration_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 300 -- cmd /c \"set VIEWER_HOST_ENABLE_RUNTIME_VIEWER_E2E=1&& py -3.14 -m pytest tests/test_fractal_runtime_lens_sdf_backend.py -q --junitxml artifacts/pytest/live_gpu_lens_sdf_integration_runtime.junit.xml\"",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label live_gpu_lens_sdf_integration_test_schema_binding --log artifacts/logs/live_gpu_lens_sdf_integration_test_schema_binding.log --out-json artifacts/validation/live_gpu_lens_sdf_integration_test_schema_binding.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_schema_binding",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label live_gpu_lens_sdf_integration_test_lens_sdf_cuda --log artifacts/logs/live_gpu_lens_sdf_integration_test_lens_sdf_cuda.log --out-json artifacts/validation/live_gpu_lens_sdf_integration_test_lens_sdf_cuda.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_lens_sdf_cuda",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label live_gpu_lens_sdf_integration_test_lens_sdf --log artifacts/logs/live_gpu_lens_sdf_integration_test_lens_sdf.log --out-json artifacts/validation/live_gpu_lens_sdf_integration_test_lens_sdf.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_lens_sdf",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/live_gpu_lens_sdf_integration.contract.json --out-json artifacts/validation/live_gpu_lens_sdf_integration_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/live_gpu_lens_sdf_integration_PHASED_PLAN.md --out-json artifacts/validation/live_gpu_lens_sdf_integration_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/live_gpu_lens_sdf_integration_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label live_gpu_lens_sdf_integration_diff_check --log artifacts/logs/live_gpu_lens_sdf_integration_diff_check.log --out-json artifacts/validation/live_gpu_lens_sdf_integration_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "runtime_lens_sdf_backend_reports_cuda",
+      "description": "Published runtime reports live Lens SDF CUDA backend, valid dimensions, and unchanged base frame through no-mouse automation",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/live_gpu_lens_sdf_integration_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_lens_sdf_backend.py::test_live_lens_sdf_auto_backend_reports_cuda_without_changing_base_frame"
+    },
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The live GPU Lens SDF integration contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/live_gpu_lens_sdf_integration_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The live GPU Lens SDF integration hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/live_gpu_lens_sdf_integration_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
