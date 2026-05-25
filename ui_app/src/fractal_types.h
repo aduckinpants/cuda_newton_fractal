@@ -61,6 +61,11 @@ enum class ColorSignal : int {
     escape_magnitude = 5,
     orbit_stripe = 6,
     root_proximity = 7,
+    sdf_signed_distance = 8,
+    sdf_inside_outside = 9,
+    sdf_boundary_band = 10,
+    sdf_normal_angle = 11,
+    sdf_curvature = 12,
 };
 
 enum class ColorPalette : int {

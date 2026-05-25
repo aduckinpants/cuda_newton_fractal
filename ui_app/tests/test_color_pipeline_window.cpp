@@ -700,6 +700,90 @@ void TestCandidateDraftOnlyTruthAndCopySurfaces() {
             std::string(ColorPipelineShapeRowBridgeHelpText()).find("legacy single-shape owners") != std::string::npos,
         "TestCandidateDraftOnlyTruthAndCopySurfaces_ShapeHelpMentionsStackBridgeAndLegacyMirror");
 }
+
+void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_SyncStartsSupported");
+
+    ColorPipelineDraftApplyState candidateState = DescribeColorPipelineCandidateApplyState(
+        state,
+        0,
+        "sdf_boundary_band",
+        FractalType::newton,
+        &params);
+    Check(candidateState.status == ColorPipelineDraftApplyStatus::can_apply,
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandCandidateCanApply");
+    Check(SelectColorPipelineLaneFunction(&state, 0, "sdf_boundary_band"),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_SelectBoundaryBand");
+    Check(state.lanes[0].rows[0].function_id == "sdf_boundary_band" &&
+            state.lanes[2].rows[0].function_id == "heatmap",
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandCoSwitchesHeatmap");
+    Check(SetRowNumber(state.lanes[0].rows[0], "signal.scale", 0.75) &&
+            SetRowNumber(state.lanes[0].rows[0], "signal.bias", 0.25),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_EditsBoundaryBandSourceParams");
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_ApplyBoundaryBand");
+    Check(params.coloring_mode == ColoringMode::smooth_escape &&
+            params.color_pipeline.signal == ColorSignal::sdf_boundary_band &&
+            params.color_pipeline.palette == ColorPalette::cyclic_escape &&
+            params.color_source_stack_count == 1 &&
+            params.color_source_stack[0].signal == ColorSignal::sdf_boundary_band &&
+            Near(params.color_source_stack[0].params.scale, 0.75) &&
+            Near(params.color_source_stack[0].params.bias, 0.25),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandRuntimeStackOwnsParams");
+    Check(state.live_snapshot.valid && state.live_snapshot.draft_import_supported &&
+            state.lanes[0].rows[0].function_id == "sdf_boundary_band" &&
+            RowNumber(state.lanes[0].rows[0], "signal.scale", 0.75) &&
+            RowNumber(state.lanes[0].rows[0], "signal.bias", 0.25),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandResyncImportsSourceParams");
+
+    ColorPipelineWindowState normalState{};
+    KernelParams normalParams = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&normalState, FractalType::newton, &normalParams),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleSyncStartsSupported");
+    Check(SelectColorPipelineLaneFunction(&normalState, 0, "sdf_normal_angle"),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_SelectNormalAngle");
+    Check(normalState.lanes[0].rows[0].function_id == "sdf_normal_angle" &&
+            normalState.lanes[2].rows[0].function_id == "phase_wheel_palette" &&
+            normalState.lanes[3].rows[0].function_id == "phase_finish",
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleCoSwitchesPhaseTuple");
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&normalState, FractalType::newton, &normalParams, &changed) && changed,
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_ApplyNormalAngle");
+    Check(normalParams.coloring_mode == ColoringMode::phase &&
+            normalParams.color_pipeline.signal == ColorSignal::sdf_normal_angle &&
+            normalParams.color_pipeline.palette == ColorPalette::phase_wheel &&
+            normalParams.color_pipeline.grading == ColorGradingPreset::phase_default &&
+            normalParams.color_source_stack_count == 1 &&
+            normalParams.color_source_stack[0].signal == ColorSignal::sdf_normal_angle,
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleRuntimeStackOwnsSignal");
+}
+
+void TestMixedSdfAndNonSdfSourceRowsFailClosed() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestMixedSdfAndNonSdfSourceRowsFailClosed_SyncStartsSupported");
+    Check(AddColorPipelineLaneRow(&state, 0, "sdf_curvature") && state.lanes[0].rows.size() == 2,
+        "TestMixedSdfAndNonSdfSourceRowsFailClosed_AddsSdfRowBesideSmoothEscape");
+
+    const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(
+        state,
+        FractalType::newton,
+        &params);
+    Check(applyState.status == ColorPipelineDraftApplyStatus::unsupported_tuple &&
+            applyState.message.find("all SDF rows or all non-SDF rows") != std::string::npos,
+        "TestMixedSdfAndNonSdfSourceRowsFailClosed_MixedStackClassifiedUnsupported");
+    Check(!ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params) &&
+            !state.validation_messages.empty() &&
+            params.color_pipeline.signal == ColorSignal::smooth_escape &&
+            params.color_source_stack_count == 0,
+        "TestMixedSdfAndNonSdfSourceRowsFailClosed_ApplyRejectsBeforeMutation");
+}
+
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -756,6 +840,8 @@ int main() {
     TestDisablePreservesSupportedGradingRowAcrossApplyResync();
     TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync();
     TestCandidateDraftOnlyTruthAndCopySurfaces();
+    TestSdfSourceRowsApplyThroughDraftLiveBridge();
+    TestMixedSdfAndNonSdfSourceRowsFailClosed();
     TestWindowUtilityContracts();
 
     std::printf("test_color_pipeline_window: passed=%d failed=%d\n", g_passed, g_failed);

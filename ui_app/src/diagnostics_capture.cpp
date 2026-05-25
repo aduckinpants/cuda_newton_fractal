@@ -47,6 +47,11 @@ const char* CaptureColorSignalId(ColorSignal signal) {
     case ColorSignal::escape_magnitude: return "escape_magnitude";
     case ColorSignal::orbit_stripe: return "orbit_stripe";
     case ColorSignal::root_proximity: return "root_proximity";
+    case ColorSignal::sdf_signed_distance: return "sdf_signed_distance";
+    case ColorSignal::sdf_inside_outside: return "sdf_inside_outside";
+    case ColorSignal::sdf_boundary_band: return "sdf_boundary_band";
+    case ColorSignal::sdf_normal_angle: return "sdf_normal_angle";
+    case ColorSignal::sdf_curvature: return "sdf_curvature";
     }
     return "unknown";
 }

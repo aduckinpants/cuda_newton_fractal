@@ -198,6 +198,26 @@ inline FunctionParamDescriptor MakeColorPipelineSourceBlendWeightParam() {
         1.0);
 }
 
+inline FunctionParamDescriptor MakeColorPipelineSourceScaleParam(
+    const char* label,
+    const char* help,
+    double minValue,
+    double maxValue,
+    double stepValue,
+    double defaultValue) {
+    return MakeColorPipelineFloatParam("signal.scale", label, help, minValue, maxValue, stepValue, defaultValue);
+}
+
+inline FunctionParamDescriptor MakeColorPipelineSourceBiasParam(
+    const char* label,
+    const char* help,
+    double minValue,
+    double maxValue,
+    double stepValue,
+    double defaultValue) {
+    return MakeColorPipelineFloatParam("signal.bias", label, help, minValue, maxValue, stepValue, defaultValue);
+}
+
 inline FunctionDescriptor MakeColorPipelineFunction(
     const char* id,
     const char* name,
@@ -225,6 +245,16 @@ inline const char* AdvancedColorSignalFunctionId(ColorSignal value) {
         return "orbit_stripe";
     case ColorSignal::root_proximity:
         return "root_proximity";
+    case ColorSignal::sdf_signed_distance:
+        return "sdf_signed_distance";
+    case ColorSignal::sdf_inside_outside:
+        return "sdf_inside_outside";
+    case ColorSignal::sdf_boundary_band:
+        return "sdf_boundary_band";
+    case ColorSignal::sdf_normal_angle:
+        return "sdf_normal_angle";
+    case ColorSignal::sdf_curvature:
+        return "sdf_curvature";
     case ColorSignal::root_index:
         return "root_index";
     }
@@ -254,6 +284,26 @@ inline bool TryParseAdvancedColorSignalFunctionId(const std::string& functionId,
     }
     if (functionId == "root_proximity") {
         if (outValue) *outValue = ColorSignal::root_proximity;
+        return true;
+    }
+    if (functionId == "sdf_signed_distance") {
+        if (outValue) *outValue = ColorSignal::sdf_signed_distance;
+        return true;
+    }
+    if (functionId == "sdf_inside_outside") {
+        if (outValue) *outValue = ColorSignal::sdf_inside_outside;
+        return true;
+    }
+    if (functionId == "sdf_boundary_band") {
+        if (outValue) *outValue = ColorSignal::sdf_boundary_band;
+        return true;
+    }
+    if (functionId == "sdf_normal_angle") {
+        if (outValue) *outValue = ColorSignal::sdf_normal_angle;
+        return true;
+    }
+    if (functionId == "sdf_curvature") {
+        if (outValue) *outValue = ColorSignal::sdf_curvature;
         return true;
     }
     if (functionId == "root_index") {
@@ -448,6 +498,51 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "Root Index",
             "Use the resolved nearest-root classification index as the upstream basin source.",
             {}),
+        MakeColorPipelineFunction(
+            "sdf_signed_distance",
+            "SDF Signed Distance",
+            "Use Lens SDF signed distance as the upstream color signal.",
+            {
+                MakeColorPipelineSourceScaleParam("Distance Scale", "Scale the signed-distance field before palette lookup.", -2.0, 2.0, 0.01, 0.05),
+                MakeColorPipelineSourceBiasParam("Distance Bias", "Shift the signed-distance field before palette lookup.", -2.0, 2.0, 0.01, 0.5),
+                MakeColorPipelineSourceBlendWeightParam(),
+            }),
+        MakeColorPipelineFunction(
+            "sdf_inside_outside",
+            "SDF Inside / Outside",
+            "Use the Lens SDF inside/outside classification as the upstream color signal.",
+            {
+                MakeColorPipelineSourceScaleParam("Inside Scale", "Scale the inside/outside signal before palette lookup.", -2.0, 2.0, 0.01, 1.0),
+                MakeColorPipelineSourceBiasParam("Inside Bias", "Shift the inside/outside signal before palette lookup.", -2.0, 2.0, 0.01, 0.0),
+                MakeColorPipelineSourceBlendWeightParam(),
+            }),
+        MakeColorPipelineFunction(
+            "sdf_boundary_band",
+            "SDF Boundary Band",
+            "Use the Lens SDF boundary band as the upstream color signal.",
+            {
+                MakeColorPipelineSourceScaleParam("Band Scale", "Scale the boundary-band signal before palette lookup.", -2.0, 2.0, 0.01, 1.0),
+                MakeColorPipelineSourceBiasParam("Band Bias", "Shift the boundary-band signal before palette lookup.", -2.0, 2.0, 0.01, 0.0),
+                MakeColorPipelineSourceBlendWeightParam(),
+            }),
+        MakeColorPipelineFunction(
+            "sdf_normal_angle",
+            "SDF Normal Angle",
+            "Use the Lens SDF normal angle as the upstream phase signal.",
+            {
+                MakeColorPipelineSourceScaleParam("Angle Scale", "Scale the normalized normal angle before palette lookup.", -2.0, 2.0, 0.01, 1.0),
+                MakeColorPipelineSourceBiasParam("Angle Bias", "Shift the normalized normal angle before palette lookup.", -2.0, 2.0, 0.01, 0.0),
+                MakeColorPipelineSourceBlendWeightParam(),
+            }),
+        MakeColorPipelineFunction(
+            "sdf_curvature",
+            "SDF Curvature",
+            "Use the Lens SDF curvature estimate as the upstream color signal.",
+            {
+                MakeColorPipelineSourceScaleParam("Curvature Scale", "Scale the curvature estimate before palette lookup.", -2.0, 2.0, 0.01, 0.25),
+                MakeColorPipelineSourceBiasParam("Curvature Bias", "Shift the curvature estimate before palette lookup.", -2.0, 2.0, 0.01, 0.5),
+                MakeColorPipelineSourceBlendWeightParam(),
+            }),
     };
 }
 
@@ -649,7 +744,12 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "escape_magnitude" ||
             functionId == "orbit_stripe" ||
             functionId == "root_proximity" ||
-            functionId == "root_index";
+            functionId == "root_index" ||
+            functionId == "sdf_signed_distance" ||
+            functionId == "sdf_inside_outside" ||
+            functionId == "sdf_boundary_band" ||
+            functionId == "sdf_normal_angle" ||
+            functionId == "sdf_curvature";
     }
     if (std::string(laneId) == "shape") {
         return functionId == "identity" ||
@@ -1004,6 +1104,13 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
         return SetColorPipelineParamNumber(ioRow, "signal.proximity_scale", liveParams.color_root_proximity_scale, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", liveParams.color_root_proximity_bias, outError);
     }
+    if (ioRow->function_id == "sdf_signed_distance" ||
+        ioRow->function_id == "sdf_inside_outside" ||
+        ioRow->function_id == "sdf_boundary_band" ||
+        ioRow->function_id == "sdf_normal_angle" ||
+        ioRow->function_id == "sdf_curvature") {
+        return true;
+    }
     if (ioRow->function_id == "phase_wheel_palette") {
         return SetColorPipelineParamNumber(ioRow, "palette.phase_offset", liveParams.color_phase_palette_offset, outError);
     }
@@ -1103,6 +1210,29 @@ inline bool TryBuildColorPipelineSelectionFromLaneIds(
     if (std::strcmp(sourceFunctionId, "root_index") == 0 && std::strcmp(paletteFunctionId, "joy_root_palette") == 0) {
         *outPipeline = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
         *outMode = ColoringMode::joy_basins;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "sdf_normal_angle") == 0 && std::strcmp(paletteFunctionId, "phase_wheel_palette") == 0) {
+        *outPipeline = {ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+        *outMode = ColoringMode::phase;
+        return true;
+    }
+    const bool sdfHeatmapSource =
+        std::strcmp(sourceFunctionId, "sdf_signed_distance") == 0 ||
+        std::strcmp(sourceFunctionId, "sdf_inside_outside") == 0 ||
+        std::strcmp(sourceFunctionId, "sdf_boundary_band") == 0 ||
+        std::strcmp(sourceFunctionId, "sdf_curvature") == 0;
+    if (sdfHeatmapSource &&
+        (std::strcmp(paletteFunctionId, "heatmap") == 0 ||
+         std::strcmp(paletteFunctionId, "explaino_cmap") == 0)) {
+        ColorSignal signal = ColorSignal::sdf_signed_distance;
+        TryParseAdvancedColorSignalFunctionId(sourceFunctionId, &signal);
+        *outPipeline = {
+            signal,
+            std::strcmp(paletteFunctionId, "explaino_cmap") == 0 ? ColorPalette::explaino_cmap : ColorPalette::cyclic_escape,
+            ColorGradingPreset::escape_default,
+        };
+        *outMode = ColoringMode::smooth_escape;
         return true;
     }
     return false;
@@ -1458,6 +1588,27 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         pipeline.grading == ColorGradingPreset::basin_default) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_index";
         if (outPaletteFunctionId) *outPaletteFunctionId = "joy_root_palette";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::sdf_normal_angle &&
+        pipeline.palette == ColorPalette::phase_wheel &&
+        pipeline.grading == ColorGradingPreset::phase_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "sdf_normal_angle";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "phase_wheel_palette";
+        return true;
+    }
+    const bool isSdfHeatmapSignal =
+        pipeline.signal == ColorSignal::sdf_signed_distance ||
+        pipeline.signal == ColorSignal::sdf_inside_outside ||
+        pipeline.signal == ColorSignal::sdf_boundary_band ||
+        pipeline.signal == ColorSignal::sdf_curvature;
+    if (isSdfHeatmapSignal &&
+        (pipeline.palette == ColorPalette::cyclic_escape || pipeline.palette == ColorPalette::explaino_cmap) &&
+        isEscapeLikeGrading) {
+        if (outSourceFunctionId) *outSourceFunctionId = AdvancedColorSignalFunctionId(pipeline.signal);
+        if (outPaletteFunctionId) {
+            *outPaletteFunctionId = pipeline.palette == ColorPalette::explaino_cmap ? "explaino_cmap" : "heatmap";
+        }
         return true;
     }
     return false;

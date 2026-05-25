@@ -61,6 +61,11 @@ void TestFunctionIdMappingsRoundTrip() {
         "TestFunctionIdMappingsRoundTrip_SignalId");
     Check(color_pipeline_core::TryParseAdvancedColorSignalFunctionId("orbit_stripe", &signal) && signal == ColorSignal::orbit_stripe,
         "TestFunctionIdMappingsRoundTrip_SignalParse");
+    Check(std::string(color_pipeline_core::AdvancedColorSignalFunctionId(ColorSignal::sdf_signed_distance)) == "sdf_signed_distance",
+        "TestFunctionIdMappingsRoundTrip_SdfSignalId");
+    Check(color_pipeline_core::TryParseAdvancedColorSignalFunctionId("sdf_curvature", &signal) && signal == ColorSignal::sdf_curvature,
+        "TestFunctionIdMappingsRoundTrip_SdfSignalParse");
+    signal = ColorSignal::orbit_stripe;
     Check(!color_pipeline_core::TryParseAdvancedColorSignalFunctionId("missing_source", &signal) && signal == ColorSignal::orbit_stripe,
         "TestFunctionIdMappingsRoundTrip_SignalRejectPreservesValue");
 
@@ -118,12 +123,17 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
     Check(source && shape && palette && grading, "TestLaneCatalogFiltersRuntimeBackedRows_AllCatalogsDiscoverable");
     if (!source || !shape || !palette || !grading) return;
 
-    Check(source->default_function_id == std::string("smooth_escape_ramp") && source->functions.size() == 7,
+    Check(source->default_function_id == std::string("smooth_escape_ramp") && source->functions.size() == 12,
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceShape");
     Check(HasFunction(*source, "smooth_escape_ramp") && HasFunction(*source, "phase_orbit") &&
             HasFunction(*source, "banded_signal") && HasFunction(*source, "escape_magnitude") &&
             HasFunction(*source, "orbit_stripe") && HasFunction(*source, "root_proximity") &&
-            HasFunction(*source, "root_index"),
+            HasFunction(*source, "root_index") &&
+            HasFunction(*source, "sdf_signed_distance") &&
+            HasFunction(*source, "sdf_inside_outside") &&
+            HasFunction(*source, "sdf_boundary_band") &&
+            HasFunction(*source, "sdf_normal_angle") &&
+            HasFunction(*source, "sdf_curvature"),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctions");
     Check(shape->default_function_id == std::string("identity") && shape->functions.size() == 7 &&
             HasFunction(*shape, "smooth_window"),
@@ -135,7 +145,19 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
     Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 8 &&
             HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default") && HasFunction(*grading, "neutral_finish") && HasFunction(*grading, "tone_map_finish") && HasFunction(*grading, "grade_glow") && HasFunction(*grading, "balance_void_grade"),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsBalanceVoidGrade");
-    Check(CatalogIdsEqual(*source, {"smooth_escape_ramp", "phase_orbit", "banded_signal", "escape_magnitude", "orbit_stripe", "root_proximity", "root_index"}),
+    Check(CatalogIdsEqual(*source, {
+            "smooth_escape_ramp",
+            "phase_orbit",
+            "banded_signal",
+            "escape_magnitude",
+            "orbit_stripe",
+            "root_proximity",
+            "root_index",
+            "sdf_signed_distance",
+            "sdf_inside_outside",
+            "sdf_boundary_band",
+            "sdf_normal_angle",
+            "sdf_curvature"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctionOrder");
     Check(CatalogIdsEqual(*shape, {"identity", "offset_scale", "repeat", "posterize", "mirror_repeat", "bias_gain_curve", "smooth_window"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
@@ -538,6 +560,14 @@ void TestSelectionAndScheduleBridgeIds() {
             selection.signal == ColorSignal::escape_magnitude && selection.palette == ColorPalette::explaino_cmap &&
             selection.grading == ColorGradingPreset::escape_default && mode == ColoringMode::smooth_escape,
         "TestSelectionAndScheduleBridgeIds_EscapeMagnitudeExplainoSelection");
+    Check(color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds("sdf_signed_distance", "heatmap", &selection, &mode) &&
+            selection.signal == ColorSignal::sdf_signed_distance && selection.palette == ColorPalette::cyclic_escape &&
+            selection.grading == ColorGradingPreset::escape_default && mode == ColoringMode::smooth_escape,
+        "TestSelectionAndScheduleBridgeIds_SdfSignedDistanceHeatmapSelection");
+    Check(color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds("sdf_normal_angle", "phase_wheel_palette", &selection, &mode) &&
+            selection.signal == ColorSignal::sdf_normal_angle && selection.palette == ColorPalette::phase_wheel &&
+            selection.grading == ColorGradingPreset::phase_default && mode == ColoringMode::phase,
+        "TestSelectionAndScheduleBridgeIds_SdfNormalAnglePhaseSelection");
     Check(!color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds("phase_orbit", "heatmap", &selection, &mode),
         "TestSelectionAndScheduleBridgeIds_InvalidTupleFailsClosed");
     Check(!color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(nullptr, "heatmap", &selection, &mode),
@@ -571,12 +601,49 @@ void TestSelectionAndScheduleBridgeIds() {
             std::string(sourceFunction ? sourceFunction : "") == "root_index" &&
             std::string(paletteFunction ? paletteFunction : "") == "root_classic_palette",
         "TestSelectionAndScheduleBridgeIds_RootBridge");
+    const ColorPipelineSelection sdfHeatmapPipeline = {ColorSignal::sdf_boundary_band, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(sdfHeatmapPipeline, &sourceFunction, &paletteFunction) &&
+            std::string(sourceFunction ? sourceFunction : "") == "sdf_boundary_band" &&
+            std::string(paletteFunction ? paletteFunction : "") == "heatmap",
+        "TestSelectionAndScheduleBridgeIds_SdfHeatmapBridge");
+    const ColorPipelineSelection sdfNormalAnglePipeline = {ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+    Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(sdfNormalAnglePipeline, &sourceFunction, &paletteFunction) &&
+            std::string(sourceFunction ? sourceFunction : "") == "sdf_normal_angle" &&
+            std::string(paletteFunction ? paletteFunction : "") == "phase_wheel_palette",
+        "TestSelectionAndScheduleBridgeIds_SdfNormalAngleBridge");
     const ColorPipelineSelection unsupportedPipeline = {ColorSignal::root_index, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
     sourceFunction = "stale";
     paletteFunction = "stale";
     Check(!color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(unsupportedPipeline, &sourceFunction, &paletteFunction) &&
             sourceFunction == nullptr && paletteFunction == nullptr,
         "TestSelectionAndScheduleBridgeIds_UnsupportedBridgeClearsOutputs");
+}
+
+void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
+    const ColorPipelineLaneCatalog* source = color_pipeline_core::FindColorPipelineLaneCatalog("source");
+    Check(source != nullptr, "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SourceCatalogPresent");
+    if (!source) return;
+
+    const char* sdfSourceIds[] = {
+        "sdf_signed_distance",
+        "sdf_inside_outside",
+        "sdf_boundary_band",
+        "sdf_normal_angle",
+        "sdf_curvature",
+    };
+    for (const char* id : sdfSourceIds) {
+        Check(HasFunction(*source, id), "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SourceCatalogIncludesSdfRow");
+        Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("source", id),
+            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowRuntimeBacked");
+
+        ColorPipelineRowState row;
+        std::string error;
+        Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, id, 41, &row, &error) &&
+                row.function_id == id &&
+                row.parameter_values.size() >= 3 &&
+                RowNumber(row, "signal.blend_weight", 1.0),
+            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowBuildsWithControls");
+    }
 }
 
 } // namespace
@@ -588,6 +655,7 @@ int main() {
     TestRowFunctionSwitchPreservesSharedParams();
     TestImportAndApplySupportedParams();
     TestSelectionAndScheduleBridgeIds();
+    TestSdfSourceRowsAreRuntimeBackedCatalogRows();
 
     std::printf("test_color_pipeline_core: passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;

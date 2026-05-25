@@ -25,6 +25,7 @@
 #include "backends/imgui_impl_dx11.h"
 
 #include "cli_args.h"
+#include "color_pipeline_sdf_postprocess.h"
 #include "color_pipeline_window.h"
 #include "viewer_cli.h"
 #include "viewer_schema_load.h"
@@ -466,6 +467,61 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
 
 // --- Headless capture helpers ---
 
+static bool RenderHeadlessFractalFrame(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    std::vector<uint32_t>& outRgba,
+    RenderStats* outStats,
+    std::string* outError) {
+    outRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+    std::vector<uint8_t> mask;
+    uint8_t* maskPtr = nullptr;
+    const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
+    if (colorPipelineNeedsSdf) {
+        mask.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+        maskPtr = mask.data();
+    }
+
+    const char* renderError = nullptr;
+    if (!RenderFractalCUDA(view, params, render, outRgba.data(), maskPtr, outStats, &renderError)) {
+        if (outError) *outError = renderError ? renderError : "RenderFractalCUDA failed during headless capture.";
+        return false;
+    }
+
+    if (!colorPipelineNeedsSdf) {
+        return true;
+    }
+
+    const LensSettings defaultLens{};
+    SdfFieldResult lensSdfField;
+    if (!ComputeLensSdfFieldForMaskWithBackend(
+            maskPtr,
+            render.resolution.x,
+            render.resolution.y,
+            defaultLens.downsample,
+            LensSdfBackend::auto_backend,
+            lensSdfField,
+            nullptr)) {
+        if (outError) *outError = "failed to compute Lens SDF field for headless Color Pipeline SDF source";
+        return false;
+    }
+
+    if (!ApplyLensSdfColorPipelinePostprocess(
+            lensSdfField.View(),
+            render,
+            params,
+            outRgba.data(),
+            outError)) {
+        if (outError && outError->empty()) {
+            *outError = "SDF Color Pipeline postprocess failed during headless capture";
+        }
+        return false;
+    }
+
+    return true;
+}
+
 static int RunHeadlessDiagnosticCapture(
     const std::string& exeDir, const ViewerCliArgs& cli, const ViewState& view,
     const KernelParams& params, const RenderSettings& render,
@@ -476,12 +532,11 @@ static int RunHeadlessDiagnosticCapture(
     RenderSettings diagnosticRender = render;
     diagnosticRender.benchmark = true;
     std::vector<uint32_t> headlessRgba;
-    headlessRgba.resize((size_t)diagnosticRender.resolution.x * (size_t)diagnosticRender.resolution.y);
-    const char* err = nullptr;
     RenderStats headlessStats{};
-    if (!RenderFractalCUDA(view, params, diagnosticRender, headlessRgba.data(), nullptr, &headlessStats, &err)) {
+    std::string renderError;
+    if (!RenderHeadlessFractalFrame(view, params, diagnosticRender, headlessRgba, &headlessStats, &renderError)) {
         WriteHeadlessErrorFile(exeDir, "capture_diagnostic_error.txt",
-            err ? err : "RenderFractalCUDA failed during headless diagnostic capture.");
+            renderError.empty() ? "RenderFractalCUDA failed during headless diagnostic capture." : renderError);
         return 1;
     }
     std::string captureError;
@@ -509,12 +564,11 @@ static int RunHeadlessFindingCapture(
     ClearHeadlessErrorFile(exeDir, "capture_finding_error.txt");
     RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
     std::vector<uint32_t> headlessRgba;
-    headlessRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
-    const char* err = nullptr;
     RenderStats headlessStats{};
-    if (!RenderFractalCUDA(view, params, findingRender, headlessRgba.data(), nullptr, &headlessStats, &err)) {
+    std::string renderError;
+    if (!RenderHeadlessFractalFrame(view, params, findingRender, headlessRgba, &headlessStats, &renderError)) {
         WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt",
-            err ? err : "RenderFractalCUDA failed during headless finding capture.");
+            renderError.empty() ? "RenderFractalCUDA failed during headless finding capture." : renderError);
         return 1;
     }
     std::string findingDir;
@@ -727,7 +781,9 @@ static void DispatchRenderFrame(
     EnsureFractalTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
 
     uint8_t* maskPtr = nullptr;
-    if (lens.enabled) {
+    const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
+    const bool needsLensSdfField = lens.enabled || colorPipelineNeedsSdf;
+    if (needsLensSdfField) {
         maskBuffer.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
         maskPtr = maskBuffer.data();
     }
@@ -763,10 +819,13 @@ static void DispatchRenderFrame(
     } else {
         stats = newStats;
         MarkRenderedFrameReady(dispatchRender, &renderedFrame);
-        UploadFractalRGBA(rgba.data(), dispatchRender.resolution.x, dispatchRender.resolution.y);
-        if (lens.enabled && maskPtr) {
-            EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
-            UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
+        bool postprocessOk = true;
+        std::string postprocessError;
+        if (needsLensSdfField && maskPtr) {
+            if (lens.enabled) {
+                EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
+                UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
+            }
             SdfFieldResult lensSdfField;
             LensSdfBackendReport backendReport{};
             if (ComputeLensSdfFieldForMaskWithBackend(
@@ -787,13 +846,33 @@ static void DispatchRenderFrame(
                     lensSdfProbe.height = lensSdfField.height;
                     lensSdfProbe.pixel_scale = lensSdfField.pixel_scale;
                 }
+                if (colorPipelineNeedsSdf &&
+                    !ApplyLensSdfColorPipelinePostprocess(
+                        lensSdfField.View(),
+                        dispatchRender,
+                        params,
+                        rgba.data(),
+                        &postprocessError)) {
+                    postprocessOk = false;
+                }
                 lensSdfProbe.fallback_used = backendReport.fallback_used;
                 if (backendReport.used == LensSdfBackend::cuda_jfa) {
                     lensSdfProbe.backend_used = "cuda_jfa";
                 } else if (backendReport.used == LensSdfBackend::cpu_chamfer) {
                     lensSdfProbe.backend_used = "cpu_chamfer";
                 }
+            } else if (colorPipelineNeedsSdf) {
+                postprocessOk = false;
+                postprocessError = "failed to compute Lens SDF field for Color Pipeline SDF source";
             }
+        }
+        if (!postprocessOk) {
+            ImGui::Begin("Color Pipeline Error");
+            ImGui::TextWrapped("SDF Color Pipeline render failed: %s", postprocessError.empty() ? "unknown error" : postprocessError.c_str());
+            ImGui::End();
+            InvalidateRenderedFrame(&renderedFrame);
+        } else {
+            UploadFractalRGBA(rgba.data(), dispatchRender.resolution.x, dispatchRender.resolution.y);
         }
     }
     dirtyOut = !renderedFrame.ready;

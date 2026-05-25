@@ -445,6 +445,8 @@ inline bool CollectEnabledColorPipelineRows(
 
 inline bool IsSupportedColorPipelineSourceStackFunctionId(const std::string& functionId);
 
+inline bool IsSdfColorPipelineSourceFunctionId(const std::string& functionId);
+
 inline bool IsSupportedColorPipelineShapeFunctionId(const std::string& functionId);
 
 inline const ColorPipelineLaneState* FindColorPipelineLaneState(
@@ -955,6 +957,12 @@ inline bool SelectColorPipelineRowFunction(
                 } else if (lane.rows[rowIndex].function_id == "root_index") {
                     companionLaneId = "palette";
                     companionFunctionId = "root_classic_palette";
+                } else if (lane.rows[rowIndex].function_id == "sdf_normal_angle") {
+                    companionLaneId = "palette";
+                    companionFunctionId = "phase_wheel_palette";
+                } else if (IsSdfColorPipelineSourceFunctionId(lane.rows[rowIndex].function_id)) {
+                    companionLaneId = "palette";
+                    companionFunctionId = "heatmap";
                 }
             } else if (lane.lane_id == "palette") {
                 if (lane.rows[rowIndex].function_id == "heatmap" ||
@@ -1348,6 +1356,10 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
         return SetColorPipelineParamNumber(ioRow, "signal.scale", sourceEntry.params.scale, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.bias", sourceEntry.params.bias, outError);
     }
+    if (IsSdfColorPipelineSourceFunctionId(ioRow->function_id)) {
+        return SetColorPipelineParamNumber(ioRow, "signal.scale", sourceEntry.params.scale, outError) &&
+            SetColorPipelineParamNumber(ioRow, "signal.bias", sourceEntry.params.bias, outError);
+    }
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", sourceEntry.params.phase_offset, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", sourceEntry.params.wrap_cycles, outError);
@@ -1422,7 +1434,20 @@ inline bool IsSupportedColorPipelineSourceStackFunctionId(const std::string& fun
         functionId == "banded_signal" ||
         functionId == "escape_magnitude" ||
         functionId == "orbit_stripe" ||
-        functionId == "root_proximity";
+        functionId == "root_proximity" ||
+        functionId == "sdf_signed_distance" ||
+        functionId == "sdf_inside_outside" ||
+        functionId == "sdf_boundary_band" ||
+        functionId == "sdf_normal_angle" ||
+        functionId == "sdf_curvature";
+}
+
+inline bool IsSdfColorPipelineSourceFunctionId(const std::string& functionId) {
+    return functionId == "sdf_signed_distance" ||
+        functionId == "sdf_inside_outside" ||
+        functionId == "sdf_boundary_band" ||
+        functionId == "sdf_normal_angle" ||
+        functionId == "sdf_curvature";
 }
 
 inline bool ColorPipelineSourceRuntimeParamsEqual(
@@ -1571,6 +1596,17 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
             !TryGetColorPipelineParamNumber(row, "signal.bias", &bias, outError) ||
             !ValidateColorPipelineParamRange("signal.scale", scale, 0.25, 4.0, outError) ||
             !ValidateColorPipelineParamRange("signal.bias", bias, -1.0, 1.0, outError)) {
+            return false;
+        }
+        entry.params.scale = static_cast<float>(scale);
+        entry.params.bias = static_cast<float>(bias);
+    } else if (IsSdfColorPipelineSourceFunctionId(row.function_id)) {
+        double scale = 0.0;
+        double bias = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "signal.scale", &scale, outError) ||
+            !TryGetColorPipelineParamNumber(row, "signal.bias", &bias, outError) ||
+            !ValidateColorPipelineParamRange("signal.scale", scale, -2.0, 2.0, outError) ||
+            !ValidateColorPipelineParamRange("signal.bias", bias, -2.0, 2.0, outError)) {
             return false;
         }
         entry.params.scale = static_cast<float>(scale);
@@ -3164,8 +3200,12 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         return false;
     }
     bool hasRootBasinPairFamily = false;
+    bool hasSdfSourceRows = false;
+    bool hasNonSdfSourceRows = false;
     for (const ColorPipelineRowState* sourceRow : sourceRows) {
         hasRootBasinPairFamily = hasRootBasinPairFamily || (sourceRow && sourceRow->function_id == "root_index");
+        hasSdfSourceRows = hasSdfSourceRows || (sourceRow && IsSdfColorPipelineSourceFunctionId(sourceRow->function_id));
+        hasNonSdfSourceRows = hasNonSdfSourceRows || (sourceRow && sourceRow->function_id != "root_index" && !IsSdfColorPipelineSourceFunctionId(sourceRow->function_id));
     }
     for (const ColorPipelineRowState* paletteRow : paletteRows) {
         hasRootBasinPairFamily = hasRootBasinPairFamily || (paletteRow && IsSupportedRootBasinPaletteFunctionId(paletteRow->function_id));
@@ -3190,6 +3230,12 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
             }
             return false;
         }
+    }
+    if (hasSdfSourceRows && hasNonSdfSourceRows) {
+        if (outError) {
+            *outError = "Current live SDF color bridge requires enabled Source rows to be all SDF rows or all non-SDF rows.";
+        }
+        return false;
     }
 
     if (hasRootBasinPairFamily) {
