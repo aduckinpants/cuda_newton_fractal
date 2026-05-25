@@ -77,6 +77,8 @@ Out of scope:
 - Continuation CPU pack proof: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_test_sdf_pack --log artifacts/logs/sdf_pack_cuda_hardening_test_sdf_pack.log --out-json artifacts/validation/sdf_pack_cuda_hardening_test_sdf_pack.json --heartbeat-seconds 30 --timeout-seconds 240 -- cmd /c ui_app\build_tests_vsdevcmd.cmd test_sdf_pack` passed with `test_sdf_pack: pass=26 fail=0`.
 - Continuation full native note: `sdf_pack_cuda_hardening_full_native` timed out after 1800s while compiling `test_generic_probe`; this is recorded as unproven timeout evidence, not a pass.
 - Continuation full native proof: retry command `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_full_native_retry --log artifacts/logs/sdf_pack_cuda_hardening_full_native_retry.log --out-json artifacts/validation/sdf_pack_cuda_hardening_full_native_retry.json --heartbeat-seconds 60 --timeout-seconds 3600 -- cmd /c ui_app\build_tests_vsdevcmd.cmd` passed and ended with `All helper tests passed`.
+- Continuation receipt-gate finding: contract proof initially rejected the receipt because the contract required the exact `sdf_pack_cuda_hardening_full_native` command, not only the retry command.
+- Continuation exact full native proof: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_cuda_hardening_full_native --log artifacts/logs/sdf_pack_cuda_hardening_full_native.log --out-json artifacts/validation/sdf_pack_cuda_hardening_full_native.json --heartbeat-seconds 30 --timeout-seconds 1800 -- cmd /c ui_app\build_tests_vsdevcmd.cmd` was rerun after the receipt mismatch, passed in 1739.665 seconds, and ended with `All helper tests passed`.
 - Continuation contract validation: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_pack_cuda_evaluator.contract.json --out-json artifacts/validation/sdf_pack_cuda_hardening_contract.json` passed.
 - Continuation plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Continuation code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pack_cuda_hardening_code_quality.json` passed with baseline check passed.
@@ -91,14 +93,18 @@ Out of scope:
 - [x] Pass 1 - found the new `test_sdf_pack_cuda` focused rail was not wired into the full helper suite; repaired the full helper compile/run path and proved it in `sdf_pack_cuda_evaluator_full_native`.
 - [x] Pass 2 - found `SampleSdfPackCuda(...)` could return host-level success for a structurally invalid manual descriptor while only marking per-point errors; added invalid/nonfinite descriptor regressions and tightened runtime descriptor validation.
 - [x] Pass 3 - clean re-read of the repaired state confirmed the slice adds only SDF pack runtime lowering/evaluation/tests and does not change Generic Equation Pack behavior, Lens SDF behavior, Color Pipeline behavior, viewport integration, renderer routing, selector defaults, camera/dive, or smooth-escape tuning.
-- [x] Pass 4 - found the exact max-node proof was initially only a hand-built descriptor; added an exact max-node lowered-pack rail plus over-limit pack rejection and reran the focused CUDA rail.`n- [x] Pass 5 - clean re-read found no additional real defect after checking API order, lowerer postorder ownership, direct callers, focused rails, full native retry, and diff hygiene.
+- [x] Pass 4 - found the exact max-node proof was initially only a hand-built descriptor; added an exact max-node lowered-pack rail plus over-limit pack rejection and reran the focused CUDA rail.
+- [x] Pass 5 - found the plan proof ledger was stale after receipt writing: it recorded the full-native retry but not the exact full-native command required by the contract; corrected the proof ledger.
+- [x] Pass 6 - clean re-read found no additional real defect after checking API order, lowerer postorder ownership, direct callers, focused rails, exact full-native proof, contract receipts, and diff hygiene.
 
 ## Audit Findings
 
 - [x] Real finding - the focused CUDA SDF pack rail was callable directly but absent from the full native helper suite, so a broad helper run could have skipped the new CUDA substrate proof.
 - [x] Real finding - the CUDA sample API needed host-boundary descriptor validation for invalid child topology and nonfinite descriptor constants instead of relying on per-point device errors.
 - [x] Clean re-read - after the repairs, focused CUDA proof, full native helper proof, and preservation rails did not expose another SDF, Generic Equation Pack, Lens SDF, Color Pipeline, renderer, selector, camera, or smooth-escape issue in this slice.
-- [x] Continuation finding - zero-count CUDA sampling now validates descriptors before no-op success, negative point counts fail, raw cyclic descriptors fail at the host boundary, and exact/over-limit node boundaries are covered.`n- [x] Clean continuation re-read - no additional real defect found after the boundary rail was added and validation was rerun.
+- [x] Continuation finding - zero-count CUDA sampling now validates descriptors before no-op success, negative point counts fail, raw cyclic descriptors fail at the host boundary, and exact/over-limit node boundaries are covered.
+- [x] Receipt-gate correction - the plan now records the exact required full-native command that passed after the initial receipt mismatch.
+- [x] Clean continuation re-read - no additional real defect found after the boundary rail was added, the exact full-native proof was recorded, and validation was rerun.
 
 ## Action Hostile Review
 

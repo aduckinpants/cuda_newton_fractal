@@ -250,3 +250,4 @@
 - `ck:4e31f8cb-postmerge` 2026-05-24 22:17 UTC | score 96 — SDF pack CUDA evaluator post-merge plan closeout synced on master; stale-plan grep, plan sync, hostile audit, and diff check passed.
 - `ck:fa02c89c` 2026-05-24 22:33 UTC — session-start | branch=codex/sdf-pack-cuda-hardening | head=135b33a | status=dirty | profile=native | intent=sdf pack cuda hardening
 - `ck:fa02c89c` 2026-05-24 23:40 UTC | score 96 — SDF CUDA hardening implemented: zero-count invalid descriptors and negative counts now fail, raw cyclic descriptors fail at host validation, exact/over-limit node boundaries are covered, focused CUDA/CPU rails and full native retry passed.
+- `ck:fa02c89c-reaudit` 2026-05-25 00:13 UTC | score 96 — SDF CUDA hardening re-audit corrected stale plan proof text: the plan now records the exact full-native command required by contract proof, not only the retry command, and literal newline formatting was fixed.
