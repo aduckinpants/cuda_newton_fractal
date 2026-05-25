@@ -15,6 +15,7 @@
     "ui_app/build_vsdevcmd.cmd",
     "tests",
     "HANDOFF_LOG.md",
+    "docs/handoffs/archive",
     "artifacts"
   ],
   "required_operator_inputs": [

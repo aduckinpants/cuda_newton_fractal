@@ -36,6 +36,7 @@ In scope:
 - `tests/test_fractal_runtime_lens_sdf_backend.py`
 - this phased plan and its contract
 - `HANDOFF_LOG.md`
+- `docs/handoffs/archive/` when `HANDOFF_LOG.md` auto-rotates during checkpoint
 
 Out of scope:
 
