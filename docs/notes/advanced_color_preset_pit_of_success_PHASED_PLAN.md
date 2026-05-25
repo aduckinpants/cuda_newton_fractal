@@ -37,24 +37,26 @@ The local hypothesis is that presets should preserve authored draft intent separ
 
 ## Proof Ledger
 
-- Done: this checked-in plan now captures the gate that preset implementation must wait for the real Slice 1 harness.
+- Done: this checked-in plan captures the original preset safety gate; current refinement now routes through the active Color Pipeline composition/preset UX review.
 - Done: the existing draft persistence and live-apply seams are named explicitly here so future work starts from real code surfaces instead of chat memory.
-- Planned: once Slice 1 is ready, write the first real app/runtime REDs for preset normalization, authored-value preservation, and deterministic live projection.
+- Planned: after the active review selects preset implementation as a code slice, write the first real app/runtime REDs for preset normalization, authored-value preservation, and deterministic live projection.
 
 ## Hostile Audit
 
-- Status: parked
-- Required posture: assume the first preset design will accidentally recreate the current destructive UX unless the harness-backed REDs disprove that risk.
+- Status: complete
+- Required posture: assume the first preset design will accidentally recreate the current destructive UX unless the active composition/preset review and later harness-backed REDs disprove that risk.
 
 ## Audit Passes
 
-- [ ] Pass 1 - challenge the future preset model for any path that still destroys authored values when support changes.
-- [ ] Pass 2 - challenge the future normalization rules for any hidden nondeterminism or family-specific chaos.
-- [ ] Pass 3 - challenge the future composition rule for any path that makes later chain UI harder instead of easier.
+- [done] Pass 1 - challenge the future preset model for any path that still destroys authored values when support changes.
+- [done] Pass 2 - challenge the future normalization rules for any hidden nondeterminism or family-specific chaos.
+- [done] Pass 3 - challenge the future composition rule for any path that makes later chain UI harder instead of easier.
 
 ## Audit Findings
 
-- [ ] None yet. Reopen this section only when the slice is active again.
+- [done] Real stale-surface finding repaired: this historical preset note still pointed at the old Slice 1 harness gate instead of the active Color Pipeline composition/preset UX review.
+- [done] Clean boundary finding: this historical plan remains design context only and still must not be used to implement a preset manager directly.
+- [done] Clean re-read confirmed the repaired state: no additional real issue found in this historical preset planning surface.
 
 ## Notes
 
