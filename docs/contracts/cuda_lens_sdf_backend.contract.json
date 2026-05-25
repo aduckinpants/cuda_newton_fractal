@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "contract_id": "cuda_lens_sdf_backend",
+  "feature_id": "cuda_lens_sdf_backend",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/cuda_lens_sdf_backend_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/cuda_lens_sdf_backend_PHASED_PLAN.md",
+    "docs/contracts/cuda_lens_sdf_backend.contract.json",
+    "ui_app/src/lens_sdf.h",
+    "ui_app/src/lens_sdf.cpp",
+    "ui_app/src/lens_sdf_cuda.h",
+    "ui_app/src/lens_sdf_cuda.cu",
+    "ui_app/tests/test_lens_sdf.cpp",
+    "ui_app/tests/test_lens_sdf_cuda.cu",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "add CUDA-backed Lens SDF backend beside CPU chamfer",
+    "keep ComputeLensSdfFieldForMask CPU-default",
+    "add explicit backend API with cpu_chamfer, cuda_jfa, and auto",
+    "prove semantic CPU/GPU parity on deterministic masks"
+  ],
+  "forbidden_operator_prompts": [
+    "route live client Lens SDF through auto in this slice",
+    "claim client performance improvement in this headless-first slice",
+    "add Color Pipeline SDF rows",
+    "add viewport overlay",
+    "add SDF-native fractal lanes"
+  ],
+  "required_defaults": {
+    "public_compute_lens_sdf_field_for_mask": "cpu_chamfer",
+    "cuda_backend": "explicit_only",
+    "fallback_reference": "cpu_chamfer",
+    "parity": "semantic_not_bit_exact",
+    "physical_mouse": "forbidden"
+  },
+  "forbidden_defaults": {
+    "live_auto_routing": "forbidden",
+    "performance_claim_without_witness": "forbidden",
+    "color_pipeline_sdf_rows": "forbidden",
+    "viewport_overlay": "forbidden",
+    "sdf_native_lane": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label cuda_lens_sdf_backend_test_lens_sdf_cuda --log artifacts/logs/cuda_lens_sdf_backend_test_lens_sdf_cuda.log --out-json artifacts/validation/cuda_lens_sdf_backend_test_lens_sdf_cuda.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_lens_sdf_cuda",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label cuda_lens_sdf_backend_test_lens_sdf --log artifacts/logs/cuda_lens_sdf_backend_test_lens_sdf.log --out-json artifacts/validation/cuda_lens_sdf_backend_test_lens_sdf.json --heartbeat-seconds 30 --timeout-seconds 180 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_lens_sdf",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/cuda_lens_sdf_backend.contract.json --out-json artifacts/validation/cuda_lens_sdf_backend_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/cuda_lens_sdf_backend_PHASED_PLAN.md --out-json artifacts/validation/cuda_lens_sdf_backend_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/cuda_lens_sdf_backend_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label cuda_lens_sdf_backend_diff_check --log artifacts/logs/cuda_lens_sdf_backend_diff_check.log --out-json artifacts/validation/cuda_lens_sdf_backend_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The CUDA Lens SDF backend contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/cuda_lens_sdf_backend_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The CUDA Lens SDF backend hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/cuda_lens_sdf_backend_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

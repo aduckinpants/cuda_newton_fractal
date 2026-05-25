@@ -260,3 +260,5 @@
 - `ck:8db3bea3` 2026-05-25 06:23 UTC | score 97 — Rearward gate contract proof evidence repaired with JUnit pytest artifact and validators rerun.
 - `ck:425509a1` 2026-05-25 06:27 UTC — session-start | branch=master | head=f6c23ce | status=dirty | profile=native | intent=sdf roadmap truth sync
 - `ck:425509a1` 2026-05-25 06:31 UTC | score 96 — SDF roadmap truth sync repaired stale shipped-vs-deferred status for parser, CUDA, hardening, and report consumers.
+- `ck:8e00136a` 2026-05-25 06:34 UTC — session-start | branch=codex/gpu-lens-sdf-backend | head=dada3b8 | status=dirty | profile=native | intent=cuda lens sdf backend
+- `ck:8e00136a` 2026-05-25 06:42 UTC | score 96 — CUDA Lens SDF backend implemented headless-first with CPU default preserved, CUDA JFA parity tests, and preservation rails green.

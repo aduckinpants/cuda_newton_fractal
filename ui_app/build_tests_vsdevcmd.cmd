@@ -60,6 +60,7 @@ if /I "%FOCUSED_TEST%"=="test_flashlight_probe" goto focused_test_flashlight_pro
 if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
 if /I "%FOCUSED_TEST%"=="test_diagnostics_capture" goto focused_test_diagnostics_capture
 if /I "%FOCUSED_TEST%"=="test_lens_sdf" goto focused_test_lens_sdf
+if /I "%FOCUSED_TEST%"=="test_lens_sdf_cuda" goto focused_test_lens_sdf_cuda
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
 if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" goto focused_test_viewer_render_pacing
 if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" goto focused_test_sample_tier_resolver
@@ -643,6 +644,17 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_lens_sdf.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_lens_sdf.exe" || exit /b 1
+exit /b 0
+
+:focused_test_lens_sdf_cuda
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\src\lens_sdf.cpp .\src\lens_sdf_cuda.cu .\tests\test_lens_sdf_cuda.cu ^
+  -o "%TESTROOT%\test_lens_sdf_cuda.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_lens_sdf_cuda.exe" || exit /b 1
 exit /b 0
 
 :focused_test_finding_archive_actions

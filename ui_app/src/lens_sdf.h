@@ -34,6 +34,18 @@ struct SdfFieldResult {
     SdfFieldView View() const;
 };
 
+enum class LensSdfBackend {
+    cpu_chamfer,
+    cuda_jfa,
+    auto_backend,
+};
+
+struct LensSdfBackendReport {
+    LensSdfBackend requested{LensSdfBackend::cpu_chamfer};
+    LensSdfBackend used{LensSdfBackend::cpu_chamfer};
+    bool fallback_used{false};
+};
+
 int NormalizeLensDownsamplePow2(int value);
 
 bool DownsampleMaskPow2(
@@ -85,6 +97,15 @@ bool ComputeLensSdfFieldForMask(
     int height,
     int downsample,
     SdfFieldResult& outField);
+
+bool ComputeLensSdfFieldForMaskWithBackend(
+    const uint8_t* mask,
+    int width,
+    int height,
+    int downsample,
+    LensSdfBackend backend,
+    SdfFieldResult& outField,
+    LensSdfBackendReport* outReport = nullptr);
 
 bool ComputeLensSdfRgbaForMask(
     const uint8_t* mask,
