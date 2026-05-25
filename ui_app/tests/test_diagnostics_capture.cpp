@@ -112,6 +112,65 @@ void TestBundleWritesFrameAndState() {
     Check(json.find("\"coloring_mode\": \"joy_basins\"") != std::string::npos, "state derives legacy coloring mirror from coherent root-basin pair");
 }
 
+void TestBundleSummarizesEffectiveColorSourceAuthority() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+
+    const fs::path flatOutputDir = FreshTempRoot("flat_effective_source") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff0000ffu, 0xff00ff00u, 0xffff0000u, 0xffffffffu};
+    DiagnosticsCaptureResult flatResult{};
+    std::string error;
+
+    bool ok = CaptureDiagnosticsBundleToDir(flatOutputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &flatResult, &error);
+    Check(ok, "flat capture succeeds for effective color source summary");
+    if (ok) {
+        const std::string json = ReadTextFile(flatResult.state_json_path);
+        Check(json.find("\"color_effective_source\"") != std::string::npos,
+            "state includes effective color source summary");
+        Check(json.find("\"authority\": \"flat_signal\"") != std::string::npos,
+            "flat state summary reports flat_signal authority");
+        Check(json.find("\"legacy_flat_signal\": \"root_index\"") != std::string::npos,
+            "flat state summary records legacy flat signal");
+        Check(json.find("\"source_stack_count\": 0") != std::string::npos,
+            "flat state summary records zero source stack rows");
+    }
+
+    params.color_root_basin_pair_count = 0;
+    params.color_pipeline = {ColorSignal::sdf_signed_distance, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    params.color_source_stack_count = 2;
+    params.color_source_stack[0].signal = ColorSignal::sdf_normal_angle;
+    params.color_source_stack[0].params.scale = 1.0f;
+    params.color_source_stack[0].params.bias = 0.0f;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    params.color_source_stack[1].signal = ColorSignal::sdf_signed_distance;
+    params.color_source_stack[1].params.scale = 0.05f;
+    params.color_source_stack[1].params.bias = 0.5f;
+    params.color_source_stack[1].params.blend_weight = 0.25f;
+
+    const fs::path stackOutputDir = FreshTempRoot("stack_effective_source") / "diagnostics_bundle";
+    DiagnosticsCaptureResult stackResult{};
+    ok = CaptureDiagnosticsBundleToDir(stackOutputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &stackResult, &error);
+    Check(ok, "source-stack capture succeeds for effective color source summary");
+    if (ok) {
+        const std::string json = ReadTextFile(stackResult.state_json_path);
+        Check(json.find("\"authority\": \"source_stack\"") != std::string::npos,
+            "stack state summary reports source_stack authority");
+        Check(json.find("\"legacy_flat_signal\": \"sdf_signed_distance\"") != std::string::npos,
+            "stack state summary preserves legacy flat signal");
+        Check(json.find("\"source_stack_count\": 2") != std::string::npos,
+            "stack state summary records source stack row count");
+        Check(json.find("\"signal\": \"sdf_normal_angle\"") != std::string::npos &&
+                json.find("\"kind\": \"phase\"") != std::string::npos,
+            "stack state summary records phase source row");
+        Check(json.find("\"signal\": \"sdf_signed_distance\"") != std::string::npos &&
+                json.find("\"kind\": \"scalar\"") != std::string::npos,
+            "stack state summary records scalar source row");
+    }
+}
+
 void TestBundlePersistsCounterfactualPairFractalTypeId() {
     ViewState view{};
     KernelParams params{};
@@ -441,6 +500,7 @@ void TestLastBundleAndSidecarOverloads() {
 
 int main() {
     TestBundleWritesFrameAndState();
+    TestBundleSummarizesEffectiveColorSourceAuthority();
     TestBundlePersistsCounterfactualPairFractalTypeId();
     TestBundlePersistsExplainoCounterfactualPairFractalTypeId();
     TestBundlePersistsProjectionAndFlowHardeningControls();

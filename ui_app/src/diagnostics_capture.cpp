@@ -56,6 +56,28 @@ const char* CaptureColorSignalId(ColorSignal signal) {
     return "unknown";
 }
 
+const char* CaptureColorSignalKindId(ColorSignal signal) {
+    switch (signal) {
+    case ColorSignal::phase_angle:
+    case ColorSignal::orbit_stripe:
+    case ColorSignal::sdf_normal_angle:
+        return "phase";
+    case ColorSignal::root_index:
+    case ColorSignal::sdf_inside_outside:
+        return "categorical";
+    case ColorSignal::iteration_count:
+    case ColorSignal::smooth_escape:
+    case ColorSignal::iteration_bands:
+    case ColorSignal::escape_magnitude:
+    case ColorSignal::root_proximity:
+    case ColorSignal::sdf_signed_distance:
+    case ColorSignal::sdf_boundary_band:
+    case ColorSignal::sdf_curvature:
+        return "scalar";
+    }
+    return "scalar";
+}
+
 const char* CaptureColorPaletteId(ColorPalette palette) {
     switch (palette) {
     case ColorPalette::root_classic: return "root_classic";
@@ -300,6 +322,40 @@ void WriteColorSourceStackJson(std::ostringstream& js, const KernelParams& param
         js << "      }" << (index + 1 < sourceStackCount ? "," : "") << "\n";
     }
     js << "    ],\n";
+}
+
+int CaptureColorSourceStackCount(const KernelParams& params) {
+    if (params.color_source_stack_count <= 0) {
+        return 0;
+    }
+    if (params.color_source_stack_count > kColorPipelineMaxSourceStackCount) {
+        return kColorPipelineMaxSourceStackCount;
+    }
+    return params.color_source_stack_count;
+}
+
+void WriteEffectiveColorSourceJson(std::ostringstream& js, const KernelParams& params) {
+    const int sourceStackCount = CaptureColorSourceStackCount(params);
+    js << "    \"color_effective_source\": {\n";
+    js << "      \"authority\": \"" << (sourceStackCount > 0 ? "source_stack" : "flat_signal") << "\",\n";
+    js << "      \"legacy_flat_signal\": \"" << CaptureColorSignalId(params.color_pipeline.signal) << "\",\n";
+    js << "      \"source_stack_count\": " << sourceStackCount << ",\n";
+    js << "      \"source_stack\": ";
+    if (sourceStackCount == 0) {
+        js << "[]\n";
+    } else {
+        js << "[\n";
+        for (int index = 0; index < sourceStackCount; ++index) {
+            const ColorPipelineSourceStackEntry& sourceEntry = params.color_source_stack[index];
+            js << "        {\n";
+            js << "          \"signal\": \"" << CaptureColorSignalId(sourceEntry.signal) << "\",\n";
+            js << "          \"kind\": \"" << CaptureColorSignalKindId(sourceEntry.signal) << "\",\n";
+            js << "          \"blend_weight\": " << static_cast<double>(sourceEntry.params.blend_weight) << "\n";
+            js << "        }" << (index + 1 < sourceStackCount ? "," : "") << "\n";
+        }
+        js << "      ]\n";
+    }
+    js << "    },\n";
 }
 
 void WriteColorPipelineStacksJson(std::ostringstream& js, const KernelParams& params) {
@@ -624,6 +680,7 @@ std::string BuildStateJson(
     js << "    \"color_shape\": \"" << CaptureColorPipelineShapeId(params.color_shape) << "\",\n";
     js << "    \"color_palette\": \"" << CaptureColorPaletteId(params.color_pipeline.palette) << "\",\n";
     js << "    \"color_grading\": \"" << CaptureColorGradingPresetId(params.color_pipeline.grading) << "\",\n";
+    WriteEffectiveColorSourceJson(js, params);
     if (HasCoherentRootBasinPairPersistence(params)) {
         const int rootBasinPairCount = params.color_root_basin_pair_count;
         js << "    \"color_root_basin_pairs\": [\n";

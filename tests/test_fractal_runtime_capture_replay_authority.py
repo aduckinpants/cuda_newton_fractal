@@ -111,6 +111,29 @@ def _write_json(path: Path, payload: dict[str, object]) -> Path:
     return path
 
 
+def _assert_effective_source_summary(captured_state: dict[str, object], row: CaptureReplayMatrixRow) -> None:
+    params = captured_state["params"]
+    summary = params.get("color_effective_source")
+    assert isinstance(summary, dict), f"{row.name}: missing color_effective_source summary"
+    assert summary.get("legacy_flat_signal") == row.color_signal
+    if row.source_stack is None:
+        assert summary.get("authority") == "flat_signal"
+        assert summary.get("source_stack_count") == 0
+        assert summary.get("source_stack") == []
+        return
+
+    assert summary.get("authority") == "source_stack"
+    assert summary.get("source_stack_count") == len(row.source_stack)
+    summary_stack = summary.get("source_stack")
+    assert isinstance(summary_stack, list)
+    assert [entry["signal"] for entry in summary_stack] == [entry["signal"] for entry in row.source_stack]
+    for entry in summary_stack:
+        if entry["signal"] == "sdf_normal_angle":
+            assert entry["kind"] == "phase"
+        elif str(entry["signal"]).startswith("sdf_"):
+            assert entry["kind"] in {"scalar", "categorical"}
+
+
 def test_capture_state_replays_pixels_for_sdf_and_non_sdf_matrix(tmp_path: Path) -> None:
     exe_path = active_runtime_exe()
     with runtime_automation_lock():
@@ -126,6 +149,7 @@ def test_capture_state_replays_pixels_for_sdf_and_non_sdf_matrix(tmp_path: Path)
             )
             captured_state = first_capture["state"]
             assert captured_state.get("lens", {}).get("downsample") == row.lens_downsample
+            _assert_effective_source_summary(captured_state, row)
 
             replay_path = _write_json(tmp_path / row.name / "replay-from-emitted-state.any-json-name", captured_state)
             replay_capture = run_headless_capture(
