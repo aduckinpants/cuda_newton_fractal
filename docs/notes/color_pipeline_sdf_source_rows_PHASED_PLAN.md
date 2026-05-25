@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed - Capture Finding SDF Color Pipeline parity repair.
+Closed - Lens Downsample SDF Source visibility repair.
 
 ## Phase Checklist
 
@@ -13,6 +13,7 @@ Closed - Capture Finding SDF Color Pipeline parity repair.
 - [x] Phase 5 - publish runtime and prove no-mouse SDF source rows change the live frame while preserving Lens/Color Pipeline behavior
 - [x] Phase 6 - hostile audit, repair findings, checkpoint, receipts, rearward review, push
 - [x] Phase 7 - repair UI Capture Finding to archive the same SDF Color Pipeline postprocessed frame as the live viewport and headless capture paths
+- [x] Phase 8 - keep Lens Downsample visible and authoritative when SDF Source rows use the Lens SDF field with Lens visualization disabled
 
 ## Explicit User Asks
 
@@ -22,6 +23,7 @@ Closed - Capture Finding SDF Color Pipeline parity repair.
 - [done] Do not expose visible Color Pipeline rows that do nothing.
 - [done] Do not use OS mouse automation.
 - [done] Repair the user-reported regression where the normal viewer Capture Finding button archives a base iteration-banded frame instead of the visible SDF Signed Distance Color Pipeline frame.
+- [done] Repair the user-reported UX regression where Lens Enabled hides Lens Downsample even though SDF Source rows can use that field resolution in the main viewport.
 
 ## Scope
 
@@ -34,6 +36,7 @@ In scope:
 - Fail closed for mixed SDF/non-SDF Source stacks unless the live consumer can honestly resolve every enabled Source row.
 - Preserve the existing Lens aux visualization and GPU/CPU backend reporting.
 - Repair the normal in-loop viewer Capture Finding action so manual captures preserve SDF Color Pipeline source-row pixels.
+- Keep `Lens Downsample` visible and authoritative when either Lens visualization is enabled or the active Color Pipeline uses an SDF Source row.
 
 Out of scope:
 
@@ -66,11 +69,14 @@ Out of scope:
   - `test_runtime_walk_headless`: passed=48 failed=0
   - `test_escape_time_coloring`: all passed
   - runtime publish: `ui_app/build_vsdevcmd.cmd` succeeded
-  - published runtime pytest: 1 passed with JUnit at `artifacts/pytest/color_pipeline_sdf_source_rows_runtime.junit.xml`
+  - published runtime pytest: 3 passed with JUnit at `artifacts/pytest/color_pipeline_sdf_source_rows_runtime.junit.xml`
 - RED 2: user-reported manual capture `D:\salt-fractal\cuda_newton_fractal_clone\findings\manual_capture\2026-05-25\093737_476__explaino_all` shows the live viewport using SDF Signed Distance while the captured finding frame is the base iteration-banded output.
 - RED 3: `color_pipeline_sdf_capture_finding_red` failed because the in-process automation report did not expose `capture_finding`, proving the schema action button path had no no-mouse click proof.
 - GREEN 3: `color_pipeline_sdf_capture_finding_runtime_pytest` passed after schema action click automation and the in-loop Capture Finding SDF postprocess repair.
-- Preservation runtime proof: `color_pipeline_sdf_source_rows_runtime_pytest` passed both the original SDF source-row sensitivity test and the new Capture Finding parity test.
+- Preservation runtime proof: `color_pipeline_sdf_source_rows_runtime_pytest` passed the original SDF source-row sensitivity test, Capture Finding parity test, and Lens Downsample SDF-field visibility/control test in one pytest invocation.
+- RED 4: `color_pipeline_sdf_lens_downsample_visibility_red_schema` failed because `lens_downsample` was still gated only by `fractal.lens.enabled`.
+- RED 5: `color_pipeline_sdf_lens_downsample_visibility_red_binding` exposed a stale `test_schema_binding` Source catalog assertion that still expected the pre-SDF seven-row Source catalog, so that native rail could not truthfully protect the SDF Source rows.
+- GREEN 4: `test_ui_schema`, `test_schema_binding`, runtime publish, and `color_pipeline_sdf_source_rows_runtime_pytest` passed after the computed Lens Downsample applicability predicate, int-combo set-value automation, and stale Source catalog assertion repair.
 
 ## Hostile Audit
 
@@ -85,6 +91,8 @@ Out of scope:
 - [done] Pass 4 - re-read the normal viewer Capture Finding path and prove it archives the same SDF Color Pipeline postprocessed pixels as the visible frame.
 - [done] Pass 5 - re-read the no-mouse harness seam and prove schema action buttons are now visible/consumable without OS cursor input.
 - [done] Pass 6 - clean re-read after repair found no SDF/non-SDF stack fallback, Lens SDF producer, or existing source-row sensitivity regression in the focused runtime proof.
+- [done] Pass 7 - re-read Lens Downsample visibility, schema binding, and runtime control authority after the SDF Source field-sharing repair.
+- [done] Pass 8 - clean re-read found no duplicate runtime viewer command requirement, no mixed-stack fallback, and no regression to Lens-enabled visualization reporting.
 
 ## Audit Findings
 
@@ -92,6 +100,8 @@ Out of scope:
 - [done] Contract runtime proof node id and command were stale after the runtime test was broadened from one SDF row to all five rows. Fixed the contract and reran the pytest with the required JUnit artifact.
 - [done] Finding 3: the normal viewer Capture Finding action called `RenderFractalCUDA(...)` directly and could archive pre-SDF-postprocess pixels even when the live viewport used an SDF Source row; fixed by routing in-loop finding capture through `RenderHeadlessFractalFrame(...)` with the live Lens settings.
 - [done] Finding 4: schema action buttons were not emitted as automation rects and could not consume in-process click commands, leaving the real Capture Finding button path unproved; fixed by wiring schema action button rect reporting and click consumption through `BindingContext`.
+- [done] Finding 5: `lens_downsample` was hidden solely by `fractal.lens.enabled`, but the live main viewport now consumes `lens.downsample` whenever Color Pipeline SDF Source rows require a Lens SDF field; fixed with `fractal.lens.downsample_applicable` and no-mouse runtime proof.
+- [done] Finding 6: `test_schema_binding` still expected the pre-SDF seven-row Source catalog, so it failed before reaching the new Lens Downsample binding proof; fixed the assertion to include all five Lens SDF Source rows.
 - [clean] Clean re-read found no mixed-stack silent fallback: native window and postprocess tests fail closed for SDF/non-SDF Source mixtures.
 - [clean] Clean re-read confirmed the repaired state did not expose another Lens SDF producer regression in focused CPU/CUDA Lens SDF, flashlight, and runtime-walk rails.
 

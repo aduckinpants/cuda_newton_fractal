@@ -8,6 +8,7 @@
 #include "ui_schema_grouping.h"
 #include "view_hp_sync.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <string>
@@ -62,6 +63,27 @@ void SeedDefaultCustomExplainoRoots(KernelParams& params) {
     params.explaino_roots[1] = {0.0f, 1.0f};
     params.explaino_roots[2] = {-1.0f, 0.0f};
     params.explaino_roots[3] = {0.0f, -1.0f};
+}
+
+bool IsSchemaSdfSourceSignal(ColorSignal signal) {
+    return signal == ColorSignal::sdf_signed_distance ||
+        signal == ColorSignal::sdf_inside_outside ||
+        signal == ColorSignal::sdf_boundary_band ||
+        signal == ColorSignal::sdf_normal_angle ||
+        signal == ColorSignal::sdf_curvature;
+}
+
+bool SchemaColorPipelineUsesSdfSource(const KernelParams& params) {
+    const int sourceStackCount = std::max(0, std::min(params.color_source_stack_count, kColorPipelineMaxSourceStackCount));
+    if (sourceStackCount > 0) {
+        for (int index = 0; index < sourceStackCount; ++index) {
+            if (IsSchemaSdfSourceSignal(params.color_source_stack[index].signal)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return IsSchemaSdfSourceSignal(params.color_pipeline.signal);
 }
 
 bool BindExplainoRootCoordinate(KernelParams& params, const std::string& path, float** outPtr) {
@@ -996,6 +1018,10 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
              view->fractal_type == FractalType::nova ||
              view->fractal_type == FractalType::halley) &&
             params->poly_kind == PolyKind::custom;
+        return true;
+    }
+    if (path == "fractal.lens.downsample_applicable") {
+        out = (lens && lens->enabled) || (params && SchemaColorPipelineUsesSdfSource(*params));
         return true;
     }
     bool* ptr = nullptr;
@@ -1948,6 +1974,51 @@ bool RenderDoubleControl(
     return changed;
 }
 
+bool TryApplyPrimaryUiAutomationSetIntComboValue(
+    BindingContext& ctx,
+    const UISchemaControl& control,
+    const UISchemaBinding& binding,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    if (!ctx.ui_automation_set_control_id ||
+        (ctx.ui_automation_set_consumed && *ctx.ui_automation_set_consumed)) {
+        return false;
+    }
+    const std::string controlId = BuildSchemaPrimaryUiAutomationControlId(control);
+    if (*ctx.ui_automation_set_control_id != controlId) {
+        return false;
+    }
+    const int requestedValue = static_cast<int>(std::lround(ctx.ui_automation_set_control_value));
+    bool matchesOption = false;
+    for (const UISchemaOption& option : control.options) {
+        try {
+            matchesOption = std::stoi(option.id) == requestedValue;
+        } catch (...) {
+            matchesOption = false;
+        }
+        if (matchesOption) {
+            break;
+        }
+    }
+    if (!matchesOption || !ApplyIntControlEdit(binding, ctx, NumericControlRange{}, requestedValue)) {
+        if (ctx.ui_automation_set_error) {
+            *ctx.ui_automation_set_error = std::string("schema int combo edit rejected visible control: ") + controlId;
+        }
+        return false;
+    }
+    if (ctx.ui_automation_set_consumed) {
+        *ctx.ui_automation_set_consumed = true;
+    }
+    if (ctx.ui_automation_set_error) {
+        ctx.ui_automation_set_error->clear();
+    }
+    MarkDirtyIfChanged(true, ioDirty);
+    if (ioInteracted) {
+        *ioInteracted = true;
+    }
+    return true;
+}
+
 bool RenderIntComboControl(
     const UISchemaControl& control,
     BindingContext& ctx,
@@ -1997,9 +2068,11 @@ bool RenderIntComboControl(
         }
     }
     MaybeNotePrimaryUiAutomationRect(ctx, control);
-    MarkDirtyIfChanged(changed, ioDirty);
-    MarkCurrentItemInteraction(changed, ioInteracted);
-    return changed;
+    const bool automationChanged = TryApplyPrimaryUiAutomationSetIntComboValue(ctx, control, binding, ioDirty, ioInteracted);
+    const bool anyChanged = changed || automationChanged;
+    MarkDirtyIfChanged(anyChanged, ioDirty);
+    MarkCurrentItemInteraction(anyChanged, ioInteracted);
+    return anyChanged;
 }
 
 bool RenderGroupedEnumComboControl(

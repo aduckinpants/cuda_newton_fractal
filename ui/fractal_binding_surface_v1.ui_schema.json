@@ -526,7 +526,7 @@
             { "id": "16", "label": "16x" }
           ],
           "binding": { "kind": "param", "path": "fractal.lens.downsample" },
-          "visible_if": { "op": "eq", "path": "fractal.lens.enabled", "value": true }
+          "visible_if": { "op": "eq", "path": "fractal.lens.downsample_applicable", "value": true }
         }
       ]
     },

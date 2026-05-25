@@ -781,6 +781,7 @@ int main() {
         bool foundSpliceOffsetUiRange = false;
         bool foundVortexStrengthUiRange = false;
         bool foundTensionStrengthUiRange = false;
+        bool foundLensDownsampleSdfFieldVisibility = false;
 
         if (!LoadAndValidateSchemaFile(schemaPath)) {
             return 1;
@@ -878,6 +879,12 @@ int main() {
                     ctrl.visible_if.path == "fractal.params.explaino_julia_custom_constants_active" &&
                     ctrl.visible_if.value == "true") {
                     foundExplainoJuliaCImag = true;
+                }
+                if (ctrl.id == "lens_downsample" && ctrl.type == "combo" && ctrl.value_type == "int" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.lens.downsample" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
+                    ctrl.visible_if.path == "fractal.lens.downsample_applicable" && ctrl.visible_if.value == "true") {
+                    foundLensDownsampleSdfFieldVisibility = true;
                 }
                 if (ctrl.id == "fractal_type") {
                     if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino_all") {
@@ -1346,6 +1353,10 @@ int main() {
         }
         if (!foundMultibrotPowerImag) {
             std::cerr << "Did not find Multibrot imaginary exponent control in schema\n";
+            return 1;
+        }
+        if (!foundLensDownsampleSdfFieldVisibility) {
+            std::cerr << "Lens Downsample must be visible when the shared Lens SDF field is applicable, not only when Lens visualization is enabled\n";
             return 1;
         }
         if (!foundResolutionAspectPresetDefault || !foundResolutionLongEdgeDefault || !foundRenderWidthDefault || !foundRenderHeightDefault) {

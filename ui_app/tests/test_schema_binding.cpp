@@ -2273,15 +2273,20 @@ int main() {
         const ColorPipelineLaneCatalog* coreSourceCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("source");
         if (!coreSourceCatalog ||
             coreSourceCatalog->default_function_id != std::string("smooth_escape_ramp") ||
-            coreSourceCatalog->functions.size() != 7 ||
+            coreSourceCatalog->functions.size() != 12 ||
             coreSourceCatalog->functions[0].id != "smooth_escape_ramp" ||
             coreSourceCatalog->functions[1].id != "phase_orbit" ||
             coreSourceCatalog->functions[2].id != "banded_signal" ||
             coreSourceCatalog->functions[3].id != "escape_magnitude" ||
             coreSourceCatalog->functions[4].id != "orbit_stripe" ||
             coreSourceCatalog->functions[5].id != "root_proximity" ||
-            coreSourceCatalog->functions[6].id != "root_index") {
-            std::cerr << "Expected the extracted advanced color core to widen the shipped Source catalog through runtime-real source rows, including root_index for basin tuples\n";
+            coreSourceCatalog->functions[6].id != "root_index" ||
+            coreSourceCatalog->functions[7].id != "sdf_signed_distance" ||
+            coreSourceCatalog->functions[8].id != "sdf_inside_outside" ||
+            coreSourceCatalog->functions[9].id != "sdf_boundary_band" ||
+            coreSourceCatalog->functions[10].id != "sdf_normal_angle" ||
+            coreSourceCatalog->functions[11].id != "sdf_curvature") {
+            std::cerr << "Expected the extracted advanced color core to widen the shipped Source catalog through runtime-real source rows, including root_index and Lens SDF source tuples\n";
             return 1;
         }
         const FunctionDescriptor* coreEscapeMagnitudeDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "escape_magnitude");
@@ -4441,6 +4446,75 @@ int main() {
         ctx.ui_automation_set_error = nullptr;
         EndFrame();
 
+        UISchemaPredicate lensDownsampleApplicable;
+        lensDownsampleApplicable.op = "eq";
+        lensDownsampleApplicable.path = "fractal.lens.downsample_applicable";
+        lensDownsampleApplicable.value = "true";
+        lens.enabled = false;
+        params.color_source_stack_count = 0;
+        params.color_pipeline.signal = ColorSignal::smooth_escape;
+        if (ctx.EvalVisibleIf(lensDownsampleApplicable)) {
+            std::cerr << "Lens Downsample applicability should be false when neither Lens nor SDF Source rows use the field\n";
+            return 1;
+        }
+        lens.enabled = true;
+        if (!ctx.EvalVisibleIf(lensDownsampleApplicable)) {
+            std::cerr << "Lens Downsample must be applicable when Lens visualization is enabled\n";
+            return 1;
+        }
+        lens.enabled = false;
+        params.color_pipeline.signal = ColorSignal::sdf_signed_distance;
+        if (!ctx.EvalVisibleIf(lensDownsampleApplicable)) {
+            std::cerr << "Lens Downsample must be applicable when the active Color Pipeline signal uses SDF\n";
+            return 1;
+        }
+        params.color_pipeline.signal = ColorSignal::smooth_escape;
+        params.color_source_stack_count = 1;
+        params.color_source_stack[0].signal = ColorSignal::sdf_boundary_band;
+        if (!ctx.EvalVisibleIf(lensDownsampleApplicable)) {
+            std::cerr << "Lens Downsample must be applicable when Source stack rows use SDF\n";
+            return 1;
+        }
+
+        BeginFrame();
+        bool downsampleAutomationDirty = false;
+        bool downsampleAutomationInteracted = false;
+        bool downsampleAutomationConsumed = false;
+        std::string downsampleAutomationError;
+        const std::string downsampleControlId = "fractal_control.lens_downsample.primary";
+        UISchemaControl lensDownsampleControl = MakeBoundControl(
+            "lens_downsample",
+            "combo",
+            "Lens Downsample",
+            "int",
+            "param",
+            "fractal.lens.downsample");
+        lensDownsampleControl.has_visible_if = true;
+        lensDownsampleControl.visible_if = lensDownsampleApplicable;
+        lensDownsampleControl.options = {
+            {"1", "1x (Full)", ""},
+            {"2", "2x", ""},
+            {"4", "4x", ""},
+            {"8", "8x", ""},
+            {"16", "16x", ""},
+        };
+        lens.downsample = 2;
+        ctx.ui_automation_set_control_id = &downsampleControlId;
+        ctx.ui_automation_set_control_value = 4.0;
+        ctx.ui_automation_set_consumed = &downsampleAutomationConsumed;
+        ctx.ui_automation_set_error = &downsampleAutomationError;
+        if (!RenderControlFromSchema(lensDownsampleControl, ctx, &downsampleAutomationDirty, nullptr, &downsampleAutomationInteracted)) {
+            std::cerr << "Visible Lens Downsample combo set-value automation should apply through the int option edit path\n";
+            return 1;
+        }
+        if (!downsampleAutomationConsumed || !downsampleAutomationDirty || !downsampleAutomationInteracted || !downsampleAutomationError.empty() || lens.downsample != 4) {
+            std::cerr << "Lens Downsample combo set-value automation should consume, dirty, interact, and write lens.downsample\n";
+            return 1;
+        }
+        ctx.ui_automation_set_control_id = nullptr;
+        ctx.ui_automation_set_consumed = nullptr;
+        ctx.ui_automation_set_error = nullptr;
+        EndFrame();
         BeginFrame();
         bool novaAlphaDirty = false;
         bool novaAlphaInteracted = false;

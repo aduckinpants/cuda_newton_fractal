@@ -309,3 +309,60 @@ def test_capture_finding_preserves_sdf_source_row_pixels_no_mouse(tmp_path: Path
             shutil.rmtree(ui_finding_dir, ignore_errors=True)
         shutil.rmtree(headless_group_root, ignore_errors=True)
         DIAGNOSTICS_FRAME_FILE.unlink(missing_ok=True)
+
+def test_lens_downsample_visible_and_authoritative_for_sdf_source_without_lens_visualization_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline SDF runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    neutral_state = json.loads(json.dumps(neutral_capture["state"]))
+    seed_state_path = write_state_bundle(tmp_path / "lens_downsample_sdf_seed", neutral_state)
+    sdf_capture = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=seed_state_path,
+        function_id="sdf_signed_distance",
+        scale=0.05,
+        bias=0.5,
+    )
+    sdf_state = json.loads(json.dumps(sdf_capture["state"]))
+    lens = sdf_state.setdefault("lens", {})
+    assert isinstance(lens, dict)
+    lens["enabled"] = False
+    lens["downsample"] = 2
+    state_path = write_state_bundle(tmp_path / "lens_downsample_sdf_visible", sdf_state)
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "lens_downsample_sdf_report.json",
+        command_path=tmp_path / "lens_downsample_sdf_command.json",
+    ) as viewer:
+        ready_report = viewer.wait_for_report(timeout_seconds=30.0)
+        assert ready_report.get("lens_sdf_enabled") is False, ready_report
+        assert ready_report.get("lens_sdf_valid") is True, ready_report
+        viewer.wait_for_control("fractal_control.lens_downsample.primary", timeout_seconds=20.0)
+        edited_report = viewer.set_control_value(
+            "fractal_control.lens_downsample.primary",
+            4.0,
+            timeout_seconds=40.0,
+        )
+
+    assert edited_report.get("lens_sdf_enabled") is False, edited_report
+    assert edited_report.get("lens_sdf_valid") is True, edited_report
+    assert edited_report.get("lens_sdf_pixel_scale") == pytest.approx(4.0), edited_report
+    render_width = edited_report.get("rendered_frame_width")
+    render_height = edited_report.get("rendered_frame_height")
+    assert isinstance(render_width, int) and render_width > 0, edited_report
+    assert isinstance(render_height, int) and render_height > 0, edited_report
+    assert edited_report.get("lens_sdf_width") == (render_width + 3) // 4, edited_report
+    assert edited_report.get("lens_sdf_height") == (render_height + 3) // 4, edited_report
