@@ -10,6 +10,7 @@ import pytest
 
 from tests.runtime_harness import (
     PersistentRuntimeViewerAutomation,
+    RuntimeReportTiming,
     active_runtime_exe,
     run_headless_capture,
     runtime_automation_lock,
@@ -120,6 +121,22 @@ def _wait_for_pacing_payload(viewer: PersistentRuntimeViewerAutomation, predicat
     raise AssertionError(f"SDF pacing report predicate was not satisfied; last_payload={last_payload!r}")
 
 
+def _wait_for_pacing_timing(
+    viewer: PersistentRuntimeViewerAutomation,
+    command_issue_epoch: float,
+    command_sequence: int,
+    predicate,
+    *,
+    timeout_seconds: float,
+) -> RuntimeReportTiming:
+    return viewer.wait_for_report_timing(
+        command_issue_epoch,
+        command_sequence,
+        lambda payload: payload.get("ui_automation_command_sequence") == command_sequence and predicate(payload),
+        timeout_seconds=timeout_seconds,
+    )
+
+
 def _assert_sdf_timing_payload(payload: dict[str, object]) -> None:
     assert payload.get("lens_sdf_valid") is True, payload
     assert payload.get("lens_sdf_color_pipeline_active") is True, payload
@@ -216,11 +233,12 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         slow_threshold_ms = (1000.0 / 240.0) * 2.0
         assert float(baseline["last_render_ms"]) > slow_threshold_ms, baseline
 
-        edited = viewer.set_control_value(
+        edited_timing = viewer.set_control_value_timing(
             "fractal_control.center_x.primary",
             -0.49,
             timeout_seconds=90.0,
         )
+        edited = edited_timing.payload
         _assert_sdf_timing_payload(edited)
         assert edited.get("ui_automation_command_sequence") == viewer.sequence, edited
         assert edited.get("render_pacing_preview_active") is True, edited
@@ -234,9 +252,21 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         assert int(edited["lens_sdf_postprocess_filled_pixel_count"]) == edited_pixels, edited
         assert 0 < edited_samples < edited_pixels, edited
         assert float(edited["last_render_ms"]) < float(baseline["last_render_ms"]), edited
+        assert edited_timing.command_to_publish_ms <= edited_timing.command_to_report_ms + 5.0, (
+            edited_timing.command_to_publish_ms,
+            edited_timing.command_to_report_ms,
+        )
+        assert edited_timing.publish_to_observed_ms < 250.0, edited_timing.publish_to_observed_ms
+        assert edited_timing.command_to_report_ms < max(75.0, float(baseline["last_render_ms"]) * 1.10), (
+            edited_timing.command_to_report_ms,
+            baseline,
+            edited,
+        )
 
-        settled = _wait_for_pacing_payload(
+        settled_timing = _wait_for_pacing_timing(
             viewer,
+            edited_timing.command_issue_epoch,
+            edited_timing.command_sequence,
             lambda payload: payload.get("ui_automation_command_sequence") == viewer.sequence
             and payload.get("render_pacing_preview_active") is False
             and float(payload.get("render_pacing_preview_scale", 0.0)) == 1.0
@@ -244,6 +274,7 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
             and int(payload.get("rendered_frame_height", 0)) >= int(payload.get("target_render_height", 1)),
             timeout_seconds=45.0,
         )
+        settled = settled_timing.payload
         _assert_sdf_timing_payload(settled)
         assert int(settled["rendered_frame_width"]) >= int(settled["target_render_width"]), settled
         assert int(settled["rendered_frame_height"]) >= int(settled["target_render_height"]), settled
@@ -251,4 +282,8 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         assert int(settled["lens_sdf_height"]) == int(settled["rendered_frame_height"]), settled
         assert int(settled["lens_sdf_postprocess_pixel_step"]) == 1, settled
         assert int(settled["lens_sdf_postprocess_filled_pixel_count"]) == int(settled["rendered_frame_width"]) * int(settled["rendered_frame_height"]), settled
+        assert settled_timing.command_to_report_ms >= edited_timing.command_to_report_ms, (
+            edited_timing.command_to_report_ms,
+            settled_timing.command_to_report_ms,
+        )
         assert viewer.launch_count == 1

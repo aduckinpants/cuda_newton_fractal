@@ -47,6 +47,8 @@ bool HasUsableTargetFrameMs(double targetFrameMs) {
 double EffectivePreviewMinScale(float renderMs, const ViewerRenderPacingConfig& config) {
     const double normalMin = ClampPreviewScale(config.min_preview_scale, kEmergencyPreviewMinScale);
     if (!HasUsableRenderTiming(renderMs) || !HasUsableTargetFrameMs(config.target_frame_ms)) return normalMin;
+    const double budgetScale = std::sqrt(config.target_frame_ms / static_cast<double>(renderMs));
+    if (std::isfinite(budgetScale) && budgetScale < normalMin) return ClampPreviewScale(budgetScale, kEmergencyPreviewMinScale);
     const double severeThreshold = config.target_frame_ms * kSevereSlowFrameMultiplier;
     return (static_cast<double>(renderMs) >= severeThreshold) ? kEmergencyPreviewMinScale : normalMin;
 }
@@ -73,7 +75,7 @@ double TargetFullPreviewScale(float renderMs, const ViewerRenderPacingConfig& co
 
 double TargetActivePreviewScale(float renderMs, const ViewerRenderPacingConfig& config, double currentScale, double minScale) {
     const double stepDown = TimingThreshold(config.target_frame_ms, config.step_down_hysteresis, 1.0, 4.0, 1.10);
-    if (static_cast<double>(renderMs) > stepDown) return PreviewScaleFromTiming(renderMs, config.target_frame_ms, currentScale, minScale);
+    if (static_cast<double>(renderMs) > stepDown) return PreviewScaleFromTiming(renderMs, config.target_frame_ms, currentScale, kEmergencyPreviewMinScale);
     const double stepUp = TimingThreshold(config.target_frame_ms, config.step_up_hysteresis, 0.1, 1.0, 0.75);
     if (static_cast<double>(renderMs) < stepUp) return PreviewScaleFromTiming(renderMs, config.target_frame_ms, currentScale, minScale);
     return currentScale;

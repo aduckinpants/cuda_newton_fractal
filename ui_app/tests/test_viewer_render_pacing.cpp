@@ -119,6 +119,29 @@ int main() {
         render.resolution = {2048, 1536};
         render.preview_min_scale = 0.50f;
         RenderStats stats{};
+        stats.last_render_ms = 240.0f;
+        const ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+
+        NoteViewerInteraction(&state);
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.02, config, &state);
+        const double expectedScale = std::sqrt(DefaultTargetFrameMs() / 240.0);
+        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, expectedScale, 1.0e-6)) {
+            std::cerr << "Expected adaptive preview floor to drop below the configured 0.5 floor when measured frames require it\n";
+            return 1;
+        }
+        if (decision.render_resolution.x != ScaledDimension(render.resolution.x, expectedScale) ||
+            decision.render_resolution.y != ScaledDimension(render.resolution.y, expectedScale)) {
+            std::cerr << "Expected adaptive preview floor to drive budget-derived dimensions\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {2048, 1536};
+        render.preview_min_scale = 0.50f;
+        RenderStats stats{};
         stats.last_render_ms = 1500.0f;
         const ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
         ViewerRenderPacingState state{};
@@ -225,8 +248,9 @@ int main() {
         state.settle_render_pending = true;
 
         ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.02, config, &state);
-        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, 0.5)) {
-            std::cerr << "Expected slow preview frames to drop directly to the computed/clamped budget scale\n";
+        const double expectedScale = 0.90 * std::sqrt(DefaultTargetFrameMs() / 180.0);
+        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, expectedScale, 1.0e-6)) {
+            std::cerr << "Expected slow active preview frames to keep dropping below the normal floor when timing is still over budget\n";
             return 1;
         }
     }

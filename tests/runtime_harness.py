@@ -82,6 +82,27 @@ class HeadlessLoadedStateScenarioResult:
 
 
 @dataclass(frozen=True)
+class RuntimeReportTiming:
+    payload: dict[str, Any]
+    command_sequence: int
+    command_issue_epoch: float
+    report_mtime_epoch: float
+    report_observed_epoch: float
+
+    @property
+    def command_to_report_ms(self) -> float:
+        return max(0.0, (self.report_observed_epoch - self.command_issue_epoch) * 1000.0)
+
+    @property
+    def command_to_publish_ms(self) -> float:
+        return max(0.0, (self.report_mtime_epoch - self.command_issue_epoch) * 1000.0)
+
+    @property
+    def publish_to_observed_ms(self) -> float:
+        return max(0.0, (self.report_observed_epoch - self.report_mtime_epoch) * 1000.0)
+
+
+@dataclass(frozen=True)
 class UiAutomationRect:
     control_id: str
     screen_left: int
@@ -441,6 +462,39 @@ class PersistentRuntimeViewerAutomation:
             time.sleep(0.05)
         raise AssertionError(f"persistent viewer report never reached ready frame; last_payload={last_payload!r}")
 
+    def wait_for_report_timing(
+        self,
+        command_issue_epoch: float,
+        command_sequence: int,
+        predicate,
+        *,
+        timeout_seconds: float = 10.0,
+    ) -> RuntimeReportTiming:
+        deadline = time.monotonic() + timeout_seconds
+        last_payload: dict[str, Any] | None = None
+        while time.monotonic() < deadline:
+            if self.proc is not None and self.proc.poll() is not None:
+                raise AssertionError(f"viewer exited while waiting for timed automation report; returncode={self.proc.returncode}")
+            payload = self._load_report()
+            if payload is None:
+                time.sleep(0.05)
+                continue
+            last_payload = payload
+            if payload.get("rendered_frame_ready") is True and predicate(payload):
+                try:
+                    report_mtime = self.report_path.stat().st_mtime
+                except OSError:
+                    report_mtime = time.time()
+                return RuntimeReportTiming(
+                    payload=payload,
+                    command_sequence=command_sequence,
+                    command_issue_epoch=command_issue_epoch,
+                    report_mtime_epoch=report_mtime,
+                    report_observed_epoch=time.time(),
+                )
+            time.sleep(0.05)
+        raise AssertionError(f"timed persistent viewer report predicate was not satisfied; last_payload={last_payload!r}")
+
     def wait_for_control(self, control_id: str, *, timeout_seconds: float = 10.0) -> UiAutomationRect:
         return wait_for_ui_automation_rect(self.report_path, control_id, timeout_seconds=timeout_seconds)
 
@@ -571,3 +625,32 @@ class PersistentRuntimeViewerAutomation:
                 return payload
             time.sleep(0.05)
         raise AssertionError(f"persistent viewer never consumed command {self.sequence} for {control_id}; last_payload={last_payload!r}")
+
+    def set_control_value_timing(self, control_id: str, value: float, *, timeout_seconds: float = 10.0) -> RuntimeReportTiming:
+        self.sequence += 1
+        command_sequence = self.sequence
+        command = {
+            "sequence": command_sequence,
+            "set_control_value": {
+                "control_id": control_id,
+                "value": value,
+            },
+        }
+        command_issue_epoch = time.time()
+        self.command_path.write_text(json.dumps(command, indent=2), encoding="utf-8")
+
+        def _matches(payload: dict[str, Any]) -> bool:
+            if payload.get("ui_automation_command_sequence") != command_sequence:
+                return False
+            if payload.get("requested_set_control_id") != control_id:
+                return False
+            set_error = payload.get("set_value_error")
+            assert not set_error, f"set-value automation failed for {control_id}: {set_error}"
+            return payload.get("set_value_consumed") is True
+
+        return self.wait_for_report_timing(
+            command_issue_epoch,
+            command_sequence,
+            _matches,
+            timeout_seconds=timeout_seconds,
+        )
