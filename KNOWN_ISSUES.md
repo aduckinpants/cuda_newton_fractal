@@ -111,7 +111,7 @@ Next correct step:
 
 ## P1 - Color Pipeline composition and effective-source UX are underdeveloped
 
-**Status:** preset workflow truth and visible implementation-wording cleanup are shipped; broader composition redesign remains deferred
+**Status:** preset workflow truth, visible implementation-wording cleanup, and the reported SDF composition runtime-authority regressions are shipped; broader composition redesign remains deferred
 **Area:** advanced color / SDF source rows / presets
 
 The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows. Effective Source-stack summary/report clarity is shipped, UI-Salt materialized metadata now owns catalog descriptors, compatibility lookup, companion suggestions, and recipe expansion backend seams, product-facing preset workflow truth is shipped, and the current composition cleanup removes remaining visible draft/live-bridge wording without changing the internal row-stack implementation.
@@ -120,8 +120,7 @@ Remaining review direction:
 - Preserve full-field `sdf_normal_angle` as a diagnostic phase view.
 - Add a later boundary-masked normal-angle beauty mode rather than deleting the diagnostic behavior.
 - Treat SDF fields as typed Source signals now, with SDF masks/gates as the next plausible composition operand.
-- Repair the reported row-enabled/effective-selection regression: disabled Color Pipeline rows must not keep contributing to draft-only compatibility/error reporting.
-- Repair the reported SDF-only Source-stack regression: `sdf_curvature` should be able to blend with `sdf_normal_angle` through the runtime-backed SDF postprocess path instead of being rejected as draft-only.
+- Keep the repaired row-enabled/effective-selection and SDF-only Source-stack regressions green: disabled rows must stay inactive for compatibility/runtime, and `sdf_curvature` must keep blending with `sdf_normal_angle` through the runtime-backed SDF postprocess path.
 - Keep the shared SDF Field Downsample limitation explicit: today it is one shared `LensSettings::downsample` value, not per SDF Source row/layer.
 - Keep preset/workflow truth green so compatible fractal switches preserve authored work and unsupported rows project safely.
 - Keep full preset manager UI, authored SDF pack viewport integration, and SDF-native lanes as separate slices.
