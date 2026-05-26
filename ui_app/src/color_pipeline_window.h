@@ -3462,7 +3462,7 @@ inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
     if (!liveParams && !HasColorPipelineDraftEdits(state)) {
         return {
             ColorPipelineDraftApplyStatus::matches_live,
-            "Draft matches the live runtime selection.",
+            "Row stack matches the live runtime selection.",
         };
     }
 
@@ -3502,7 +3502,7 @@ inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
         if (!tupleChanged) {
             return {
                 ColorPipelineDraftApplyStatus::matches_live,
-                "Draft matches the live runtime selection.",
+                "Row stack matches the live runtime selection.",
             };
         }
 
@@ -3515,7 +3515,7 @@ inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
     }
     return {
         ColorPipelineDraftApplyStatus::can_apply,
-        "Draft diverges from the live runtime selection.",
+        "Row stack differs from the live runtime selection.",
     };
 }
 
