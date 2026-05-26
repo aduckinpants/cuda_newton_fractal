@@ -1,20 +1,21 @@
 # Advanced Color Preset Pit Of Success
 
-> Historical planning surface. The active refinement lane is now
-> `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md`.
+> Historical planning surface. The Color Pipeline composition/preset UX review is
+> complete; future preset implementation should start from that review's
+> remaining follow-up order, with effective Source-stack summary already shipped.
 > 
 > This is intentionally a design-only planning slice for now. Do not start preset implementation until the Slice 1 UI integration harness is real, trusted, and mandatory workflow proof for user-facing UI behavior changes.
 
 ## Current Phase
 
-Phase 0 parked - design placeholder only. Do not implement from this document directly; refine through the active Color Pipeline composition/preset UX review first.
+Phase 0 parked - design placeholder only. Do not implement from this document directly; open a fresh preset workflow slice using the completed Color Pipeline composition/preset UX review as context.
 
 ## Phase Checklist
 
 - [ ] Phase 1 - define the preset product invariants, normalization rules, and safety defaults around authored draft preservation versus live-supported projection
 - [ ] Phase 2 - define preset v0 as a deterministic default-preset path with minimal or no UI chrome if UI exposure would slow the safety work down
 - [ ] Phase 3 - define the future composition model and simple chain rule so later add/blend/compose behavior can land without chaos
-- [ ] Phase 4 - reopen this slice only after the active composition/preset UX review selects preset implementation as the next bounded code slice
+- [ ] Phase 4 - reopen this slice only through a fresh checked-in preset workflow slice; the composition/preset review is complete and source-stack summary/report clarity is already shipped
 
 ## Explicit User Asks
 
@@ -37,9 +38,9 @@ The local hypothesis is that presets should preserve authored draft intent separ
 
 ## Proof Ledger
 
-- Done: this checked-in plan captures the original preset safety gate; current refinement now routes through the active Color Pipeline composition/preset UX review.
+- Done: this checked-in plan captures the original preset safety gate; current refinement now routes through the completed Color Pipeline composition/preset UX review and later implementation slices.
 - Done: the existing draft persistence and live-apply seams are named explicitly here so future work starts from real code surfaces instead of chat memory.
-- Planned: after the active review selects preset implementation as a code slice, write the first real app/runtime REDs for preset normalization, authored-value preservation, and deterministic live projection.
+- Planned: when preset workflow becomes the active code slice, write the first real app/runtime REDs for preset normalization, authored-value preservation, and deterministic live projection.
 
 ## Hostile Audit
 
@@ -73,4 +74,4 @@ The local hypothesis is that presets should preserve authored draft intent separ
 
 ## Next Use
 
-Do not implement from this document yet. The current active planning surface is `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md`, which must first settle effective Source-stack summaries, authored intent versus live projection, and the small function-library/composition follow-up order.
+Do not implement from this document directly. Use the completed `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md` as context: effective Source-stack summary/report clarity is shipped, while authored intent versus live projection, nondestructive preset workflow, composition UI cleanup, boundary-masked phase sources, and SDF masks/gates remain separate follow-up slices.

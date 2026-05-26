@@ -99,7 +99,8 @@ Later pacing/capture work repaired several concrete bugs: unknown-timing downsca
 Next correct step:
 - Add a persistent no-mouse telemetry harness that records input mutation time, render start/end, report publish time, preview scale, target/live dimensions, and settle timing in one viewer process.
 - Do not change pacing policy again until that harness shows the actual failure mode.
-- For SDF Color Pipeline workloads specifically, the active measured follow-up is postprocess optimization: scalar-only SDF Source rows should not compute normal/curvature neighborhoods, and per-row downsample/GPU postprocess remain separate later slices.
+- For SDF Color Pipeline workloads specifically, scalar-only SDF postprocess optimization is shipped: scalar SDF Source rows no longer compute normal/curvature neighborhoods.
+- The next measured SDF follow-up is field quality/downsample policy: decide shared versus row-local field resolution authority before per-row/multi-field downsample or GPU postprocess changes.
 - Do not treat SDF postprocess cost as a fractal kernel problem; the current telemetry distinguishes base render, field generation, and postprocess cost.
 
 **Files:** `ui_app/src/viewer_render_pacing.*`, `ui_app/src/main.cpp`, `tests/test_fractal_runtime_resolution_pacing.py`
@@ -108,16 +109,16 @@ Next correct step:
 
 ## P1 - Color Pipeline composition and effective-source UX are underdeveloped
 
-**Status:** active planning in `docs/notes/color_pipeline_composition_preset_ux_review_PHASED_PLAN.md`
+**Status:** planning complete; follow-up implementation slices remain
 **Area:** advanced color / SDF source rows / presets
 
-The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows, but the authoring model still exposes implementation seams too directly. In particular, captures/reports can be misread when legacy top-level fields like `color_signal` are treated as the effective source even though a non-empty `color_source_stack` is the real render authority.
+The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows, but the authoring model still exposes implementation seams too directly. Effective Source-stack summary/report clarity is shipped, so captures/reports can identify when `color_source_stack` is the real render authority instead of relying only on legacy top-level `color_signal`.
 
-Current review direction:
-- Add effective Source-stack summary/report clarity first.
+Remaining review direction:
 - Preserve full-field `sdf_normal_angle` as a diagnostic phase view.
 - Add a later boundary-masked normal-angle beauty mode rather than deleting the diagnostic behavior.
 - Treat SDF fields as typed Source signals now, with SDF masks/gates as the next plausible composition operand.
+- Improve preset/workflow truth so compatible fractal switches preserve authored work and unsupported rows project safely.
 - Keep full preset manager UI, authored SDF pack viewport integration, and SDF-native lanes as separate slices.
 
 ---

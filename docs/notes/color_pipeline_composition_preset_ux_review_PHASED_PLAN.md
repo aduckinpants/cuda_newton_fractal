@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - Color Pipeline composition/preset review is documented, roadmap surfaces are synced, and validation/checkpoint are underway.
+Complete - Color Pipeline composition/preset review is documented, synced, validated, checkpointed, and later truth-synced after the effective Source summary shipped.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 in progress - Color Pipeline composition/preset review is documented, ro
 - [x] Phase 2 - record current repo truth for Color Pipeline stack authority, SDF phase signals, and function-library limits
 - [x] Phase 3 - define the smallest implementation-ready follow-up slices for preset workflow, source-stack authority summaries, and function-library expansion
 - [x] Phase 4 - sync SDF and Color Pipeline roadmap surfaces with the selected follow-up order
-- [ ] Phase 5 - validate plan/contract sync, hostile audit, diff hygiene, checkpoint, receipts, rearward review, push, and clean tree
+- [x] Phase 5 - validate plan/contract sync, hostile audit, diff hygiene, checkpoint, receipts, rearward review, push, and clean tree
 
 ## Explicit User Asks
 
@@ -18,7 +18,7 @@ Phase 5 in progress - Color Pipeline composition/preset review is documented, ro
 - [done] Review the Color Pipeline function-library shape because the current function set and composition flow are useful but still limited.
 - [done] Consider whether SDF fields should feed other Color Pipeline segments or become building blocks for more advanced composition math.
 - [done] Keep SDF-native lanes, authored SDF UI, and broad Color Pipeline redesign separate until the smaller UX authority gaps are planned clearly.
-- [done] Continue real work after the planning truth is captured, instead of leaving the repo in discussion-only state. The next code seam is source-stack authority summary/report clarity; it is intentionally not implemented in this workflow-only review slice.
+- [done] Continue real work after the planning truth is captured, instead of leaving the repo in discussion-only state. The selected next code seam, source-stack authority summary/report clarity, later shipped at `ck:6b8e3f61`.
 
 ## Scope
 
@@ -69,7 +69,7 @@ Current useful function families:
 
 Current gaps:
 
-- Effective Source-stack authority is not summarized clearly enough. Legacy top-level `color_signal` can mislead captures/reports when a stack is active.
+- Effective Source-stack summary/report clarity is shipped, but the user-facing authoring workflow still needs better preset/projection semantics and less implementation-wording leakage.
 - Signal kind metadata exists, but phase/categorical kinds do not yet strongly guide row affordances, warning text, or phase-safe defaults.
 - There is no first-class mask/gate segment. Users can blend rows, but cannot easily say "apply this source only near an SDF boundary" or "use this inside/outside field as a rule".
 - Function picker/library presentation is flat enough that growing the library will become confusing.
@@ -90,10 +90,10 @@ The important boundary is that SDF should become a typed operand in the composit
 
 ## Proposed Follow-Up Order
 
-1. Source-stack authority summary.
+1. Source-stack authority summary - shipped.
    - Size/reward: small / high trust.
-   - Add diagnostics/state/report language that identifies the effective active Source stack when `color_source_stack_count > 0`.
-   - Keep legacy top-level fields for compatibility, but stop relying on them as the only product-facing summary.
+   - Diagnostic state exports now identify flat-signal versus source-stack authority with source row signal kinds and blend weights.
+   - Keep legacy top-level fields for compatibility, but do not treat them as the only product-facing summary.
 
 2. Preset workflow truth.
    - Size/reward: medium / high user value.
@@ -131,8 +131,8 @@ The important boundary is that SDF should become a typed operand in the composit
 - Investigation finding: the referenced `152625_625__halley` capture is Halley with a four-row SDF source stack, not a Multibrot/signed-distance-only kernel repro.
 - Investigation finding: `sdf_normal_angle` contributes to that stack but is not the full-weight dominant row in that capture.
 - Investigation finding: the real product risk is effective-source/state-summary clarity plus phase-safe/beauty-mode follow-up, not deletion of full-field normal-angle diagnostics.
-- Current follow-up selection: the next implementation-ready seam should be source-stack authority summary and report clarity before adding more SDF/operator functions.
-- Roadmap sync: `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`, `docs/notes/sdf_field_pack_near_term_TODO.md`, and the parked preset pit-of-success plan now point at this review and its selected follow-up order.
+- Current follow-up selection at review close was source-stack authority summary/report clarity; this shipped later at `ck:6b8e3f61`. Remaining composition follow-ups are preset workflow truth, composition UI cleanup, boundary-masked phase source, SDF masks/gates, and function-library taxonomy.
+- Roadmap sync: `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`, `docs/notes/sdf_field_pack_near_term_TODO.md`, and the parked preset pit-of-success plan now point at this review and its selected follow-up order. A later truth-sync marks source-stack summary as shipped and moves SDF performance work to field quality/downsample policy.
 
 ## Hostile Audit
 
@@ -151,6 +151,7 @@ The important boundary is that SDF should become a typed operand in the composit
 - [done] Real roadmap gap found: the active SDF TODO mentioned Color Pipeline composition/preset UX review but did not spell out the source-stack authority summary, full-field diagnostic versus boundary-masked normal-angle split, or SDF-as-mask/gate follow-up.
 - [done] Real older-plan drift found: the preset pit-of-success note remained parked behind an old harness gate and did not identify this active composition review as the current refinement surface.
 - [done] Clean re-read: this review does not implement or claim a full preset manager, Factorio-style UI, authored SDF live viewport integration, or SDF-native lanes.
+- [done] Later truth-sync finding: source-stack authority summary/report clarity is shipped and should not remain listed as the next pending implementation seam.
 
 ## Action Hostile Review
 

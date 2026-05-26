@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "contract_id": "sdf_postprocess_truth_sync",
+  "feature_id": "sdf_postprocess_truth_sync",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_postprocess_truth_sync_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes",
+    "docs/contracts",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "repair stale roadmap/status text that still marks SDF postprocess signal specialization as active after it shipped",
+    "repair stale composition/preset planning text that still marks effective Source-stack summary/report clarity as pending after it shipped",
+    "record SDF field quality/downsample policy as the next planned measured decision point without implementing it in this docs-only slice",
+    "preserve the shipped SDF Source row, capture/replay, phase-signal metadata, fractal-switch preservation, realtime pacing, and postprocess-specialization truth"
+  ],
+  "forbidden_operator_prompts": [
+    "implement per-function or per-row SDF downsample in this slice",
+    "rewrite Color Pipeline SDF postprocess on GPU in this slice",
+    "implement boundary-masked normal-angle in this slice",
+    "implement a Color Pipeline preset manager in this slice",
+    "add SDF-native fractal lanes in this slice",
+    "add authored SDF pack live viewport integration in this slice",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "workflow_only": true,
+    "physical_mouse_automation": false,
+    "per_row_sdf_downsample_implemented": false,
+    "gpu_postprocess_rewrite_implemented": false,
+    "runtime_visible_change": false
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "per_row_sdf_downsample": "deferred",
+    "gpu_postprocess_rewrite": "deferred",
+    "preset_manager": "forbidden",
+    "sdf_native_lane": "forbidden",
+    "authored_pack_live_integration": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_postprocess_truth_sync.contract.json --out-json artifacts/validation/sdf_postprocess_truth_sync_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_postprocess_truth_sync_PHASED_PLAN.md --out-json artifacts/validation/sdf_postprocess_truth_sync_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_postprocess_truth_sync_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_truth_sync_diff_check --log artifacts/logs/sdf_postprocess_truth_sync_diff_check.log --out-json artifacts/validation/sdf_postprocess_truth_sync_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF postprocess truth-sync contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_postprocess_truth_sync_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF postprocess truth-sync hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_postprocess_truth_sync_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
