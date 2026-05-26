@@ -1110,6 +1110,103 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_ClearRestoresHardcoded");
 }
 
+
+void TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    Check(!color_pipeline_core::IsColorPipelineMetadataCompanionSuggestionActive(),
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_StartsHardcoded");
+    Check(color_pipeline_core::ColorPipelineCompanionSuggestionAuthorityId() == std::string("hardcoded"),
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_StartsHardcodedAuthority");
+    Check(color_pipeline_core::CountActiveColorPipelineCompanionSuggestions() == color_pipeline_core::CountHardcodedColorPipelineCompanionSuggestions(),
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_HardcodedFallbackCountIsTruthful");
+
+    std::string companionLane;
+    std::string companionFunction;
+    Check(color_pipeline_core::TrySuggestColorPipelineCompanionFunction("source", "sdf_normal_angle", &companionLane, &companionFunction) &&
+            companionLane == "palette" && companionFunction == "phase_wheel_palette",
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_HardcodedPhaseSdfSuggestion");
+    Check(color_pipeline_core::TrySuggestColorPipelineCompanionFunction("palette", "root_classic_palette", &companionLane, &companionFunction) &&
+            companionLane == "source" && companionFunction == "root_index",
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_HardcodedRootPaletteSuggestion");
+
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    const std::string path = ResolveMaterializedContractPath();
+    Check(LoadColorPipelineMaterializedContractJson(path, &contract, &error),
+        (std::string("TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_Loads: ") + error).c_str());
+    if (!error.empty() || contract.schema_version != 1) {
+        Check(false, "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_ContractLoadOrVersion");
+        return;
+    }
+
+    Check(color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error),
+        (std::string("TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_Install: ") + error).c_str());
+    Check(color_pipeline_core::IsColorPipelineMetadataCompanionSuggestionActive(),
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_MetadataActive");
+    Check(color_pipeline_core::ColorPipelineCompanionSuggestionAuthorityId() == std::string("materialized_json"),
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_Authority");
+    Check(color_pipeline_core::CountActiveColorPipelineCompanionSuggestions() == color_pipeline_core::CountHardcodedColorPipelineCompanionSuggestions(),
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_Count");
+
+    const ColorPipelineLaneCatalog* sourceLane = color_pipeline_core::FindColorPipelineLaneCatalog("source");
+    const ColorPipelineLaneCatalog* paletteLane = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
+    Check(sourceLane != nullptr && paletteLane != nullptr,
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_SourcePaletteCatalogsPresent");
+    if (sourceLane && paletteLane) {
+        for (const FunctionDescriptor& sourceFunction : sourceLane->functions) {
+            std::string expectedLane;
+            std::string expectedFunction;
+            const bool expectedSupported = color_pipeline_core::TrySuggestHardcodedColorPipelineCompanionFunction(
+                "source",
+                sourceFunction.id.c_str(),
+                &expectedLane,
+                &expectedFunction);
+            std::string actualLane;
+            std::string actualFunction;
+            const bool actualSupported = color_pipeline_core::TrySuggestColorPipelineCompanionFunction(
+                "source",
+                sourceFunction.id.c_str(),
+                &actualLane,
+                &actualFunction);
+            Check(actualSupported == expectedSupported,
+                "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_SourceAllowDeny");
+            if (actualSupported && expectedSupported) {
+                Check(actualLane == expectedLane && actualFunction == expectedFunction,
+                    "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_SourceTuple");
+            }
+        }
+        for (const FunctionDescriptor& paletteFunction : paletteLane->functions) {
+            std::string expectedLane;
+            std::string expectedFunction;
+            const bool expectedSupported = color_pipeline_core::TrySuggestHardcodedColorPipelineCompanionFunction(
+                "palette",
+                paletteFunction.id.c_str(),
+                &expectedLane,
+                &expectedFunction);
+            std::string actualLane;
+            std::string actualFunction;
+            const bool actualSupported = color_pipeline_core::TrySuggestColorPipelineCompanionFunction(
+                "palette",
+                paletteFunction.id.c_str(),
+                &actualLane,
+                &actualFunction);
+            Check(actualSupported == expectedSupported,
+                "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_PaletteAllowDeny");
+            if (actualSupported && expectedSupported) {
+                Check(actualLane == expectedLane && actualFunction == expectedFunction,
+                    "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_PaletteTuple");
+            }
+        }
+    }
+
+    Check(!color_pipeline_core::TrySuggestColorPipelineCompanionFunction("shape", "identity", &companionLane, &companionFunction),
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_NonSourcePaletteDenied");
+
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    Check(!color_pipeline_core::IsColorPipelineMetadataCompanionSuggestionActive(),
+        "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_ClearRestoresHardcoded");
+}
+
 void TestMaterializedContractLoaderRejectsTamperedJson() {
     const char* duplicateFunctionJson = R"json({
   "schema_version": 1,
@@ -1209,6 +1306,7 @@ int main() {
     TestMaterializedUiSaltMetadataShadowsCurrentCatalog();
     TestMaterializedUiSaltMetadataCanOwnPublicCatalog();
     TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup();
+    TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions();
     TestMaterializedContractLoaderRejectsTamperedJson();
 
     std::printf("test_color_pipeline_core: passed=%d failed=%d\n", g_passed, g_failed);

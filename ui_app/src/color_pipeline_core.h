@@ -879,6 +879,18 @@ inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
 
 inline int CountHardcodedColorPipelineCompatibilityRows();
 
+inline bool TrySuggestHardcodedColorPipelineCompanionFunction(
+    const char* laneId,
+    const char* functionId,
+    std::string* outCompanionLaneId,
+    std::string* outCompanionFunctionId);
+
+inline int CountHardcodedColorPipelineCompanionSuggestions();
+
+inline bool ValidateMaterializedColorPipelineCompanionSuggestions(
+    const std::vector<MaterializedColorPipelineCompatibility>& compatibility,
+    std::string* outError);
+
 inline ColorPipelineMetadataCatalogStorage& MutableColorPipelineMetadataCatalogStorage() {
     static ColorPipelineMetadataCatalogStorage storage;
     return storage;
@@ -1167,6 +1179,9 @@ inline bool TryInstallColorPipelineMetadataCatalog(
         }
         candidate.compatibility.push_back(row);
     }
+    if (!ValidateMaterializedColorPipelineCompanionSuggestions(candidate.compatibility, outError)) {
+        return false;
+    }
 
     ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
     storage = std::move(candidate);
@@ -1250,6 +1265,240 @@ inline int CountHardcodedColorPipelineCompatibilityRows() {
                     paletteFunction.id.c_str(),
                     &selection,
                     &mode)) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
+inline bool SetColorPipelineCompanionSuggestion(
+    const char* laneId,
+    const char* functionId,
+    std::string* outCompanionLaneId,
+    std::string* outCompanionFunctionId) {
+    if (!laneId || !functionId || !outCompanionLaneId || !outCompanionFunctionId) {
+        return false;
+    }
+    outCompanionLaneId->assign(laneId);
+    outCompanionFunctionId->assign(functionId);
+    return true;
+}
+
+inline bool TrySuggestHardcodedColorPipelineCompanionFunction(
+    const char* laneId,
+    const char* functionId,
+    std::string* outCompanionLaneId,
+    std::string* outCompanionFunctionId) {
+    if (!laneId || laneId[0] == '\0' || !functionId || functionId[0] == '\0' ||
+        !outCompanionLaneId || !outCompanionFunctionId) {
+        return false;
+    }
+    outCompanionLaneId->clear();
+    outCompanionFunctionId->clear();
+    const std::string lane(laneId);
+    const std::string function(functionId);
+    if (lane == "source") {
+        if (function == "smooth_escape_ramp" || function == "escape_magnitude" || function == "root_proximity") {
+            return SetColorPipelineCompanionSuggestion("palette", "heatmap", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "phase_orbit" || function == "orbit_stripe") {
+            return SetColorPipelineCompanionSuggestion("palette", "phase_wheel_palette", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "banded_signal") {
+            return SetColorPipelineCompanionSuggestion("palette", "banded_heatmap", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "root_index") {
+            return SetColorPipelineCompanionSuggestion("palette", "root_classic_palette", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "sdf_normal_angle") {
+            return SetColorPipelineCompanionSuggestion("palette", "phase_wheel_palette", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "sdf_signed_distance" || function == "sdf_inside_outside" ||
+            function == "sdf_boundary_band" || function == "sdf_curvature") {
+            return SetColorPipelineCompanionSuggestion("palette", "heatmap", outCompanionLaneId, outCompanionFunctionId);
+        }
+    } else if (lane == "palette") {
+        if (function == "heatmap" || function == "explaino_cmap") {
+            return SetColorPipelineCompanionSuggestion("source", "smooth_escape_ramp", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "phase_wheel_palette") {
+            return SetColorPipelineCompanionSuggestion("source", "phase_orbit", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "banded_heatmap") {
+            return SetColorPipelineCompanionSuggestion("source", "banded_signal", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "joy_root_palette" || function == "root_classic_palette") {
+            return SetColorPipelineCompanionSuggestion("source", "root_index", outCompanionLaneId, outCompanionFunctionId);
+        }
+    }
+    return false;
+}
+
+inline bool TrySuggestColorPipelineCompanionFromCompatibilityRows(
+    const std::vector<MaterializedColorPipelineCompatibility>& compatibility,
+    const char* laneId,
+    const char* functionId,
+    std::string* outCompanionLaneId,
+    std::string* outCompanionFunctionId) {
+    if (!laneId || laneId[0] == '\0' || !functionId || functionId[0] == '\0' ||
+        !outCompanionLaneId || !outCompanionFunctionId) {
+        return false;
+    }
+    outCompanionLaneId->clear();
+    outCompanionFunctionId->clear();
+    const std::string lane(laneId);
+    const std::string function(functionId);
+    if (lane == "source") {
+        for (const MaterializedColorPipelineCompatibility& row : compatibility) {
+            if (row.source == function) {
+                return SetColorPipelineCompanionSuggestion("palette", row.palette.c_str(), outCompanionLaneId, outCompanionFunctionId);
+            }
+        }
+    } else if (lane == "palette") {
+        for (const MaterializedColorPipelineCompatibility& row : compatibility) {
+            if (row.palette == function) {
+                return SetColorPipelineCompanionSuggestion("source", row.source.c_str(), outCompanionLaneId, outCompanionFunctionId);
+            }
+        }
+    }
+    return false;
+}
+
+inline bool ValidateMaterializedColorPipelineCompanionSuggestionForFunction(
+    const std::vector<MaterializedColorPipelineCompatibility>& compatibility,
+    const char* laneId,
+    const char* functionId,
+    std::string* outError) {
+    std::string expectedLane;
+    std::string expectedFunction;
+    const bool expected = TrySuggestHardcodedColorPipelineCompanionFunction(
+        laneId,
+        functionId,
+        &expectedLane,
+        &expectedFunction);
+    std::string actualLane;
+    std::string actualFunction;
+    const bool actual = TrySuggestColorPipelineCompanionFromCompatibilityRows(
+        compatibility,
+        laneId,
+        functionId,
+        &actualLane,
+        &actualFunction);
+    if (expected != actual || (expected && (expectedLane != actualLane || expectedFunction != actualFunction))) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            std::string("Materialized companion suggestion does not preserve hardcoded suggestion for '") +
+                laneId + "' function '" + functionId + "'");
+    }
+    return true;
+}
+
+inline bool ValidateMaterializedColorPipelineCompanionSuggestions(
+    const std::vector<MaterializedColorPipelineCompatibility>& compatibility,
+    std::string* outError) {
+    const std::vector<ColorPipelineLaneCatalog>& hardcoded = GetHardcodedColorPipelineLaneCatalogs();
+    for (const ColorPipelineLaneCatalog& catalog : hardcoded) {
+        if (std::strcmp(catalog.lane_id, "source") != 0 && std::strcmp(catalog.lane_id, "palette") != 0) {
+            continue;
+        }
+        for (const FunctionDescriptor& function : catalog.functions) {
+            if (!ValidateMaterializedColorPipelineCompanionSuggestionForFunction(
+                    compatibility,
+                    catalog.lane_id,
+                    function.id.c_str(),
+                    outError)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+inline bool IsColorPipelineMetadataCompanionSuggestionActive() {
+    return IsColorPipelineMetadataCompatibilityActive();
+}
+
+inline std::string ColorPipelineCompanionSuggestionAuthorityId() {
+    return IsColorPipelineMetadataCompanionSuggestionActive() ? "materialized_json" : "hardcoded";
+}
+
+inline bool TrySuggestMaterializedColorPipelineCompanionFunction(
+    const char* laneId,
+    const char* functionId,
+    std::string* outCompanionLaneId,
+    std::string* outCompanionFunctionId) {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    if (!IsColorPipelineMetadataCompanionSuggestionActive()) {
+        return false;
+    }
+    return TrySuggestColorPipelineCompanionFromCompatibilityRows(
+        storage.compatibility,
+        laneId,
+        functionId,
+        outCompanionLaneId,
+        outCompanionFunctionId);
+}
+
+inline bool TrySuggestColorPipelineCompanionFunction(
+    const char* laneId,
+    const char* functionId,
+    std::string* outCompanionLaneId,
+    std::string* outCompanionFunctionId) {
+    if (IsColorPipelineMetadataCompanionSuggestionActive()) {
+        return TrySuggestMaterializedColorPipelineCompanionFunction(
+            laneId,
+            functionId,
+            outCompanionLaneId,
+            outCompanionFunctionId);
+    }
+    return TrySuggestHardcodedColorPipelineCompanionFunction(
+        laneId,
+        functionId,
+        outCompanionLaneId,
+        outCompanionFunctionId);
+}
+
+inline int CountHardcodedColorPipelineCompanionSuggestions() {
+    int count = 0;
+    const std::vector<ColorPipelineLaneCatalog>& hardcoded = GetHardcodedColorPipelineLaneCatalogs();
+    for (const ColorPipelineLaneCatalog& catalog : hardcoded) {
+        if (std::strcmp(catalog.lane_id, "source") != 0 && std::strcmp(catalog.lane_id, "palette") != 0) {
+            continue;
+        }
+        for (const FunctionDescriptor& function : catalog.functions) {
+            std::string companionLane;
+            std::string companionFunction;
+            if (TrySuggestHardcodedColorPipelineCompanionFunction(
+                    catalog.lane_id,
+                    function.id.c_str(),
+                    &companionLane,
+                    &companionFunction)) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
+inline int CountActiveColorPipelineCompanionSuggestions() {
+    if (!IsColorPipelineMetadataCompanionSuggestionActive()) {
+        return CountHardcodedColorPipelineCompanionSuggestions();
+    }
+    int count = 0;
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    for (const ColorPipelineLaneCatalog& catalog : storage.catalogs) {
+        if (std::strcmp(catalog.lane_id, "source") != 0 && std::strcmp(catalog.lane_id, "palette") != 0) {
+            continue;
+        }
+        for (const FunctionDescriptor& function : catalog.functions) {
+            std::string companionLane;
+            std::string companionFunction;
+            if (TrySuggestMaterializedColorPipelineCompanionFunction(
+                    catalog.lane_id,
+                    function.id.c_str(),
+                    &companionLane,
+                    &companionFunction)) {
                 ++count;
             }
         }

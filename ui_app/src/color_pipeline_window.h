@@ -931,8 +931,8 @@ inline bool SelectColorPipelineRowFunction(
 
         ColorPipelineSelection pipeline{};
         ColoringMode mode = ColoringMode::root_basin;
-        const char* companionLaneId = nullptr;
-        const char* companionFunctionId = nullptr;
+        std::string companionLaneId;
+        std::string companionFunctionId;
         const bool singleSourcePaletteRows =
             sourceLane && paletteLane &&
             sourceLane->rows.size() == 1 &&
@@ -945,50 +945,13 @@ inline bool SelectColorPipelineRowFunction(
                 &pipeline,
                 &mode);
         if (!pairAlreadySupported) {
-            if (lane.lane_id == "source") {
-                if (lane.rows[rowIndex].function_id == "smooth_escape_ramp" ||
-                    lane.rows[rowIndex].function_id == "escape_magnitude" ||
-                    lane.rows[rowIndex].function_id == "root_proximity") {
-                    companionLaneId = "palette";
-                    companionFunctionId = "heatmap";
-                } else if (lane.rows[rowIndex].function_id == "phase_orbit" ||
-                           lane.rows[rowIndex].function_id == "orbit_stripe") {
-                    companionLaneId = "palette";
-                    companionFunctionId = "phase_wheel_palette";
-                } else if (lane.rows[rowIndex].function_id == "banded_signal") {
-                    companionLaneId = "palette";
-                    companionFunctionId = "banded_heatmap";
-                } else if (lane.rows[rowIndex].function_id == "root_index") {
-                    companionLaneId = "palette";
-                    companionFunctionId = "root_classic_palette";
-                } else if (lane.rows[rowIndex].function_id == "sdf_normal_angle") {
-                    companionLaneId = "palette";
-                    companionFunctionId = "phase_wheel_palette";
-                } else if (IsSdfColorPipelineSourceFunctionId(lane.rows[rowIndex].function_id)) {
-                    companionLaneId = "palette";
-                    companionFunctionId = "heatmap";
-                }
-            } else if (lane.lane_id == "palette") {
-                if (lane.rows[rowIndex].function_id == "heatmap" ||
-                    lane.rows[rowIndex].function_id == "explaino_cmap") {
-                    companionLaneId = "source";
-                    companionFunctionId = "smooth_escape_ramp";
-                } else if (lane.rows[rowIndex].function_id == "phase_wheel_palette") {
-                    companionLaneId = "source";
-                    companionFunctionId = "phase_orbit";
-                } else if (lane.rows[rowIndex].function_id == "banded_heatmap") {
-                    companionLaneId = "source";
-                    companionFunctionId = "banded_signal";
-                } else if (lane.rows[rowIndex].function_id == "joy_root_palette") {
-                    companionLaneId = "source";
-                    companionFunctionId = "root_index";
-                } else if (lane.rows[rowIndex].function_id == "root_classic_palette") {
-                    companionLaneId = "source";
-                    companionFunctionId = "root_index";
-                }
-            }
+            color_pipeline_core::TrySuggestColorPipelineCompanionFunction(
+                lane.lane_id.c_str(),
+                lane.rows[rowIndex].function_id.c_str(),
+                &companionLaneId,
+                &companionFunctionId);
 
-            if (companionLaneId && companionFunctionId) {
+            if (!companionLaneId.empty() && !companionFunctionId.empty()) {
                 for (ColorPipelineLaneState& companionLane : ioState->lanes) {
                     if (companionLane.lane_id != companionLaneId) {
                         continue;
@@ -1000,7 +963,7 @@ inline bool SelectColorPipelineRowFunction(
                     if (!companionCatalog) {
                         break;
                     }
-                    const FunctionDescriptor* companionDescriptor = FindColorPipelineFunctionDescriptor(*companionCatalog, companionFunctionId);
+                    const FunctionDescriptor* companionDescriptor = FindColorPipelineFunctionDescriptor(*companionCatalog, companionFunctionId.c_str());
                     if (!companionDescriptor) {
                         break;
                     }

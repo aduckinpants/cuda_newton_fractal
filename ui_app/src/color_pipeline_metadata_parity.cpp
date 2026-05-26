@@ -185,6 +185,8 @@ std::string SerializeColorPipelineMetadataParityReportJson(
     out << "  \"compatibility_count\": " << report.compatibility_count << ",\n";
     out << "  \"compatibility_authority\": \"" << JsonEscape(report.compatibility_authority) << "\",\n";
     out << "  \"active_compatibility_count\": " << report.active_compatibility_count << ",\n";
+    out << "  \"companion_suggestion_authority\": \"" << JsonEscape(report.companion_suggestion_authority) << "\",\n";
+    out << "  \"active_companion_suggestion_count\": " << report.active_companion_suggestion_count << ",\n";
     out << "  \"unsupported_pair_count\": " << report.unsupported_pair_count << ",\n";
     out << "  \"errors\": [";
     for (std::size_t index = 0; index < report.errors.size(); ++index) {
