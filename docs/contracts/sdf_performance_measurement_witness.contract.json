@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "contract_id": "sdf_performance_measurement_witness",
+  "feature_id": "sdf_performance_design",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_performance_measurement_witness_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_performance_measurement_witness_PHASED_PLAN.md",
+    "docs/contracts/sdf_performance_measurement_witness.contract.json",
+    "HANDOFF_LOG.md",
+    "tools",
+    "tests",
+    "ui_app/src",
+    "ui_app/tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "begin the next implementation slice from the SDF performance/design preflight",
+    "add a no-mouse measurement witness before selecting per-row downsample or GPU postprocess",
+    "compare representative SDF Color Pipeline scenes by base render, SDF field, SDF postprocess, and total render cost",
+    "preserve existing SDF Source row behavior, capture/replay authority, preview/full-quality distinction, and UI-Salt metadata behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "implement per-row or per-function SDF downsample authority in this slice",
+    "implement GPU Color Pipeline postprocess in this slice",
+    "change visible Color Pipeline UI behavior",
+    "change SDF source semantics or palette/shape/grading behavior",
+    "add authored SDF pack UI or SDF-native lanes",
+    "remove the legacy runtime layer or add a Salticid runtime dependency",
+    "use physical mouse automation",
+    "claim client performance improvement from helper-only proof"
+  ],
+  "required_defaults": {
+    "slice_kind": "measurement_witness",
+    "physical_mouse_automation": false,
+    "optimization_policy_changes": false,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true
+  },
+  "forbidden_defaults": {
+    "per_row_downsample": "deferred_until_report_review",
+    "gpu_postprocess": "deferred_until_report_review",
+    "sdf_native_lanes": "deferred",
+    "authored_sdf_pack_ui": "deferred",
+    "salticid_runtime_dependency": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_performance_measurement_witness_unit --log artifacts/logs/sdf_performance_measurement_witness_unit.log --out-json artifacts/validation/sdf_performance_measurement_witness_unit.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_sdf_performance_witness_tool.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_performance_measurement_witness_publish --log artifacts/logs/sdf_performance_measurement_witness_publish.log --out-json artifacts/validation/sdf_performance_measurement_witness_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_performance_measurement_witness_runtime --log artifacts/logs/sdf_performance_measurement_witness_runtime.log --out-json artifacts/validation/sdf_performance_measurement_witness_runtime.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_performance_witness.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_performance_measurement_witness.contract.json --out-json artifacts/validation/sdf_performance_measurement_witness_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_performance_measurement_witness_PHASED_PLAN.md --out-json artifacts/validation/sdf_performance_measurement_witness_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_performance_measurement_witness_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_performance_measurement_witness_diff_check --log artifacts/logs/sdf_performance_measurement_witness_diff_check.log --out-json artifacts/validation/sdf_performance_measurement_witness_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF performance measurement witness contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_performance_measurement_witness_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    }
+  ]
+}
