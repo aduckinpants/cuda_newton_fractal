@@ -1,0 +1,1376 @@
+{
+  "schema_version": 1,
+  "source_path": "docs\\ui_salt\\color_pipeline_function_library.ui.salt",
+  "contracts": [
+    {
+      "kind": "function_library",
+      "contract_id": "viewer.function_library_contract.v1",
+      "version": 1
+    },
+    {
+      "kind": "composition_recipe",
+      "contract_id": "viewer.composition_recipe_contract.v1",
+      "version": 1
+    },
+    {
+      "kind": "explaino",
+      "contract_id": "viewer.explaino_contract.v1",
+      "version": 1
+    }
+  ],
+  "function_library": {
+    "lanes": [
+      {
+        "id": "source",
+        "label": "Source",
+        "default": "smooth_escape_ramp",
+        "functions": [
+          {
+            "id": "smooth_escape_ramp",
+            "label": "Smooth Escape Ramp",
+            "description": "Use the continuous escape estimate as the upstream color signal.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.scale",
+                "type": "float",
+                "label": "Scale",
+                "min": 0.25,
+                "max": 4.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "signal.bias",
+                "type": "float",
+                "label": "Bias",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "scalar"
+          },
+          {
+            "id": "phase_orbit",
+            "label": "Phase Orbit",
+            "description": "Use orbit phase as the upstream signal.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.phase_offset",
+                "type": "float",
+                "label": "Phase Offset",
+                "min": -3.141592653589793,
+                "max": 3.141592653589793,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "signal.wrap_cycles",
+                "type": "float",
+                "label": "Wrap Cycles",
+                "min": 0.5,
+                "max": 6.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "phase"
+          },
+          {
+            "id": "banded_signal",
+            "label": "Iteration Bands",
+            "description": "Quantize the escape signal into stepped iteration bands.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.band_count",
+                "type": "int",
+                "label": "Band Count",
+                "min": 2,
+                "max": 24,
+                "step": 1,
+                "default": 8
+              },
+              {
+                "path": "signal.softness",
+                "type": "float",
+                "label": "Softness",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.35
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "scalar"
+          },
+          {
+            "id": "escape_magnitude",
+            "label": "Escape Magnitude",
+            "description": "Use the orbit magnitude as the upstream escape-time source.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.magnitude_scale",
+                "type": "float",
+                "label": "Magnitude Scale",
+                "min": 0.25,
+                "max": 4.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "signal.magnitude_bias",
+                "type": "float",
+                "label": "Magnitude Bias",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "scalar"
+          },
+          {
+            "id": "orbit_stripe",
+            "label": "Orbit Stripe",
+            "description": "Fold orbit phase into a controllable stripe source before palette lookup.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.stripe_frequency",
+                "type": "float",
+                "label": "Stripe Frequency",
+                "min": 0.25,
+                "max": 12.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "signal.phase_offset",
+                "type": "float",
+                "label": "Phase Offset",
+                "min": -3.141592653589793,
+                "max": 3.141592653589793,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "phase"
+          },
+          {
+            "id": "root_proximity",
+            "label": "Root Proximity",
+            "description": "Use nearest-root proximity as the upstream source on basin-capable fractal families.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.proximity_scale",
+                "type": "float",
+                "label": "Proximity Scale",
+                "min": 0.25,
+                "max": 8.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "signal.proximity_bias",
+                "type": "float",
+                "label": "Proximity Bias",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "scalar"
+          },
+          {
+            "id": "root_index",
+            "label": "Root Index",
+            "description": "Use the resolved nearest-root classification index as the upstream basin source.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [],
+            "signal_kind": "categorical"
+          },
+          {
+            "id": "sdf_signed_distance",
+            "label": "SDF Signed Distance",
+            "description": "Use Lens SDF signed distance as the upstream color signal.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.scale",
+                "type": "float",
+                "label": "Distance Scale",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.05
+              },
+              {
+                "path": "signal.bias",
+                "type": "float",
+                "label": "Distance Bias",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.5
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "scalar"
+          },
+          {
+            "id": "sdf_inside_outside",
+            "label": "SDF Inside / Outside",
+            "description": "Use the Lens SDF inside/outside classification as the upstream color signal.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.scale",
+                "type": "float",
+                "label": "Inside Scale",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "signal.bias",
+                "type": "float",
+                "label": "Inside Bias",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "categorical"
+          },
+          {
+            "id": "sdf_boundary_band",
+            "label": "SDF Boundary Band",
+            "description": "Use the Lens SDF boundary band as the upstream color signal.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.scale",
+                "type": "float",
+                "label": "Band Scale",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "signal.bias",
+                "type": "float",
+                "label": "Band Bias",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "signal.boundary_width_px",
+                "type": "float",
+                "label": "Boundary Width",
+                "min": 0.25,
+                "max": 16.0,
+                "step": 0.25,
+                "default": 2.0
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "scalar"
+          },
+          {
+            "id": "sdf_normal_angle",
+            "label": "SDF Normal Angle",
+            "description": "Use the Lens SDF normal angle as the upstream phase signal.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.scale",
+                "type": "float",
+                "label": "Angle Scale",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "signal.bias",
+                "type": "float",
+                "label": "Angle Bias",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "phase"
+          },
+          {
+            "id": "sdf_curvature",
+            "label": "SDF Curvature",
+            "description": "Use the Lens SDF curvature estimate as the upstream color signal.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.scale",
+                "type": "float",
+                "label": "Curvature Scale",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.25
+              },
+              {
+                "path": "signal.bias",
+                "type": "float",
+                "label": "Curvature Bias",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.5
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "scalar"
+          }
+        ]
+      },
+      {
+        "id": "shape",
+        "label": "Shape",
+        "default": "identity",
+        "functions": [
+          {
+            "id": "identity",
+            "label": "Identity",
+            "description": "Keep the incoming source signal unchanged before palette materialization.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": []
+          },
+          {
+            "id": "offset_scale",
+            "label": "Offset + Scale",
+            "description": "Shift and scale the incoming signal before palette materialization.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "shape.offset",
+                "type": "float",
+                "label": "Offset",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "shape.scale",
+                "type": "float",
+                "label": "Scale",
+                "min": 0.1,
+                "max": 8.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ]
+          },
+          {
+            "id": "repeat",
+            "label": "Repeat",
+            "description": "Tile the incoming signal into repeating bands.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "shape.frequency",
+                "type": "float",
+                "label": "Frequency",
+                "min": 0.25,
+                "max": 24.0,
+                "step": 0.01,
+                "default": 8.0
+              },
+              {
+                "path": "shape.phase",
+                "type": "float",
+                "label": "Phase",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              }
+            ]
+          },
+          {
+            "id": "posterize",
+            "label": "Posterize",
+            "description": "Quantize the incoming signal into stepped bands.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "shape.steps",
+                "type": "int",
+                "label": "Steps",
+                "min": 2,
+                "max": 24,
+                "step": 1,
+                "default": 6
+              },
+              {
+                "path": "shape.mix",
+                "type": "float",
+                "label": "Mix",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ]
+          },
+          {
+            "id": "mirror_repeat",
+            "label": "Mirror Repeat",
+            "description": "Tile the incoming signal into a mirrored triangle-wave pattern.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "shape.frequency",
+                "type": "float",
+                "label": "Frequency",
+                "min": 0.25,
+                "max": 24.0,
+                "step": 0.01,
+                "default": 8.0
+              },
+              {
+                "path": "shape.phase",
+                "type": "float",
+                "label": "Phase",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              }
+            ]
+          },
+          {
+            "id": "bias_gain_curve",
+            "label": "Bias + Gain Curve",
+            "description": "Remap the incoming signal through a bias/gain curve while preserving neutral defaults.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "shape.bias",
+                "type": "float",
+                "label": "Bias",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.5
+              },
+              {
+                "path": "shape.gain",
+                "type": "float",
+                "label": "Gain",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.5
+              }
+            ]
+          },
+          {
+            "id": "smooth_window",
+            "label": "Smooth Window",
+            "description": "Gate the incoming signal through a smoothstep window over the current wrap domain.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "shape.center",
+                "type": "float",
+                "label": "Center",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.5
+              },
+              {
+                "path": "shape.width",
+                "type": "float",
+                "label": "Width",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "shape.softness",
+                "type": "float",
+                "label": "Softness",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "palette",
+        "label": "Palette",
+        "default": "heatmap",
+        "functions": [
+          {
+            "id": "heatmap",
+            "label": "Heatmap",
+            "description": "Wrap escape signals through the cyclic escape palette.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "palette.cycle_scale",
+                "type": "float",
+                "label": "Cycle Scale",
+                "min": 0.25,
+                "max": 4.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "palette.saturation",
+                "type": "float",
+                "label": "Saturation",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "palette.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "palette.blend_mode",
+                "type": "enum",
+                "label": "Blend Mode",
+                "default": "normal",
+                "options": [
+                  "normal"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "phase_wheel_palette",
+            "label": "Phase Wheel",
+            "description": "Wrap signal values around a phase wheel palette.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "palette.phase_offset",
+                "type": "float",
+                "label": "Phase Offset",
+                "min": -3.141592653589793,
+                "max": 3.141592653589793,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "palette.saturation",
+                "type": "float",
+                "label": "Saturation",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.15
+              },
+              {
+                "path": "palette.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "palette.blend_mode",
+                "type": "enum",
+                "label": "Blend Mode",
+                "default": "normal",
+                "options": [
+                  "normal"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "banded_heatmap",
+            "label": "Banded Heatmap",
+            "description": "Map banded escape signals through the runtime band palette.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "palette.band_emphasis",
+                "type": "float",
+                "label": "Band Emphasis",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "palette.phase_offset",
+                "type": "float",
+                "label": "Phase Offset",
+                "min": -3.141592653589793,
+                "max": 3.141592653589793,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "palette.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "palette.blend_mode",
+                "type": "enum",
+                "label": "Blend Mode",
+                "default": "normal",
+                "options": [
+                  "normal"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "explaino_cmap",
+            "label": "Explaino CMap",
+            "description": "Map scalar signals through the legacy ExplainO seed colormap lineage.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "palette.seed_scale",
+                "type": "float",
+                "label": "Seed Scale",
+                "min": 0.25,
+                "max": 4.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "palette.seed_phase",
+                "type": "float",
+                "label": "Seed Phase",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "palette.colorfulness",
+                "type": "float",
+                "label": "Colorfulness",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "palette.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "palette.blend_mode",
+                "type": "enum",
+                "label": "Blend Mode",
+                "default": "normal",
+                "options": [
+                  "normal"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "root_classic_palette",
+            "label": "Root Classic Palette",
+            "description": "Materialize basin root classification through the existing root-classic palette lineage.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": []
+          },
+          {
+            "id": "joy_root_palette",
+            "label": "Joy Root Palette",
+            "description": "Materialize basin root classification through the existing joy-basins palette lineage.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "grading",
+        "label": "Grading",
+        "default": "contrast_lift",
+        "functions": [
+          {
+            "id": "contrast_lift",
+            "label": "Contrast Lift",
+            "description": "Apply the default escape-time grading profile.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "grade.exposure",
+                "type": "float",
+                "label": "Exposure",
+                "min": 0.1,
+                "max": 3.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "grade.saturation",
+                "type": "float",
+                "label": "Saturation",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ]
+          },
+          {
+            "id": "phase_finish",
+            "label": "Phase Finish",
+            "description": "Apply the default phase grading profile.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "grade.saturation",
+                "type": "float",
+                "label": "Saturation",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.15
+              },
+              {
+                "path": "grade.contrast",
+                "type": "float",
+                "label": "Contrast",
+                "min": 0.0,
+                "max": 3.0,
+                "step": 0.01,
+                "default": 1.1
+              }
+            ]
+          },
+          {
+            "id": "band_finish",
+            "label": "Band Finish",
+            "description": "Apply the default banded grading profile through the legacy grading mirror.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "grade.saturation",
+                "type": "float",
+                "label": "Saturation",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.15
+              },
+              {
+                "path": "grade.contrast",
+                "type": "float",
+                "label": "Contrast",
+                "min": 0.0,
+                "max": 3.0,
+                "step": 0.01,
+                "default": 1.1
+              }
+            ]
+          },
+          {
+            "id": "basin_default",
+            "label": "Basin Default",
+            "description": "Preserve the legacy basin grading defaults without exposing fake tuning controls.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": []
+          },
+          {
+            "id": "neutral_finish",
+            "label": "Neutral Finish",
+            "description": "Apply a neutral grading finish through the shared exposure, saturation, and contrast owners.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "grade.exposure",
+                "type": "float",
+                "label": "Exposure",
+                "min": 0.1,
+                "max": 3.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "grade.saturation",
+                "type": "float",
+                "label": "Saturation",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.15
+              },
+              {
+                "path": "grade.contrast",
+                "type": "float",
+                "label": "Contrast",
+                "min": 0.0,
+                "max": 3.0,
+                "step": 0.01,
+                "default": 1.1
+              }
+            ]
+          },
+          {
+            "id": "tone_map_finish",
+            "label": "Tone Map Finish",
+            "description": "Apply tone mapping after tint, saturation, and contrast through the shared exposure, saturation, and contrast owners.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "grade.exposure",
+                "type": "float",
+                "label": "Exposure",
+                "min": 0.1,
+                "max": 3.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "grade.saturation",
+                "type": "float",
+                "label": "Saturation",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.15
+              },
+              {
+                "path": "grade.contrast",
+                "type": "float",
+                "label": "Contrast",
+                "min": 0.0,
+                "max": 3.0,
+                "step": 0.01,
+                "default": 1.1
+              }
+            ]
+          },
+          {
+            "id": "grade_glow",
+            "label": "Grade Glow",
+            "description": "Apply shared exposure, saturation, and contrast grading, then add a dedicated glow highlight finish through the runtime glow owner.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "grade.exposure",
+                "type": "float",
+                "label": "Exposure",
+                "min": 0.1,
+                "max": 3.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "grade.saturation",
+                "type": "float",
+                "label": "Saturation",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 1.15
+              },
+              {
+                "path": "grade.contrast",
+                "type": "float",
+                "label": "Contrast",
+                "min": 0.0,
+                "max": 3.0,
+                "step": 0.01,
+                "default": 1.1
+              },
+              {
+                "path": "grade.glow",
+                "type": "float",
+                "label": "Glow",
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.25
+              }
+            ]
+          },
+          {
+            "id": "balance_void_grade",
+            "label": "Balance Void Grade",
+            "description": "Apply the reusable balance-void grading manifold through dedicated runtime owners instead of the shared neutral or ExplainO-specific finish rails.",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "grade.balance_void",
+                "type": "float",
+                "label": "Balance Void",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "grade.chroma_tension",
+                "type": "float",
+                "label": "Chroma Tension",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "grade.accent_bias",
+                "type": "float",
+                "label": "Accent Bias",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "composition_recipe_contract": {
+    "compatibility": [
+      {
+        "source": "smooth_escape_ramp",
+        "palette": "heatmap",
+        "signal": "smooth_escape_ramp",
+        "palette_runtime": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "smooth_escape_ramp",
+        "palette": "explaino_cmap",
+        "signal": "smooth_escape_ramp",
+        "palette_runtime": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "phase_orbit",
+        "palette": "phase_wheel_palette",
+        "signal": "phase_orbit",
+        "palette_runtime": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "mode": "phase",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "banded_signal",
+        "palette": "banded_heatmap",
+        "signal": "banded_signal",
+        "palette_runtime": "banded_heatmap",
+        "grading": "band_finish",
+        "mode": "iteration_bands",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "escape_magnitude",
+        "palette": "heatmap",
+        "signal": "escape_magnitude",
+        "palette_runtime": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "escape_magnitude",
+        "palette": "explaino_cmap",
+        "signal": "escape_magnitude",
+        "palette_runtime": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "orbit_stripe",
+        "palette": "phase_wheel_palette",
+        "signal": "orbit_stripe",
+        "palette_runtime": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "mode": "phase",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "root_proximity",
+        "palette": "heatmap",
+        "signal": "root_proximity",
+        "palette_runtime": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "root_proximity",
+        "palette": "explaino_cmap",
+        "signal": "root_proximity",
+        "palette_runtime": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "root_index",
+        "palette": "root_classic_palette",
+        "signal": "root_index",
+        "palette_runtime": "root_classic_palette",
+        "grading": "basin_default",
+        "mode": "root_basin",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "root_index",
+        "palette": "joy_root_palette",
+        "signal": "root_index",
+        "palette_runtime": "joy_root_palette",
+        "grading": "basin_default",
+        "mode": "joy_basins",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_normal_angle",
+        "palette": "phase_wheel_palette",
+        "signal": "sdf_normal_angle",
+        "palette_runtime": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "mode": "phase",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_signed_distance",
+        "palette": "heatmap",
+        "signal": "sdf_signed_distance",
+        "palette_runtime": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_signed_distance",
+        "palette": "explaino_cmap",
+        "signal": "sdf_signed_distance",
+        "palette_runtime": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_inside_outside",
+        "palette": "heatmap",
+        "signal": "sdf_inside_outside",
+        "palette_runtime": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_inside_outside",
+        "palette": "explaino_cmap",
+        "signal": "sdf_inside_outside",
+        "palette_runtime": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_boundary_band",
+        "palette": "heatmap",
+        "signal": "sdf_boundary_band",
+        "palette_runtime": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_boundary_band",
+        "palette": "explaino_cmap",
+        "signal": "sdf_boundary_band",
+        "palette_runtime": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_curvature",
+        "palette": "heatmap",
+        "signal": "sdf_curvature",
+        "palette_runtime": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_curvature",
+        "palette": "explaino_cmap",
+        "signal": "sdf_curvature",
+        "palette_runtime": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      }
+    ],
+    "recipes": [
+      {
+        "id": "default_smooth_escape",
+        "label": "Default Smooth Escape",
+        "source": "smooth_escape_ramp",
+        "shape": "identity",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "phase_orbit_wheel",
+        "label": "Phase Orbit Wheel",
+        "source": "phase_orbit",
+        "shape": "identity",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_normal_angle_diagnostic",
+        "label": "SDF Normal Angle Diagnostic",
+        "source": "sdf_normal_angle",
+        "shape": "identity",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "fail_closed_reason": ""
+      }
+    ]
+  },
+  "explaino_contract": {
+    "entries": [
+      {
+        "id": "color_pipeline.explaino_cmap",
+        "hypothesis_space": "color_pipeline_source_signal",
+        "authority": "palette_row",
+        "lens": "source_signal_to_explaino_cmap",
+        "invariant": "runtime_backed_fail_closed_palette_mapping",
+        "proof": "color_pipeline_metadata_parity",
+        "fallback": "fail_closed",
+        "product_facing": false,
+        "diagnostic": true
+      },
+      {
+        "id": "color_pipeline.balance_void_grade",
+        "hypothesis_space": "color_pipeline_grading_manifold",
+        "authority": "grading_row",
+        "lens": "source_signal_to_balance_void_manifold",
+        "invariant": "dedicated_runtime_owner_fields",
+        "proof": "color_pipeline_metadata_parity",
+        "fallback": "fail_closed",
+        "product_facing": false,
+        "diagnostic": true
+      }
+    ]
+  }
+}

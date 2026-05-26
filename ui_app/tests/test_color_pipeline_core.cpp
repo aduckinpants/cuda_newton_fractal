@@ -1,8 +1,13 @@
 #include "../src/color_pipeline_core.h"
+#include "../src/color_pipeline_metadata_contract.h"
+#include "../src/enum_id_utils.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <initializer_list>
 #include <string>
 #include <vector>
@@ -60,6 +65,86 @@ bool RowEnum(const ColorPipelineRowState& row, const char* path, const char* exp
 
 const FunctionDescriptor* FindFunction(const ColorPipelineLaneCatalog& catalog, const char* id) {
     return color_pipeline_core::FindColorPipelineFunctionDescriptor(catalog, id ? id : "");
+}
+
+bool FileExists(const char* path) {
+    std::ifstream input(path, std::ios::in | std::ios::binary);
+    return input.good();
+}
+
+std::string ResolveMaterializedContractPath() {
+    const char* candidates[] = {
+        "..\\docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+        "docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+    };
+    for (const char* candidate : candidates) {
+        if (FileExists(candidate)) {
+            return candidate;
+        }
+    }
+    return candidates[0];
+}
+
+std::string TempContractPath(const char* fileName) {
+    const char* tempDir = std::getenv("TEMP");
+    std::string base = (tempDir && tempDir[0] != '\0') ? tempDir : ".";
+    const char last = base.empty() ? '\0' : base.back();
+    if (last != '\\' && last != '/') {
+        base.push_back('\\');
+    }
+    base += fileName ? fileName : "ui_salt_contract_invalid.json";
+    return base;
+}
+
+bool WriteTextFile(const std::string& path, const char* text) {
+    std::ofstream output(path, std::ios::out | std::ios::binary);
+    if (!output) {
+        return false;
+    }
+    output << (text ? text : "");
+    return output.good();
+}
+
+void CheckMaterializedParamMatches(
+    const FunctionParamDescriptor& expected,
+    const MaterializedColorPipelineParam& actual,
+    const char* messagePrefix) {
+    Check(actual.path == expected.path, (std::string(messagePrefix) + "_Path").c_str());
+    Check(actual.type == expected.type, (std::string(messagePrefix) + "_Type").c_str());
+    Check(actual.label == expected.label, (std::string(messagePrefix) + "_Label").c_str());
+    Check(actual.has_min == expected.has_min, (std::string(messagePrefix) + "_HasMin").c_str());
+    if (actual.has_min && expected.has_min) {
+        Check(Near(actual.min_value, expected.min_value), (std::string(messagePrefix) + "_Min").c_str());
+    }
+    Check(actual.has_max == expected.has_max, (std::string(messagePrefix) + "_HasMax").c_str());
+    if (actual.has_max && expected.has_max) {
+        Check(Near(actual.max_value, expected.max_value), (std::string(messagePrefix) + "_Max").c_str());
+    }
+    Check(actual.has_step == expected.has_step, (std::string(messagePrefix) + "_HasStep").c_str());
+    if (actual.has_step && expected.has_step) {
+        Check(Near(actual.step_value, expected.step_value), (std::string(messagePrefix) + "_Step").c_str());
+    }
+    Check(actual.has_default == expected.has_default, (std::string(messagePrefix) + "_HasDefault").c_str());
+    if (expected.has_default) {
+        if (expected.default_value.is_number()) {
+            Check(actual.default_kind == "number" && Near(actual.number_default, expected.default_value.as_number()),
+                (std::string(messagePrefix) + "_NumericDefault").c_str());
+        } else if (expected.default_value.is_bool()) {
+            Check(actual.default_kind == "bool" && actual.bool_default == expected.default_value.as_bool(),
+                (std::string(messagePrefix) + "_BoolDefault").c_str());
+        } else if (expected.default_value.is_string()) {
+            Check(actual.default_kind == "string" && actual.string_default == expected.default_value.as_string(),
+                (std::string(messagePrefix) + "_StringDefault").c_str());
+        } else {
+            Check(false, (std::string(messagePrefix) + "_UnsupportedDefaultKind").c_str());
+        }
+    }
+    Check(actual.enum_options.size() == expected.options.size(), (std::string(messagePrefix) + "_EnumOptionCount").c_str());
+    const std::size_t optionCount = std::min(actual.enum_options.size(), expected.options.size());
+    for (std::size_t index = 0; index < optionCount; ++index) {
+        Check(actual.enum_options[index] == expected.options[index].id,
+            (std::string(messagePrefix) + "_EnumOption").c_str());
+    }
 }
 
 void TestFunctionIdMappingsRoundTrip() {
@@ -730,6 +815,218 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
     }
 }
 
+void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    const std::string path = ResolveMaterializedContractPath();
+    Check(LoadColorPipelineMaterializedContractJson(path, &contract, &error),
+        (std::string("TestMaterializedUiSaltMetadataShadowsCurrentCatalog_Loads: ") + error).c_str());
+    if (!error.empty() || contract.schema_version != 1) {
+        Check(false, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ContractLoadOrVersion");
+        return;
+    }
+
+    Check(contract.lanes.size() == color_pipeline_core::GetColorPipelineLaneCatalogs().size(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
+    Check(contract.compatibility.size() == 20,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
+    Check(!contract.recipes.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipesPresent");
+    Check(!contract.explaino_entries.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoEntriesPresent");
+
+    const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
+    for (std::size_t laneIndex = 0; laneIndex < catalogs.size(); ++laneIndex) {
+        const ColorPipelineLaneCatalog& expectedLane = catalogs[laneIndex];
+        const MaterializedColorPipelineLane* actualLane = FindMaterializedColorPipelineLane(contract, expectedLane.lane_id);
+        Check(actualLane != nullptr, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LanePresent");
+        if (!actualLane) {
+            continue;
+        }
+        Check(contract.lanes[laneIndex].id == expectedLane.lane_id,
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneOrder");
+        Check(actualLane->label == expectedLane.label,
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneLabel");
+        Check(actualLane->default_function_id == expectedLane.default_function_id,
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneDefault");
+        Check(actualLane->functions.size() == expectedLane.functions.size(),
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FunctionCount");
+        const std::size_t functionCount = std::min(actualLane->functions.size(), expectedLane.functions.size());
+        for (std::size_t functionIndex = 0; functionIndex < functionCount; ++functionIndex) {
+            const FunctionDescriptor& expectedFunction = expectedLane.functions[functionIndex];
+            const MaterializedColorPipelineFunction& actualFunction = actualLane->functions[functionIndex];
+            Check(actualFunction.id == expectedFunction.id,
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FunctionOrder");
+            Check(actualFunction.label == expectedFunction.name,
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FunctionLabel");
+            Check(actualFunction.description == expectedFunction.description,
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FunctionDescription");
+            Check(actualFunction.runtime_backed,
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FunctionRuntimeBacked");
+            Check(actualFunction.params.size() == expectedFunction.parameters.size(),
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ParamCount");
+            const std::size_t paramCount = std::min(actualFunction.params.size(), expectedFunction.parameters.size());
+            for (std::size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
+                CheckMaterializedParamMatches(
+                    expectedFunction.parameters[paramIndex],
+                    actualFunction.params[paramIndex],
+                    "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_Param");
+            }
+            if (std::string(expectedLane.lane_id) == "source") {
+                Check(actualFunction.signal_kind ==
+                        color_pipeline_core::ColorPipelineSourceSignalKindId(
+                            color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId(expectedFunction.id.c_str())),
+                    "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SourceSignalKind");
+            } else {
+                Check(actualFunction.signal_kind.empty(),
+                    "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_NonSourceHasNoSignalKind");
+            }
+        }
+    }
+
+    const ColorPipelineLaneCatalog* sourceLane = color_pipeline_core::FindColorPipelineLaneCatalog("source");
+    const ColorPipelineLaneCatalog* paletteLane = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
+    Check(sourceLane != nullptr && paletteLane != nullptr,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SourcePaletteCatalogsPresent");
+    if (sourceLane && paletteLane) {
+        for (const FunctionDescriptor& sourceFunction : sourceLane->functions) {
+            for (const FunctionDescriptor& paletteFunction : paletteLane->functions) {
+                ColorPipelineSelection selection;
+                ColoringMode mode = ColoringMode::smooth_escape;
+                const bool runtimeSupported = color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+                    sourceFunction.id.c_str(),
+                    paletteFunction.id.c_str(),
+                    &selection,
+                    &mode);
+                const MaterializedColorPipelineCompatibility* materializedCompatibility =
+                    FindMaterializedColorPipelineCompatibility(contract, sourceFunction.id, paletteFunction.id);
+                Check(runtimeSupported == (materializedCompatibility != nullptr),
+                    "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAllowDeny");
+                if (runtimeSupported && materializedCompatibility) {
+                    Check(materializedCompatibility->signal == color_pipeline_core::AdvancedColorSignalFunctionId(selection.signal),
+                        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilitySignal");
+                    Check(materializedCompatibility->palette_runtime == color_pipeline_core::AdvancedColorPaletteFunctionId(selection.palette),
+                        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityPalette");
+                    Check(materializedCompatibility->grading == color_pipeline_core::AdvancedColorGradingFunctionId(selection.grading),
+                        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityGrading");
+                    Check(materializedCompatibility->mode == ColoringModeId(mode),
+                        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityMode");
+                    Check(!materializedCompatibility->reason.empty(),
+                        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityReason");
+                }
+            }
+        }
+    }
+
+    for (const MaterializedColorPipelineRecipe& recipe : contract.recipes) {
+        Check(FindMaterializedColorPipelineCompatibility(contract, recipe.source, recipe.palette) != nullptr,
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeHasSupportedBridge");
+        const MaterializedColorPipelineLane* shapeLane = FindMaterializedColorPipelineLane(contract, "shape");
+        const MaterializedColorPipelineLane* gradingLane = FindMaterializedColorPipelineLane(contract, "grading");
+        Check(shapeLane && FindMaterializedColorPipelineFunction(*shapeLane, recipe.shape),
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeShapeBacked");
+        Check(gradingLane && FindMaterializedColorPipelineFunction(*gradingLane, recipe.grading),
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeGradingBacked");
+    }
+
+    bool explainoPaletteFound = false;
+    bool balanceVoidFound = false;
+    for (const MaterializedExplainoContractEntry& entry : contract.explaino_entries) {
+        Check(!entry.product_facing && entry.diagnostic,
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoDiagnosticOnly");
+        Check(!entry.hypothesis_space.empty() && !entry.authority.empty() && !entry.lens.empty() &&
+                !entry.invariant.empty() && !entry.proof.empty() && !entry.fallback.empty(),
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoProofFields");
+        explainoPaletteFound = explainoPaletteFound || entry.id == "color_pipeline.explaino_cmap";
+        balanceVoidFound = balanceVoidFound || entry.id == "color_pipeline.balance_void_grade";
+    }
+    Check(explainoPaletteFound && balanceVoidFound,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExpectedExplainoEntriesPresent");
+}
+
+void TestMaterializedContractLoaderRejectsTamperedJson() {
+    const char* duplicateFunctionJson = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "function_library": {
+    "lanes": [
+      {
+        "id": "source",
+        "label": "Source",
+        "default": "smooth_escape_ramp",
+        "functions": [
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []},
+          {"id": "smooth_escape_ramp", "label": "Duplicate", "description": "", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []}
+        ]
+      }
+    ]
+  },
+  "composition_recipe_contract": {"compatibility": [], "recipes": []},
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string duplicatePath = TempContractPath("ui_salt_contract_duplicate_function.json");
+    Check(WriteTextFile(duplicatePath, duplicateFunctionJson),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WriteDuplicateFixture");
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    Check(!LoadColorPipelineMaterializedContractJson(duplicatePath, &contract, &error) &&
+            error.find("Duplicate materialized function id") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_DuplicateFunctionRejected");
+    std::remove(duplicatePath.c_str());
+
+    const char* danglingCompatibilityJson = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "function_library": {
+    "lanes": [
+      {
+        "id": "source",
+        "label": "Source",
+        "default": "smooth_escape_ramp",
+        "functions": [
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []}
+        ]
+      },
+      {
+        "id": "palette",
+        "label": "Palette",
+        "default": "heatmap",
+        "functions": [
+          {"id": "heatmap", "label": "Heatmap", "description": "", "runtime_backed": true, "input_kind": "scalar", "output_kind": "rgb", "params": []}
+        ]
+      },
+      {
+        "id": "grading",
+        "label": "Grading",
+        "default": "contrast_lift",
+        "functions": [
+          {"id": "contrast_lift", "label": "Contrast Lift", "description": "", "runtime_backed": true, "input_kind": "rgb", "output_kind": "rgb", "params": []}
+        ]
+      }
+    ]
+  },
+  "composition_recipe_contract": {
+    "compatibility": [
+      {"source": "missing_source", "palette": "heatmap", "signal": "smooth_escape_ramp", "palette_runtime": "heatmap", "grading": "contrast_lift", "mode": "smooth_escape", "reason": "tampered"}
+    ],
+    "recipes": []
+  },
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string danglingPath = TempContractPath("ui_salt_contract_dangling_compatibility.json");
+    Check(WriteTextFile(danglingPath, danglingCompatibilityJson),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WriteDanglingFixture");
+    error.clear();
+    Check(!LoadColorPipelineMaterializedContractJson(danglingPath, &contract, &error) &&
+            error.find("Compatibility references missing source function") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_DanglingCompatibilityRejected");
+    std::remove(danglingPath.c_str());
+}
+
 } // namespace
 
 int main() {
@@ -741,6 +1038,8 @@ int main() {
     TestImportAndApplySupportedParams();
     TestSelectionAndScheduleBridgeIds();
     TestSdfSourceRowsAreRuntimeBackedCatalogRows();
+    TestMaterializedUiSaltMetadataShadowsCurrentCatalog();
+    TestMaterializedContractLoaderRejectsTamperedJson();
 
     std::printf("test_color_pipeline_core: passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;

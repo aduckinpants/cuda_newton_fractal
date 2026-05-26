@@ -254,7 +254,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\tests\test_color_pipeline_core.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\tests\test_color_pipeline_core.cpp ^
   /Fe:"%TESTROOT%\test_color_pipeline_core.exe"
 if errorlevel 1 exit /b 1
 
@@ -812,7 +812,7 @@ exit /b 0
 
 :focused_test_color_pipeline_core
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\tests\test_color_pipeline_core.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\tests\test_color_pipeline_core.cpp ^
   /Fe:"%TESTROOT%\test_color_pipeline_core.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_color_pipeline_core.exe" || exit /b 1
@@ -844,7 +844,7 @@ exit /b 0
 
 :focused_advanced_color_grading_red
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\tests\test_color_pipeline_core.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\tests\test_color_pipeline_core.cpp ^
   /Fe:"%TESTROOT%\test_color_pipeline_core.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
@@ -874,7 +874,7 @@ exit /b 0
 
 :focused_advanced_color_grading_owner
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\tests\test_color_pipeline_core.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\tests\test_color_pipeline_core.cpp ^
   /Fe:"%TESTROOT%\test_color_pipeline_core.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^

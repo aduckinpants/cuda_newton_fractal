@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "contract_id": "ui_salt_explaino_contract_metadata_lowering",
+  "feature_id": "ui_salt_explaino_contract_metadata_lowering",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/ui_salt_explaino_contract_metadata_lowering_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs",
+    "HANDOFF_LOG.md",
+    "tools",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "build a behavior-preserving compiler-style layer for the viewer function library and Color Pipeline composition system",
+    "use Salticid-inspired ui.salt authoring and recipe materialization without adding a Salticid runtime dependency",
+    "materialize viewer-owned JSON contracts for function library, composition recipe, and Explaino semantics",
+    "freeze current UI behavior until generated metadata proves parity with the current hardcoded behavior",
+    "move backend lookup seams one at a time only after shadow parity is green"
+  ],
+  "forbidden_operator_prompts": [
+    "add new Color Pipeline composition UI in this slice",
+    "implement Factorio-style schedule workflow UI in this slice",
+    "implement boundary-masked SDF normal-angle beauty mode in this slice",
+    "add SDF operands or gates as first-class composition nodes in this slice",
+    "integrate Generic Equation Pack viewport work in this slice",
+    "add a Salticid sample_fn adapter in this slice",
+    "add SDF-native fractal lanes in this slice",
+    "import or run Salticid as a viewer runtime dependency",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "ui_behavior_frozen": true,
+    "viewer_authority": "materialized_json_not_raw_ui_salt",
+    "salticid_runtime_dependency": false,
+    "hardcoded_color_pipeline_authority_until_parity": true,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "new_visible_color_pipeline_rows": "forbidden",
+    "runtime_salticid_dependency": "forbidden",
+    "silent_recipe_fallback": "forbidden",
+    "unsupported_recipe_acceptance": "forbidden",
+    "feature_expansion": "deferred",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_contract_native --log artifacts/logs/ui_salt_contract_native.log --out-json artifacts/validation/ui_salt_contract_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_contract_materializer_pytest --log artifacts/logs/ui_salt_contract_materializer_pytest.log --out-json artifacts/validation/ui_salt_contract_materializer_pytest.json --heartbeat-seconds 30 --timeout-seconds 600 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_contract_runtime_publish --log artifacts/logs/ui_salt_contract_runtime_publish.log --out-json artifacts/validation/ui_salt_contract_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_contract_runtime_pytest --log artifacts/logs/ui_salt_contract_runtime_pytest.log --out-json artifacts/validation/ui_salt_contract_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py tests/test_fractal_runtime_sdf_phase_signal_semantics.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_explaino_contract_metadata_lowering.contract.json --out-json artifacts/validation/ui_salt_contract_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_explaino_contract_metadata_lowering_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_contract_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_contract_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_contract_diff_check --log artifacts/logs/ui_salt_contract_diff_check.log --out-json artifacts/validation/ui_salt_contract_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The UI-Salt Explaino metadata lowering contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_contract_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The UI-Salt Explaino metadata lowering hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_contract_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
