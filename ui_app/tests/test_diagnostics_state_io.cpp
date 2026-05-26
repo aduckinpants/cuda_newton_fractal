@@ -56,6 +56,15 @@ static bool DraftRowHasNumberParam(const ColorPipelineRowState& row, const char*
   return false;
 }
 
+static bool DraftRowHasEnumParam(const ColorPipelineRowState& row, const char* path, const char* expected) {
+  for (const ColorPipelineParamState& param : row.parameter_values) {
+    if (param.path == path && param.enum_value == expected) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static bool SetDraftRowNumberParam(ColorPipelineRowState* row, const char* path, double value) {
   if (!row) return false;
   for (ColorPipelineParamState& param : row->parameter_values) {
@@ -4294,13 +4303,14 @@ int main() {
   "params": {
     "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
     "poly_kind": 0,
-    "coloring_mode": "smooth_escape",
-    "color_signal": "sdf_boundary_band",
+    "coloring_mode": "phase",
+    "color_signal": "sdf_normal_angle",
     "color_shape": "identity",
-    "color_palette": "cyclic_escape",
-    "color_grading": "escape_default",
+    "color_palette": "phase_wheel",
+    "color_grading": "phase_default",
     "color_source_stack": [
-      { "signal": "sdf_boundary_band", "scale": 0.75, "bias": 0.25, "blend_weight": 1.0, "sdf_boundary_width_px": 5.5 }
+      { "signal": "sdf_boundary_band", "scale": 0.75, "bias": 0.25, "blend_weight": 1.0, "sdf_boundary_width_px": 5.5 },
+      { "signal": "sdf_normal_angle", "scale": 1.0, "bias": 0.0, "blend_weight": 0.5, "sdf_gate": "boundary_band", "sdf_gate_width_px": 3.25 }
     ],
     "nova_alpha": 0.5,
     "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
@@ -4321,23 +4331,29 @@ int main() {
             std::cerr << "V3 SDF source-stack parameter load failed: " << error << "\n";
             return 1;
         }
-        if (p.color_source_stack_count != 1 ||
+        if (p.color_source_stack_count != 2 ||
             p.color_source_stack[0].signal != ColorSignal::sdf_boundary_band ||
             !NearlyEqual(p.color_source_stack[0].params.scale, 0.75, 0.001) ||
             !NearlyEqual(p.color_source_stack[0].params.bias, 0.25, 0.001) ||
             !NearlyEqual(p.color_source_stack[0].params.sdf_boundary_width_px, 5.5, 0.001) ||
-            p.color_pipeline.signal != ColorSignal::sdf_boundary_band ||
-            p.color_pipeline.palette != ColorPalette::cyclic_escape ||
-            p.color_pipeline.grading != ColorGradingPreset::escape_default ||
-            p.coloring_mode != ColoringMode::smooth_escape ||
+            p.color_source_stack[1].signal != ColorSignal::sdf_normal_angle ||
+            p.color_source_stack[1].params.sdf_gate != ColorPipelineSdfGateMode::boundary_band ||
+            !NearlyEqual(p.color_source_stack[1].params.sdf_gate_width_px, 3.25, 0.001) ||
+            p.color_pipeline.signal != ColorSignal::sdf_normal_angle ||
+            p.color_pipeline.palette != ColorPalette::phase_wheel ||
+            p.color_pipeline.grading != ColorGradingPreset::phase_default ||
+            p.coloring_mode != ColoringMode::phase ||
             !windowState.live_snapshot.valid ||
             !windowState.live_snapshot.draft_import_supported ||
             windowState.live_snapshot.lanes.size() < 4 ||
-            windowState.live_snapshot.lanes[0].rows.size() != 1 ||
+            windowState.live_snapshot.lanes[0].rows.size() != 2 ||
             windowState.live_snapshot.lanes[0].rows[0].function_id != "sdf_boundary_band" ||
+            windowState.live_snapshot.lanes[0].rows[1].function_id != "sdf_normal_angle" ||
             !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.scale", 0.75, 0.001) ||
             !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.bias", 0.25, 0.001) ||
-            !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.boundary_width_px", 5.5, 0.001)) {
+            !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.boundary_width_px", 5.5, 0.001) ||
+            !DraftRowHasEnumParam(windowState.live_snapshot.lanes[0].rows[1], "signal.sdf_gate", "boundary_band") ||
+            !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[1], "signal.sdf_gate_width_px", 3.25, 0.001)) {
             std::cerr << "Expected SDF Source stacks to round-trip through diagnostics state load with a live SDF Source lane and owner params\n";
             return 1;
         }

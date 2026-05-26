@@ -104,6 +104,11 @@ constexpr int kColorPipelineMaxRootBasinPairCount = 8;
 constexpr int kColorPipelineMaxPaletteStackCount = 8;
 constexpr int kColorPipelineMaxGradingStackCount = 8;
 
+enum class ColorPipelineSdfGateMode : int {
+    none = 0,
+    boundary_band = 1,
+};
+
 struct ColorPipelineSourceRuntimeParams {
     float scale{1.0f};
     float bias{0.0f};
@@ -118,6 +123,8 @@ struct ColorPipelineSourceRuntimeParams {
     float proximity_scale{1.0f};
     float proximity_bias{0.0f};
     float sdf_boundary_width_px{2.0f};
+    ColorPipelineSdfGateMode sdf_gate{ColorPipelineSdfGateMode::none};
+    float sdf_gate_width_px{2.0f};
     float blend_weight{1.0f};
 };
 

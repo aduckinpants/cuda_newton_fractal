@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_sdf_mask_gate_composition",
+  "feature_id": "color_pipeline_composition_followups",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/color_pipeline_sdf_mask_gate_composition_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs",
+    "spec_intake",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "record shared SDF downsample as a deferred per-source quality limitation",
+    "implement one bounded source-local SDF boundary gate composition vertical",
+    "prove full-field sdf_normal_angle remains available with gate off",
+    "prove boundary-gated sdf_normal_angle changes pixels through the published no-mouse viewer path",
+    "preserve Color Pipeline preset workflow, SDF source rows, capture/replay authority, and no physical mouse automation"
+  ],
+  "forbidden_operator_prompts": [
+    "implement per-row SDF downsample in this slice",
+    "implement GPU Color Pipeline postprocess in this slice",
+    "redesign the full Color Pipeline UI in this slice",
+    "add a broad library of new functions in this slice",
+    "implement authored SDF pack viewport UI in this slice",
+    "add SDF-native fractal lanes in this slice",
+    "add a Salticid runtime dependency",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "visible_ui_change_scope": "one_source_local_sdf_gate_vertical",
+    "full_field_sdf_normal_angle_preserved": true,
+    "per_source_downsample_implementation": false,
+    "new_broad_function_library": false,
+    "salticid_runtime_dependency": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "per_source_downsample": "deferred",
+    "gpu_postprocess": "deferred",
+    "broad_color_pipeline_redesign": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_mask_gate_window --log artifacts/logs/color_pipeline_sdf_mask_gate_window.log --out-json artifacts/validation/color_pipeline_sdf_mask_gate_window.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_mask_gate_core --log artifacts/logs/color_pipeline_sdf_mask_gate_core.log --out-json artifacts/validation/color_pipeline_sdf_mask_gate_core.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_mask_gate_postprocess --log artifacts/logs/color_pipeline_sdf_mask_gate_postprocess.log --out-json artifacts/validation/color_pipeline_sdf_mask_gate_postprocess.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_mask_gate_state --log artifacts/logs/color_pipeline_sdf_mask_gate_state.log --out-json artifacts/validation/color_pipeline_sdf_mask_gate_state.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_diagnostics_state_io",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_mask_gate_publish --log artifacts/logs/color_pipeline_sdf_mask_gate_publish.log --out-json artifacts/validation/color_pipeline_sdf_mask_gate_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_mask_gate_runtime --log artifacts/logs/color_pipeline_sdf_mask_gate_runtime.log --out-json artifacts/validation/color_pipeline_sdf_mask_gate_runtime.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py tests/test_fractal_runtime_capture_replay_authority.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_sdf_mask_gate_composition.contract.json --out-json artifacts/validation/color_pipeline_sdf_mask_gate_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_sdf_mask_gate_composition_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_sdf_mask_gate_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_sdf_mask_gate_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_mask_gate_diff_check --log artifacts/logs/color_pipeline_sdf_mask_gate_diff_check.log --out-json artifacts/validation/color_pipeline_sdf_mask_gate_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Color Pipeline SDF mask/gate composition contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_sdf_mask_gate_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    }
+  ]
+}

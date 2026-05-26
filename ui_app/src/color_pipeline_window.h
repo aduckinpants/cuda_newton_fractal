@@ -1185,9 +1185,11 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (IsSdfColorPipelineSourceFunctionId(functionId)) {
         if (functionId == "sdf_boundary_band") {
             return path == "signal.scale" || path == "signal.bias" ||
-                path == "signal.blend_weight" || path == "signal.boundary_width_px";
+                path == "signal.blend_weight" || path == "signal.boundary_width_px" ||
+                path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px";
         }
-        return path == "signal.scale" || path == "signal.bias" || path == "signal.blend_weight";
+        return path == "signal.scale" || path == "signal.bias" || path == "signal.blend_weight" ||
+            path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px";
     }
     if (functionId == "heatmap") {
         return path == "palette.cycle_scale" || path == "palette.saturation" ||
@@ -1305,6 +1307,14 @@ inline bool SetColorPipelineParamNumber(
     return color_pipeline_core::SetColorPipelineParamNumber(ioRow, path, value, outError);
 }
 
+inline bool SetColorPipelineParamEnum(
+    ColorPipelineRowState* ioRow,
+    const char* path,
+    const char* value,
+    std::string* outError = nullptr) {
+    return color_pipeline_core::SetColorPipelineParamEnum(ioRow, path, value, outError);
+}
+
 inline bool TryGetColorPipelineParamEnum(
     const ColorPipelineRowState& row,
     const char* path,
@@ -1415,9 +1425,13 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
             return false;
         }
         if (ioRow->function_id == "sdf_boundary_band") {
-            return SetColorPipelineParamNumber(ioRow, "signal.boundary_width_px", sourceEntry.params.sdf_boundary_width_px, outError);
+            if (!SetColorPipelineParamNumber(ioRow, "signal.boundary_width_px", sourceEntry.params.sdf_boundary_width_px, outError)) {
+                return false;
+            }
         }
-        return true;
+        const char* gateId = color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate);
+        return SetColorPipelineParamEnum(ioRow, "signal.sdf_gate", gateId ? gateId : "none", outError) &&
+            SetColorPipelineParamNumber(ioRow, "signal.sdf_gate_width_px", sourceEntry.params.sdf_gate_width_px, outError);
     }
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", sourceEntry.params.phase_offset, outError) &&
@@ -1525,6 +1539,8 @@ inline bool ColorPipelineSourceRuntimeParamsEqual(
         std::fabs(left.proximity_scale - right.proximity_scale) <= 1.0e-6f &&
         std::fabs(left.proximity_bias - right.proximity_bias) <= 1.0e-6f &&
         std::fabs(left.sdf_boundary_width_px - right.sdf_boundary_width_px) <= 1.0e-6f &&
+        left.sdf_gate == right.sdf_gate &&
+        std::fabs(left.sdf_gate_width_px - right.sdf_gate_width_px) <= 1.0e-6f &&
         std::fabs(left.blend_weight - right.blend_weight) <= 1.0e-6f;
 }
 
@@ -1679,6 +1695,18 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
             }
             entry.params.sdf_boundary_width_px = static_cast<float>(boundaryWidthPx);
         }
+        std::string gateId = "none";
+        double gateWidthPx = entry.params.sdf_gate_width_px;
+        if (!TryGetColorPipelineParamEnum(row, "signal.sdf_gate", &gateId, outError) ||
+            !color_pipeline_core::TryParseColorPipelineSdfGateModeId(gateId, &entry.params.sdf_gate) ||
+            !TryGetColorPipelineParamNumber(row, "signal.sdf_gate_width_px", &gateWidthPx, outError) ||
+            !ValidateColorPipelineParamRange("signal.sdf_gate_width_px", gateWidthPx, 0.25, 16.0, outError)) {
+            if (outError && outError->empty()) {
+                *outError = "Invalid SDF Source boundary-gate parameters";
+            }
+            return false;
+        }
+        entry.params.sdf_gate_width_px = static_cast<float>(gateWidthPx);
     } else if (row.function_id == "phase_orbit") {
         double phaseOffset = 0.0;
         double wrapCycles = 0.0;

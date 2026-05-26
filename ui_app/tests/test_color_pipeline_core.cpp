@@ -65,6 +65,16 @@ bool RowEnum(const ColorPipelineRowState& row, const char* path, const char* exp
     return color_pipeline_core::TryGetColorPipelineParamEnum(row, path, &actual) && actual == expected;
 }
 
+bool HasEnumOption(const FunctionDescriptor& function, const char* path, const char* optionId) {
+    for (const FunctionParamDescriptor& param : function.parameters) {
+        if (param.path != path) continue;
+        for (const UISchemaOption& option : param.options) {
+            if (option.id == optionId) return true;
+        }
+    }
+    return false;
+}
+
 const FunctionDescriptor* FindFunction(const ColorPipelineLaneCatalog& catalog, const char* id) {
     return color_pipeline_core::FindColorPipelineFunctionDescriptor(catalog, id ? id : "");
 }
@@ -802,6 +812,11 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
         Check(HasParam(*descriptor, "signal.scale") && HasParam(*descriptor, "signal.bias") &&
                 HasParam(*descriptor, "signal.blend_weight"),
             "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowsExposeCommonLiveParams");
+        Check(HasParam(*descriptor, "signal.sdf_gate") &&
+                HasParam(*descriptor, "signal.sdf_gate_width_px") &&
+                HasEnumOption(*descriptor, "signal.sdf_gate", "none") &&
+                HasEnumOption(*descriptor, "signal.sdf_gate", "boundary_band"),
+            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowsExposeBoundaryGateParams");
         Check((std::string(expected.id) == "sdf_boundary_band") == HasParam(*descriptor, "signal.boundary_width_px"),
             "TestSdfSourceRowsAreRuntimeBackedCatalogRows_BoundaryWidthIsBoundaryBandOnly");
 
@@ -812,6 +827,8 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
                 RowNumber(row, "signal.scale", expected.scale) &&
                 RowNumber(row, "signal.bias", expected.bias) &&
                 RowNumber(row, "signal.blend_weight", 1.0) &&
+                RowEnum(row, "signal.sdf_gate", "none") &&
+                RowNumber(row, "signal.sdf_gate_width_px", 2.0) &&
                 (std::string(expected.id) != "sdf_boundary_band" || RowNumber(row, "signal.boundary_width_px", 2.0)),
             "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowBuildsWithVisibleTuningControls");
     }

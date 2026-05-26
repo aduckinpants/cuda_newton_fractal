@@ -59,6 +59,19 @@ SdfFieldSignalConfig SignalConfigForSourceEntry(const ColorPipelineSourceStackEn
     return config;
 }
 
+float ApplySdfGateToSourceValue(
+    float value,
+    float signedDistancePx,
+    const ColorPipelineSourceStackEntry& entry) {
+    if (entry.params.sdf_gate != ColorPipelineSdfGateMode::boundary_band) {
+        return value;
+    }
+    SdfFieldSignalConfig gateConfig{};
+    gateConfig.boundary_band_px = EscapeTimeColorClamp(entry.params.sdf_gate_width_px, 0.25f, 16.0f);
+    const float mask = ResolveSdfBoundaryBandFromSignedDistancePx(signedDistancePx, gateConfig);
+    return value * EscapeTimeColorClamp(mask, 0.0f, 1.0f);
+}
+
 float ResolveSdfSourceValueFromSample(
     const SdfFieldSignalSample& sample,
     const ColorPipelineSourceStackEntry& entry) {
@@ -66,7 +79,8 @@ float ResolveSdfSourceValueFromSample(
     if (entry.signal == ColorSignal::sdf_normal_angle) {
         value = (value + kPi) / kTwoPi;
     }
-    return value * entry.params.scale + entry.params.bias;
+    value = value * entry.params.scale + entry.params.bias;
+    return ApplySdfGateToSourceValue(value, sample.signed_distance_px, entry);
 }
 
 bool BoundaryBandConfigMatches(const SdfFieldSignalConfig& left, const SdfFieldSignalConfig& right) {
@@ -128,7 +142,8 @@ bool ResolveDirectSdfSourceValueFromCenter(
     } else if (entry.signal != ColorSignal::sdf_signed_distance) {
         return false;
     }
-    *outValue = value * entry.params.scale + entry.params.bias;
+    value = value * entry.params.scale + entry.params.bias;
+    *outValue = ApplySdfGateToSourceValue(value, center, entry);
     return true;
 }
 

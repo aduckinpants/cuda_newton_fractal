@@ -119,6 +119,7 @@ Remaining review direction:
 - Preserve full-field `sdf_normal_angle` as a diagnostic phase view.
 - Add a later boundary-masked normal-angle beauty mode rather than deleting the diagnostic behavior.
 - Treat SDF fields as typed Source signals now, with SDF masks/gates as the next plausible composition operand.
+- Keep the shared SDF Field Downsample limitation explicit: today it is one shared `LensSettings::downsample` value, not per SDF Source row/layer.
 - Keep preset/workflow truth green so compatible fractal switches preserve authored work and unsupported rows project safely.
 - Keep full preset manager UI, authored SDF pack viewport integration, and SDF-native lanes as separate slices.
 

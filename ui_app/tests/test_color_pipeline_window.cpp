@@ -52,9 +52,18 @@ bool SetRowNumber(ColorPipelineRowState& row, const char* path, double value) {
     return SetColorPipelineParamNumber(&row, path, value);
 }
 
+bool SetRowEnum(ColorPipelineRowState& row, const char* path, const char* value) {
+    return color_pipeline_core::SetColorPipelineParamEnum(&row, path, value);
+}
+
 bool RowNumber(const ColorPipelineRowState& row, const char* path, double expected) {
     double actual = 0.0;
     return TryGetColorPipelineParamNumber(row, path, &actual) && Near(actual, expected);
+}
+
+bool RowEnum(const ColorPipelineRowState& row, const char* path, const char* expected) {
+    std::string actual;
+    return TryGetColorPipelineParamEnum(row, path, &actual) && actual == expected;
 }
 
 bool RenderablePathsEqual(const ColorPipelineRowState& row, std::initializer_list<const char*> expected) {
@@ -793,7 +802,7 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
             state.lanes[2].rows[0].function_id == "heatmap",
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandCoSwitchesHeatmap");
     Check(RenderablePathsEqual(state.lanes[0].rows[0],
-              {"signal.scale", "signal.bias", "signal.boundary_width_px", "signal.blend_weight"}),
+              {"signal.scale", "signal.bias", "signal.boundary_width_px", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.blend_weight"}),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandRenderableParams");
     Check(SetRowNumber(state.lanes[0].rows[0], "signal.scale", 0.75) &&
             SetRowNumber(state.lanes[0].rows[0], "signal.bias", 0.25) &&
@@ -840,8 +849,11 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
             normalState.lanes[3].rows[0].function_id == "phase_finish",
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleCoSwitchesPhaseTuple");
     Check(RenderablePathsEqual(normalState.lanes[0].rows[0],
-              {"signal.scale", "signal.bias", "signal.blend_weight"}),
+              {"signal.scale", "signal.bias", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.blend_weight"}),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleRenderableParams");
+    Check(SetRowEnum(normalState.lanes[0].rows[0], "signal.sdf_gate", "boundary_band") &&
+            SetRowNumber(normalState.lanes[0].rows[0], "signal.sdf_gate_width_px", 3.5),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleEditsBoundaryGate");
     changed = false;
     Check(ApplyColorPipelineDraftToLiveState(&normalState, FractalType::newton, &normalParams, &changed) && changed,
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_ApplyNormalAngle");
@@ -850,8 +862,14 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
             normalParams.color_pipeline.palette == ColorPalette::phase_wheel &&
             normalParams.color_pipeline.grading == ColorGradingPreset::phase_default &&
             normalParams.color_source_stack_count == 1 &&
-            normalParams.color_source_stack[0].signal == ColorSignal::sdf_normal_angle,
-        "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleRuntimeStackOwnsSignal");
+            normalParams.color_source_stack[0].signal == ColorSignal::sdf_normal_angle &&
+            normalParams.color_source_stack[0].params.sdf_gate == ColorPipelineSdfGateMode::boundary_band &&
+            Near(normalParams.color_source_stack[0].params.sdf_gate_width_px, 3.5),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleRuntimeStackOwnsSignalAndBoundaryGate");
+    Check(normalState.live_snapshot.valid && normalState.live_snapshot.draft_import_supported &&
+            RowEnum(normalState.lanes[0].rows[0], "signal.sdf_gate", "boundary_band") &&
+            RowNumber(normalState.lanes[0].rows[0], "signal.sdf_gate_width_px", 3.5),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleResyncImportsBoundaryGate");
     Check(!ColorPipelineSdfFieldDownsampleControlVisible(ColorPipelineWindowState{}, &lens),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_DownsampleAliasHiddenWithoutSdfDraft");
 }

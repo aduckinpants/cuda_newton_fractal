@@ -143,6 +143,59 @@ void TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources(
         "TestNormalAnglePhaseOffsetChangesFrame_BoundaryBandRemainsScalar");
 }
 
+void TestNormalAngleBoundaryGateMasksFullFieldDiagnostic() {
+    const SdfFieldResult field = MakeTestField();
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams fullField = SdfParams(ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel);
+    KernelParams gated = fullField;
+    gated.color_source_stack[0].params.sdf_gate = ColorPipelineSdfGateMode::boundary_band;
+    gated.color_source_stack[0].params.sdf_gate_width_px = 0.75f;
+    KernelParams wideGate = gated;
+    wideGate.color_source_stack[0].params.sdf_gate_width_px = 6.0f;
+
+    std::vector<std::uint32_t> fullPixels(16, 0x12345678u);
+    std::vector<std::uint32_t> gatedPixels(16, 0x12345678u);
+    std::vector<std::uint32_t> widePixels(16, 0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, fullField, fullPixels.data(), &error),
+        "TestNormalAngleBoundaryGateMasksFullFieldDiagnostic_FullFieldSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, gated, gatedPixels.data(), &error),
+        "TestNormalAngleBoundaryGateMasksFullFieldDiagnostic_GatedSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, wideGate, widePixels.data(), &error),
+        "TestNormalAngleBoundaryGateMasksFullFieldDiagnostic_WideGateSucceeds");
+    Check(HashFrame(fullPixels) != HashFrame(gatedPixels),
+        "TestNormalAngleBoundaryGateMasksFullFieldDiagnostic_GateChangesFrame");
+    Check(HashFrame(gatedPixels) != HashFrame(widePixels),
+        "TestNormalAngleBoundaryGateMasksFullFieldDiagnostic_GateWidthChangesFrame");
+}
+
+void TestNormalAngleGateWidthIsInactiveWhenGateIsOff() {
+    const SdfFieldResult field = MakeTestField();
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams narrowUnused = SdfParams(ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel);
+    narrowUnused.color_source_stack[0].params.sdf_gate = ColorPipelineSdfGateMode::none;
+    narrowUnused.color_source_stack[0].params.sdf_gate_width_px = 0.25f;
+    KernelParams wideUnused = narrowUnused;
+    wideUnused.color_source_stack[0].params.sdf_gate_width_px = 16.0f;
+
+    std::vector<std::uint32_t> narrowPixels(16, 0x12345678u);
+    std::vector<std::uint32_t> widePixels(16, 0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, narrowUnused, narrowPixels.data(), &error),
+        "TestNormalAngleGateWidthIsInactiveWhenGateIsOff_NarrowSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, wideUnused, widePixels.data(), &error),
+        "TestNormalAngleGateWidthIsInactiveWhenGateIsOff_WideSucceeds");
+    Check(HashFrame(narrowPixels) == HashFrame(widePixels),
+        "TestNormalAngleGateWidthIsInactiveWhenGateIsOff_WidthIgnoredWhenGateOff");
+}
+
 void TestMixedSourceStackFailsClosed() {
     const SdfFieldResult field = MakeTestField();
     RenderSettings render{};
@@ -309,6 +362,8 @@ int main() {
     TestEachSdfSourceSignalPostprocessesFrame();
     TestBoundaryBandWidthChangesPostprocessFrame();
     TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources();
+    TestNormalAngleBoundaryGateMasksFullFieldDiagnostic();
+    TestNormalAngleGateWidthIsInactiveWhenGateIsOff();
     TestMixedSourceStackFailsClosed();
     TestBoundaryBandWidthStillAffectsMixedSdfStack();
     TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood();

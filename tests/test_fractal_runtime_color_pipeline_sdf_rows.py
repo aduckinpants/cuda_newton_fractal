@@ -115,8 +115,10 @@ def _capture_sdf_source_row(
     function_id: str,
     scale: float,
     bias: float,
+    sdf_gate: str | None = None,
+    sdf_gate_width_px: float | None = None,
 ) -> dict[str, object]:
-    return run_headless_capture(
+    args: list[str] = [
         str(exe_path),
         "--load-state-json",
         str(state_path),
@@ -126,8 +128,23 @@ def _capture_sdf_source_row(
         f"set_param:source:0:signal.scale:number:{scale}",
         "--color-pipeline-action",
         f"set_param:source:0:signal.bias:number:{bias}",
-        "--capture-diagnostic",
-    )
+    ]
+    if sdf_gate is not None:
+        args.extend(
+            [
+                "--color-pipeline-action",
+                f"set_param:source:0:signal.sdf_gate:enum:{sdf_gate}",
+            ]
+        )
+    if sdf_gate_width_px is not None:
+        args.extend(
+            [
+                "--color-pipeline-action",
+                f"set_param:source:0:signal.sdf_gate_width_px:number:{sdf_gate_width_px}",
+            ]
+        )
+    args.append("--capture-diagnostic")
+    return run_headless_capture(*args)
 
 
 def _capture_all_sdf_source_rows(
@@ -172,6 +189,7 @@ def _assert_sdf_capture_state(
     assert source_entry.get("signal") == function_id
     assert source_entry.get("scale") == pytest.approx(scale, abs=1e-6)
     assert source_entry.get("bias") == pytest.approx(bias, abs=1e-6)
+    assert source_entry.get("sdf_gate", "none") in {"none", "boundary_band"}
 
     source_row = _first_color_pipeline_row(state, "source")
     assert source_row.get("function_id") == function_id
@@ -235,6 +253,66 @@ def test_color_pipeline_sdf_source_rows_are_live_backed_no_mouse(tmp_path: Path)
         assert edited["frame_hash"] != baseline["frame_hash"], (
             f"expected {function_id} signal.scale/signal.bias edits to change the live rendered frame"
         )
+
+
+def test_sdf_source_boundary_gate_changes_normal_angle_frame_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline SDF runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    state_path = write_state_bundle(
+        tmp_path / "sdf_source_boundary_gate_seed",
+        json.loads(json.dumps(neutral_capture["state"])),
+    )
+
+    full_field = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_normal_angle",
+        scale=1.0,
+        bias=0.0,
+        sdf_gate="none",
+        sdf_gate_width_px=2.0,
+    )
+    gated = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_normal_angle",
+        scale=1.0,
+        bias=0.0,
+        sdf_gate="boundary_band",
+        sdf_gate_width_px=1.0,
+    )
+    wide_gate = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_normal_angle",
+        scale=1.0,
+        bias=0.0,
+        sdf_gate="boundary_band",
+        sdf_gate_width_px=6.0,
+    )
+
+    gated_stack = gated["state"]["params"]["color_source_stack"]
+    assert isinstance(gated_stack, list) and gated_stack
+    assert gated_stack[0].get("sdf_gate") == "boundary_band"
+    assert gated_stack[0].get("sdf_gate_width_px") == pytest.approx(1.0)
+    assert gated["frame_hash"] != full_field["frame_hash"], (
+        "expected boundary-gating sdf_normal_angle to mask the full-field diagnostic output"
+    )
+    assert wide_gate["frame_hash"] != gated["frame_hash"], (
+        "expected SDF gate width to be a live source-local control"
+    )
 
 
 def test_capture_finding_preserves_sdf_source_row_pixels_no_mouse(tmp_path: Path) -> None:
@@ -360,7 +438,7 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
     ) as viewer:
         viewer.wait_for_report(timeout_seconds=30.0)
         for function_id, *_ in SDF_SOURCE_ROWS:
-            for path in ("signal.scale", "signal.bias", "signal.blend_weight"):
+            for path in ("signal.scale", "signal.bias", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.blend_weight"):
                 viewer.wait_for_control(
                     f"color_pipeline.source.{function_id}.{path}.primary",
                     timeout_seconds=20.0,

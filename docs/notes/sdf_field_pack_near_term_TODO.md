@@ -28,7 +28,7 @@ Shipped since this roadmap was first written:
 
 Next performance/design choices:
 
-- Per-row or per-function SDF downsample still needs a deliberate authority model: multiple fields, high-resolution field with row-local coarse sampling, or a source-stack-level quality policy.
+- Per-row or per-function SDF downsample still needs a deliberate authority model: multiple fields, high-resolution field with row-local coarse sampling, or a source-stack-level quality policy. Current SDF Source rows all share `LensSettings::downsample`, so a layered stack cannot set a different field resolution per SDF Source row yet.
 - GPU Color Pipeline postprocess remains a larger follow-up after the CPU preview policy and reports are measured in real client use.
 - Color Pipeline composition/preset UX, boundary-masked normal-angle, SDF-backed masks/gates, authored-pack UI, and SDF-native lanes remain planned product work after the next performance/design choice is selected.
 
