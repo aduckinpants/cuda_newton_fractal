@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "contract_id": "runtime_ui_harness_color_pipeline_preset_gate",
+  "feature_id": "runtime_ui_harness_color_pipeline_preset_gate",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/runtime_ui_harness_color_pipeline_preset_gate_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    ".vscode/tasks.json",
+    "tests/test_agent_workflow_tools.py",
+    "tests/test_fractal_runtime_explaino_sidecar_live.py",
+    "docs/contracts/runtime_ui_harness_color_pipeline_preset_gate.contract.json",
+    "docs/notes/runtime_ui_harness_color_pipeline_preset_gate_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "public runtime UI harness must cover Color Pipeline preset workflow changes",
+    "standalone no-mouse preset proof is not enough for workflow-changing UI slices",
+    "keep proof in persistent in-process automation and avoid physical mouse automation",
+    "repair public harness brittleness discovered while proving the full UI harness"
+  ],
+  "forbidden_operator_prompts": [
+    "change Color Pipeline product behavior in this slice",
+    "replace the runtime harness instead of wiring the missing workflow into it",
+    "use physical mouse automation",
+    "claim closure with only a standalone proof outside the public harness"
+  ],
+  "required_defaults": {
+    "public_runtime_ui_harness_includes_color_pipeline_presets": true,
+    "physical_mouse": "forbidden",
+    "product_behavior_change": "forbidden"
+  },
+  "forbidden_defaults": {
+    "standalone_preset_proof_only": "forbidden",
+    "task_profile_bypass": "forbidden",
+    "runtime_harness_coverage_regression": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/runtime_ui_harness_color_pipeline_preset_gate_agent_workflow.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label runtime_ui_harness_color_pipeline_preset_gate_publish --log artifacts/logs/runtime_ui_harness_color_pipeline_preset_gate_publish.log --out-json artifacts/validation/runtime_ui_harness_color_pipeline_preset_gate_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label runtime_ui_harness_color_pipeline_preset_gate_runtime --log artifacts/logs/runtime_ui_harness_color_pipeline_preset_gate_runtime.log --out-json artifacts/validation/runtime_ui_harness_color_pipeline_preset_gate_runtime.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_presets.py --junitxml artifacts/pytest/runtime_ui_harness_color_pipeline_preset_gate_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label runtime_ui_harness_color_pipeline_preset_gate_full_harness --log artifacts/logs/runtime_ui_harness_color_pipeline_preset_gate_full_harness.log --out-json artifacts/validation/runtime_ui_harness_color_pipeline_preset_gate_full_harness.json --heartbeat-seconds 30 --timeout-seconds 1800 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_dual.py tests/test_fractal_runtime_explaino_escape_variants.py tests/test_fractal_runtime_explaino_sidecar_live.py tests/test_fractal_runtime_shutdown.py tests/test_fractal_runtime_sweep_pause.py tests/test_fractal_runtime_runtime_walk_viewer.py tests/test_fractal_runtime_color_pipeline_presets.py --junitxml artifacts/pytest/runtime_ui_harness_color_pipeline_preset_gate_full_harness.junit.xml -k \"not test_runtime_walk_viewer_tolerates_missing_companion_fits and not test_runtime_walk_viewer_can_boot_from_fits_only_cli\"",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/runtime_ui_harness_color_pipeline_preset_gate.contract.json --out-json artifacts/validation/runtime_ui_harness_color_pipeline_preset_gate_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/runtime_ui_harness_color_pipeline_preset_gate_PHASED_PLAN.md --out-json artifacts/validation/runtime_ui_harness_color_pipeline_preset_gate_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/runtime_ui_harness_color_pipeline_preset_gate_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label runtime_ui_harness_color_pipeline_preset_gate_diff_check --log artifacts/logs/runtime_ui_harness_color_pipeline_preset_gate_diff_check.log --out-json artifacts/validation/runtime_ui_harness_color_pipeline_preset_gate_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "workflow_task_includes_color_pipeline_preset_file",
+      "description": "Workflow unit test proves the public runtime UI harness task includes the Color Pipeline preset runtime workflow file",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/runtime_ui_harness_color_pipeline_preset_gate_agent_workflow.junit.xml",
+      "test_nodeid": "tests/test_agent_workflow_tools.py::test_runtime_ui_harness_task_targets_shared_runtime_scenarios"
+    },
+    {
+      "assertion_id": "runtime_preset_workflow_passes_persistent_harness",
+      "description": "Published runtime passes the Color Pipeline preset workflow through persistent no-mouse viewer automation",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/runtime_ui_harness_color_pipeline_preset_gate_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse"
+    },
+    {
+      "assertion_id": "full_public_harness_runs_color_pipeline_preset_case",
+      "description": "The full public runtime UI harness bundle runs the Color Pipeline preset workflow case, not just the standalone focused proof",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/runtime_ui_harness_color_pipeline_preset_gate_full_harness.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse"
+    },
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The runtime UI harness Color Pipeline preset gate contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/runtime_ui_harness_color_pipeline_preset_gate_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The runtime UI harness Color Pipeline preset gate hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/runtime_ui_harness_color_pipeline_preset_gate_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

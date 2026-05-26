@@ -196,6 +196,7 @@
         "tests/test_fractal_runtime_shutdown.py",
         "tests/test_fractal_runtime_sweep_pause.py",
         "tests/test_fractal_runtime_runtime_walk_viewer.py",
+        "tests/test_fractal_runtime_color_pipeline_presets.py",
         "-k",
         "not test_runtime_walk_viewer_tolerates_missing_companion_fits and not test_runtime_walk_viewer_can_boot_from_fits_only_cli"
       ],

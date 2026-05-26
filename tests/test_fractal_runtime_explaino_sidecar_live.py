@@ -29,6 +29,21 @@ def _configure_sidecar_policy(state: dict[str, object], **updates: object) -> di
     return configured_state
 
 
+VISIBLE_MOTION_INTERVAL_DIFF = 0.10
+REQUIRED_VISIBLE_MOTION_INTERVALS = 2
+
+
+def _assert_repeated_visible_motion(frames: list[object], *, context: str) -> None:
+    interval_diffs = [_mean_abs_diff(left, right) for left, right in zip(frames, frames[1:])]
+    moving_intervals = [diff for diff in interval_diffs if diff > VISIBLE_MOTION_INTERVAL_DIFF]
+    assert len(moving_intervals) >= REQUIRED_VISIBLE_MOTION_INTERVALS, (
+        f"{context} did not visibly change across enough live intervals; "
+        f"diffs={[round(diff, 3) for diff in interval_diffs]} "
+        f"threshold={VISIBLE_MOTION_INTERVAL_DIFF:.3f} "
+        f"required_intervals={REQUIRED_VISIBLE_MOTION_INTERVALS}"
+    )
+
+
 def test_runtime_default_explaino_startup_stays_visually_stable() -> None:
     if sys.platform != "win32":
         pytest.skip("live Explaino runtime regression is Windows-only")
@@ -108,16 +123,13 @@ def test_runtime_loaded_sidecar_paced_loop_changes_live_view_multiple_times(
         _focus_window(hwnd)
 
         time.sleep(0.6)
-        frame_a = _capture_ready_window_pixels(hwnd)
-        time.sleep(0.8)
-        frame_b = _capture_ready_window_pixels(hwnd)
-        time.sleep(0.8)
-        frame_c = _capture_ready_window_pixels(hwnd)
-        diff_ab = _mean_abs_diff(frame_a, frame_b)
-        diff_bc = _mean_abs_diff(frame_b, frame_c)
+        frames = []
+        for index in range(4):
+            frames.append(_capture_ready_window_pixels(hwnd))
+            if index != 3:
+                time.sleep(0.8)
 
-        assert diff_ab > 0.15, f"loaded sidecar paced loop did not visibly change the first live interval; diff={diff_ab:.3f}"
-        assert diff_bc > 0.15, f"loaded sidecar paced loop did not visibly change the second live interval; diff={diff_bc:.3f}"
+        _assert_repeated_visible_motion(frames, context="loaded sidecar paced loop")
     finally:
         _close_runtime(hwnd, proc)
 

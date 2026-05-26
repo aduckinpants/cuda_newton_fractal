@@ -409,18 +409,22 @@ def test_advanced_color_phase8c_plan_documents_fast_medium_and_closure_ladders()
 
 
 def test_runtime_ui_harness_task_targets_shared_runtime_scenarios() -> None:
-    tasks_json = (REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8")
+    tasks = json.loads((REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8"))["tasks"]
+    task = next((candidate for candidate in tasks if candidate.get("label") == "verify: runtime ui harness"), None)
 
-    assert '"label": "verify: runtime ui harness"' in tasks_json
-    assert '"artifacts/verify_runtime_ui_harness.log"' in tasks_json
-    assert '"tests/test_fractal_runtime_explaino_dual.py"' in tasks_json
-    assert '"tests/test_fractal_runtime_explaino_escape_variants.py"' in tasks_json
-    assert '"tests/test_fractal_runtime_explaino_sidecar_live.py"' in tasks_json
-    assert '"tests/test_fractal_runtime_runtime_walk_viewer.py"' in tasks_json
-    assert '"tests/test_fractal_runtime_shutdown.py"' in tasks_json
-    assert '"tests/test_fractal_runtime_sweep_pause.py"' in tasks_json
-    assert 'not test_runtime_walk_viewer_tolerates_missing_companion_fits' in tasks_json
-    assert 'not test_runtime_walk_viewer_can_boot_from_fits_only_cli' in tasks_json
+    assert task is not None
+    args = task["args"]
+    assert "artifacts/verify_runtime_ui_harness.log" in args
+    assert "tests/test_fractal_runtime_explaino_dual.py" in args
+    assert "tests/test_fractal_runtime_explaino_escape_variants.py" in args
+    assert "tests/test_fractal_runtime_explaino_sidecar_live.py" in args
+    assert "tests/test_fractal_runtime_runtime_walk_viewer.py" in args
+    assert "tests/test_fractal_runtime_shutdown.py" in args
+    assert "tests/test_fractal_runtime_color_pipeline_presets.py" in args
+    assert "tests/test_fractal_runtime_sweep_pause.py" in args
+    filter_expr = args[args.index("-k") + 1]
+    assert "not test_runtime_walk_viewer_tolerates_missing_companion_fits" in filter_expr
+    assert "not test_runtime_walk_viewer_can_boot_from_fits_only_cli" in filter_expr
 
 
 def test_runtime_walk_fits_witness_task_surfaces_non_mandatory_pair() -> None:
