@@ -88,9 +88,12 @@ void TestLensSdfProbeTimingFields() {
     probe.field_ms = 2.0f;
     probe.postprocess_ms = 7.5f;
     probe.total_ms = probe.field_ms + probe.postprocess_ms;
+    probe.postprocess_worker_count = 3;
     Check(probe.color_pipeline_active && probe.base_render_ms == 3.0f &&
             probe.field_ms == 2.0f && probe.postprocess_ms == 7.5f && probe.total_ms == 9.5f,
         "lens SDF automation probe carries separate field/postprocess timing");
+    Check(probe.postprocess_worker_count == 3,
+        "lens SDF automation probe carries postprocess worker count");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {

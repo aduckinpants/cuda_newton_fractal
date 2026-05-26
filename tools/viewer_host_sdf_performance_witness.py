@@ -166,6 +166,7 @@ def measurement_from_payload(
         "lens_sdf_height": _as_int(payload, "lens_sdf_height"),
         "lens_sdf_pixel_scale": _as_float(payload, "lens_sdf_pixel_scale", 1.0),
         "lens_sdf_postprocess_pixel_step": _as_int(payload, "lens_sdf_postprocess_pixel_step", 1),
+        "lens_sdf_postprocess_worker_count": _as_int(payload, "lens_sdf_postprocess_worker_count", 1),
         "lens_sdf_postprocess_direct_sample_count": _as_int(payload, "lens_sdf_postprocess_direct_sample_count"),
         "lens_sdf_postprocess_neighborhood_sample_count": _as_int(payload, "lens_sdf_postprocess_neighborhood_sample_count"),
         "lens_sdf_postprocess_filled_pixel_count": _as_int(payload, "lens_sdf_postprocess_filled_pixel_count"),
@@ -238,14 +239,14 @@ def write_markdown_report(report: dict[str, object], out_path: Path) -> None:
         f"- Recommendation: `{report.get('summary', {}).get('recommendation', '')}`",
         f"- Persistent viewer launches: `{report.get('persistent_viewer_launch_count', '')}`",
         "",
-        "| Scenario | Phase | Class | Base ms | Field ms | Post ms | SDF total ms | Last ms | Step |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|",
+        "| Scenario | Phase | Class | Base ms | Field ms | Post ms | SDF total ms | Last ms | Step | Workers |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for item in report.get("scenarios", []):
         if not isinstance(item, dict):
             continue
         lines.append(
-            "| {name} | {phase} | {classification} | {base:.3f} | {field:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} |".format(
+            "| {name} | {phase} | {classification} | {base:.3f} | {field:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} | {workers} |".format(
                 name=item.get("name", ""),
                 phase=item.get("phase", ""),
                 classification=item.get("classification", ""),
@@ -255,6 +256,7 @@ def write_markdown_report(report: dict[str, object], out_path: Path) -> None:
                 total=float(item.get("lens_sdf_total_ms", 0.0)),
                 last=float(item.get("last_render_ms", 0.0)),
                 step=int(item.get("lens_sdf_postprocess_pixel_step", 0)),
+                workers=int(item.get("lens_sdf_postprocess_worker_count", 0)),
             )
         )
     out_path.parent.mkdir(parents=True, exist_ok=True)

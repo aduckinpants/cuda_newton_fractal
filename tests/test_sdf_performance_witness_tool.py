@@ -43,6 +43,7 @@ def _payload(
         "lens_sdf_height": 240,
         "lens_sdf_pixel_scale": 1.0,
         "lens_sdf_postprocess_pixel_step": pixel_step,
+        "lens_sdf_postprocess_worker_count": 3,
         "lens_sdf_postprocess_direct_sample_count": direct_samples,
         "lens_sdf_postprocess_neighborhood_sample_count": neighborhood_samples,
         "lens_sdf_postprocess_filled_pixel_count": 320 * 240,
@@ -93,6 +94,7 @@ def test_sdf_measurement_report_classifies_field_and_postprocess_pressure() -> N
     assert report["scenarios"][0]["classification"] == "field_generation_pressure"
     assert report["scenarios"][1]["classification"] == "postprocess_pressure"
     assert report["scenarios"][2]["classification"] == "preview_quality_sample"
+    assert report["scenarios"][1]["lens_sdf_postprocess_worker_count"] == 3
     assert report["summary"]["recommendation"] == "mixed_or_inconclusive_measurement_review_required"
 
 

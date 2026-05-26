@@ -47,6 +47,23 @@ SdfFieldResult MakeTestField() {
     return field;
 }
 
+SdfFieldResult MakeLargeTestField(int width, int height) {
+    SdfFieldResult field;
+    field.width = width;
+    field.height = height;
+    field.pixel_scale = 1.0f;
+    field.signed_distance_px.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            const float fx = (static_cast<float>(x) - static_cast<float>(width) * 0.5f) * 0.125f;
+            const float fy = (static_cast<float>(y) - static_cast<float>(height) * 0.5f) * 0.125f;
+            field.signed_distance_px[static_cast<std::size_t>(y) * static_cast<std::size_t>(width) + static_cast<std::size_t>(x)] =
+                std::sin(fx) * std::cos(fy) * 6.0f + (0.25f * fx) - (0.15f * fy);
+        }
+    }
+    return field;
+}
+
 KernelParams SdfParams(ColorSignal signal, ColorPalette palette = ColorPalette::cyclic_escape) {
     KernelParams params{};
     params.coloring_mode = palette == ColorPalette::phase_wheel ? ColoringMode::phase : ColoringMode::smooth_escape;
@@ -391,6 +408,52 @@ void TestNormalAngleRequiresNeighborhoodSamples() {
     Check(stats.neighborhood_sample_count == 16,
         "TestNormalAngleRequiresNeighborhoodSamples_NeighborhoodSamplesEveryPixel");
 }
+
+void TestParallelPostprocessMatchesForcedSerialPixelsAndStats() {
+    const SdfFieldResult field = MakeLargeTestField(32, 24);
+    RenderSettings render{};
+    render.resolution = {32, 24};
+
+    KernelParams params = SdfParams(ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel);
+    params.color_source_stack_count = 2;
+    params.color_source_stack[0].signal = ColorSignal::sdf_normal_angle;
+    params.color_source_stack[0].params.scale = 1.25f;
+    params.color_source_stack[0].params.bias = 0.1f;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    params.color_source_stack[1].signal = ColorSignal::sdf_curvature;
+    params.color_source_stack[1].params.scale = 0.5f;
+    params.color_source_stack[1].params.bias = 0.5f;
+    params.color_source_stack[1].params.blend_weight = 0.35f;
+
+    std::vector<std::uint32_t> serialPixels(static_cast<std::size_t>(render.resolution.x) * static_cast<std::size_t>(render.resolution.y), 0x12345678u);
+    std::vector<std::uint32_t> parallelPixels = serialPixels;
+    std::string error;
+    SdfColorPipelinePostprocessStats serialStats{};
+    SdfColorPipelinePostprocessOptions serialOptions{};
+    serialOptions.max_worker_threads = 1;
+    Check(ApplyLensSdfColorPipelinePostprocess(
+            field.View(), render, params, serialPixels.data(), &error, &serialStats, &serialOptions),
+        "TestParallelPostprocessMatchesForcedSerialPixelsAndStats_SerialSucceeds");
+    Check(serialStats.worker_count == 1,
+        "TestParallelPostprocessMatchesForcedSerialPixelsAndStats_SerialWorkerCountOne");
+
+    SdfColorPipelinePostprocessStats parallelStats{};
+    SdfColorPipelinePostprocessOptions parallelOptions{};
+    parallelOptions.max_worker_threads = 4;
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(
+            field.View(), render, params, parallelPixels.data(), &error, &parallelStats, &parallelOptions),
+        "TestParallelPostprocessMatchesForcedSerialPixelsAndStats_ParallelSucceeds");
+    Check(parallelStats.worker_count > 1 && parallelStats.worker_count <= 4,
+        "TestParallelPostprocessMatchesForcedSerialPixelsAndStats_ParallelWorkerCountBounded");
+    Check(parallelPixels == serialPixels,
+        "TestParallelPostprocessMatchesForcedSerialPixelsAndStats_ParallelPixelsMatchSerial");
+    Check(parallelStats.direct_sample_count == serialStats.direct_sample_count &&
+            parallelStats.neighborhood_sample_count == serialStats.neighborhood_sample_count &&
+            parallelStats.filled_pixel_count == serialStats.filled_pixel_count,
+        "TestParallelPostprocessMatchesForcedSerialPixelsAndStats_ParallelStatsMatchSerial");
+}
+
 void TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution() {
     KernelParams scalar = SdfParams(ColorSignal::sdf_signed_distance);
     Check(ResolveSdfColorPipelinePostprocessOutputPixelStep(scalar, true, 0.25, false) == 1,
@@ -432,6 +495,7 @@ int main() {
     TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels();
     TestDownsampledFieldUnevenRenderSizeMatchesReference();
     TestPreviewPixelStepReducesSamplesAndFillsFrame();
+    TestParallelPostprocessMatchesForcedSerialPixelsAndStats();
     TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution();
 
     std::printf("test_color_pipeline_sdf_postprocess: passed=%d failed=%d\n", g_passed, g_failed);

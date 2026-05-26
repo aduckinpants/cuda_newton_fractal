@@ -15,6 +15,7 @@ int ResolveSdfColorPipelinePostprocessOutputPixelStep(const KernelParams& params
 
 struct SdfColorPipelinePostprocessOptions {
     int output_pixel_step{1};
+    int max_worker_threads{0};
 };
 
 struct SdfColorPipelinePostprocessStats {
@@ -22,6 +23,7 @@ struct SdfColorPipelinePostprocessStats {
     std::size_t neighborhood_sample_count{0};
     std::size_t filled_pixel_count{0};
     int output_pixel_step{1};
+    int worker_count{1};
 };
 
 bool ApplyLensSdfColorPipelinePostprocess(

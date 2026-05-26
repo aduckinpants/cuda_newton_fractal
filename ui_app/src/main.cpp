@@ -977,6 +977,7 @@ static void DispatchRenderFrame(
                         postprocessOk = false;
                     }
                     lensSdfProbe.postprocess_pixel_step = postprocessStats.output_pixel_step;
+                    lensSdfProbe.postprocess_worker_count = postprocessStats.worker_count;
                     lensSdfProbe.postprocess_direct_sample_count =
                         static_cast<std::uint64_t>(postprocessStats.direct_sample_count);
                     lensSdfProbe.postprocess_neighborhood_sample_count =

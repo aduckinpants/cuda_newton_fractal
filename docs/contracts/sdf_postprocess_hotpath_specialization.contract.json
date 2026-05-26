@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "contract_id": "sdf_postprocess_hotpath_specialization",
+  "feature_id": "sdf_performance_design",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_postprocess_hotpath_specialization_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_postprocess_hotpath_specialization_PHASED_PLAN.md",
+    "docs/contracts/sdf_postprocess_hotpath_specialization.contract.json",
+    "HANDOFF_LOG.md",
+    "ui_app/src/color_pipeline_sdf_postprocess.cpp",
+    "ui_app/src/color_pipeline_sdf_postprocess.h",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tests",
+    "tools",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "optimize the measured SDF Color Pipeline CPU postprocess hot path first",
+    "preserve exact full-quality pixels without approximation or LUT quantization",
+    "keep worker threading bounded and local to SDF postprocess",
+    "baseline before editing and compare the published-runtime SDF performance witness after implementation"
+  ],
+  "forbidden_operator_prompts": [
+    "change visible Color Pipeline UI behavior",
+    "change SDF source semantics, gates, phase behavior, capture/replay, shared Lens downsample authority, or preview policy",
+    "implement GPU Color Pipeline postprocess in this slice",
+    "implement per-row or per-source SDF downsample authority in this slice",
+    "start authored SDF pack UI or SDF-native fractal lanes",
+    "remove the legacy runtime layer or add a Salticid runtime dependency",
+    "use physical mouse automation",
+    "claim client performance improvement from helper-only proof"
+  ],
+  "required_defaults": {
+    "slice_kind": "runtime_visible_cpu_hotpath_optimization",
+    "physical_mouse_automation": false,
+    "exact_full_quality_pixels": true,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "worker_threading_scope": "sdf_postprocess_only"
+  },
+  "forbidden_defaults": {
+    "gpu_postprocess": "deferred",
+    "per_row_downsample": "deferred",
+    "sdf_native_lanes": "deferred",
+    "authored_sdf_pack_ui": "deferred",
+    "salticid_runtime_dependency": "forbidden",
+    "approximate_pixel_lut": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_hotpath_baseline --log artifacts/logs/sdf_postprocess_hotpath_baseline.log --out-json artifacts/validation/sdf_postprocess_hotpath_baseline.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_sdf_performance_witness.py --runtime-exe D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe --out-json artifacts/sdf_postprocess_hotpath_specialization/baseline_sdf_performance_witness.json --out-md artifacts/sdf_postprocess_hotpath_specialization/baseline_sdf_performance_witness.md --work-dir artifacts/sdf_postprocess_hotpath_specialization/baseline_work --width 640 --height 480 --include-preview-sample",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_hotpath_native --log artifacts/logs/sdf_postprocess_hotpath_native.log --out-json artifacts/validation/sdf_postprocess_hotpath_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_hotpath_report_native --log artifacts/logs/sdf_postprocess_hotpath_report_native.log --out-json artifacts/validation/sdf_postprocess_hotpath_report_native.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_hotpath_publish --log artifacts/logs/sdf_postprocess_hotpath_publish.log --out-json artifacts/validation/sdf_postprocess_hotpath_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_hotpath_runtime_sdf_rows --log artifacts/logs/sdf_postprocess_hotpath_runtime_sdf_rows.log --out-json artifacts/validation/sdf_postprocess_hotpath_runtime_sdf_rows.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_hotpath_runtime_pacing --log artifacts/logs/sdf_postprocess_hotpath_runtime_pacing.log --out-json artifacts/validation/sdf_postprocess_hotpath_runtime_pacing.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_hotpath_runtime_capture_replay --log artifacts/logs/sdf_postprocess_hotpath_runtime_capture_replay.log --out-json artifacts/validation/sdf_postprocess_hotpath_runtime_capture_replay.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_capture_replay_authority.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_hotpath_after_witness --log artifacts/logs/sdf_postprocess_hotpath_after_witness.log --out-json artifacts/validation/sdf_postprocess_hotpath_after_witness.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_sdf_performance_witness.py --runtime-exe D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe --out-json artifacts/sdf_postprocess_hotpath_specialization/after_sdf_performance_witness.json --out-md artifacts/sdf_postprocess_hotpath_specialization/after_sdf_performance_witness.md --work-dir artifacts/sdf_postprocess_hotpath_specialization/after_work --width 640 --height 480 --include-preview-sample",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_postprocess_hotpath_specialization.contract.json --out-json artifacts/validation/sdf_postprocess_hotpath_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_postprocess_hotpath_specialization_PHASED_PLAN.md --out-json artifacts/validation/sdf_postprocess_hotpath_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_postprocess_hotpath_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_hotpath_diff_check --log artifacts/logs/sdf_postprocess_hotpath_diff_check.log --out-json artifacts/validation/sdf_postprocess_hotpath_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF postprocess hotpath specialization contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_postprocess_hotpath_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    }
+  ]
+}
