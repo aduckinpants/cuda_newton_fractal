@@ -1618,20 +1618,20 @@ inline std::string ColorPipelineRecipeExpansionAuthorityId() {
     return IsColorPipelineMetadataRecipeExpansionActive() ? "materialized_json" : "hardcoded";
 }
 
-inline int CountActiveColorPipelineRecipes() {
+inline const std::vector<MaterializedColorPipelineRecipe>& GetActiveColorPipelineRecipes() {
     const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
     return IsColorPipelineMetadataRecipeExpansionActive()
-        ? static_cast<int>(storage.recipes.size())
-        : CountHardcodedColorPipelineRecipes();
+        ? storage.recipes
+        : GetHardcodedColorPipelineRecipes();
+}
+
+inline int CountActiveColorPipelineRecipes() {
+    return static_cast<int>(GetActiveColorPipelineRecipes().size());
 }
 
 inline const MaterializedColorPipelineRecipe* FindActiveColorPipelineRecipe(
     const std::string& recipeId) {
-    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
-    if (IsColorPipelineMetadataRecipeExpansionActive()) {
-        return FindColorPipelineRecipeInRows(storage.recipes, recipeId);
-    }
-    return FindHardcodedColorPipelineRecipe(recipeId);
+    return FindColorPipelineRecipeInRows(GetActiveColorPipelineRecipes(), recipeId);
 }
 
 inline const std::vector<ColorPipelineLaneCatalog>& GetColorPipelineLaneCatalogs() {

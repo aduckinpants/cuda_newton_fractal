@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 - hostile review, validation, checkpoint, receipts, rearward review, push, and merge-back if green.
+Complete - hostile review, validation, checkpoint, receipts, rearward review, push, and merge-back landed.
 
 ## Phase Checklist
 
@@ -12,7 +12,7 @@ Phase 6 - hostile review, validation, checkpoint, receipts, rearward review, pus
 - [x] Phase 3 - add metadata-backed compatibility authority with hardcoded fallback
 - [x] Phase 4 - initialize the published viewer compatibility table from the staged materialized JSON
 - [x] Phase 5 - prove UI behavior stays frozen, unsupported pairs stay denied, and SDF rows still fail closed correctly
-- [ ] Phase 6 - hostile review, validation, checkpoint, receipts, rearward review, push, and merge-back if green
+- [x] Phase 6 - hostile review, validation, checkpoint, receipts, rearward review, push, and merge-back
 
 ## Explicit User Asks
 

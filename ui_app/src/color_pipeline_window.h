@@ -116,8 +116,12 @@ inline std::string BuildColorPipelineSdfFieldDownsampleControlId() {
     return "color_pipeline.source.sdf_field.downsample.primary";
 }
 
+inline std::string BuildColorPipelineRecipeApplyControlId(const std::string& recipeId) {
+    return std::string("color_pipeline.recipe.") + recipeId + ".apply";
+}
+
 inline const char* ColorPipelineWindowDraftRecipesIntroText() {
-    return "Draft Source / Shape / Palette / Grading recipes here. The legacy Color panel still shows the simple mode and grading mirrors during the schedule-editor transition.";
+    return "Preset Source / Shape / Palette / Grading recipes are materialized from the UI-Salt contract and apply through the normal row editor.";
 }
 
 inline const char* ColorPipelineWindowLaneModelSummaryText() {
@@ -125,7 +129,11 @@ inline const char* ColorPipelineWindowLaneModelSummaryText() {
 }
 
 inline const char* ColorPipelineWindowBridgeBoundarySummaryText() {
-    return "Current live apply bridge supports the bounded shipped Source / Shape / Palette / Grading recipes shown here; root_index with root_classic_palette or joy_root_palette stays on the separate row-indexed root-basin schedule.";
+    return "Supported preset application covers the bounded shipped Source / Shape / Palette / Grading recipes shown here; root_index with root_classic_palette or joy_root_palette stays on the separate row-indexed root-basin schedule.";
+}
+
+inline const char* ColorPipelineWindowSupportedPresetSummaryText() {
+    return "Available presets: Smooth Escape, Phase Orbit Wheel, and SDF Normal Angle Diagnostic.";
 }
 
 inline const char* ColorPipelineWindowFixedPresetHelpText() {
@@ -133,11 +141,11 @@ inline const char* ColorPipelineWindowFixedPresetHelpText() {
 }
 
 inline const char* ColorPipelineUnsupportedShapeRowsMessage() {
-    return "Current live bridge only supports the shipped Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows in bounded ordered Shape stacks; unshipped custom Shape recipes stay draft-only until custom runtime integration lands.";
+    return "Current runtime application only supports the shipped Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows in bounded ordered Shape stacks; unshipped custom Shape recipes stay unsupported until custom runtime integration lands.";
 }
 
 inline const char* ColorPipelineShapeRowBridgeHelpText() {
-    return "Shape rows edit the schedule draft now; shipped ordered Shape stacks participate in the current bridge, and the last enabled Shape row still mirrors into the legacy single-shape owners.";
+    return "Shape rows edit the authored row stack; shipped ordered Shape stacks participate in runtime application, and the last enabled Shape row still mirrors into the legacy single-shape owners.";
 }
 
 #ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
@@ -4108,6 +4116,80 @@ inline void OpenColorPipelineWindow(ColorPipelineWindowState* ioState) {
     ioState->open = true;
 }
 
+inline bool ConsumeColorPipelineAutomationClick(
+    ColorPipelineWindowState* ioState,
+    const std::string& controlId) {
+    if (!ioState ||
+        !ioState->ui_automation_click_pending ||
+        ioState->ui_automation_click_consumed ||
+        ioState->ui_automation_click_control_id != controlId) {
+        return false;
+    }
+    ioState->ui_automation_click_consumed = true;
+    return true;
+}
+
+inline bool ApplyColorPipelineRecipePresetToLive(
+    ColorPipelineWindowState* ioState,
+    const char* recipeId,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    bool* ioDirty,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    if (!ApplyColorPipelineRecipeToDraft(ioState, recipeId)) {
+        return false;
+    }
+    bool changed = false;
+    if (liveParams && ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed)) {
+        if (changed && ioDirty) {
+            *ioDirty = true;
+        }
+        if (changed && ioInteraction) {
+            ioInteraction->interacted = true;
+        }
+    } else if (ioInteraction) {
+        ioInteraction->interacted = true;
+    }
+    return true;
+}
+
+inline void RenderColorPipelineRecipePresetControls(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    bool* ioDirty,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    if (!ioState) {
+        return;
+    }
+    const std::vector<MaterializedColorPipelineRecipe>& recipes = color_pipeline_core::GetActiveColorPipelineRecipes();
+    if (recipes.empty()) {
+        return;
+    }
+    ImGui::TextDisabled(ColorPipelineWindowSupportedPresetSummaryText());
+    for (std::size_t index = 0; index < recipes.size(); ++index) {
+        const MaterializedColorPipelineRecipe& recipe = recipes[index];
+        const std::string controlId = BuildColorPipelineRecipeApplyControlId(recipe.id);
+        if (index > 0) {
+            ImGui::SameLine();
+        }
+        ImGui::PushID(recipe.id.c_str());
+        const bool clicked = ImGui::Button(recipe.label.c_str());
+        NoteColorPipelineUiAutomationRect(ioState, controlId.c_str());
+        const bool automationClicked = ConsumeColorPipelineAutomationClick(ioState, controlId);
+        if (clicked || automationClicked) {
+            ApplyColorPipelineRecipePresetToLive(
+                ioState,
+                recipe.id.c_str(),
+                liveFractalType,
+                liveParams,
+                ioDirty,
+                ioInteraction);
+        }
+        ImGui::PopID();
+    }
+}
+
 inline void RenderColorPipelineWindowSummary(
     ColorPipelineWindowState* ioState,
     FractalType liveFractalType,
@@ -4119,6 +4201,7 @@ inline void RenderColorPipelineWindowSummary(
     ImGui::TextWrapped(ColorPipelineWindowDraftRecipesIntroText());
     ImGui::TextDisabled(ColorPipelineWindowLaneModelSummaryText());
     ImGui::TextDisabled(ColorPipelineWindowBridgeBoundarySummaryText());
+    RenderColorPipelineRecipePresetControls(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
     ImGui::TextDisabled(ColorPipelineWindowFixedPresetHelpText());
     ImGui::Separator();
     if (ioState && liveParams) {
@@ -4132,19 +4215,19 @@ inline void RenderColorPipelineWindowSummary(
                 shapeId = ioState->live_snapshot.lanes[1].rows[0].function_id.c_str();
             }
             ImGui::TextWrapped(
-                "Live bridge: %s -> %s / %s / %s",
+                "Live selection: %s -> %s / %s / %s",
                 ColoringModeId(ioState->live_snapshot.coloring_mode),
                 signalId ? signalId : "(unsupported signal)",
                 shapeId,
                 paletteId ? paletteId : "(unsupported palette)");
         } else if (ioState->live_snapshot.valid) {
             ImGui::TextWrapped(
-                "Live bridge: %s (outside the current Source / Shape / Palette bridge)",
+                "Live selection: %s (outside the current Source / Shape / Palette preset path)",
                 ColoringModeId(ioState->live_snapshot.coloring_mode));
-            ImGui::TextDisabled("The schedule editor keeps its own starter draft until live runtime maps onto a supported Source / Shape / Palette bridge recipe.");
+            ImGui::TextDisabled("The row editor keeps its own starter state until live runtime maps onto a supported Source / Shape / Palette preset.");
         } else {
-            ImGui::TextWrapped("Live bridge: current runtime color state is invalid or out of sync with the programmable bridge.");
-            ImGui::TextDisabled("The current supported draft can still repair the runtime; the live import/reset path will return once the state is coherent again.");
+            ImGui::TextWrapped("Live selection: current runtime color state is invalid or out of sync with the row editor.");
+            ImGui::TextDisabled("The current supported row stack can still repair the runtime; reset-from-live returns once the state is coherent again.");
         }
         const bool canApply = applyState.status == ColorPipelineDraftApplyStatus::can_apply;
         if (applyState.status == ColorPipelineDraftApplyStatus::matches_live) {
@@ -4155,7 +4238,7 @@ inline void RenderColorPipelineWindowSummary(
                 : ImVec4(1.0f, 0.62f, 0.48f, 1.0f);
             ImGui::TextColored(statusColor, "%s", applyState.message.c_str());
             if (!canApply) {
-                ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape / Escape Magnitude / Root Proximity with Heatmap or Explaino Cmap, Phase Orbit / Orbit Stripe with Phase Wheel, Iteration Bands with Banded Heatmap, and Root Index with Root Classic Palette or Joy Root Palette.");
+                ImGui::TextDisabled("Supported runtime presets right now: Smooth Escape / Escape Magnitude / Root Proximity with Heatmap or Explaino Cmap, Phase Orbit / Orbit Stripe with Phase Wheel, Iteration Bands with Banded Heatmap, and Root Index with Root Classic Palette or Joy Root Palette.");
             }
         }
         if (!ioState->live_snapshot.valid || !ioState->live_snapshot.draft_import_supported) {

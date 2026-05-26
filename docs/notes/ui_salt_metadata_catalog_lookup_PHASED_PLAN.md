@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 - hostile audit, validation, checkpoint, receipts, rearward review, push, and clean-tree closure.
+Complete - hostile audit, validation, checkpoint, receipts, rearward review, push, and clean-tree closure landed.
 
 ## Phase Checklist
 
@@ -12,7 +12,7 @@ Phase 6 - hostile audit, validation, checkpoint, receipts, rearward review, push
 - [x] Phase 3 - add the metadata-to-`ColorPipelineLaneCatalog` adapter and active catalog provider
 - [x] Phase 4 - initialize the published viewer catalog from the staged materialized JSON before normal UI startup
 - [x] Phase 5 - prove visible Color Pipeline behavior remains frozen and compatibility/recipe routing stays hardcoded
-- [ ] Phase 6 - hostile review, validation, checkpoint, receipts, rearward review, push, and clean-tree closure
+- [x] Phase 6 - hostile review, validation, checkpoint, receipts, rearward review, push, and clean-tree closure
 
 ## Explicit User Asks
 

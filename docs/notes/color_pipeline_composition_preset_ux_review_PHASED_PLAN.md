@@ -131,7 +131,7 @@ The important boundary is that SDF should become a typed operand in the composit
 - Investigation finding: the referenced `152625_625__halley` capture is Halley with a four-row SDF source stack, not a Multibrot/signed-distance-only kernel repro.
 - Investigation finding: `sdf_normal_angle` contributes to that stack but is not the full-weight dominant row in that capture.
 - Investigation finding: the real product risk is effective-source/state-summary clarity plus phase-safe/beauty-mode follow-up, not deletion of full-field normal-angle diagnostics.
-- Current follow-up selection at review close was source-stack authority summary/report clarity; this shipped later at `ck:6b8e3f61`. Remaining composition follow-ups are preset workflow truth, composition UI cleanup, boundary-masked phase source, SDF masks/gates, and function-library taxonomy.
+- Current follow-up selection at review close was source-stack authority summary/report clarity; this shipped later at `ck:6b8e3f61`. UI-Salt backend authority for catalog descriptors, compatibility, companion suggestions, and recipe expansion shipped through `d908c54`. Active branch `codex/color-pipeline-preset-workflow-truth` now owns the next follow-up: product-facing preset workflow truth. Remaining later composition follow-ups are composition UI cleanup, boundary-masked phase source, SDF masks/gates, and function-library taxonomy.
 - Roadmap sync: `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`, `docs/notes/sdf_field_pack_near_term_TODO.md`, and the parked preset pit-of-success plan now point at this review and its selected follow-up order. A later truth-sync marks source-stack summary as shipped and moves SDF performance work to field quality/downsample policy.
 
 ## Hostile Audit
@@ -152,6 +152,7 @@ The important boundary is that SDF should become a typed operand in the composit
 - [done] Real older-plan drift found: the preset pit-of-success note remained parked behind an old harness gate and did not identify this active composition review as the current refinement surface.
 - [done] Clean re-read: this review does not implement or claim a full preset manager, Factorio-style UI, authored SDF live viewport integration, or SDF-native lanes.
 - [done] Later truth-sync finding: source-stack authority summary/report clarity is shipped and should not remain listed as the next pending implementation seam.
+- [done] Later truth-sync finding: UI-Salt backend authority is shipped through recipe expansion; preset workflow truth is the active product-facing gap, not another backend metadata switch.
 
 ## Action Hostile Review
 

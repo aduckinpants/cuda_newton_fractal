@@ -5,7 +5,7 @@ Purpose: keep intentionally paused threads visible so they do not vanish between
 Active specs: see `spec_intake/_STATUS.md` for the current planning surface.
 Agent protocol: see `AGENT_WORKING_PROTOCOL.md` for working rules.
 
-Last reconciled: 2026-05-23 on `codex/parameter-functionality-campaign` at `55be8c8`.
+Last reconciled: 2026-05-26 on `codex/color-pipeline-preset-workflow-truth` at `d908c54` before code mutation.
 
 ## Current Difficulty / Reward Priority
 
@@ -19,12 +19,13 @@ This table is the current backlog order after reconciling the older deferred not
 | 4 | Categorized selector + view presets | Medium | High | Organize the growing catalog and add per-fractal view preset choices before more catalog growth; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 5 | Camera/dive behavior | Medium | High | Make auto-dive dt-aware and implement at least one real behavior mode instead of flat zoom stubs; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 6 | Smooth-escape/color tuning | Medium | Medium/High | Per-family color tuning and interior treatment, without reopening Color Pipeline architecture broadly; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
-| 7 | SDF performance follow-up after preview policy | Medium/High | High | Preview postprocess quality policy is shipped; next choose between per-row/multi-field downsample design and GPU Color Pipeline postprocess with measured client evidence. |
-| 8 | Generic equation-pack productization | Medium/High | High strategic | Persistence first, then catalog picker, authoring UX, Salticid adapter, performance profiling. |
-| 9 | Callable/transpiler handoff | High | High strategic | Finish the handoff boundary without pretending dynamic backend execution already exists. |
-| 10 | Catalog/family authority refactor | High | High | Move remaining family defaults, visibility, and validation out of brittle monolithic paths before larger families. |
-| 11 | Perturbation deep-zoom expansion | High | Very high | Start with Mandelbrot/Multibrot recurrence proof and precision tests; do not generalize blindly. |
-| 12 | New substrate families | Very high | High | Lyapunov, IFS, attractor density, 3D DE/raymarch, and explanation-state families each need their own rendering/state contracts. |
+| 7 | Color Pipeline preset workflow truth | Medium | High | UI-Salt backend authority is shipped; current active slice makes the visible preset workflow truthful without a broad redesign. |
+| 8 | SDF performance follow-up after preview policy | Medium/High | High | Preview postprocess quality policy is shipped; next choose between per-row/multi-field downsample design and GPU Color Pipeline postprocess with measured client evidence. |
+| 9 | Generic equation-pack productization | Medium/High | High strategic | Persistence first, then catalog picker, authoring UX, Salticid adapter, performance profiling. |
+| 10 | Callable/transpiler handoff | High | High strategic | Finish the handoff boundary without pretending dynamic backend execution already exists. |
+| 11 | Catalog/family authority refactor | High | High | Move remaining family defaults, visibility, and validation out of brittle monolithic paths before larger families. |
+| 12 | Perturbation deep-zoom expansion | High | Very high | Start with Mandelbrot/Multibrot recurrence proof and precision tests; do not generalize blindly. |
+| 13 | New substrate families | Very high | High | Lyapunov, IFS, attractor density, 3D DE/raymarch, and explanation-state families each need their own rendering/state contracts. |
 
 ## 1. Viewer Responsiveness / Adaptive Render Recovery
 
@@ -157,7 +158,8 @@ Shipped since the original deferred note:
 - SDF preview postprocess quality policy is shipped: shared field downsample remains the authority, interactive preview reports a stepped postprocess path, and full-quality render/capture stays step 1.
 
 Active follow-up:
-- Choose the next SDF performance/design slice explicitly: per-row/multi-field downsample authority, GPU Color Pipeline postprocess, or broader composition/preset UX. Do not hide per-row quality as a guessed setting inside another slice.
+- Broader composition/preset UX is active now as `color_pipeline_preset_workflow_truth`; keep it bounded to preset workflow truth and do not mix SDF per-row quality choices into it.
+- After that, choose the next SDF performance/design slice explicitly: per-row/multi-field downsample authority or GPU Color Pipeline postprocess with measured client evidence.
 
 Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.

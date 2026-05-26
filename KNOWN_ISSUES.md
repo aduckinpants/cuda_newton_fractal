@@ -3,7 +3,7 @@
 Catalogued issues for the CUDA fractal viewer clone repo.
 Priority tiers: **P0** (blocks demo quality), **P1** (materially degrades experience), **P2** (nice to fix).
 
-Last reconciled: 2026-05-23 on `codex/parameter-functionality-campaign` at `55be8c8`.
+Last reconciled: 2026-05-26 on `codex/color-pipeline-preset-workflow-truth` at `d908c54` before code mutation.
 
 ---
 
@@ -110,10 +110,10 @@ Next correct step:
 
 ## P1 - Color Pipeline composition and effective-source UX are underdeveloped
 
-**Status:** planning complete; follow-up implementation slices remain
+**Status:** active bounded follow-up for preset workflow truth; broader composition redesign remains deferred
 **Area:** advanced color / SDF source rows / presets
 
-The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows, but the authoring model still exposes implementation seams too directly. Effective Source-stack summary/report clarity is shipped, so captures/reports can identify when `color_source_stack` is the real render authority instead of relying only on legacy top-level `color_signal`.
+The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows, but the authoring model still exposes implementation seams too directly. Effective Source-stack summary/report clarity is shipped, and UI-Salt materialized metadata now owns catalog descriptors, compatibility lookup, companion suggestions, and recipe expansion backend seams. The remaining active issue is that the visible preset workflow still needs to present that authority without misleading draft/live implementation wording or silent projection.
 
 Remaining review direction:
 - Preserve full-field `sdf_normal_angle` as a diagnostic phase view.

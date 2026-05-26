@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - the behavior-preserving UI-Salt shadow metadata slice is implemented and validated. The first live backend lookup switch remains explicitly deferred until the generated JSON has a safe published-runtime embedding or staging path.
+Complete - the UI-Salt metadata campaign has moved beyond shadow metadata: runtime packaging, catalog descriptors, compatibility lookup, companion suggestions, and recipe expansion backend seams are shipped through `d908c54`. The active follow-up is product-facing preset workflow truth, not another backend authority switch.
 
 ## Phase Checklist
 
@@ -11,7 +11,7 @@ Complete - the behavior-preserving UI-Salt shadow metadata slice is implemented 
 - [x] Phase 2 - add RED tests for materialized UI-Salt contracts, strict validation, and current Color Pipeline catalog parity
 - [x] Phase 3 - implement the minimal viewer-local UI-Salt materializer and generated JSON contract fixtures
 - [x] Phase 4 - add a C++ metadata loader/shadow parity seam without switching shipped runtime authority
-- [deferred] Phase 5 - switch the first backend lookup seam only after parity is green; this checkpoint proves parity and defers live seam switching until the generated JSON is embedded or staged beside the published runtime instead of depending on repo-relative `docs/` paths
+- [done] Phase 5 - later slices shipped the first backend lookup seams after runtime contract packaging: catalog descriptors, compatibility lookup, companion suggestions, and recipe expansion
 - [x] Phase 6 - hostile review, validation, and checkpoint closeout handoff for this behavior-preserving shadow metadata slice
 
 ## Explicit User Asks
@@ -19,7 +19,7 @@ Complete - the behavior-preserving UI-Salt shadow metadata slice is implemented 
 - [done] Build the first behavior-preserving compiler-style layer for the viewer function library and Color Pipeline composition system as a shadow metadata authority.
 - [done] Use Salticid-inspired `ui.salt` authoring, recipe materialization, typed metadata, and an Explaino-shaped contract without running Salticid inside the viewer.
 - [done] Freeze current UI behavior while generated metadata proves parity with the hardcoded implementation.
-- [deferred] Move backend lookup seams one at a time only after parity is proven; first switch is blocked on a safe generated-contract packaging/embedding decision for the published viewer.
+- [done] Move backend lookup seams one at a time only after parity is proven; runtime packaging removed the previous blocker and later slices shipped catalog, compatibility, companion, and recipe expansion authority.
 - [done] Keep feature expansion deferred until the contract layer is stable.
 
 ## Scope

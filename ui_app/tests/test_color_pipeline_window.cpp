@@ -658,6 +658,19 @@ void TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync() {
 }
 
 
+void TestPresetWorkflowTruthSurface() {
+    const std::string recipeControlId = BuildColorPipelineRecipeApplyControlId("sdf_normal_angle_diagnostic");
+    Check(recipeControlId == "color_pipeline.recipe.sdf_normal_angle_diagnostic.apply",
+        "TestPresetWorkflowTruthSurface_RecipeApplyControlIdIsStable");
+    Check(std::string(ColorPipelineWindowDraftRecipesIntroText()).find("Draft") == std::string::npos,
+        "TestPresetWorkflowTruthSurface_IntroDoesNotLeakDraftAsProductWorkflow");
+    Check(std::string(ColorPipelineWindowBridgeBoundarySummaryText()).find("Live bridge") == std::string::npos,
+        "TestPresetWorkflowTruthSurface_BridgeSummaryDoesNotLeadWithImplementationSeam");
+    Check(std::string(ColorPipelineWindowSupportedPresetSummaryText()).find("Smooth Escape") != std::string::npos &&
+            std::string(ColorPipelineWindowSupportedPresetSummaryText()).find("Normal Angle") != std::string::npos,
+        "TestPresetWorkflowTruthSurface_SupportedPresetSummaryNamesShippedRecipes");
+}
+
 void TestRecipeExpansionUsesExistingWindowDraftRows() {
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
     ColorPipelineWindowState state{};
@@ -963,6 +976,7 @@ int main() {
     TestSdfSourceRowsApplyThroughDraftLiveBridge();
     TestMixedSdfAndNonSdfSourceRowsFailClosed();
     TestDraftEditsSurviveCompatibleFractalSwitchSync();
+    TestPresetWorkflowTruthSurface();
     TestRecipeExpansionUsesExistingWindowDraftRows();
     TestWindowUtilityContracts();
 
