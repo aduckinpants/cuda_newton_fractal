@@ -427,6 +427,21 @@ static bool TryParseHeadlessProofArgs(const std::vector<std::string>& args, View
     return true;
 }
 
+static bool TryParseMetadataHeadlessArgs(const std::vector<std::string>& args, ViewerCliArgs* out) {
+    out->describe_functions = HasArg(args, "--describe-functions");
+    out->describe_parameter_surface = HasArg(args, "--describe-parameter-surface");
+    out->describe_explaino_axis_registry = HasArg(args, "--describe-explaino-axis-registry");
+    out->validate_ui_salt_contract = HasArg(args, "--validate-ui-salt-contract");
+    out->explore_recommend = HasArg(args, "--explore-recommend");
+    if (!TryStr(args, "--describe-functions-json", &out->have_describe_functions_json, &out->describe_functions_json_path)) return false;
+    if (!TryStr(args, "--describe-parameter-surface-json", &out->have_describe_parameter_surface_json, &out->describe_parameter_surface_json_path)) return false;
+    if (!TryStr(args, "--describe-explaino-axis-registry-json", &out->have_describe_explaino_axis_registry_json, &out->describe_explaino_axis_registry_json_path)) return false;
+    if (!TryStr(args, "--ui-salt-contract-json", &out->have_ui_salt_contract_json, &out->ui_salt_contract_json_path)) return false;
+    if (!TryStr(args, "--ui-salt-contract-report-json", &out->have_ui_salt_contract_report_json, &out->ui_salt_contract_report_json_path)) return false;
+    if (!TryStr(args, "--explore-recommend-json", &out->have_explore_recommend_json, &out->explore_recommend_json_path)) return false;
+    return true;
+}
+
 int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     *out = ViewerCliArgs{};
 
@@ -434,10 +449,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     out->validate_ui_only = HasArg(args, "--validate-ui");
     out->capture_diagnostic_only = HasArg(args, "--capture-diagnostic");
     out->capture_finding_only = HasArg(args, "--capture-finding");
-    out->describe_functions = HasArg(args, "--describe-functions");
-    out->describe_parameter_surface = HasArg(args, "--describe-parameter-surface");
-    out->describe_explaino_axis_registry = HasArg(args, "--describe-explaino-axis-registry");
-    out->explore_recommend = HasArg(args, "--explore-recommend");
+    if (!TryParseMetadataHeadlessArgs(args, out)) return 1;
     if (!TryStr(args, "--diagnostics-out-dir", &out->have_diagnostics_out_dir, &out->diagnostics_out_dir)) return 1;
     if (!TryStr(args, "--out-dir", &out->have_diagnostics_out_dir_alias, &out->diagnostics_out_dir_alias)) return 1;
     if (out->have_diagnostics_out_dir && out->have_diagnostics_out_dir_alias &&
@@ -464,11 +476,6 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     int sampleSourceCount = (out->sample_request_stdin ? 1 : 0) + (out->have_sample_request_json ? 1 : 0);
     out->any_sample_mode_arg = sampleSourceCount > 0 || out->sample_response_stdout || out->have_sample_response_json;
 
-    // Describe-functions JSON
-    if (!TryStr(args, "--describe-functions-json", &out->have_describe_functions_json, &out->describe_functions_json_path)) return 1;
-    if (!TryStr(args, "--describe-parameter-surface-json", &out->have_describe_parameter_surface_json, &out->describe_parameter_surface_json_path)) return 1;
-    if (!TryStr(args, "--describe-explaino-axis-registry-json", &out->have_describe_explaino_axis_registry_json, &out->describe_explaino_axis_registry_json_path)) return 1;
-    if (!TryStr(args, "--explore-recommend-json", &out->have_explore_recommend_json, &out->explore_recommend_json_path)) return 1;
     if (!TryParseFlashlightArgs(args, out)) return 1;
     if (!TryParseRuntimeWalkArgs(args, out)) return 1;
 

@@ -1,0 +1,185 @@
+#include "color_pipeline_metadata_parity.h"
+
+#include "color_pipeline_core.h"
+#include "enum_id_utils.h"
+
+#include <algorithm>
+#include <sstream>
+
+namespace {
+
+void AddError(ColorPipelineMetadataParityReport* report, const std::string& error) {
+    if (report) {
+        report->errors.push_back(error);
+    }
+}
+
+bool Near(double actual, double expected) {
+    const double delta = actual - expected;
+    return delta >= -1.0e-9 && delta <= 1.0e-9;
+}
+
+bool ParamMatches(const FunctionParamDescriptor& expected, const MaterializedColorPipelineParam& actual) {
+    if (actual.path != expected.path || actual.type != expected.type || actual.label != expected.label) return false;
+    if (actual.has_min != expected.has_min || actual.has_max != expected.has_max || actual.has_step != expected.has_step) return false;
+    if (actual.has_min && !Near(actual.min_value, expected.min_value)) return false;
+    if (actual.has_max && !Near(actual.max_value, expected.max_value)) return false;
+    if (actual.has_step && !Near(actual.step_value, expected.step_value)) return false;
+    if (actual.has_default != expected.has_default) return false;
+    if (expected.has_default) {
+        if (expected.default_value.is_number() && !(actual.default_kind == "number" && Near(actual.number_default, expected.default_value.as_number()))) return false;
+        if (expected.default_value.is_bool() && !(actual.default_kind == "bool" && actual.bool_default == expected.default_value.as_bool())) return false;
+        if (expected.default_value.is_string() && !(actual.default_kind == "string" && actual.string_default == expected.default_value.as_string())) return false;
+    }
+    if (actual.enum_options.size() != expected.options.size()) return false;
+    for (std::size_t index = 0; index < actual.enum_options.size(); ++index) {
+        if (actual.enum_options[index] != expected.options[index].id) return false;
+    }
+    return true;
+}
+
+void ValidateLaneCatalogs(
+    const MaterializedColorPipelineContract& contract,
+    ColorPipelineMetadataParityReport* report) {
+    const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
+    report->lane_count = static_cast<int>(contract.lanes.size());
+    if (contract.lanes.size() != catalogs.size()) {
+        AddError(report, "lane count mismatch");
+        return;
+    }
+    for (std::size_t laneIndex = 0; laneIndex < catalogs.size(); ++laneIndex) {
+        const ColorPipelineLaneCatalog& expectedLane = catalogs[laneIndex];
+        const MaterializedColorPipelineLane* actualLane = FindMaterializedColorPipelineLane(contract, expectedLane.lane_id);
+        if (!actualLane) {
+            AddError(report, std::string("missing lane: ") + expectedLane.lane_id);
+            continue;
+        }
+        if (contract.lanes[laneIndex].id != expectedLane.lane_id ||
+            actualLane->label != expectedLane.label ||
+            actualLane->default_function_id != expectedLane.default_function_id) {
+            AddError(report, std::string("lane metadata mismatch: ") + expectedLane.lane_id);
+        }
+        if (actualLane->functions.size() != expectedLane.functions.size()) {
+            AddError(report, std::string("function count mismatch for lane: ") + expectedLane.lane_id);
+            continue;
+        }
+        report->function_count += static_cast<int>(actualLane->functions.size());
+        for (std::size_t functionIndex = 0; functionIndex < expectedLane.functions.size(); ++functionIndex) {
+            const FunctionDescriptor& expectedFunction = expectedLane.functions[functionIndex];
+            const MaterializedColorPipelineFunction& actualFunction = actualLane->functions[functionIndex];
+            if (actualFunction.id != expectedFunction.id ||
+                actualFunction.label != expectedFunction.name ||
+                actualFunction.description != expectedFunction.description ||
+                !actualFunction.runtime_backed) {
+                AddError(report, std::string("function metadata mismatch: ") + expectedFunction.id);
+            }
+            if (actualFunction.params.size() != expectedFunction.parameters.size()) {
+                AddError(report, std::string("parameter count mismatch: ") + expectedFunction.id);
+                continue;
+            }
+            for (std::size_t paramIndex = 0; paramIndex < expectedFunction.parameters.size(); ++paramIndex) {
+                if (!ParamMatches(expectedFunction.parameters[paramIndex], actualFunction.params[paramIndex])) {
+                    AddError(report, std::string("parameter metadata mismatch: ") + expectedFunction.id + ":" + expectedFunction.parameters[paramIndex].path);
+                }
+            }
+            if (std::string(expectedLane.lane_id) == "source") {
+                const char* expectedKind = color_pipeline_core::ColorPipelineSourceSignalKindId(
+                    color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId(expectedFunction.id.c_str()));
+                if (actualFunction.signal_kind != expectedKind) {
+                    AddError(report, std::string("source signal-kind mismatch: ") + expectedFunction.id);
+                }
+            } else if (!actualFunction.signal_kind.empty()) {
+                AddError(report, std::string("non-source function has signal_kind: ") + expectedFunction.id);
+            }
+        }
+    }
+}
+
+void ValidateCompatibility(
+    const MaterializedColorPipelineContract& contract,
+    ColorPipelineMetadataParityReport* report) {
+    report->compatibility_count = static_cast<int>(contract.compatibility.size());
+    const ColorPipelineLaneCatalog* sourceLane = color_pipeline_core::FindColorPipelineLaneCatalog("source");
+    const ColorPipelineLaneCatalog* paletteLane = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
+    if (!sourceLane || !paletteLane) {
+        AddError(report, "missing source or palette lane");
+        return;
+    }
+    for (const FunctionDescriptor& sourceFunction : sourceLane->functions) {
+        for (const FunctionDescriptor& paletteFunction : paletteLane->functions) {
+            ColorPipelineSelection selection;
+            ColoringMode mode = ColoringMode::smooth_escape;
+            const bool supported = color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+                sourceFunction.id.c_str(),
+                paletteFunction.id.c_str(),
+                &selection,
+                &mode);
+            const MaterializedColorPipelineCompatibility* row =
+                FindMaterializedColorPipelineCompatibility(contract, sourceFunction.id, paletteFunction.id);
+            if (!supported) {
+                ++report->unsupported_pair_count;
+            }
+            if (supported != (row != nullptr)) {
+                AddError(report, std::string("compatibility allow/deny mismatch: ") + sourceFunction.id + "+" + paletteFunction.id);
+                continue;
+            }
+            if (supported && row) {
+                if (row->signal != color_pipeline_core::AdvancedColorSignalFunctionId(selection.signal) ||
+                    row->palette_runtime != color_pipeline_core::AdvancedColorPaletteFunctionId(selection.palette) ||
+                    row->grading != color_pipeline_core::AdvancedColorGradingFunctionId(selection.grading) ||
+                    row->mode != ColoringModeId(mode)) {
+                    AddError(report, std::string("compatibility tuple mismatch: ") + sourceFunction.id + "+" + paletteFunction.id);
+                }
+            }
+        }
+    }
+}
+
+std::string JsonEscape(const std::string& text) {
+    std::ostringstream out;
+    for (const char ch : text) {
+        switch (ch) {
+        case '\\': out << "\\\\"; break;
+        case '"': out << "\\\""; break;
+        case '\n': out << "\\n"; break;
+        case '\r': out << "\\r"; break;
+        case '\t': out << "\\t"; break;
+        default: out << ch; break;
+        }
+    }
+    return out.str();
+}
+
+} // namespace
+
+ColorPipelineMetadataParityReport ValidateColorPipelineMetadataParity(
+    const MaterializedColorPipelineContract& contract) {
+    ColorPipelineMetadataParityReport report;
+    report.schema_version = contract.schema_version;
+    ValidateLaneCatalogs(contract, &report);
+    ValidateCompatibility(contract, &report);
+    report.ok = report.errors.empty();
+    return report;
+}
+
+std::string SerializeColorPipelineMetadataParityReportJson(
+    const ColorPipelineMetadataParityReport& report,
+    const std::string& contractPath) {
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"ok\": " << (report.ok ? "true" : "false") << ",\n";
+    out << "  \"contract_path\": \"" << JsonEscape(contractPath) << "\",\n";
+    out << "  \"schema_version\": " << report.schema_version << ",\n";
+    out << "  \"lane_count\": " << report.lane_count << ",\n";
+    out << "  \"function_count\": " << report.function_count << ",\n";
+    out << "  \"compatibility_count\": " << report.compatibility_count << ",\n";
+    out << "  \"unsupported_pair_count\": " << report.unsupported_pair_count << ",\n";
+    out << "  \"errors\": [";
+    for (std::size_t index = 0; index < report.errors.size(); ++index) {
+        if (index > 0) out << ", ";
+        out << "\"" << JsonEscape(report.errors[index]) << "\"";
+    }
+    out << "]\n";
+    out << "}\n";
+    return out.str();
+}

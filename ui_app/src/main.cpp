@@ -25,6 +25,8 @@
 #include "backends/imgui_impl_dx11.h"
 
 #include "cli_args.h"
+#include "color_pipeline_metadata_contract.h"
+#include "color_pipeline_metadata_parity.h"
 #include "color_pipeline_sdf_postprocess.h"
 #include "color_pipeline_window.h"
 #include "viewer_cli.h"
@@ -121,6 +123,11 @@ static std::string JoinPath(const std::string& a, const char* b) {
     char last = a.back();
     if (last == '\\' || last == '/') return a + b;
     return a + "\\" + b;
+}
+
+static std::string DefaultUiSaltContractPath(const std::string& exeDir) {
+    return JoinPath(JoinPath(JoinPath(exeDir, "ui_salt"), "generated"),
+        "color_pipeline_function_library.contract.v1.json");
 }
 
 static std::string HeadlessDiagnosticsErrorPath(const std::string& exeDir, const char* fileName) {
@@ -1647,6 +1654,45 @@ static void PresentFrame() {
     g_pSwapChain->Present(1, 0);
 }
 
+static int RunValidateUiSaltContractMode(const ViewerCliArgs& cli, const std::string& exeDir) {
+    const std::string contractPath = cli.have_ui_salt_contract_json
+        ? cli.ui_salt_contract_json_path
+        : DefaultUiSaltContractPath(exeDir);
+
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    if (!LoadColorPipelineMaterializedContractJson(contractPath, &contract, &error)) {
+        std::fprintf(stderr, "Failed to load UI-Salt contract %s: %s\n",
+            contractPath.c_str(), error.c_str());
+        return 1;
+    }
+
+    const ColorPipelineMetadataParityReport report = ValidateColorPipelineMetadataParity(contract);
+    const std::string reportJson = SerializeColorPipelineMetadataParityReportJson(report, contractPath);
+    if (cli.have_ui_salt_contract_report_json) {
+        std::ofstream out(cli.ui_salt_contract_report_json_path, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!out) {
+            std::fprintf(stderr, "Failed to open UI-Salt contract report %s\n",
+                cli.ui_salt_contract_report_json_path.c_str());
+            return 1;
+        }
+        out << reportJson;
+        if (!out.good()) {
+            std::fprintf(stderr, "Failed to write UI-Salt contract report %s\n",
+                cli.ui_salt_contract_report_json_path.c_str());
+            return 1;
+        }
+    } else {
+        std::fputs(reportJson.c_str(), stdout);
+    }
+
+    if (!report.ok) {
+        std::fprintf(stderr, "UI-Salt contract parity validation failed for %s\n", contractPath.c_str());
+        return 1;
+    }
+    return 0;
+}
+
 static int RunSampleSessionMode(const ViewerCliArgs& cli, const std::string& exePath) {
     if (cli.have_sample_session_pipe) {
         return RunNamedPipeSessionMode(cli.sample_session_pipe_name, exePath);
@@ -1661,6 +1707,20 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     const bool describeExplainoAxisRegistry = cli.describe_explaino_axis_registry || cli.have_describe_explaino_axis_registry_json;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
+    const bool validateUiSaltContract = cli.validate_ui_salt_contract ||
+        cli.have_ui_salt_contract_json || cli.have_ui_salt_contract_report_json;
+    if (validateUiSaltContract) {
+        if (!cli.validate_ui_salt_contract || cli.sample_session || cli.any_sample_mode_arg ||
+                cli.describe_functions || cli.have_describe_functions_json ||
+                describeParameterSurface || describeExplainoAxisRegistry ||
+                exploreRecommend || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer ||
+                cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
+            std::fprintf(stderr, "--validate-ui-salt-contract is mutually exclusive with other headless verbs and required for UI-Salt contract paths\n");
+            return 1;
+        }
+        return RunValidateUiSaltContractMode(cli, exeDir);
+    }
+
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
             describeParameterSurface || describeExplainoAxisRegistry ||

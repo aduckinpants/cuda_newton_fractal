@@ -1,5 +1,6 @@
 #include "../src/color_pipeline_core.h"
 #include "../src/color_pipeline_metadata_contract.h"
+#include "../src/color_pipeline_metadata_parity.h"
 #include "../src/enum_id_utils.h"
 
 #include <algorithm>
@@ -832,6 +833,13 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
     Check(!contract.recipes.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipesPresent");
     Check(!contract.explaino_entries.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoEntriesPresent");
+
+    const ColorPipelineMetadataParityReport parity = ValidateColorPipelineMetadataParity(contract);
+    Check(parity.ok && parity.errors.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
+    Check(parity.lane_count == 4 && parity.function_count == 33 &&
+            parity.compatibility_count == 20 && parity.unsupported_pair_count > 0,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
     const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
     for (std::size_t laneIndex = 0; laneIndex < catalogs.size(); ++laneIndex) {

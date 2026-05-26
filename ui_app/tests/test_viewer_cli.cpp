@@ -30,6 +30,7 @@ static void TestDefaultsNoArgs() {
     int rc = ParseViewerCli(Args({}), &cli);
     Check(rc == 0, "TestDefaultsNoArgs_ReturnCode");
     Check(!cli.validate_ui_only, "TestDefaultsNoArgs_ValidateUi");
+    Check(!cli.validate_ui_salt_contract, "TestDefaultsNoArgs_ValidateUiSaltContract");
     Check(!cli.capture_diagnostic_only, "TestDefaultsNoArgs_CaptureDiag");
     Check(!cli.capture_finding_only, "TestDefaultsNoArgs_CaptureFinding");
     Check(!cli.describe_functions, "TestDefaultsNoArgs_DescribeFunctions");
@@ -49,6 +50,37 @@ static void TestValidateUi() {
     int rc = ParseViewerCli(Args({"--validate-ui"}), &cli);
     Check(rc == 0, "TestValidateUi_ReturnCode");
     Check(cli.validate_ui_only, "TestValidateUi_Flag");
+}
+
+static void TestValidateUiSaltContract() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--validate-ui-salt-contract",
+        "--ui-salt-contract-json", "ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+        "--ui-salt-contract-report-json", "contract_report.json",
+    }), &cli);
+    Check(rc == 0, "TestValidateUiSaltContract_ReturnCode");
+    Check(cli.validate_ui_salt_contract, "TestValidateUiSaltContract_Flag");
+    Check(cli.have_ui_salt_contract_json &&
+            cli.ui_salt_contract_json_path == "ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+        "TestValidateUiSaltContract_ContractPath");
+    Check(cli.have_ui_salt_contract_report_json &&
+            cli.ui_salt_contract_report_json_path == "contract_report.json",
+        "TestValidateUiSaltContract_ReportPath");
+}
+
+static void TestValidateUiSaltContractMissingPathValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--validate-ui-salt-contract", "--ui-salt-contract-json"}), &cli);
+    Check(rc != 0, "TestValidateUiSaltContractMissingPathValue_Fails");
+}
+
+static void TestValidateUiSaltContractConflictsWithSampleSession() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--validate-ui-salt-contract", "--sample-session"}), &cli);
+    Check(rc == 0, "TestValidateUiSaltContractConflictsWithSampleSession_Parse");
+    Check(!ValidateViewerCliModeConflicts(cli),
+        "TestValidateUiSaltContractConflictsWithSampleSession_ModeInvalid");
 }
 
 static void TestFractalType() {
@@ -682,6 +714,9 @@ static void TestDescribeFunctions() {
 int main() {
     TestDefaultsNoArgs();
     TestValidateUi();
+    TestValidateUiSaltContract();
+    TestValidateUiSaltContractMissingPathValue();
+    TestValidateUiSaltContractConflictsWithSampleSession();
     TestFractalType();
     TestFractalTypeMissingValue();
     TestFractalTypeUnknown();
