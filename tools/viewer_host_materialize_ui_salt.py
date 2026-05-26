@@ -239,11 +239,12 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 "functions": [],
             })
         elif name == "function":
-            _check_known_args(name, kwargs, {"lane", "id", "label", "description", "signal_kind", "runtime_backed", "input_kind", "output_kind", "cost_hint", "params"})
+            _check_known_args(name, kwargs, {"lane", "id", "label", "description", "taxonomy_group", "signal_kind", "runtime_backed", "input_kind", "output_kind", "cost_hint", "params"})
             lane_id = _require_string(kwargs, "lane", statement=name)
             function_id = _require_string(kwargs, "id", statement=name)
             if function_id in functions:
                 raise MaterializerError(f"duplicate function id '{function_id}'")
+            taxonomy_group = _require_string(kwargs, "taxonomy_group", statement=f"function {function_id}")
             signal_kind = _optional_string(kwargs, "signal_kind", "")
             if signal_kind and signal_kind not in VALID_SIGNAL_KINDS:
                 raise MaterializerError(f"function {function_id} invalid signal_kind '{signal_kind}'")
@@ -252,6 +253,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 "id": function_id,
                 "label": _require_string(kwargs, "label", statement=name),
                 "description": _optional_string(kwargs, "description", ""),
+                "taxonomy_group": taxonomy_group,
                 "runtime_backed": runtime_backed,
                 "input_kind": _optional_string(kwargs, "input_kind", "scalar"),
                 "output_kind": _optional_string(kwargs, "output_kind", "scalar"),

@@ -856,7 +856,8 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
     Check(parity.lane_count == 4 && parity.function_count == 33 &&
-            parity.compatibility_count == 20 && parity.recipe_count == 3 && parity.unsupported_pair_count > 0,
+            parity.compatibility_count == 20 && parity.recipe_count == 3 &&
+            parity.taxonomy_group_count == 23 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
     const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
@@ -885,6 +886,8 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                 "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FunctionLabel");
             Check(actualFunction.description == expectedFunction.description,
                 "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FunctionDescription");
+            Check(actualFunction.taxonomy_group == expectedFunction.taxonomy_group && !actualFunction.taxonomy_group.empty(),
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FunctionTaxonomyGroup");
             Check(actualFunction.runtime_backed,
                 "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FunctionRuntimeBacked");
             Check(actualFunction.params.size() == expectedFunction.parameters.size(),
@@ -1335,8 +1338,8 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
         "label": "Source",
         "default": "smooth_escape_ramp",
         "functions": [
-          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []},
-          {"id": "smooth_escape_ramp", "label": "Duplicate", "description": "", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []}
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []},
+          {"id": "smooth_escape_ramp", "label": "Duplicate", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []}
         ]
       }
     ]
@@ -1367,7 +1370,7 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
         "label": "Source",
         "default": "smooth_escape_ramp",
         "functions": [
-          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []}
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []}
         ]
       },
       {
@@ -1375,7 +1378,7 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
         "label": "Palette",
         "default": "heatmap",
         "functions": [
-          {"id": "heatmap", "label": "Heatmap", "description": "", "runtime_backed": true, "input_kind": "scalar", "output_kind": "rgb", "params": []}
+          {"id": "heatmap", "label": "Heatmap", "description": "", "taxonomy_group": "palette_escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "rgb", "params": []}
         ]
       },
       {
@@ -1383,7 +1386,7 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
         "label": "Grading",
         "default": "contrast_lift",
         "functions": [
-          {"id": "contrast_lift", "label": "Contrast Lift", "description": "", "runtime_backed": true, "input_kind": "rgb", "output_kind": "rgb", "params": []}
+          {"id": "contrast_lift", "label": "Contrast Lift", "description": "", "taxonomy_group": "grade_escape", "runtime_backed": true, "input_kind": "rgb", "output_kind": "rgb", "params": []}
         ]
       }
     ]

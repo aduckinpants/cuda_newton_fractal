@@ -283,11 +283,13 @@ inline FunctionDescriptor MakeColorPipelineFunction(
     const char* id,
     const char* name,
     const char* description,
+    const char* taxonomyGroup,
     std::vector<FunctionParamDescriptor> parameters) {
     return color_pipeline_core::MakeColorPipelineFunction(
         id,
         name,
         description,
+        taxonomyGroup,
         std::move(parameters));
 }
 

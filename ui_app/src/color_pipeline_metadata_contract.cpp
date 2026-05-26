@@ -171,6 +171,7 @@ bool ReadFunction(
     if (!ReadString(value, "id", &function.id, outError) ||
         !ReadString(value, "label", &function.label, outError) ||
         !ReadOptionalString(value, "description", &function.description, outError) ||
+        !ReadString(value, "taxonomy_group", &function.taxonomy_group, outError) ||
         !ReadBool(value, "runtime_backed", &function.runtime_backed, outError) ||
         !ReadString(value, "input_kind", &function.input_kind, outError) ||
         !ReadString(value, "output_kind", &function.output_kind, outError)) {
@@ -334,6 +335,9 @@ bool ValidateMaterializedLanes(
         for (const MaterializedColorPipelineFunction& function : lane.functions) {
             if (function.id.empty()) {
                 return SetError(outError, std::string("Materialized lane '") + lane.id + "' contains an empty function id");
+            }
+            if (function.taxonomy_group.empty()) {
+                return SetError(outError, std::string("Materialized function '") + function.id + "' contains an empty taxonomy_group");
             }
             if (!laneFunctionIds.insert(function.id).second || !outFunctionIds->insert(function.id).second) {
                 return SetError(outError, std::string("Duplicate materialized function id '") + function.id + "'");

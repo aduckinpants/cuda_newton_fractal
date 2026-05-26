@@ -4,6 +4,7 @@
 #include "enum_id_utils.h"
 
 #include <algorithm>
+#include <set>
 #include <sstream>
 
 namespace {
@@ -43,6 +44,7 @@ void ValidateLaneCatalogs(
     ColorPipelineMetadataParityReport* report) {
     const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetHardcodedColorPipelineLaneCatalogs();
     report->lane_count = static_cast<int>(contract.lanes.size());
+    std::set<std::string> uniqueTaxonomyGroups;
     if (contract.lanes.size() != catalogs.size()) {
         AddError(report, "lane count mismatch");
         return;
@@ -64,14 +66,28 @@ void ValidateLaneCatalogs(
             continue;
         }
         report->function_count += static_cast<int>(actualLane->functions.size());
+        ColorPipelineLaneTaxonomyGroups laneGroups;
+        laneGroups.lane_id = expectedLane.lane_id;
         for (std::size_t functionIndex = 0; functionIndex < expectedLane.functions.size(); ++functionIndex) {
             const FunctionDescriptor& expectedFunction = expectedLane.functions[functionIndex];
             const MaterializedColorPipelineFunction& actualFunction = actualLane->functions[functionIndex];
             if (actualFunction.id != expectedFunction.id ||
                 actualFunction.label != expectedFunction.name ||
                 actualFunction.description != expectedFunction.description ||
+                actualFunction.taxonomy_group != expectedFunction.taxonomy_group ||
                 !actualFunction.runtime_backed) {
                 AddError(report, std::string("function metadata mismatch: ") + expectedFunction.id);
+            }
+            if (expectedFunction.taxonomy_group.empty()) {
+                AddError(report, std::string("missing taxonomy group: ") + expectedFunction.id);
+            } else {
+                if (uniqueTaxonomyGroups.insert(expectedFunction.taxonomy_group).second) {
+                    ++report->taxonomy_group_count;
+                }
+                if (std::find(laneGroups.groups.begin(), laneGroups.groups.end(), expectedFunction.taxonomy_group) ==
+                    laneGroups.groups.end()) {
+                    laneGroups.groups.push_back(expectedFunction.taxonomy_group);
+                }
             }
             if (actualFunction.params.size() != expectedFunction.parameters.size()) {
                 AddError(report, std::string("parameter count mismatch: ") + expectedFunction.id);
@@ -92,6 +108,7 @@ void ValidateLaneCatalogs(
                 AddError(report, std::string("non-source function has signal_kind: ") + expectedFunction.id);
             }
         }
+        report->lane_taxonomy_groups.push_back(std::move(laneGroups));
     }
 }
 
@@ -216,6 +233,26 @@ std::string SerializeColorPipelineMetadataParityReportJson(
     out << "  \"recipe_count\": " << report.recipe_count << ",\n";
     out << "  \"recipe_expansion_authority\": \"" << JsonEscape(report.recipe_expansion_authority) << "\",\n";
     out << "  \"active_recipe_count\": " << report.active_recipe_count << ",\n";
+    out << "  \"taxonomy_group_count\": " << report.taxonomy_group_count << ",\n";
+    out << "  \"lane_taxonomy_groups\": {";
+    for (std::size_t laneIndex = 0; laneIndex < report.lane_taxonomy_groups.size(); ++laneIndex) {
+        if (laneIndex > 0) {
+            out << ',';
+        }
+        const ColorPipelineLaneTaxonomyGroups& lane = report.lane_taxonomy_groups[laneIndex];
+        out << "\n    \"" << JsonEscape(lane.lane_id) << "\": [";
+        for (std::size_t groupIndex = 0; groupIndex < lane.groups.size(); ++groupIndex) {
+            if (groupIndex > 0) {
+                out << ", ";
+            }
+            out << "\"" << JsonEscape(lane.groups[groupIndex]) << "\"";
+        }
+        out << "]";
+    }
+    if (!report.lane_taxonomy_groups.empty()) {
+        out << "\n  ";
+    }
+    out << "},\n";
     out << "  \"unsupported_pair_count\": " << report.unsupported_pair_count << ",\n";
     out << "  \"errors\": [";
     for (std::size_t index = 0; index < report.errors.size(); ++index) {

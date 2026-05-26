@@ -22,9 +22,9 @@ contract(kind="composition_recipe", contract_id="viewer.composition_recipe_contr
 contract(kind="explaino", contract_id="viewer.explaino_contract.v1", version=1)
 lane(id="source", label="Source", default="smooth_escape_ramp")
 lane(id="palette", label="Palette", default="heatmap")
-function(lane="source", id="smooth_escape_ramp", label="Smooth Escape Ramp", signal_kind="scalar", runtime_backed=True, params=[["signal.scale", "float", "Scale", 0.25, 4.0, 0.01, 1.0], ["signal.bias", "float", "Bias", -1.0, 1.0, 0.01, 0.0]])
-function(lane="source", id="sdf_normal_angle", label="SDF Normal Angle", signal_kind="phase", runtime_backed=True, params=[["signal.scale", "float", "Angle Scale", -2.0, 2.0, 0.01, 1.0]])
-function(lane="palette", id="heatmap", label="Heatmap", runtime_backed=True, params=[["palette.cycle_scale", "float", "Cycle Scale", 0.25, 4.0, 0.01, 1.0]])
+function(lane="source", id="smooth_escape_ramp", label="Smooth Escape Ramp", taxonomy_group="escape", signal_kind="scalar", runtime_backed=True, params=[["signal.scale", "float", "Scale", 0.25, 4.0, 0.01, 1.0], ["signal.bias", "float", "Bias", -1.0, 1.0, 0.01, 0.0]])
+function(lane="source", id="sdf_normal_angle", label="SDF Normal Angle", taxonomy_group="sdf_phase", signal_kind="phase", runtime_backed=True, params=[["signal.scale", "float", "Angle Scale", -2.0, 2.0, 0.01, 1.0]])
+function(lane="palette", id="heatmap", label="Heatmap", taxonomy_group="palette_escape", runtime_backed=True, params=[["palette.cycle_scale", "float", "Cycle Scale", 0.25, 4.0, 0.01, 1.0]])
 compat(source="smooth_escape_ramp", palette="heatmap", signal="smooth_escape_ramp", palette_runtime="heatmap", grading="contrast_lift", mode="smooth_escape")
 explaino_contract(id="color_pipeline.explaino_cmap", hypothesis_space="color_pipeline_source_signal", authority="palette_row", lens="source_signal_to_explaino_cmap", invariant="fail_closed_runtime_backing", proof="color_pipeline_metadata_parity", fallback="fail_closed", product_facing=False, diagnostic=True)
 '''
@@ -63,6 +63,8 @@ def test_materializer_accepts_valid_contract(tmp_path):
         "sdf_normal_angle",
     ]
     assert source_lane["functions"][1]["signal_kind"] == "phase"
+    assert source_lane["functions"][0]["taxonomy_group"] == "escape"
+    assert source_lane["functions"][1]["taxonomy_group"] == "sdf_phase"
     assert payload["composition_recipe_contract"]["compatibility"][0]["mode"] == "smooth_escape"
     assert payload["explaino_contract"]["entries"][0]["proof"] == "color_pipeline_metadata_parity"
 
@@ -85,6 +87,13 @@ def test_materializer_rejects_invalid_signal_kind(tmp_path):
     proc, _ = run_materializer(tmp_path, text)
     assert proc.returncode != 0
     assert "invalid signal_kind" in proc.stderr
+
+
+def test_materializer_requires_taxonomy_group(tmp_path):
+    text = VALID_UI_SALT.replace('taxonomy_group="escape", ', '')
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "function smooth_escape_ramp requires taxonomy_group" in proc.stderr
 
 
 def test_materializer_rejects_invalid_param_range(tmp_path):
@@ -137,4 +146,15 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     signal_kinds = {fn["id"]: fn.get("signal_kind") for fn in lanes["source"]["functions"]}
     assert signal_kinds["sdf_normal_angle"] == "phase"
     assert signal_kinds["sdf_inside_outside"] == "categorical"
+    taxonomy_groups = {
+        fn["id"]: fn.get("taxonomy_group")
+        for lane in actual["function_library"]["lanes"]
+        for fn in lane["functions"]
+    }
+    assert all(taxonomy_groups.values())
+    assert taxonomy_groups["smooth_escape_ramp"] == "escape"
+    assert taxonomy_groups["sdf_normal_angle"] == "sdf_phase"
+    assert taxonomy_groups["identity"] == "identity"
+    assert taxonomy_groups["phase_wheel_palette"] == "palette_phase"
+    assert taxonomy_groups["balance_void_grade"] == "grade_manifold"
     assert len(actual["composition_recipe_contract"]["compatibility"]) == 20

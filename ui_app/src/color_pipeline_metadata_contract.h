@@ -25,6 +25,7 @@ struct MaterializedColorPipelineFunction {
     std::string id;
     std::string label;
     std::string description;
+    std::string taxonomy_group;
     bool runtime_backed = false;
     std::string input_kind;
     std::string output_kind;

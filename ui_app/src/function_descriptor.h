@@ -70,6 +70,7 @@ struct FunctionDescriptor {
     std::string id;
     std::string name;
     std::string description;
+    std::string taxonomy_group;
     std::vector<FunctionParamDescriptor> parameters;
     std::vector<FunctionOutputDescriptor> outputs;
     std::vector<FunctionSummaryMetric> summary_metrics;

@@ -273,11 +273,13 @@ inline FunctionDescriptor MakeColorPipelineFunction(
     const char* id,
     const char* name,
     const char* description,
+    const char* taxonomyGroup,
     std::vector<FunctionParamDescriptor> parameters) {
     FunctionDescriptor descriptor;
     descriptor.id = id ? id : "";
     descriptor.name = name ? name : "";
     descriptor.description = description ? description : "";
+    descriptor.taxonomy_group = taxonomyGroup ? taxonomyGroup : "";
     descriptor.parameters = std::move(parameters);
     return descriptor;
 }
@@ -549,6 +551,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "smooth_escape_ramp",
             "Smooth Escape Ramp",
             "Use the continuous escape estimate as the upstream color signal.",
+            "escape",
             {
                 MakeColorPipelineFloatParam("signal.scale", "Scale", "Expand or compress the smooth escape ramp.", 0.25, 4.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.bias", "Bias", "Shift the smooth escape ramp before palette lookup.", -1.0, 1.0, 0.01, 0.0),
@@ -558,6 +561,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "phase_orbit",
             "Phase Orbit",
             "Use orbit phase as the upstream signal.",
+            "phase",
             {
                 MakeColorPipelineFloatParam("signal.phase_offset", "Phase Offset", "Rotate the sampled phase before downstream palette work.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
                 MakeColorPipelineFloatParam("signal.wrap_cycles", "Wrap Cycles", "Control how many hue cycles appear across one full rotation.", 0.5, 6.0, 0.01, 1.0),
@@ -567,6 +571,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "banded_signal",
             "Iteration Bands",
             "Quantize the escape signal into stepped iteration bands.",
+            "bands",
             {
                 MakeColorPipelineIntParam("signal.band_count", "Band Count", "Choose how many bands to carve out of the escape signal.", 2, 24, 1, 8),
                 MakeColorPipelineFloatParam("signal.softness", "Softness", "Blend between hard posterization and soft band transitions.", 0.0, 1.0, 0.01, 0.35),
@@ -576,6 +581,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "escape_magnitude",
             "Escape Magnitude",
             "Use the orbit magnitude as the upstream escape-time source.",
+            "escape",
             {
                 MakeColorPipelineFloatParam("signal.magnitude_scale", "Magnitude Scale", "Expand or compress the escape-magnitude source before palette lookup.", 0.25, 4.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.magnitude_bias", "Magnitude Bias", "Shift the escape-magnitude source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
@@ -585,6 +591,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "orbit_stripe",
             "Orbit Stripe",
             "Fold orbit phase into a controllable stripe source before palette lookup.",
+            "phase",
             {
                 MakeColorPipelineFloatParam("signal.stripe_frequency", "Stripe Frequency", "Control how often orbit stripes repeat around the phase wheel.", 0.25, 12.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.phase_offset", "Phase Offset", "Offset the stripe wave before palette lookup.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
@@ -594,6 +601,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "root_proximity",
             "Root Proximity",
             "Use nearest-root proximity as the upstream source on basin-capable fractal families.",
+            "basin",
             {
                 MakeColorPipelineFloatParam("signal.proximity_scale", "Proximity Scale", "Control how quickly root proximity falls off away from a root.", 0.25, 8.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.proximity_bias", "Proximity Bias", "Shift the root-proximity source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
@@ -603,11 +611,13 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "root_index",
             "Root Index",
             "Use the resolved nearest-root classification index as the upstream basin source.",
+            "basin",
             {}),
         MakeColorPipelineFunction(
             "sdf_signed_distance",
             "SDF Signed Distance",
             "Use Lens SDF signed distance as the upstream color signal.",
+            "sdf",
             {
                 MakeColorPipelineSourceScaleParam("Distance Scale", "Scale the signed-distance field before palette lookup.", -2.0, 2.0, 0.01, 0.05),
                 MakeColorPipelineSourceBiasParam("Distance Bias", "Shift the signed-distance field before palette lookup.", -2.0, 2.0, 0.01, 0.5),
@@ -619,6 +629,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "sdf_inside_outside",
             "SDF Inside / Outside",
             "Use the Lens SDF inside/outside classification as the upstream color signal.",
+            "sdf",
             {
                 MakeColorPipelineSourceScaleParam("Inside Scale", "Scale the inside/outside signal before palette lookup.", -2.0, 2.0, 0.01, 1.0),
                 MakeColorPipelineSourceBiasParam("Inside Bias", "Shift the inside/outside signal before palette lookup.", -2.0, 2.0, 0.01, 0.0),
@@ -630,6 +641,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "sdf_boundary_band",
             "SDF Boundary Band",
             "Use the Lens SDF boundary band as the upstream color signal.",
+            "sdf",
             {
                 MakeColorPipelineSourceScaleParam("Band Scale", "Scale the boundary-band signal before palette lookup.", -2.0, 2.0, 0.01, 1.0),
                 MakeColorPipelineSourceBiasParam("Band Bias", "Shift the boundary-band signal before palette lookup.", -2.0, 2.0, 0.01, 0.0),
@@ -642,6 +654,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "sdf_normal_angle",
             "SDF Normal Angle",
             "Use the Lens SDF normal angle as the upstream phase signal.",
+            "sdf_phase",
             {
                 MakeColorPipelineSourceScaleParam("Angle Scale", "Scale the normalized normal angle before palette lookup.", -2.0, 2.0, 0.01, 1.0),
                 MakeColorPipelineSourceBiasParam("Angle Bias", "Shift the normalized normal angle before palette lookup.", -2.0, 2.0, 0.01, 0.0),
@@ -653,6 +666,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             "sdf_curvature",
             "SDF Curvature",
             "Use the Lens SDF curvature estimate as the upstream color signal.",
+            "sdf",
             {
                 MakeColorPipelineSourceScaleParam("Curvature Scale", "Scale the curvature estimate before palette lookup.", -2.0, 2.0, 0.01, 0.25),
                 MakeColorPipelineSourceBiasParam("Curvature Bias", "Shift the curvature estimate before palette lookup.", -2.0, 2.0, 0.01, 0.5),
@@ -669,6 +683,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             "heatmap",
             "Heatmap",
             "Wrap escape signals through the cyclic escape palette.",
+            "palette_escape",
             {
                 MakeColorPipelineFloatParam("palette.cycle_scale", "Cycle Scale", "Control how quickly the palette repeats across the signal.", 0.25, 4.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("palette.saturation", "Saturation", "Push or soften color separation in the cyclic palette.", 0.0, 2.0, 0.01, 1.0),
@@ -679,6 +694,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             "phase_wheel_palette",
             "Phase Wheel",
             "Wrap signal values around a phase wheel palette.",
+            "palette_phase",
             {
                 MakeColorPipelineFloatParam("palette.phase_offset", "Phase Offset", "Rotate the wheel before it is applied to the incoming signal.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
                 MakeColorPipelineFloatParam("palette.saturation", "Saturation", "Push or soften color separation in the wheel.", 0.0, 2.0, 0.01, 1.15),
@@ -689,6 +705,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             "banded_heatmap",
             "Banded Heatmap",
             "Map banded escape signals through the runtime band palette.",
+            "palette_bands",
             {
                 MakeColorPipelineFloatParam("palette.band_emphasis", "Band Emphasis", "Increase or relax the contrast between neighboring bands.", 0.0, 2.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("palette.phase_offset", "Phase Offset", "Offset the band palette without changing the source signal.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
@@ -699,6 +716,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             "explaino_cmap",
             "Explaino CMap",
             "Map scalar signals through the legacy ExplainO seed colormap lineage.",
+            "palette_explaino",
             {
                 MakeColorPipelineFloatParam("palette.seed_scale", "Seed Scale", "Control how quickly the ExplainO seed palette cycles across the incoming signal.", 0.25, 4.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("palette.seed_phase", "Seed Phase", "Rotate the ExplainO seed palette without changing the upstream signal.", -1.0, 1.0, 0.01, 0.0),
@@ -710,11 +728,13 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             "root_classic_palette",
             "Root Classic Palette",
             "Materialize basin root classification through the existing root-classic palette lineage.",
+            "palette_basin",
             {}),
         MakeColorPipelineFunction(
             "joy_root_palette",
             "Joy Root Palette",
             "Materialize basin root classification through the existing joy-basins palette lineage.",
+            "palette_basin",
             {}),
     };
 }
@@ -725,11 +745,13 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
             "identity",
             "Identity",
             "Keep the incoming source signal unchanged before palette materialization.",
+            "identity",
             {}),
         MakeColorPipelineFunction(
             "offset_scale",
             "Offset + Scale",
             "Shift and scale the incoming signal before palette materialization.",
+            "remap",
             {
                 MakeColorPipelineFloatParam("shape.offset", "Offset", "Shift the incoming signal before downstream palette work.", -2.0, 2.0, 0.01, 0.0),
                 MakeColorPipelineFloatParam("shape.scale", "Scale", "Expand or compress the incoming signal.", 0.1, 8.0, 0.01, 1.0),
@@ -738,6 +760,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
             "repeat",
             "Repeat",
             "Tile the incoming signal into repeating bands.",
+            "repeat",
             {
                 MakeColorPipelineFloatParam("shape.frequency", "Frequency", "Control how often the signal repeats.", 0.25, 24.0, 0.01, 8.0),
                 MakeColorPipelineFloatParam("shape.phase", "Phase", "Offset the repeated pattern without changing the source.", -1.0, 1.0, 0.01, 0.0),
@@ -746,6 +769,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
             "posterize",
             "Posterize",
             "Quantize the incoming signal into stepped bands.",
+            "posterize",
             {
                 MakeColorPipelineIntParam("shape.steps", "Steps", "Choose how many discrete levels to keep.", 2, 24, 1, 6),
                 MakeColorPipelineFloatParam("shape.mix", "Mix", "Blend between the original signal and the stepped version.", 0.0, 1.0, 0.01, 1.0),
@@ -754,6 +778,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
             "mirror_repeat",
             "Mirror Repeat",
             "Tile the incoming signal into a mirrored triangle-wave pattern.",
+            "repeat",
             {
                 MakeColorPipelineFloatParam("shape.frequency", "Frequency", "Control how often the mirrored pattern repeats.", 0.25, 24.0, 0.01, 8.0),
                 MakeColorPipelineFloatParam("shape.phase", "Phase", "Offset the mirrored pattern without changing the source.", -1.0, 1.0, 0.01, 0.0),
@@ -762,6 +787,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
             "bias_gain_curve",
             "Bias + Gain Curve",
             "Remap the incoming signal through a bias/gain curve while preserving neutral defaults.",
+            "remap",
             {
                 MakeColorPipelineFloatParam("shape.bias", "Bias", "Push the incoming signal toward the low or high end before gain is applied.", 0.0, 1.0, 0.01, 0.5),
                 MakeColorPipelineFloatParam("shape.gain", "Gain", "Adjust midtone contrast while preserving a neutral center at 0.5.", 0.0, 1.0, 0.01, 0.5),
@@ -770,6 +796,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
             "smooth_window",
             "Smooth Window",
             "Gate the incoming signal through a smoothstep window over the current wrap domain.",
+            "gate",
             {
                 MakeColorPipelineFloatParam("shape.center", "Center", "Choose where the smooth window is centered across the current wrap domain.", 0.0, 1.0, 0.01, 0.5),
                 MakeColorPipelineFloatParam("shape.width", "Width", "Control how much of the current wrap domain stays inside the window.", 0.0, 1.0, 0.01, 1.0),
@@ -784,6 +811,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
             "contrast_lift",
             "Contrast Lift",
             "Apply the default escape-time grading profile.",
+            "grade_escape",
             {
                 MakeColorPipelineFloatParam("grade.exposure", "Exposure", "Set the overall escape brightness.", 0.1, 3.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften the escape palette intensity.", 0.0, 2.0, 0.01, 1.0),
@@ -792,6 +820,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
             "phase_finish",
             "Phase Finish",
             "Apply the default phase grading profile.",
+            "grade_phase",
             {
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften phase-wheel intensity.", 0.0, 2.0, 0.01, 1.15),
                 MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch the phase palette mid-tones.", 0.0, 3.0, 0.01, 1.10),
@@ -800,6 +829,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
             "band_finish",
             "Band Finish",
             "Apply the default banded grading profile through the legacy grading mirror.",
+            "grade_bands",
             {
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften banded palette intensity.", 0.0, 2.0, 0.01, 1.15),
                 MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch the banded palette mid-tones.", 0.0, 3.0, 0.01, 1.10),
@@ -808,11 +838,13 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
             "basin_default",
             "Basin Default",
             "Preserve the legacy basin grading defaults without exposing fake tuning controls.",
+            "grade_basin",
             {}),
         MakeColorPipelineFunction(
             "neutral_finish",
             "Neutral Finish",
             "Apply a neutral grading finish through the shared exposure, saturation, and contrast owners.",
+            "grade_neutral",
             {
                 MakeColorPipelineFloatParam("grade.exposure", "Exposure", "Set the overall neutral brightness.", 0.1, 3.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften neutral palette intensity.", 0.0, 2.0, 0.01, 1.15),
@@ -822,6 +854,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
             "tone_map_finish",
             "Tone Map Finish",
             "Apply tone mapping after tint, saturation, and contrast through the shared exposure, saturation, and contrast owners.",
+            "grade_neutral",
             {
                 MakeColorPipelineFloatParam("grade.exposure", "Exposure", "Set the overall tone-map finish exposure.", 0.1, 3.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften tone-map finish palette intensity before tone mapping.", 0.0, 2.0, 0.01, 1.15),
@@ -831,6 +864,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
             "grade_glow",
             "Grade Glow",
             "Apply shared exposure, saturation, and contrast grading, then add a dedicated glow highlight finish through the runtime glow owner.",
+            "grade_fx",
             {
                 MakeColorPipelineFloatParam("grade.exposure", "Exposure", "Set the overall grade-glow exposure before the highlight finish.", 0.1, 3.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften grade-glow palette intensity before the highlight finish.", 0.0, 2.0, 0.01, 1.15),
@@ -841,6 +875,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
             "balance_void_grade",
             "Balance Void Grade",
             "Apply the reusable balance-void grading manifold through dedicated runtime owners instead of the shared neutral or ExplainO-specific finish rails.",
+            "grade_manifold",
             {
                 MakeColorPipelineFloatParam("grade.balance_void", "Balance Void", "Bias the manifold warmer or cooler around the current luminance center.", -1.0, 1.0, 0.01, 0.0),
                 MakeColorPipelineFloatParam("grade.chroma_tension", "Chroma Tension", "Tighten or relax the chroma stretch around the current accent band.", -1.0, 1.0, 0.01, 0.0),
@@ -1112,6 +1147,7 @@ inline bool ConvertMaterializedColorPipelineFunction(
     if (source.id != reference.id ||
         source.label != reference.name ||
         source.description != reference.description ||
+        source.taxonomy_group != reference.taxonomy_group ||
         !source.runtime_backed ||
         !IsColorPipelineFunctionRuntimeBacked(referenceLane.lane_id, source.id)) {
         return SetColorPipelineMetadataCatalogError(
@@ -1128,6 +1164,7 @@ inline bool ConvertMaterializedColorPipelineFunction(
     descriptor.id = source.id;
     descriptor.name = source.label;
     descriptor.description = source.description;
+    descriptor.taxonomy_group = source.taxonomy_group;
     descriptor.parameters.reserve(source.params.size());
     for (std::size_t paramIndex = 0; paramIndex < source.params.size(); ++paramIndex) {
         FunctionParamDescriptor param;

@@ -47,5 +47,16 @@ def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> N
     assert report["recipe_count"] == 3
     assert report["recipe_expansion_authority"] == "materialized_json"
     assert report["active_recipe_count"] == 3
+    assert report["taxonomy_group_count"] == 23
+    assert report["lane_taxonomy_groups"]["source"] == [
+        "escape",
+        "phase",
+        "bands",
+        "basin",
+        "sdf",
+        "sdf_phase",
+    ]
+    assert "palette_phase" in report["lane_taxonomy_groups"]["palette"]
+    assert "grade_manifold" in report["lane_taxonomy_groups"]["grading"]
     assert report["unsupported_pair_count"] > 0
     assert report["errors"] == []

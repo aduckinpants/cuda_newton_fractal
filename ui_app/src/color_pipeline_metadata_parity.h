@@ -5,6 +5,11 @@
 #include <string>
 #include <vector>
 
+struct ColorPipelineLaneTaxonomyGroups {
+    std::string lane_id;
+    std::vector<std::string> groups;
+};
+
 struct ColorPipelineMetadataParityReport {
     bool ok = false;
     int schema_version = 0;
@@ -21,6 +26,8 @@ struct ColorPipelineMetadataParityReport {
     std::string recipe_expansion_authority;
     int active_recipe_count = 0;
     int unsupported_pair_count = 0;
+    int taxonomy_group_count = 0;
+    std::vector<ColorPipelineLaneTaxonomyGroups> lane_taxonomy_groups;
     std::vector<std::string> errors;
 };
 
