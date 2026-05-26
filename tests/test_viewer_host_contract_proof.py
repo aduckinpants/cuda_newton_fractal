@@ -312,22 +312,24 @@ def test_fractal_parameter_surface_contract_requires_all44_scope() -> None:
     enum_ids_text = (REPO_ROOT / "ui_app" / "src" / "enum_id_utils.h").read_text(encoding="utf-8")
     enum_id_rows = [line for line in enum_ids_text.splitlines() if "{FractalType::" in line and line.count('"') >= 2]
 
-    assert len(options) == 44
-    assert len(enum_id_rows) == 44
+    expected_count = contract["required_defaults"].get("all_fractal_count")
+
+    assert len(options) == expected_count
+    assert len(enum_id_rows) == expected_count
     assert contract["feature_id"] == "fractal_parameter_surface_matrix_phase11_parameter_api_hardening"
-    assert contract["required_defaults"].get("all_fractal_count") == 44
+    assert expected_count == 46
     assert contract["required_defaults"].get("selected_subset_closeout_is_insufficient") is True
-    assert contract["forbidden_defaults"].get("subset_matrix_closeout_as_all44_completion") == "forbidden"
+    assert contract["forbidden_defaults"].get("subset_matrix_closeout_as_all_current_completion") == "forbidden"
     assert contract["forbidden_defaults"].get("missing_control_omission") == "forbidden"
     assert contract["forbidden_defaults"].get("dead_slider_omission") == "forbidden"
-    assert any("all 44" in item or "all-44" in item for item in contract["required_operator_inputs"])
+    assert any("all-fractal" in item for item in contract["required_operator_inputs"])
     assert any("selected subset" in item for item in contract["forbidden_operator_prompts"])
     assert any("legacy relaunching runtime-walk viewer module" in item for item in contract["forbidden_operator_prompts"])
     assert "Phase 11 is closed" in plan_text
-    assert "all 44" in plan_text
+    assert "current schema/enum count" in plan_text
     assert "No remaining parameter-surface cleanup phase is open in this plan" not in plan_text
-    assert "FractalType` enum count: 44" in inventory_text
-    assert "fractal_type` schema option count: 44" in inventory_text
+    assert f"FractalType` enum count: {expected_count}" in inventory_text
+    assert f"fractal_type` schema option count: {expected_count}" in inventory_text
 
 
 def test_fractal_parameter_surface_contract_requires_phase11_parameter_api_hardening() -> None:
@@ -335,7 +337,7 @@ def test_fractal_parameter_surface_contract_requires_phase11_parameter_api_harde
     plan_text = (REPO_ROOT / "docs" / "notes" / "fractal_parameter_surface_matrix_PHASED_PLAN.md").read_text(encoding="utf-8")
 
     assert contract["feature_id"] == "fractal_parameter_surface_matrix_phase11_parameter_api_hardening"
-    assert contract["required_defaults"].get("descriptor_export") == "required_all44_schema_cpp_derived"
+    assert contract["required_defaults"].get("descriptor_export") == "required_all_current_schema_cpp_derived"
     assert contract["required_defaults"].get("mcmullen_direct_controls") == "required"
     assert contract["required_defaults"].get("phase9_10_descriptor_and_mcmullen_baseline") == "preserved"
     assert contract["required_defaults"].get("parameter_api_hardening") == "required"

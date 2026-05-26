@@ -50,9 +50,9 @@
   ],
   "required_operator_inputs": [
     "run another hostile review and harden the parameter API without widening into deferred fractal work",
-    "keep the all-44 descriptor/export guardrail and McMullen direct controls from Phase 9/10 intact",
+    "keep the current all-fractal descriptor/export guardrail and McMullen direct controls from Phase 9/10 intact",
     "make McMullen state-load authority unambiguous so non-custom presets cannot preserve conflicting direct m, n, and lambda display values",
-    "add descriptor artifact read-back proof so the generated all-44 control-surface descriptor is valid JSON and contains the expected authority fields",
+    "add descriptor artifact read-back proof so the generated current all-fractal control-surface descriptor is valid JSON and contains the expected authority fields",
     "prove the persistent no-mouse runtime path still changes the live frame for McMullen direct controls while deferring Collatz, fixed-family variants, Explaino rational escape, generated/internal editors, perturbation zoom, and broader backend refactors"
   ],
   "forbidden_operator_prompts": [
@@ -64,7 +64,7 @@
     "leave McMullen direct controls visible but not runtime-authoritative in custom mode",
     "leave non-custom McMullen preset state with stale conflicting direct values",
     "mutate the Color Pipeline except to preserve existing guardrails",
-    "claim closure from a selected subset instead of the all-44 descriptor/schema authority"
+    "claim closure from a selected subset instead of the current all-fractal descriptor/schema authority"
   ],
   "required_defaults": {
     "branch": "codex/fractal-parameter-surface-matrix",
@@ -75,10 +75,10 @@
     "runtime_walk_viewer_default_proof": "forbidden_legacy_relaunch_module",
     "runtime_walk_viewer_e2e_module": "legacy_opt_in_only",
     "persistent_runtime_viewer_harness": "required",
-    "all_fractal_count": 44,
+    "all_fractal_count": 46,
     "selected_subset_closeout_is_insufficient": true,
     "legacy_relaunch_runtime_walk_module": "forbidden_default_proof",
-    "descriptor_export": "required_all44_schema_cpp_derived",
+    "descriptor_export": "required_all_current_schema_cpp_derived",
     "mcmullen_direct_controls": "required",
     "mcmullen_custom_authority_rule": "required",
     "defer_remaining_future_slices": true,
@@ -92,7 +92,7 @@
     "renderer_rewrite": "forbidden",
     "color_pipeline_mutation": "forbidden",
     "claim_all_items_done": "forbidden",
-    "subset_matrix_closeout_as_all44_completion": "forbidden",
+    "subset_matrix_closeout_as_all_current_completion": "forbidden",
     "missing_control_omission": "forbidden",
     "dead_slider_omission": "forbidden",
     "collatz_controls": "deferred",

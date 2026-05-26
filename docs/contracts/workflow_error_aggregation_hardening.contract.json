@@ -9,6 +9,9 @@
     "tools/viewer_host_write_contract_proof_receipt.py",
     "tests/test_agent_workflow_tools.py",
     "tests/test_viewer_host_contract_proof.py",
+    "docs/contracts/fractal_parameter_surface_matrix.contract.json",
+    "docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md",
+    "docs/notes/fractal_control_surface_audit_inventory.md",
     "docs/contracts/workflow_error_aggregation_hardening.contract.json",
     "docs/notes/workflow_error_aggregation_hardening_PHASED_PLAN.md",
     "HANDOFF_LOG.md",
@@ -37,7 +40,7 @@
   },
   "required_validation_commands": [
     "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml",
-    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py::test_contract_proof_receipt_reports_missing_commands_and_evidence_together -q --junitxml artifacts/pytest/test_viewer_host_contract_proof.junit.xml",
+    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_full.junit.xml",
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/workflow_error_aggregation_hardening.contract.json --out-json artifacts/validation/workflow_error_aggregation_hardening_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/workflow_error_aggregation_hardening_PHASED_PLAN.md --out-json artifacts/validation/workflow_error_aggregation_hardening_hostile_audit.json",
@@ -57,7 +60,7 @@
       "assertion_id": "contract_proof_writer_aggregates_errors",
       "description": "The direct contract-proof writer test proves proof blockers are aggregated instead of reported one class per run",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof.junit.xml",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_full.junit.xml",
       "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_contract_proof_receipt_reports_missing_commands_and_evidence_together"
     },
     {

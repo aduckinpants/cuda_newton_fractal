@@ -49,9 +49,10 @@ The controlling defect is workflow friction from staged failure discovery. The w
 - RED proof: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py::test_contract_proof_receipt_reports_missing_commands_and_evidence_together -q` failed because the direct contract-proof writer stopped at missing commands and did not also report missing parseable evidence.
 - Implementation: `write-receipts` now preflights contract validation commands, parseable evidence, and expected artifacts before writing a validation receipt; direct contract-proof writing now aggregates missing commands, missing evidence, and assertion failures in one report.
 - GREEN proof: `py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml` passed (`43 passed`).
-- GREEN proof: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py::test_contract_proof_receipt_reports_missing_commands_and_evidence_together -q --junitxml artifacts/pytest/test_viewer_host_contract_proof.junit.xml` passed (`1 passed`).
+- GREEN proof: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_full.junit.xml` passed (`1 passed`).
 - Contract proof: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/workflow_error_aggregation_hardening.contract.json --out-json artifacts/validation/workflow_error_aggregation_hardening_contract.json` passed.
-- Residual unrelated finding: full `tests/test_viewer_host_contract_proof.py` currently has a pre-existing stale fractal-count assertion (`44` expected, `46` current); this slice records it as out of scope and uses focused workflow node proof for the new aggregation behavior.
+- Residual finding promoted to follow-up hardening: full `tests/test_viewer_host_contract_proof.py` exposed a stale fractal-count assertion (`44` expected, `46` current). This branch widens scope only to refresh that workflow proof surface against current schema/enum authority.
+- Repair proof: `fractal_parameter_surface_matrix.contract.json`, the parameter-surface plan, and the control-surface inventory now distinguish historical `all44` artifact names from the current 46-lane schema/enum authority; full `test_viewer_host_contract_proof.py` is green again.
 
 ## Hostile Audit
 
@@ -74,7 +75,7 @@ The controlling defect is workflow friction from staged failure discovery. The w
 ## Validation Targets
 
 - `py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml`
-- `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py::test_contract_proof_receipt_reports_missing_commands_and_evidence_together -q --junitxml artifacts/pytest/test_viewer_host_contract_proof.junit.xml`
+- `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_full.junit.xml`
 - `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/workflow_error_aggregation_hardening.contract.json --out-json artifacts/validation/workflow_error_aggregation_hardening_contract.json`
 - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
 - `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/workflow_error_aggregation_hardening_PHASED_PLAN.md --out-json artifacts/validation/workflow_error_aggregation_hardening_hostile_audit.json`

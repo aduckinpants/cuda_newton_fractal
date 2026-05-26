@@ -245,6 +245,8 @@ Phase 11 is closed: the parameter API hardening pass repaired the McMullen state
 - Phase 11 focused state IO green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_state_io_green --log artifacts/logs/phase11_parameter_api_state_io_green.log -- ui_app/build_tests_vsdevcmd.cmd test_diagnostics_state_io`.
 - Phase 11 focused native green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_native --log artifacts/logs/phase11_parameter_api_native.log -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner`.
 - Phase 11 descriptor read-back artifact: `artifacts/analysis/phase9_10_all44_control_surface_descriptor.json` reports `ok=true`, `fractal_count=44`, and `mcmullen_direct_control_count=3` after the read-back rail.
+
+- Current workflow-proof stale-count repair: schema and enum authority now report 46 fractal lanes after later catalog growth. Historical Phase 8/9 artifact names remain `all44`, but current contract-proof guardrails now compare against the checked-in current schema/enum count instead of a stale literal 44.
 - Phase 11 contract proof green: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase11.junit.xml` (`23 passed`).
 - Phase 11 code-quality green: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/logs/phase11_parameter_api_code_quality.json` (score 97/100).
 - Phase 11 contract validation green: `artifacts/validation/fractal_parameter_surface_matrix_contract_phase11.json`.
