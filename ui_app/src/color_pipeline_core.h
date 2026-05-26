@@ -2,6 +2,7 @@
 
 #include "fractal_types.h"
 #include "function_descriptor.h"
+#include "color_pipeline_metadata_contract.h"
 
 #include <cmath>
 #include <cstdint>
@@ -850,7 +851,7 @@ inline std::vector<FunctionDescriptor> FilterRuntimeBackedColorPipelineFunctions
     return filtered;
 }
 
-inline const std::vector<ColorPipelineLaneCatalog>& GetColorPipelineLaneCatalogs() {
+inline const std::vector<ColorPipelineLaneCatalog>& GetHardcodedColorPipelineLaneCatalogs() {
     static const std::vector<ColorPipelineLaneCatalog> catalogs = {
         {"source", "Source", "smooth_escape_ramp", FilterRuntimeBackedColorPipelineFunctions("source", BuildColorPipelineSignalFunctions())},
         {"shape", "Shape", "identity", FilterRuntimeBackedColorPipelineFunctions("shape", BuildColorPipelineShapeFunctions())},
@@ -858,6 +859,294 @@ inline const std::vector<ColorPipelineLaneCatalog>& GetColorPipelineLaneCatalogs
         {"grading", "Grading", "contrast_lift", FilterRuntimeBackedColorPipelineFunctions("grading", BuildColorPipelineGradeFunctions())},
     };
     return catalogs;
+}
+
+struct ColorPipelineMetadataCatalogStorage {
+    bool active = false;
+    std::vector<std::string> lane_ids;
+    std::vector<std::string> lane_labels;
+    std::vector<std::string> lane_defaults;
+    std::vector<ColorPipelineLaneCatalog> catalogs;
+};
+
+inline ColorPipelineMetadataCatalogStorage& MutableColorPipelineMetadataCatalogStorage() {
+    static ColorPipelineMetadataCatalogStorage storage;
+    return storage;
+}
+
+inline void RefreshColorPipelineMetadataCatalogPointers(ColorPipelineMetadataCatalogStorage* storage) {
+    if (!storage) {
+        return;
+    }
+    const std::size_t laneCount = storage->catalogs.size();
+    for (std::size_t laneIndex = 0; laneIndex < laneCount; ++laneIndex) {
+        storage->catalogs[laneIndex].lane_id = storage->lane_ids[laneIndex].c_str();
+        storage->catalogs[laneIndex].label = storage->lane_labels[laneIndex].c_str();
+        storage->catalogs[laneIndex].default_function_id = storage->lane_defaults[laneIndex].c_str();
+    }
+}
+
+inline const FunctionDescriptor* FindColorPipelineFunctionDescriptorInCatalog(
+    const ColorPipelineLaneCatalog& catalog,
+    const std::string& functionId) {
+    for (const FunctionDescriptor& descriptor : catalog.functions) {
+        if (descriptor.id == functionId) {
+            return &descriptor;
+        }
+    }
+    return nullptr;
+}
+
+inline const FunctionParamDescriptor* FindColorPipelineParamDescriptorInFunction(
+    const FunctionDescriptor& descriptor,
+    const std::string& paramPath) {
+    for (const FunctionParamDescriptor& param : descriptor.parameters) {
+        if (param.path == paramPath) {
+            return &param;
+        }
+    }
+    return nullptr;
+}
+
+inline bool SetColorPipelineMetadataCatalogError(std::string* outError, const std::string& message) {
+    if (outError) {
+        *outError = message;
+    }
+    return false;
+}
+
+inline bool ConvertMaterializedColorPipelineParam(
+    const MaterializedColorPipelineParam& source,
+    const FunctionParamDescriptor& reference,
+    FunctionParamDescriptor* outParam,
+    std::string* outError) {
+    if (!outParam) {
+        return SetColorPipelineMetadataCatalogError(outError, "Materialized catalog param conversion requires output storage");
+    }
+    if (source.path != reference.path || source.type != reference.type || source.label != reference.label) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            std::string("Materialized parameter does not preserve the hardcoded UI descriptor for '") + reference.path + "'");
+    }
+    if (source.has_min != reference.has_min ||
+        source.has_max != reference.has_max ||
+        source.has_step != reference.has_step) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            std::string("Materialized parameter range flags do not preserve '") + reference.path + "'");
+    }
+    if (source.has_min && source.min_value != reference.min_value) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            std::string("Materialized parameter min does not preserve '") + reference.path + "'");
+    }
+    if (source.has_max && source.max_value != reference.max_value) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            std::string("Materialized parameter max does not preserve '") + reference.path + "'");
+    }
+    if (source.has_step && source.step_value != reference.step_value) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            std::string("Materialized parameter step does not preserve '") + reference.path + "'");
+    }
+
+    FunctionParamDescriptor param;
+    param.path = source.path;
+    param.type = source.type;
+    param.label = source.label;
+    param.help = reference.help;
+    param.has_min = source.has_min;
+    param.min_value = source.min_value;
+    param.has_max = source.has_max;
+    param.max_value = source.max_value;
+    param.has_step = source.has_step;
+    param.step_value = source.step_value;
+    param.has_default = source.has_default;
+    if (source.has_default) {
+        if (source.default_kind == "number") {
+            if (source.type != "float" && source.type != "double" && source.type != "int") {
+                return SetColorPipelineMetadataCatalogError(
+                    outError,
+                    std::string("Numeric default does not match materialized parameter type for '") + source.path + "'");
+            }
+            param.default_value = MakeColorPipelineNumberValue(source.number_default);
+        } else if (source.default_kind == "bool") {
+            if (source.type != "bool") {
+                return SetColorPipelineMetadataCatalogError(
+                    outError,
+                    std::string("Bool default does not match materialized parameter type for '") + source.path + "'");
+            }
+            param.default_value = MakeColorPipelineBoolValue(source.bool_default);
+        } else if (source.default_kind == "string") {
+            if (source.type != "enum") {
+                return SetColorPipelineMetadataCatalogError(
+                    outError,
+                    std::string("String default does not match materialized parameter type for '") + source.path + "'");
+            }
+            param.default_value = MakeColorPipelineStringValue(source.string_default.c_str());
+        } else {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Unknown materialized default kind for '") + source.path + "'");
+        }
+    }
+
+    if (source.enum_options.size() != reference.options.size()) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            std::string("Materialized enum options do not preserve '") + source.path + "'");
+    }
+    for (std::size_t optionIndex = 0; optionIndex < source.enum_options.size(); ++optionIndex) {
+        if (source.enum_options[optionIndex] != reference.options[optionIndex].id) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized enum option order does not preserve '") + source.path + "'");
+        }
+    }
+    param.options = reference.options;
+
+    *outParam = std::move(param);
+    return true;
+}
+
+inline bool ConvertMaterializedColorPipelineFunction(
+    const MaterializedColorPipelineFunction& source,
+    const ColorPipelineLaneCatalog& referenceLane,
+    const FunctionDescriptor& reference,
+    FunctionDescriptor* outDescriptor,
+    std::string* outError) {
+    if (!outDescriptor) {
+        return SetColorPipelineMetadataCatalogError(outError, "Materialized catalog function conversion requires output storage");
+    }
+    if (source.id != reference.id ||
+        source.label != reference.name ||
+        source.description != reference.description ||
+        !source.runtime_backed ||
+        !IsColorPipelineFunctionRuntimeBacked(referenceLane.lane_id, source.id)) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            std::string("Materialized function does not preserve the hardcoded UI descriptor for '") + reference.id + "'");
+    }
+    if (source.params.size() != reference.parameters.size()) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            std::string("Materialized parameter count does not preserve '") + reference.id + "'");
+    }
+
+    FunctionDescriptor descriptor;
+    descriptor.id = source.id;
+    descriptor.name = source.label;
+    descriptor.description = source.description;
+    descriptor.parameters.reserve(source.params.size());
+    for (std::size_t paramIndex = 0; paramIndex < source.params.size(); ++paramIndex) {
+        FunctionParamDescriptor param;
+        if (!ConvertMaterializedColorPipelineParam(
+                source.params[paramIndex],
+                reference.parameters[paramIndex],
+                &param,
+                outError)) {
+            return false;
+        }
+        descriptor.parameters.push_back(std::move(param));
+    }
+    *outDescriptor = std::move(descriptor);
+    return true;
+}
+
+inline bool TryInstallColorPipelineMetadataCatalog(
+    const MaterializedColorPipelineContract& contract,
+    std::string* outError = nullptr) {
+    const std::vector<ColorPipelineLaneCatalog>& hardcoded = GetHardcodedColorPipelineLaneCatalogs();
+    if (contract.lanes.size() != hardcoded.size()) {
+        return SetColorPipelineMetadataCatalogError(outError, "Materialized catalog lane count does not preserve the hardcoded catalog");
+    }
+
+    ColorPipelineMetadataCatalogStorage candidate;
+    candidate.active = true;
+    candidate.lane_ids.reserve(contract.lanes.size());
+    candidate.lane_labels.reserve(contract.lanes.size());
+    candidate.lane_defaults.reserve(contract.lanes.size());
+    candidate.catalogs.reserve(contract.lanes.size());
+
+    for (std::size_t laneIndex = 0; laneIndex < contract.lanes.size(); ++laneIndex) {
+        const MaterializedColorPipelineLane& sourceLane = contract.lanes[laneIndex];
+        const ColorPipelineLaneCatalog& referenceLane = hardcoded[laneIndex];
+        if (sourceLane.id != referenceLane.lane_id ||
+            sourceLane.label != referenceLane.label ||
+            sourceLane.default_function_id != referenceLane.default_function_id) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized lane does not preserve the hardcoded lane descriptor for '") + referenceLane.lane_id + "'");
+        }
+        if (sourceLane.functions.size() != referenceLane.functions.size()) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized function count does not preserve lane '") + referenceLane.lane_id + "'");
+        }
+
+        candidate.lane_ids.push_back(sourceLane.id);
+        candidate.lane_labels.push_back(sourceLane.label);
+        candidate.lane_defaults.push_back(sourceLane.default_function_id);
+
+        ColorPipelineLaneCatalog lane;
+        lane.lane_id = candidate.lane_ids.back().c_str();
+        lane.label = candidate.lane_labels.back().c_str();
+        lane.default_function_id = candidate.lane_defaults.back().c_str();
+        lane.functions.reserve(sourceLane.functions.size());
+
+        for (std::size_t functionIndex = 0; functionIndex < sourceLane.functions.size(); ++functionIndex) {
+            const MaterializedColorPipelineFunction& sourceFunction = sourceLane.functions[functionIndex];
+            const FunctionDescriptor& referenceFunction = referenceLane.functions[functionIndex];
+            FunctionDescriptor descriptor;
+            if (!ConvertMaterializedColorPipelineFunction(
+                    sourceFunction,
+                    referenceLane,
+                    referenceFunction,
+                    &descriptor,
+                    outError)) {
+                return false;
+            }
+            lane.functions.push_back(std::move(descriptor));
+        }
+        candidate.catalogs.push_back(std::move(lane));
+    }
+
+    ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    storage = std::move(candidate);
+    RefreshColorPipelineMetadataCatalogPointers(&storage);
+    if (outError) {
+        outError->clear();
+    }
+    return true;
+}
+
+inline void ClearColorPipelineMetadataCatalogForTests() {
+    MutableColorPipelineMetadataCatalogStorage() = ColorPipelineMetadataCatalogStorage{};
+}
+
+inline bool IsColorPipelineMetadataCatalogActive() {
+    return MutableColorPipelineMetadataCatalogStorage().active;
+}
+
+inline std::string ColorPipelineCatalogAuthorityId() {
+    return IsColorPipelineMetadataCatalogActive() ? "materialized_json" : "hardcoded";
+}
+
+inline int CountColorPipelineCatalogFunctions(const std::vector<ColorPipelineLaneCatalog>& catalogs) {
+    int count = 0;
+    for (const ColorPipelineLaneCatalog& catalog : catalogs) {
+        count += static_cast<int>(catalog.functions.size());
+    }
+    return count;
+}
+
+inline const std::vector<ColorPipelineLaneCatalog>& GetColorPipelineLaneCatalogs() {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    if (storage.active) {
+        return storage.catalogs;
+    }
+    return GetHardcodedColorPipelineLaneCatalogs();
 }
 
 inline const ColorPipelineLaneCatalog* FindColorPipelineLaneCatalog(const std::string& laneId) {
@@ -872,12 +1161,7 @@ inline const ColorPipelineLaneCatalog* FindColorPipelineLaneCatalog(const std::s
 inline const FunctionDescriptor* FindColorPipelineFunctionDescriptor(
     const ColorPipelineLaneCatalog& catalog,
     const std::string& functionId) {
-    for (const FunctionDescriptor& descriptor : catalog.functions) {
-        if (descriptor.id == functionId) {
-            return &descriptor;
-        }
-    }
-    return nullptr;
+    return FindColorPipelineFunctionDescriptorInCatalog(catalog, functionId);
 }
 
 inline double ResolveColorPipelineNumericDefault(const FunctionParamDescriptor& param) {

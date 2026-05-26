@@ -1,4 +1,5 @@
 #include "../src/color_pipeline_core.h"
+#include "../src/color_pipeline_metadata_catalog.h"
 #include "../src/color_pipeline_metadata_contract.h"
 #include "../src/color_pipeline_metadata_parity.h"
 #include "../src/enum_id_utils.h"
@@ -950,6 +951,80 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExpectedExplainoEntriesPresent");
 }
 
+void TestMaterializedUiSaltMetadataCanOwnPublicCatalog() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    Check(!color_pipeline_core::IsColorPipelineMetadataCatalogActive(),
+        "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_StartsHardcoded");
+
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    const std::string path = ResolveMaterializedContractPath();
+    Check(LoadColorPipelineMaterializedContractJson(path, &contract, &error),
+        (std::string("TestMaterializedUiSaltMetadataCanOwnPublicCatalog_Loads: ") + error).c_str());
+    if (!error.empty() || contract.schema_version != 1) {
+        Check(false, "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_ContractLoadOrVersion");
+        return;
+    }
+
+    const std::vector<ColorPipelineLaneCatalog>& hardcoded =
+        color_pipeline_core::GetHardcodedColorPipelineLaneCatalogs();
+    Check(color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error),
+        (std::string("TestMaterializedUiSaltMetadataCanOwnPublicCatalog_Install: ") + error).c_str());
+    Check(color_pipeline_core::IsColorPipelineMetadataCatalogActive(),
+        "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_MetadataActive");
+    Check(color_pipeline_core::ColorPipelineCatalogAuthorityId() == std::string("materialized_json"),
+        "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_Authority");
+
+    const std::vector<ColorPipelineLaneCatalog>& active =
+        color_pipeline_core::GetColorPipelineLaneCatalogs();
+    Check(active.size() == hardcoded.size(),
+        "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_LaneCount");
+    for (std::size_t laneIndex = 0; laneIndex < active.size() && laneIndex < hardcoded.size(); ++laneIndex) {
+        const ColorPipelineLaneCatalog& expectedLane = hardcoded[laneIndex];
+        const ColorPipelineLaneCatalog& actualLane = active[laneIndex];
+        Check(std::string(actualLane.lane_id) == expectedLane.lane_id,
+            "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_LaneId");
+        Check(std::string(actualLane.label) == expectedLane.label,
+            "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_LaneLabel");
+        Check(std::string(actualLane.default_function_id) == expectedLane.default_function_id,
+            "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_LaneDefault");
+        Check(actualLane.functions.size() == expectedLane.functions.size(),
+            "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_FunctionCount");
+        for (std::size_t functionIndex = 0;
+                functionIndex < actualLane.functions.size() && functionIndex < expectedLane.functions.size();
+                ++functionIndex) {
+            Check(actualLane.functions[functionIndex].id == expectedLane.functions[functionIndex].id,
+                "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_FunctionOrder");
+            Check(actualLane.functions[functionIndex].parameters.size() ==
+                    expectedLane.functions[functionIndex].parameters.size(),
+                "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_ParamCount");
+            for (std::size_t paramIndex = 0;
+                    paramIndex < actualLane.functions[functionIndex].parameters.size() &&
+                    paramIndex < expectedLane.functions[functionIndex].parameters.size();
+                    ++paramIndex) {
+                const FunctionParamDescriptor& actualParam =
+                    actualLane.functions[functionIndex].parameters[paramIndex];
+                const FunctionParamDescriptor& expectedParam =
+                    expectedLane.functions[functionIndex].parameters[paramIndex];
+                Check(actualParam.help == expectedParam.help,
+                    "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_ParamHelpPreserved");
+                Check(actualParam.options.size() == expectedParam.options.size(),
+                    "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_ParamOptionCount");
+                for (std::size_t optionIndex = 0;
+                        optionIndex < actualParam.options.size() && optionIndex < expectedParam.options.size();
+                        ++optionIndex) {
+                    Check(actualParam.options[optionIndex].label == expectedParam.options[optionIndex].label,
+                        "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_ParamOptionLabelPreserved");
+                }
+            }
+        }
+    }
+
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    Check(!color_pipeline_core::IsColorPipelineMetadataCatalogActive(),
+        "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_ClearRestoresHardcoded");
+}
+
 void TestMaterializedContractLoaderRejectsTamperedJson() {
     const char* duplicateFunctionJson = R"json({
   "schema_version": 1,
@@ -1047,6 +1122,7 @@ int main() {
     TestSelectionAndScheduleBridgeIds();
     TestSdfSourceRowsAreRuntimeBackedCatalogRows();
     TestMaterializedUiSaltMetadataShadowsCurrentCatalog();
+    TestMaterializedUiSaltMetadataCanOwnPublicCatalog();
     TestMaterializedContractLoaderRejectsTamperedJson();
 
     std::printf("test_color_pipeline_core: passed=%d failed=%d\n", g_passed, g_failed);

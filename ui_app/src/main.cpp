@@ -25,6 +25,7 @@
 #include "backends/imgui_impl_dx11.h"
 
 #include "cli_args.h"
+#include "color_pipeline_metadata_catalog.h"
 #include "color_pipeline_metadata_contract.h"
 #include "color_pipeline_metadata_parity.h"
 #include "color_pipeline_sdf_postprocess.h"
@@ -128,6 +129,25 @@ static std::string JoinPath(const std::string& a, const char* b) {
 static std::string DefaultUiSaltContractPath(const std::string& exeDir) {
     return JoinPath(JoinPath(JoinPath(exeDir, "ui_salt"), "generated"),
         "color_pipeline_function_library.contract.v1.json");
+}
+
+static bool TryInstallUiSaltCatalogFromPath(const std::string& contractPath, std::string* outError) {
+    MaterializedColorPipelineContract contract;
+    if (!LoadColorPipelineMaterializedContractJson(contractPath, &contract, outError)) {
+        return false;
+    }
+    return color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, outError);
+}
+
+static void TryInitializeColorPipelineMetadataCatalog(const std::string& exeDir) {
+    const std::string contractPath = DefaultUiSaltContractPath(exeDir);
+    std::string error;
+    if (!TryInstallUiSaltCatalogFromPath(contractPath, &error)) {
+        std::fprintf(stderr,
+            "Warning: using hardcoded Color Pipeline catalog because UI-Salt metadata catalog did not load from %s: %s\n",
+            contractPath.c_str(),
+            error.c_str());
+    }
 }
 
 static std::string HeadlessDiagnosticsErrorPath(const std::string& exeDir, const char* fileName) {
@@ -1667,7 +1687,15 @@ static int RunValidateUiSaltContractMode(const ViewerCliArgs& cli, const std::st
         return 1;
     }
 
-    const ColorPipelineMetadataParityReport report = ValidateColorPipelineMetadataParity(contract);
+    ColorPipelineMetadataParityReport report = ValidateColorPipelineMetadataParity(contract);
+    if (report.ok && !color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error)) {
+        report.ok = false;
+        report.errors.push_back(std::string("catalog install failed: ") + error);
+    }
+    report.catalog_authority = color_pipeline_core::ColorPipelineCatalogAuthorityId();
+    report.active_catalog_function_count = color_pipeline_core::CountColorPipelineCatalogFunctions(
+        color_pipeline_core::GetColorPipelineLaneCatalogs());
+
     const std::string reportJson = SerializeColorPipelineMetadataParityReportJson(report, contractPath);
     if (cli.have_ui_salt_contract_report_json) {
         std::ofstream out(cli.ui_salt_contract_report_json_path, std::ios::out | std::ios::binary | std::ios::trunc);
@@ -3352,6 +3380,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     { int headlessRc = TryDispatchCommandLineModes(cli, exePath, exeDir); if (headlessRc >= 0) return headlessRc; }
 
     if (!ValidateViewerCliModeConflicts(cli)) return 1;
+    TryInitializeColorPipelineMetadataCatalog(exeDir);
 
     ViewState view{};
     KernelParams params{};

@@ -41,7 +41,7 @@ bool ParamMatches(const FunctionParamDescriptor& expected, const MaterializedCol
 void ValidateLaneCatalogs(
     const MaterializedColorPipelineContract& contract,
     ColorPipelineMetadataParityReport* report) {
-    const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
+    const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetHardcodedColorPipelineLaneCatalogs();
     report->lane_count = static_cast<int>(contract.lanes.size());
     if (contract.lanes.size() != catalogs.size()) {
         AddError(report, "lane count mismatch");
@@ -99,8 +99,16 @@ void ValidateCompatibility(
     const MaterializedColorPipelineContract& contract,
     ColorPipelineMetadataParityReport* report) {
     report->compatibility_count = static_cast<int>(contract.compatibility.size());
-    const ColorPipelineLaneCatalog* sourceLane = color_pipeline_core::FindColorPipelineLaneCatalog("source");
-    const ColorPipelineLaneCatalog* paletteLane = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
+    const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetHardcodedColorPipelineLaneCatalogs();
+    const ColorPipelineLaneCatalog* sourceLane = nullptr;
+    const ColorPipelineLaneCatalog* paletteLane = nullptr;
+    for (const ColorPipelineLaneCatalog& catalog : catalogs) {
+        if (std::string(catalog.lane_id) == "source") {
+            sourceLane = &catalog;
+        } else if (std::string(catalog.lane_id) == "palette") {
+            paletteLane = &catalog;
+        }
+    }
     if (!sourceLane || !paletteLane) {
         AddError(report, "missing source or palette lane");
         return;
@@ -172,6 +180,8 @@ std::string SerializeColorPipelineMetadataParityReportJson(
     out << "  \"schema_version\": " << report.schema_version << ",\n";
     out << "  \"lane_count\": " << report.lane_count << ",\n";
     out << "  \"function_count\": " << report.function_count << ",\n";
+    out << "  \"catalog_authority\": \"" << JsonEscape(report.catalog_authority) << "\",\n";
+    out << "  \"active_catalog_function_count\": " << report.active_catalog_function_count << ",\n";
     out << "  \"compatibility_count\": " << report.compatibility_count << ",\n";
     out << "  \"unsupported_pair_count\": " << report.unsupported_pair_count << ",\n";
     out << "  \"errors\": [";
