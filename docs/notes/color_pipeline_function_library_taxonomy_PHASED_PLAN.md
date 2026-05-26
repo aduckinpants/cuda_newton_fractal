@@ -47,7 +47,7 @@ Out of scope:
 - Start authority: `codex/color-pipeline-function-library-taxonomy` branched from `fb0bdf5`, clean, previous rearward review `ok`.
 - Known low-priority limitation carried forward: current `SDF Field Downsample` is one shared `LensSettings::downsample` authority, not per SDF Source row/layer.
 - RED: `py -3.14 -m pytest tests/test_ui_salt_materializer.py` failed on missing `taxonomy_group` support and absent generated taxonomy fields.
-- GREEN: `py -3.14 -m pytest tests/test_ui_salt_materializer.py` passed with 8 tests.
+- GREEN: `color_pipeline_function_library_taxonomy_ui_salt_materializer` passed `tests/test_ui_salt_materializer.py` with 8 tests.
 - Native GREEN: `color_pipeline_function_library_taxonomy_core` passed `test_color_pipeline_core` with 2276 passed, 0 failed.
 - Native GREEN: `color_pipeline_function_library_taxonomy_window` passed `test_color_pipeline_window` with 200 passed, 0 failed.
 - Runtime publish GREEN: `color_pipeline_function_library_taxonomy_publish` staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.

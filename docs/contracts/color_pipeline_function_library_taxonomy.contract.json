@@ -53,7 +53,7 @@
     "physical_mouse_automation": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 -m pytest tests/test_ui_salt_materializer.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_library_taxonomy_ui_salt_materializer --log artifacts/logs/color_pipeline_function_library_taxonomy_ui_salt_materializer.log --out-json artifacts/validation/color_pipeline_function_library_taxonomy_ui_salt_materializer.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py",
     "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_library_taxonomy_core --log artifacts/logs/color_pipeline_function_library_taxonomy_core.log --out-json artifacts/validation/color_pipeline_function_library_taxonomy_core.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
     "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_library_taxonomy_window --log artifacts/logs/color_pipeline_function_library_taxonomy_window.log --out-json artifacts/validation/color_pipeline_function_library_taxonomy_window.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window",
     "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_library_taxonomy_publish --log artifacts/logs/color_pipeline_function_library_taxonomy_publish.log --out-json artifacts/validation/color_pipeline_function_library_taxonomy_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
