@@ -3242,11 +3242,11 @@ static void RunViewerFrame(
     }
     FailClosedPendingUiAutomationSetValue(viewerUiAutomationRects, colorPipelineWindow);
 
-    if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
+    const bool explainoSeedAnimationChanged = ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params);
+    const bool paramAnimationChanged = ApplyParamAnimDynamics(io.DeltaTime, view, params);
+    if (explainoSeedAnimationChanged || paramAnimationChanged) {
         dirty = true;
-    }
-    if (ApplyParamAnimDynamics(io.DeltaTime, view, params)) {
-        dirty = true;
+        actions.interactionChanged = true;
     }
 
     if (actions.interactionChanged) {

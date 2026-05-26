@@ -106,6 +106,35 @@ def _configure_sdf_heavy_realtime_state(state: dict[str, object]) -> None:
     )
 
 
+def _configure_sdf_animation_realtime_state(state: dict[str, object]) -> None:
+    _configure_sdf_heavy_realtime_state(state)
+    state["fractal_type"] = "explaino_all"
+    view = state["view"]
+    assert isinstance(view, dict)
+    view.update(
+        {
+            "center_x": 0.0,
+            "center_y": 0.0,
+            "center_hp_x": 0.0,
+            "center_hp_y": 0.0,
+            "zoom": 1.0,
+            "log2_zoom": 0.0,
+        }
+    )
+    params = state["params"]
+    assert isinstance(params, dict)
+    params.update(
+        {
+            "max_iter": 150,
+            "ripple_amplitude": 0.15,
+            "color_signal": "sdf_curvature",
+            "color_shape": "identity",
+            "color_palette": "cyclic_escape",
+            "color_grading": "escape_default",
+        }
+    )
+
+
 def _wait_for_pacing_payload(viewer: PersistentRuntimeViewerAutomation, predicate, *, timeout_seconds: float) -> dict[str, object]:
     deadline = time.monotonic() + timeout_seconds
     last_payload: dict[str, object] | None = None
@@ -181,6 +210,22 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
     state = json.loads(json.dumps(sdf_stack_capture["state"]))
     _configure_sdf_heavy_realtime_state(state)
     state_path = write_state_bundle(tmp_path / "sdf_realtime_pacing", state)
+
+    explaino_seed_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_all",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    explaino_seed_state_path = write_state_bundle(tmp_path / "sdf_animation_seed", explaino_seed_capture["state"])
+    animation_stack_capture = _capture_sdf_heavy_source_stack(exe_path=exe_path, state_path=explaino_seed_state_path)
+    animation_state = json.loads(json.dumps(animation_stack_capture["state"]))
+    _configure_sdf_animation_realtime_state(animation_state)
+    animation_state_path = write_state_bundle(tmp_path / "sdf_animation_pacing", animation_state)
 
     with PersistentRuntimeViewerAutomation(
         exe_path=exe_path,
@@ -286,4 +331,55 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
             edited_timing.command_to_report_ms,
             settled_timing.command_to_report_ms,
         )
+
+        animation_baseline = viewer.load_state_json(
+            animation_state_path,
+            expected_fractal_type="explaino_all",
+            timeout_seconds=60.0,
+        )
+        _assert_sdf_timing_payload(animation_baseline)
+        assert animation_baseline.get("render_pacing_preview_active") is False, animation_baseline
+        assert int(animation_baseline["lens_sdf_postprocess_pixel_step"]) == 1, animation_baseline
+        animation_slow_threshold_ms = (1000.0 / 240.0) * 2.0
+        assert float(animation_baseline["last_render_ms"]) > animation_slow_threshold_ms, animation_baseline
+
+        animation_enable = viewer.set_enum_id(
+            "fractal.view.param_anim_target",
+            "ripple_amplitude",
+            expected_fractal_type="explaino_all",
+            timeout_seconds=60.0,
+        )
+        _assert_sdf_timing_payload(animation_enable)
+        animation_sequence = viewer.sequence
+        animation_wait_started = time.monotonic()
+        animation_preview = _wait_for_pacing_payload(
+            viewer,
+            lambda payload: payload.get("ui_automation_command_sequence") == animation_sequence
+            and (time.monotonic() - animation_wait_started) > 1.0
+            and payload.get("render_pacing_preview_active") is True
+            and float(payload.get("render_pacing_preview_scale", 1.0)) < 0.999
+            and int(payload.get("rendered_frame_width", 0)) < int(payload.get("target_render_width", 0))
+            and int(payload.get("lens_sdf_postprocess_pixel_step", 1)) >= 1,
+            timeout_seconds=15.0,
+        )
+        _assert_sdf_timing_payload(animation_preview)
+
+        animation_disable = viewer.set_enum_id(
+            "fractal.view.param_anim_target",
+            "none",
+            expected_fractal_type="explaino_all",
+            timeout_seconds=60.0,
+        )
+        _assert_sdf_timing_payload(animation_disable)
+        disable_sequence = viewer.sequence
+        animation_settled = _wait_for_pacing_payload(
+            viewer,
+            lambda payload: payload.get("ui_automation_command_sequence") == disable_sequence
+            and payload.get("render_pacing_preview_active") is False
+            and float(payload.get("render_pacing_preview_scale", 0.0)) == 1.0
+            and int(payload.get("rendered_frame_width", 0)) >= int(payload.get("target_render_width", 1))
+            and int(payload.get("lens_sdf_postprocess_pixel_step", 0)) == 1,
+            timeout_seconds=45.0,
+        )
+        _assert_sdf_timing_payload(animation_settled)
         assert viewer.launch_count == 1
