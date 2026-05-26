@@ -203,3 +203,5 @@
 - `ck:0245810b` 2026-05-26 17:41 UTC | score 8 — Closed follow-up proof correction for Color Pipeline taxonomy slice: switched materializer proof to logged-command evidence so contract receipts can validate every required rail.
 - `ck:d402cfc8` 2026-05-26 17:57 UTC — session-start | branch=codex/color-pipeline-sdf-postprocess-performance | head=bcf5e1f | status=dirty | profile=runtime | intent=Color Pipeline SDF postprocess performance
 - `ck:d402cfc8` 2026-05-26 18:13 UTC | score 8 — Closed Color Pipeline SDF postprocess performance slice: full-quality downsampled SDF fields now reuse one postprocess sample per field cell while preserving expanded pixels; native/runtime/no-mouse preservation rails passed.
+- `ck:538994ab` 2026-05-26 18:50 UTC — session-start | branch=codex/color-pipeline-sdf-composition-bug-intake | head=9e379d8 | status=dirty | profile=checkpoint | intent=Color Pipeline SDF composition bug intake
+- `ck:538994ab` 2026-05-26 18:51 UTC | score 8 — Closed Color Pipeline SDF composition bug intake: disabled-row draft-only error and SDF curvature plus normal-angle blend regression are now explicit next-slice REDs in checked-in planning surfaces.

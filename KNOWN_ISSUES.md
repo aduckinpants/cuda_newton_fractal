@@ -120,6 +120,8 @@ Remaining review direction:
 - Preserve full-field `sdf_normal_angle` as a diagnostic phase view.
 - Add a later boundary-masked normal-angle beauty mode rather than deleting the diagnostic behavior.
 - Treat SDF fields as typed Source signals now, with SDF masks/gates as the next plausible composition operand.
+- Repair the reported row-enabled/effective-selection regression: disabled Color Pipeline rows must not keep contributing to draft-only compatibility/error reporting.
+- Repair the reported SDF-only Source-stack regression: `sdf_curvature` should be able to blend with `sdf_normal_angle` through the runtime-backed SDF postprocess path instead of being rejected as draft-only.
 - Keep the shared SDF Field Downsample limitation explicit: today it is one shared `LensSettings::downsample` value, not per SDF Source row/layer.
 - Keep preset/workflow truth green so compatible fractal switches preserve authored work and unsupported rows project safely.
 - Keep full preset manager UI, authored SDF pack viewport integration, and SDF-native lanes as separate slices.

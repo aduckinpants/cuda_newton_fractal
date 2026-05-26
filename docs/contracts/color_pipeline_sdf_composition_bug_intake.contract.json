@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_sdf_composition_bug_intake",
+  "feature_id": "color_pipeline_composition_followups",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/color_pipeline_sdf_composition_bug_intake_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs",
+    "spec_intake",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "record the disabled-row draft-only error bug as a next-slice RED",
+    "record the SDF curvature plus SDF normal-angle blend regression as a next-slice RED",
+    "sync roadmap and known-issue surfaces without claiming product repair",
+    "keep implementation, runtime proof, and broader composition redesign out of this intake slice"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the disabled-row bug is fixed in this intake",
+    "claim the SDF curvature/normal-angle blend regression is fixed in this intake",
+    "implement Color Pipeline row-enable compatibility changes",
+    "implement SDF source-stack compatibility changes",
+    "implement per-source SDF downsample",
+    "implement GPU Color Pipeline postprocess",
+    "add authored SDF pack UI or SDF-native lanes",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "docs_only_intake": true,
+    "product_code_changes": false,
+    "runtime_claims": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "implementation": "deferred_to_next_slice",
+    "runtime_closure_claim": "forbidden",
+    "per_source_downsample": "deferred",
+    "gpu_postprocess": "deferred",
+    "sdf_native_lanes": "deferred",
+    "authored_sdf_pack_ui": "deferred",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_sdf_composition_bug_intake.contract.json --out-json artifacts/validation/color_pipeline_sdf_composition_bug_intake_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_sdf_composition_bug_intake_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_sdf_composition_bug_intake_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_sdf_composition_bug_intake_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_composition_bug_intake_diff_check --log artifacts/logs/color_pipeline_sdf_composition_bug_intake_diff_check.log --out-json artifacts/validation/color_pipeline_sdf_composition_bug_intake_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF composition bug-intake contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_sdf_composition_bug_intake_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    }
+  ]
+}

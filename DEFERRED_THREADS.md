@@ -161,6 +161,7 @@ Shipped since the original deferred note:
 
 Active follow-up:
 - Broader composition/preset UX now has preset workflow truth and visible implementation-wording cleanup covered by bounded slices. Keep later composition work split by topic instead of turning it into a broad redesign.
+- Next immediate composition repair should cover two reported regressions before broader UI redesign: disabled rows still affecting draft-only compatibility/errors, and `sdf_curvature` no longer blending with `sdf_normal_angle` in an SDF-only Source stack.
 - Choose the next larger SDF performance/design slice explicitly when returning to performance: per-row/multi-field downsample authority or GPU Color Pipeline postprocess with measured client evidence.
 
 Still deferred follow-ups:
