@@ -1695,6 +1695,8 @@ static int RunValidateUiSaltContractMode(const ViewerCliArgs& cli, const std::st
     report.catalog_authority = color_pipeline_core::ColorPipelineCatalogAuthorityId();
     report.active_catalog_function_count = color_pipeline_core::CountColorPipelineCatalogFunctions(
         color_pipeline_core::GetColorPipelineLaneCatalogs());
+    report.compatibility_authority = color_pipeline_core::ColorPipelineCompatibilityAuthorityId();
+    report.active_compatibility_count = color_pipeline_core::CountActiveColorPipelineCompatibilityRows();
 
     const std::string reportJson = SerializeColorPipelineMetadataParityReportJson(report, contractPath);
     if (cli.have_ui_salt_contract_report_json) {

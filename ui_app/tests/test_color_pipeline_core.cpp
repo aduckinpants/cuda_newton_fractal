@@ -1025,6 +1025,91 @@ void TestMaterializedUiSaltMetadataCanOwnPublicCatalog() {
         "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_ClearRestoresHardcoded");
 }
 
+void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    Check(!color_pipeline_core::IsColorPipelineMetadataCompatibilityActive(),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_StartsHardcoded");
+    Check(color_pipeline_core::ColorPipelineCompatibilityAuthorityId() == std::string("hardcoded"),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_StartsHardcodedAuthority");
+    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == color_pipeline_core::CountHardcodedColorPipelineCompatibilityRows(),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_HardcodedFallbackCountIsTruthful");
+
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    const std::string path = ResolveMaterializedContractPath();
+    Check(LoadColorPipelineMaterializedContractJson(path, &contract, &error),
+        (std::string("TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Loads: ") + error).c_str());
+    if (!error.empty() || contract.schema_version != 1) {
+        Check(false, "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_ContractLoadOrVersion");
+        return;
+    }
+
+    Check(color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error),
+        (std::string("TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Install: ") + error).c_str());
+    Check(color_pipeline_core::IsColorPipelineMetadataCompatibilityActive(),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_MetadataActive");
+    Check(color_pipeline_core::ColorPipelineCompatibilityAuthorityId() == std::string("materialized_json"),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Authority");
+    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 20,
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Count");
+
+    const ColorPipelineLaneCatalog* sourceLane = color_pipeline_core::FindColorPipelineLaneCatalog("source");
+    const ColorPipelineLaneCatalog* paletteLane = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
+    Check(sourceLane != nullptr && paletteLane != nullptr,
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_SourcePaletteCatalogsPresent");
+    if (sourceLane && paletteLane) {
+        for (const FunctionDescriptor& sourceFunction : sourceLane->functions) {
+            for (const FunctionDescriptor& paletteFunction : paletteLane->functions) {
+                ColorPipelineSelection expectedSelection;
+                ColoringMode expectedMode = ColoringMode::smooth_escape;
+                const bool expectedSupported = color_pipeline_core::TryBuildHardcodedColorPipelineSelectionFromLaneIds(
+                    sourceFunction.id.c_str(),
+                    paletteFunction.id.c_str(),
+                    &expectedSelection,
+                    &expectedMode);
+                ColorPipelineSelection actualSelection;
+                ColoringMode actualMode = ColoringMode::smooth_escape;
+                const bool actualSupported = color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+                    sourceFunction.id.c_str(),
+                    paletteFunction.id.c_str(),
+                    &actualSelection,
+                    &actualMode);
+                Check(actualSupported == expectedSupported,
+                    "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_AllowDeny");
+                if (actualSupported && expectedSupported) {
+                    Check(actualSelection.signal == expectedSelection.signal,
+                        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Signal");
+                    Check(actualSelection.palette == expectedSelection.palette,
+                        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Palette");
+                    Check(actualSelection.grading == expectedSelection.grading,
+                        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Grading");
+                    Check(actualMode == expectedMode,
+                        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Mode");
+                }
+            }
+        }
+    }
+
+    ColorPipelineSelection rejectedSelection;
+    ColoringMode rejectedMode = ColoringMode::smooth_escape;
+    Check(!color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+            "sdf_normal_angle",
+            "heatmap",
+            &rejectedSelection,
+            &rejectedMode),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_PhaseSdfHeatmapStillDenied");
+    Check(!color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+            "sdf_signed_distance",
+            "phase_wheel_palette",
+            &rejectedSelection,
+            &rejectedMode),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_ScalarSdfPhaseWheelStillDenied");
+
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    Check(!color_pipeline_core::IsColorPipelineMetadataCompatibilityActive(),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_ClearRestoresHardcoded");
+}
+
 void TestMaterializedContractLoaderRejectsTamperedJson() {
     const char* duplicateFunctionJson = R"json({
   "schema_version": 1,
@@ -1123,6 +1208,7 @@ int main() {
     TestSdfSourceRowsAreRuntimeBackedCatalogRows();
     TestMaterializedUiSaltMetadataShadowsCurrentCatalog();
     TestMaterializedUiSaltMetadataCanOwnPublicCatalog();
+    TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup();
     TestMaterializedContractLoaderRejectsTamperedJson();
 
     std::printf("test_color_pipeline_core: passed=%d failed=%d\n", g_passed, g_failed);

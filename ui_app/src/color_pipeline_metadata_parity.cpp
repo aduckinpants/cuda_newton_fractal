@@ -117,7 +117,7 @@ void ValidateCompatibility(
         for (const FunctionDescriptor& paletteFunction : paletteLane->functions) {
             ColorPipelineSelection selection;
             ColoringMode mode = ColoringMode::smooth_escape;
-            const bool supported = color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+            const bool supported = color_pipeline_core::TryBuildHardcodedColorPipelineSelectionFromLaneIds(
                 sourceFunction.id.c_str(),
                 paletteFunction.id.c_str(),
                 &selection,
@@ -183,6 +183,8 @@ std::string SerializeColorPipelineMetadataParityReportJson(
     out << "  \"catalog_authority\": \"" << JsonEscape(report.catalog_authority) << "\",\n";
     out << "  \"active_catalog_function_count\": " << report.active_catalog_function_count << ",\n";
     out << "  \"compatibility_count\": " << report.compatibility_count << ",\n";
+    out << "  \"compatibility_authority\": \"" << JsonEscape(report.compatibility_authority) << "\",\n";
+    out << "  \"active_compatibility_count\": " << report.active_compatibility_count << ",\n";
     out << "  \"unsupported_pair_count\": " << report.unsupported_pair_count << ",\n";
     out << "  \"errors\": [";
     for (std::size_t index = 0; index < report.errors.size(); ++index) {

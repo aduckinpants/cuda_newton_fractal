@@ -13,6 +13,8 @@ struct ColorPipelineMetadataParityReport {
     std::string catalog_authority;
     int active_catalog_function_count = 0;
     int compatibility_count = 0;
+    std::string compatibility_authority;
+    int active_compatibility_count = 0;
     int unsupported_pair_count = 0;
     std::vector<std::string> errors;
 };

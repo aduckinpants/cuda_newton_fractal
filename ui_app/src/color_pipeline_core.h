@@ -3,6 +3,7 @@
 #include "fractal_types.h"
 #include "function_descriptor.h"
 #include "color_pipeline_metadata_contract.h"
+#include "enum_id_utils.h"
 
 #include <cmath>
 #include <cstdint>
@@ -867,7 +868,16 @@ struct ColorPipelineMetadataCatalogStorage {
     std::vector<std::string> lane_labels;
     std::vector<std::string> lane_defaults;
     std::vector<ColorPipelineLaneCatalog> catalogs;
+    std::vector<MaterializedColorPipelineCompatibility> compatibility;
 };
+
+inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId,
+    ColorPipelineSelection* outPipeline,
+    ColoringMode* outMode);
+
+inline int CountHardcodedColorPipelineCompatibilityRows();
 
 inline ColorPipelineMetadataCatalogStorage& MutableColorPipelineMetadataCatalogStorage() {
     static ColorPipelineMetadataCatalogStorage storage;
@@ -1112,6 +1122,52 @@ inline bool TryInstallColorPipelineMetadataCatalog(
         candidate.catalogs.push_back(std::move(lane));
     }
 
+    const int expectedCompatibilityCount = CountHardcodedColorPipelineCompatibilityRows();
+    if (static_cast<int>(contract.compatibility.size()) != expectedCompatibilityCount) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            "Materialized compatibility count does not preserve the hardcoded compatibility table");
+    }
+    candidate.compatibility.reserve(contract.compatibility.size());
+    for (const MaterializedColorPipelineCompatibility& row : contract.compatibility) {
+        ColorPipelineSelection expectedSelection;
+        ColoringMode expectedMode = ColoringMode::smooth_escape;
+        if (!TryBuildHardcodedColorPipelineSelectionFromLaneIds(
+                row.source.c_str(),
+                row.palette.c_str(),
+                &expectedSelection,
+                &expectedMode)) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized compatibility row claims unsupported pair '") + row.source + "' + '" + row.palette + "'");
+        }
+
+        ColorPipelineSelection actualSelection;
+        ColoringMode actualMode = ColoringMode::smooth_escape;
+        if (!TryParseAdvancedColorSignalFunctionId(row.signal, &actualSelection.signal) ||
+            !TryParseAdvancedColorPaletteFunctionId(row.palette_runtime, &actualSelection.palette) ||
+            !TryParseAdvancedColorGradingFunctionId(row.grading, &actualSelection.grading) ||
+            !TryParseColoringModeId(row.mode, &actualMode)) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized compatibility row has an unknown runtime tuple for '") + row.source + "' + '" + row.palette + "'");
+        }
+        if (actualSelection.signal != expectedSelection.signal ||
+            actualSelection.palette != expectedSelection.palette ||
+            actualSelection.grading != expectedSelection.grading ||
+            actualMode != expectedMode) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized compatibility row does not preserve hardcoded tuple for '") + row.source + "' + '" + row.palette + "'");
+        }
+        if (row.reason.empty()) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized compatibility row is missing a reason for '") + row.source + "' + '" + row.palette + "'");
+        }
+        candidate.compatibility.push_back(row);
+    }
+
     ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
     storage = std::move(candidate);
     RefreshColorPipelineMetadataCatalogPointers(&storage);
@@ -1137,6 +1193,66 @@ inline int CountColorPipelineCatalogFunctions(const std::vector<ColorPipelineLan
     int count = 0;
     for (const ColorPipelineLaneCatalog& catalog : catalogs) {
         count += static_cast<int>(catalog.functions.size());
+    }
+    return count;
+}
+
+inline bool IsColorPipelineMetadataCompatibilityActive() {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    return storage.active && !storage.compatibility.empty();
+}
+
+inline std::string ColorPipelineCompatibilityAuthorityId() {
+    return IsColorPipelineMetadataCompatibilityActive() ? "materialized_json" : "hardcoded";
+}
+
+inline int CountActiveColorPipelineCompatibilityRows() {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    return IsColorPipelineMetadataCompatibilityActive() ? static_cast<int>(storage.compatibility.size()) : CountHardcodedColorPipelineCompatibilityRows();
+}
+
+inline const MaterializedColorPipelineCompatibility* FindActiveColorPipelineCompatibility(
+    const std::string& sourceFunctionId,
+    const std::string& paletteFunctionId) {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    if (!IsColorPipelineMetadataCompatibilityActive()) {
+        return nullptr;
+    }
+    for (const MaterializedColorPipelineCompatibility& compatibility : storage.compatibility) {
+        if (compatibility.source == sourceFunctionId && compatibility.palette == paletteFunctionId) {
+            return &compatibility;
+        }
+    }
+    return nullptr;
+}
+
+inline int CountHardcodedColorPipelineCompatibilityRows() {
+    int count = 0;
+    const std::vector<ColorPipelineLaneCatalog>& hardcoded = GetHardcodedColorPipelineLaneCatalogs();
+    const ColorPipelineLaneCatalog* sourceLane = nullptr;
+    const ColorPipelineLaneCatalog* paletteLane = nullptr;
+    for (const ColorPipelineLaneCatalog& catalog : hardcoded) {
+        if (std::strcmp(catalog.lane_id, "source") == 0) {
+            sourceLane = &catalog;
+        } else if (std::strcmp(catalog.lane_id, "palette") == 0) {
+            paletteLane = &catalog;
+        }
+    }
+    if (!sourceLane || !paletteLane) {
+        return 0;
+    }
+    for (const FunctionDescriptor& sourceFunction : sourceLane->functions) {
+        for (const FunctionDescriptor& paletteFunction : paletteLane->functions) {
+            ColorPipelineSelection selection;
+            ColoringMode mode = ColoringMode::smooth_escape;
+            if (TryBuildHardcodedColorPipelineSelectionFromLaneIds(
+                    sourceFunction.id.c_str(),
+                    paletteFunction.id.c_str(),
+                    &selection,
+                    &mode)) {
+                ++count;
+            }
+        }
     }
     return count;
 }
@@ -1486,7 +1602,7 @@ inline bool ValidateColorPipelineParamRange(
     return true;
 }
 
-inline bool TryBuildColorPipelineSelectionFromLaneIds(
+inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
     const char* sourceFunctionId,
     const char* paletteFunctionId,
     ColorPipelineSelection* outPipeline,
@@ -1576,6 +1692,53 @@ inline bool TryBuildColorPipelineSelectionFromLaneIds(
         return true;
     }
     return false;
+}
+
+inline bool TryBuildMaterializedColorPipelineSelectionFromLaneIds(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId,
+    ColorPipelineSelection* outPipeline,
+    ColoringMode* outMode) {
+    if (!sourceFunctionId || sourceFunctionId[0] == '\0' ||
+        !paletteFunctionId || paletteFunctionId[0] == '\0' ||
+        !outPipeline || !outMode) {
+        return false;
+    }
+    const MaterializedColorPipelineCompatibility* compatibility =
+        FindActiveColorPipelineCompatibility(sourceFunctionId, paletteFunctionId);
+    if (!compatibility) {
+        return false;
+    }
+    ColorPipelineSelection selection;
+    ColoringMode mode = ColoringMode::smooth_escape;
+    if (!TryParseAdvancedColorSignalFunctionId(compatibility->signal, &selection.signal) ||
+        !TryParseAdvancedColorPaletteFunctionId(compatibility->palette_runtime, &selection.palette) ||
+        !TryParseAdvancedColorGradingFunctionId(compatibility->grading, &selection.grading) ||
+        !TryParseColoringModeId(compatibility->mode, &mode)) {
+        return false;
+    }
+    *outPipeline = selection;
+    *outMode = mode;
+    return true;
+}
+
+inline bool TryBuildColorPipelineSelectionFromLaneIds(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId,
+    ColorPipelineSelection* outPipeline,
+    ColoringMode* outMode) {
+    if (IsColorPipelineMetadataCompatibilityActive()) {
+        return TryBuildMaterializedColorPipelineSelectionFromLaneIds(
+            sourceFunctionId,
+            paletteFunctionId,
+            outPipeline,
+            outMode);
+    }
+    return TryBuildHardcodedColorPipelineSelectionFromLaneIds(
+        sourceFunctionId,
+        paletteFunctionId,
+        outPipeline,
+        outMode);
 }
 
 inline bool ApplySupportedColorPipelineRowParamsToLive(

@@ -40,5 +40,7 @@ def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> N
     assert report["catalog_authority"] == "materialized_json"
     assert report["active_catalog_function_count"] == 33
     assert report["compatibility_count"] == 20
+    assert report["compatibility_authority"] == "materialized_json"
+    assert report["active_compatibility_count"] == 20
     assert report["unsupported_pair_count"] > 0
     assert report["errors"] == []
