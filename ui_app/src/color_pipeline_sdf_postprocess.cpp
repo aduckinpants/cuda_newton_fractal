@@ -326,6 +326,23 @@ bool ColorPipelineSdfPostprocessCanUseDirectSamples(const KernelParams& params) 
         !SdfSignalNeedsNeighborhood(params.color_pipeline.signal);
 }
 
+int ResolveSdfColorPipelinePostprocessOutputPixelStep(
+    const KernelParams& params,
+    bool previewActive,
+    double previewScale,
+    bool forceFullQuality) {
+    if (forceFullQuality || !previewActive) {
+        return 1;
+    }
+    if (ColorPipelineSdfPostprocessCanUseDirectSamples(params)) {
+        return 1;
+    }
+    if (previewScale <= 0.35) {
+        return 4;
+    }
+    return 2;
+}
+
 bool ApplyLensSdfColorPipelinePostprocess(
     const SdfFieldView& field,
     const RenderSettings& render,

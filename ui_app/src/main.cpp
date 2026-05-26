@@ -813,15 +813,6 @@ static void BuildLensSdfViewportOverlayRgba(
 
 // --- Render dispatch helper ---
 
-static int ResolveSdfColorPipelinePostprocessPixelStep(const ViewerRenderPacingDecision& renderPacing, bool forceFullQuality) {
-    if (forceFullQuality || !renderPacing.preview_active) {
-        return 1;
-    }
-    if (renderPacing.preview_scale <= 0.35) {
-        return 4;
-    }
-    return 2;
-}
 
 static void DispatchRenderFrame(
     ViewState& view, KernelParams& params, const RenderSettings& render,
@@ -946,7 +937,7 @@ static void DispatchRenderFrame(
                     const auto postprocessStart = std::chrono::steady_clock::now();
                     SdfColorPipelinePostprocessOptions postprocessOptions{};
                     postprocessOptions.output_pixel_step =
-                        ResolveSdfColorPipelinePostprocessPixelStep(renderPacing, forceFullQuality);
+                        ResolveSdfColorPipelinePostprocessOutputPixelStep(params, renderPacing.preview_active, renderPacing.preview_scale, forceFullQuality);
                     SdfColorPipelinePostprocessStats postprocessStats{};
                     if (!ApplyLensSdfColorPipelinePostprocess(
                             lensSdfField.View(),

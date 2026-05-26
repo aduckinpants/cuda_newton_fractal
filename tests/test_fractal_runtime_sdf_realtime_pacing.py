@@ -180,6 +180,34 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         assert int(scalar_baseline["lens_sdf_width"]) == int(scalar_baseline["rendered_frame_width"]), scalar_baseline
         assert int(scalar_baseline["lens_sdf_height"]) == int(scalar_baseline["rendered_frame_height"]), scalar_baseline
 
+        scalar_edited = viewer.set_control_value(
+            "fractal_control.center_x.primary",
+            -0.49,
+            timeout_seconds=90.0,
+        )
+        _assert_sdf_timing_payload(scalar_edited)
+        assert scalar_edited.get("ui_automation_command_sequence") == viewer.sequence, scalar_edited
+        assert scalar_edited.get("render_pacing_preview_active") is True, scalar_edited
+        assert int(scalar_edited["rendered_frame_width"]) < int(scalar_edited["target_render_width"]), scalar_edited
+        assert int(scalar_edited["lens_sdf_postprocess_pixel_step"]) == 1, scalar_edited
+        scalar_edited_pixels = int(scalar_edited["rendered_frame_width"]) * int(scalar_edited["rendered_frame_height"])
+        assert int(scalar_edited["lens_sdf_postprocess_filled_pixel_count"]) == scalar_edited_pixels, scalar_edited
+        assert int(scalar_edited["lens_sdf_postprocess_direct_sample_count"]) == scalar_edited_pixels, scalar_edited
+        assert int(scalar_edited["lens_sdf_postprocess_neighborhood_sample_count"]) == 0, scalar_edited
+
+        scalar_settled = _wait_for_pacing_payload(
+            viewer,
+            lambda payload: payload.get("ui_automation_command_sequence") == viewer.sequence
+            and payload.get("render_pacing_preview_active") is False
+            and float(payload.get("render_pacing_preview_scale", 0.0)) == 1.0
+            and int(payload.get("rendered_frame_width", 0)) >= int(payload.get("target_render_width", 1))
+            and int(payload.get("rendered_frame_height", 0)) >= int(payload.get("target_render_height", 1)),
+            timeout_seconds=45.0,
+        )
+        _assert_sdf_timing_payload(scalar_settled)
+        assert int(scalar_settled["lens_sdf_postprocess_pixel_step"]) == 1, scalar_settled
+        assert int(scalar_settled["lens_sdf_postprocess_filled_pixel_count"]) == int(scalar_settled["rendered_frame_width"]) * int(scalar_settled["rendered_frame_height"]), scalar_settled
+
         baseline = viewer.load_state_json(state_path, expected_fractal_type="multibrot", timeout_seconds=60.0)
         _assert_sdf_timing_payload(baseline)
         assert baseline.get("render_pacing_preview_active") is False, baseline
@@ -211,7 +239,9 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
             viewer,
             lambda payload: payload.get("ui_automation_command_sequence") == viewer.sequence
             and payload.get("render_pacing_preview_active") is False
-            and float(payload.get("render_pacing_preview_scale", 0.0)) == 1.0,
+            and float(payload.get("render_pacing_preview_scale", 0.0)) == 1.0
+            and int(payload.get("rendered_frame_width", 0)) >= int(payload.get("target_render_width", 1))
+            and int(payload.get("rendered_frame_height", 0)) >= int(payload.get("target_render_height", 1)),
             timeout_seconds=45.0,
         )
         _assert_sdf_timing_payload(settled)

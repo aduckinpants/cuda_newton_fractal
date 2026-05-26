@@ -277,6 +277,31 @@ void TestNormalAngleRequiresNeighborhoodSamples() {
     Check(stats.neighborhood_sample_count == 16,
         "TestNormalAngleRequiresNeighborhoodSamples_NeighborhoodSamplesEveryPixel");
 }
+void TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution() {
+    KernelParams scalar = SdfParams(ColorSignal::sdf_signed_distance);
+    Check(ResolveSdfColorPipelinePostprocessOutputPixelStep(scalar, true, 0.25, false) == 1,
+        "TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution_SignedDistanceStepOne");
+
+    KernelParams scalarStack = SdfParams(ColorSignal::sdf_signed_distance);
+    scalarStack.color_source_stack_count = 3;
+    scalarStack.color_source_stack[1].signal = ColorSignal::sdf_inside_outside;
+    scalarStack.color_source_stack[1].params.blend_weight = 0.5f;
+    scalarStack.color_source_stack[2].signal = ColorSignal::sdf_boundary_band;
+    scalarStack.color_source_stack[2].params.blend_weight = 0.5f;
+    scalarStack.color_source_stack[2].params.sdf_boundary_width_px = 4.0f;
+    Check(ResolveSdfColorPipelinePostprocessOutputPixelStep(scalarStack, true, 0.25, false) == 1,
+        "TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution_ScalarStackStepOne");
+
+    KernelParams heavy = SdfParams(ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel);
+    Check(ResolveSdfColorPipelinePostprocessOutputPixelStep(heavy, true, 0.25, false) == 4,
+        "TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution_NormalAngleCanStepFour");
+    Check(ResolveSdfColorPipelinePostprocessOutputPixelStep(heavy, true, 0.50, false) == 2,
+        "TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution_NormalAngleCanStepTwo");
+    Check(ResolveSdfColorPipelinePostprocessOutputPixelStep(heavy, true, 0.25, true) == 1,
+        "TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution_ForceFullQualityStepOne");
+    Check(ResolveSdfColorPipelinePostprocessOutputPixelStep(heavy, false, 0.25, false) == 1,
+        "TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution_NoPreviewStepOne");
+}
 
 } // namespace
 
@@ -290,6 +315,7 @@ int main() {
     TestNormalAngleRequiresNeighborhoodSamples();
     TestDownsampledFieldAloneDoesNotReducePostprocessSamples();
     TestPreviewPixelStepReducesSamplesAndFillsFrame();
+    TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution();
 
     std::printf("test_color_pipeline_sdf_postprocess: passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;

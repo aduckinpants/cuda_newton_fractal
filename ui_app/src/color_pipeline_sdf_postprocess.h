@@ -11,6 +11,7 @@ bool IsColorPipelineSdfSourceSignal(ColorSignal signal);
 bool ColorPipelineUsesSdfSource(const KernelParams& params);
 bool ColorPipelineSourceStackIsSdfOnly(const KernelParams& params, std::string* outError = nullptr);
 bool ColorPipelineSdfPostprocessCanUseDirectSamples(const KernelParams& params);
+int ResolveSdfColorPipelinePostprocessOutputPixelStep(const KernelParams& params, bool previewActive, double previewScale, bool forceFullQuality);
 
 struct SdfColorPipelinePostprocessOptions {
     int output_pixel_step{1};
