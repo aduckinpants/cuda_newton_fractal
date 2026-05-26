@@ -100,7 +100,8 @@ Next correct step:
 - Add a persistent no-mouse telemetry harness that records input mutation time, render start/end, report publish time, preview scale, target/live dimensions, and settle timing in one viewer process.
 - Do not change pacing policy again until that harness shows the actual failure mode.
 - For SDF Color Pipeline workloads specifically, scalar-only SDF postprocess optimization is shipped: scalar SDF Source rows no longer compute normal/curvature neighborhoods.
-- The next measured SDF follow-up is field quality/downsample policy: decide shared versus row-local field resolution authority before per-row/multi-field downsample or GPU postprocess changes.
+- SDF preview postprocess quality policy is shipped: interactive preview can reduce CPU SDF source samples through a reportable postprocess pixel step, while full-quality render and capture stay step 1.
+- Remaining SDF performance work is a separate decision between per-row/multi-field downsample authority and GPU Color Pipeline postprocess.
 - Do not treat SDF postprocess cost as a fractal kernel problem; the current telemetry distinguishes base render, field generation, and postprocess cost.
 
 **Files:** `ui_app/src/viewer_render_pacing.*`, `ui_app/src/main.cpp`, `tests/test_fractal_runtime_resolution_pacing.py`

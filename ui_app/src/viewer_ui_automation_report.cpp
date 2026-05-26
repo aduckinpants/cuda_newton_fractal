@@ -74,6 +74,10 @@ void WriteLensSdfReportFields(
     out << "  \"lens_sdf_field_ms\": " << std::setprecision(12) << lensSdfProbe.field_ms << ",\n";
     out << "  \"lens_sdf_postprocess_ms\": " << std::setprecision(12) << lensSdfProbe.postprocess_ms << ",\n";
     out << "  \"lens_sdf_total_ms\": " << std::setprecision(12) << lensSdfProbe.total_ms << ",\n";
+    out << "  \"lens_sdf_postprocess_pixel_step\": " << lensSdfProbe.postprocess_pixel_step << ",\n";
+    out << "  \"lens_sdf_postprocess_direct_sample_count\": " << lensSdfProbe.postprocess_direct_sample_count << ",\n";
+    out << "  \"lens_sdf_postprocess_neighborhood_sample_count\": " << lensSdfProbe.postprocess_neighborhood_sample_count << ",\n";
+    out << "  \"lens_sdf_postprocess_filled_pixel_count\": " << lensSdfProbe.postprocess_filled_pixel_count << ",\n";
     out << "  \"lens_sdf_overlay_mode\": ";
     WriteAutomationReportString(out, lensSdfProbe.overlay_mode);
     out << ",\n";

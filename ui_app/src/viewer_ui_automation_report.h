@@ -54,6 +54,10 @@ struct ViewerUiAutomationLensSdfProbe {
     float field_ms = 0.0f;
     float postprocess_ms = 0.0f;
     float total_ms = 0.0f;
+    int postprocess_pixel_step = 1;
+    std::uint64_t postprocess_direct_sample_count = 0;
+    std::uint64_t postprocess_neighborhood_sample_count = 0;
+    std::uint64_t postprocess_filled_pixel_count = 0;
     std::string overlay_mode = "off";
     bool overlay_active = false;
     float overlay_opacity = 0.55f;

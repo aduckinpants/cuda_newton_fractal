@@ -19,7 +19,7 @@ This table is the current backlog order after reconciling the older deferred not
 | 4 | Categorized selector + view presets | Medium | High | Organize the growing catalog and add per-fractal view preset choices before more catalog growth; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 5 | Camera/dive behavior | Medium | High | Make auto-dive dt-aware and implement at least one real behavior mode instead of flat zoom stubs; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 6 | Smooth-escape/color tuning | Medium | Medium/High | Per-family color tuning and interior treatment, without reopening Color Pipeline architecture broadly; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
-| 7 | SDF field quality/downsample policy | Medium | High | Next measured SDF decision: define shared versus row-local field resolution authority before per-row/multi-field downsample or GPU postprocess; only return to debounce policy after end-to-end latency evidence. |
+| 7 | SDF performance follow-up after preview policy | Medium/High | High | Preview postprocess quality policy is shipped; next choose between per-row/multi-field downsample design and GPU Color Pipeline postprocess with measured client evidence. |
 | 8 | Generic equation-pack productization | Medium/High | High strategic | Persistence first, then catalog picker, authoring UX, Salticid adapter, performance profiling. |
 | 9 | Callable/transpiler handoff | High | High strategic | Finish the handoff boundary without pretending dynamic backend execution already exists. |
 | 10 | Catalog/family authority refactor | High | High | Move remaining family defaults, visibility, and validation out of brittle monolithic paths before larger families. |
@@ -37,7 +37,8 @@ Current shipped state:
 - Capture Finding now preserves visible aspect/camera at high resolution and forces standard/f64 output.
 - The focused pacing helper target exists: `ui_app/build_tests_vsdevcmd.cmd test_viewer_render_pacing`.
 - SDF realtime pacing telemetry now reports base render, SDF field, SDF postprocess, and SDF total timing.
-- SDF postprocess signal specialization now avoids derivative/neighborhood sampling for scalar-only SDF Source rows; the next SDF follow-up is field quality/downsample policy before per-row/multi-field or GPU postprocess changes.
+- SDF postprocess signal specialization now avoids derivative/neighborhood sampling for scalar-only SDF Source rows.
+- SDF preview postprocess quality policy now reduces CPU SDF source samples during interactive preview through a reportable postprocess pixel step; full-quality render and capture stay step 1.
 
 Remaining risk:
 - The existing proof focuses on render dimensions, timing reports, and no-mouse camera/control edits. It does not fully prove whole-PC responsiveness or end-to-end input-to-frame latency under every extreme f64 workload.
@@ -133,7 +134,7 @@ Timing rule:
 
 ## 5. Lens SDF Follow-Ups
 
-Status: partially shipped substrate. Capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, and SDF postprocess signal specialization are shipped; the next SDF implementation decision is field quality/downsample policy.
+Status: partially shipped substrate. Capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, and SDF preview postprocess quality policy are shipped.
 
 Shipped since the original deferred note:
 - `lens.downsample` control truth is repaired.
@@ -153,9 +154,10 @@ Shipped since the original deferred note:
 - Color Pipeline fractal-switch preservation is shipped: compatible fractal selector changes keep supported live/source-stack Color Pipeline state, while unsupported switches project to target defaults.
 - SDF realtime pacing telemetry is shipped and identifies SDF postprocess as a measured FPS bottleneck.
 - SDF postprocess signal specialization is shipped: scalar-only rows no longer pay for derivative neighborhoods, while derivative sources preserve their sampling behavior.
+- SDF preview postprocess quality policy is shipped: shared field downsample remains the authority, interactive preview reports a stepped postprocess path, and full-quality render/capture stays step 1.
 
 Active follow-up:
-- Work SDF field quality/downsample policy before per-row/multi-field downsample, GPU postprocess, authored SDF UI, or SDF-native lanes. The decision point is shared field authority versus row-local quality requests, not a hidden implementation guess.
+- Choose the next SDF performance/design slice explicitly: per-row/multi-field downsample authority, GPU Color Pipeline postprocess, or broader composition/preset UX. Do not hide per-row quality as a guessed setting inside another slice.
 
 Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.

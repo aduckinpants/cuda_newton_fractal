@@ -25,6 +25,12 @@ int ClampIntLocal(int value, int lo, int hi) {
     return value;
 }
 
+int NormalizePostprocessPixelStep(int value) {
+    if (value <= 1) return 1;
+    if (value <= 2) return 2;
+    return 4;
+}
+
 bool SdfSignalNeedsNeighborhood(ColorSignal signal) {
     return signal == ColorSignal::sdf_normal_angle || signal == ColorSignal::sdf_curvature;
 }
@@ -326,7 +332,8 @@ bool ApplyLensSdfColorPipelinePostprocess(
     const KernelParams& params,
     std::uint32_t* ioRgba,
     std::string* outError,
-    SdfColorPipelinePostprocessStats* outStats) {
+    SdfColorPipelinePostprocessStats* outStats,
+    const SdfColorPipelinePostprocessOptions* options) {
     if (!ioRgba || render.resolution.x <= 0 || render.resolution.y <= 0) {
         if (outError) *outError = "SDF Color Pipeline postprocess received an invalid render target";
         return false;
@@ -335,8 +342,10 @@ bool ApplyLensSdfColorPipelinePostprocess(
         if (outError) *outError = "SDF Color Pipeline postprocess requires a valid Lens SDF field";
         return false;
     }
+    const int outputPixelStep = NormalizePostprocessPixelStep(options ? options->output_pixel_step : 1);
     if (outStats) {
         *outStats = {};
+        outStats->output_pixel_step = outputPixelStep;
     }
     if (!ColorPipelineSourceStackIsSdfOnly(params, outError)) {
         return false;
@@ -345,10 +354,14 @@ bool ApplyLensSdfColorPipelinePostprocess(
     const bool useDirectSamples = ColorPipelineSdfPostprocessCanUseDirectSamples(params);
     const int width = render.resolution.x;
     const int height = render.resolution.y;
-    for (int y = 0; y < height; ++y) {
-        const int fy = ClampIntLocal((static_cast<long long>(y) * field.height) / height, 0, field.height - 1);
-        for (int x = 0; x < width; ++x) {
-            const int fx = ClampIntLocal((static_cast<long long>(x) * field.width) / width, 0, field.width - 1);
+    for (int y = 0; y < height; y += outputPixelStep) {
+        const int blockHeight = ClampIntLocal(height - y, 1, outputPixelStep);
+        const int sampleY = ClampIntLocal(y + blockHeight / 2, 0, height - 1);
+        const int fy = ClampIntLocal((static_cast<long long>(sampleY) * field.height) / height, 0, field.height - 1);
+        for (int x = 0; x < width; x += outputPixelStep) {
+            const int blockWidth = ClampIntLocal(width - x, 1, outputPixelStep);
+            const int sampleX = ClampIntLocal(x + blockWidth / 2, 0, width - 1);
+            const int fx = ClampIntLocal((static_cast<long long>(sampleX) * field.width) / width, 0, field.width - 1);
             float signal = 0.0f;
             const bool resolved = useDirectSamples
                 ? ResolveDirectSdfPipelineSignal(field, fx, fy, params, &signal, outError)
@@ -366,8 +379,16 @@ bool ApplyLensSdfColorPipelinePostprocess(
             const float shapedSignal = ApplyColorPipelineShapeValue(signal, params);
             Rgba8 color = SampleProgrammableEscapeTimePalette<Rgba8>(shapedSignal, true, params);
             color = ApplyFractalColorGrading(color, params);
-            ioRgba[static_cast<std::size_t>(y) * static_cast<std::size_t>(width) + static_cast<std::size_t>(x)] =
-                PackRgba(color);
+            const std::uint32_t packed = PackRgba(color);
+            for (int yy = y; yy < y + blockHeight; ++yy) {
+                const std::size_t rowOffset = static_cast<std::size_t>(yy) * static_cast<std::size_t>(width);
+                for (int xx = x; xx < x + blockWidth; ++xx) {
+                    ioRgba[rowOffset + static_cast<std::size_t>(xx)] = packed;
+                    if (outStats) {
+                        ++outStats->filled_pixel_count;
+                    }
+                }
+            }
         }
     }
     return true;

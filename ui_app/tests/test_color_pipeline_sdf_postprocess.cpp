@@ -216,6 +216,51 @@ void TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood() {
         "TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood_NoNeighborhoodSamples");
 }
 
+
+void TestDownsampledFieldAloneDoesNotReducePostprocessSamples() {
+    SdfFieldResult field = MakeTestField();
+    field.pixel_scale = 4.0f;
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams params = SdfParams(ColorSignal::sdf_signed_distance);
+    std::vector<std::uint32_t> pixels(16, 0x12345678u);
+    std::string error;
+    SdfColorPipelinePostprocessStats stats{};
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, pixels.data(), &error, &stats),
+        "TestDownsampledFieldAloneDoesNotReducePostprocessSamples_PostprocessSucceeds");
+    Check(stats.output_pixel_step == 1,
+        "TestDownsampledFieldAloneDoesNotReducePostprocessSamples_DefaultStepOne");
+    Check(stats.direct_sample_count == 16,
+        "TestDownsampledFieldAloneDoesNotReducePostprocessSamples_StillSamplesEveryRenderPixel");
+    Check(stats.filled_pixel_count == 16,
+        "TestDownsampledFieldAloneDoesNotReducePostprocessSamples_FillsEveryPixel");
+}
+
+void TestPreviewPixelStepReducesSamplesAndFillsFrame() {
+    const SdfFieldResult field = MakeTestField();
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams params = SdfParams(ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel);
+    std::vector<std::uint32_t> pixels(16, 0x12345678u);
+    const std::uint64_t before = HashFrame(pixels);
+    std::string error;
+    SdfColorPipelinePostprocessStats stats{};
+    SdfColorPipelinePostprocessOptions options{};
+    options.output_pixel_step = 2;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, pixels.data(), &error, &stats, &options),
+        "TestPreviewPixelStepReducesSamplesAndFillsFrame_PostprocessSucceeds");
+    Check(stats.output_pixel_step == 2,
+        "TestPreviewPixelStepReducesSamplesAndFillsFrame_ReportsStepTwo");
+    Check(stats.neighborhood_sample_count == 4,
+        "TestPreviewPixelStepReducesSamplesAndFillsFrame_SamplesOnePerBlock");
+    Check(stats.filled_pixel_count == 16,
+        "TestPreviewPixelStepReducesSamplesAndFillsFrame_FillsEveryPixel");
+    Check(HashFrame(pixels) != before,
+        "TestPreviewPixelStepReducesSamplesAndFillsFrame_FrameChangesFromSentinel");
+}
+
 void TestNormalAngleRequiresNeighborhoodSamples() {
     const SdfFieldResult field = MakeTestField();
     RenderSettings render{};
@@ -243,6 +288,8 @@ int main() {
     TestBoundaryBandWidthStillAffectsMixedSdfStack();
     TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood();
     TestNormalAngleRequiresNeighborhoodSamples();
+    TestDownsampledFieldAloneDoesNotReducePostprocessSamples();
+    TestPreviewPixelStepReducesSamplesAndFillsFrame();
 
     std::printf("test_color_pipeline_sdf_postprocess: passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;

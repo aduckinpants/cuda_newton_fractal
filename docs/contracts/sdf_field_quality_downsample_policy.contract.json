@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_quality_downsample_policy",
+  "feature_id": "sdf_field_quality_downsample_policy",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_field_quality_downsample_policy_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes",
+    "docs/contracts",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/color_pipeline_sdf_postprocess.h",
+    "ui_app/src/color_pipeline_sdf_postprocess.cpp",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "improve interactive SDF Color Pipeline responsiveness through measured postprocess work reduction",
+    "keep LensSettings.downsample as the shared field-resolution authority in this slice",
+    "report SDF postprocess pixel step and sample counts for runtime proof",
+    "preserve full-quality render and capture behavior at step 1",
+    "sync roadmap/status docs so this shipped policy is not left listed as the next active item"
+  ],
+  "forbidden_operator_prompts": [
+    "persist per-row or per-function SDF downsample in this slice",
+    "generate multiple SDF fields per Color Pipeline stack in this slice",
+    "rewrite Color Pipeline SDF postprocess on GPU in this slice",
+    "implement boundary-masked normal-angle in this slice",
+    "implement a Color Pipeline preset manager in this slice",
+    "add SDF-native fractal lanes in this slice",
+    "add authored SDF pack live viewport integration in this slice",
+    "use physical mouse automation",
+    "downgrade capture-quality rendering"
+  ],
+  "required_defaults": {
+    "physical_mouse_automation": false,
+    "capture_quality_downgraded": false,
+    "lens_downsample_shared_authority": true,
+    "full_quality_sdf_postprocess_pixel_step": 1
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "capture_quality_downgrade": "forbidden",
+    "per_row_sdf_downsample": "deferred",
+    "multi_field_sdf_stack": "deferred",
+    "gpu_postprocess_rewrite": "deferred",
+    "preset_manager": "forbidden",
+    "sdf_native_lane": "forbidden",
+    "authored_pack_live_integration": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_quality_policy_native --log artifacts/logs/sdf_field_quality_policy_native.log --out-json artifacts/validation/sdf_field_quality_policy_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_quality_policy_runtime_publish --log artifacts/logs/sdf_field_quality_policy_runtime_publish.log --out-json artifacts/validation/sdf_field_quality_policy_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_quality_policy_runtime_pytest --log artifacts/logs/sdf_field_quality_policy_runtime_pytest.log --out-json artifacts/validation/sdf_field_quality_policy_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_quality_downsample_policy.contract.json --out-json artifacts/validation/sdf_field_quality_policy_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_quality_downsample_policy_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_quality_policy_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_quality_policy_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_quality_policy_diff_check --log artifacts/logs/sdf_field_quality_policy_diff_check.log --out-json artifacts/validation/sdf_field_quality_policy_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field quality/downsample policy contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_quality_policy_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF field quality/downsample policy hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_quality_policy_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

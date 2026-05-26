@@ -813,6 +813,16 @@ static void BuildLensSdfViewportOverlayRgba(
 
 // --- Render dispatch helper ---
 
+static int ResolveSdfColorPipelinePostprocessPixelStep(const ViewerRenderPacingDecision& renderPacing, bool forceFullQuality) {
+    if (forceFullQuality || !renderPacing.preview_active) {
+        return 1;
+    }
+    if (renderPacing.preview_scale <= 0.35) {
+        return 4;
+    }
+    return 2;
+}
+
 static void DispatchRenderFrame(
     ViewState& view, KernelParams& params, const RenderSettings& render,
     const LensSettings& lens, const ViewerRenderPacingDecision& renderPacing,
@@ -934,14 +944,27 @@ static void DispatchRenderFrame(
                 }
                 if (colorPipelineNeedsSdf) {
                     const auto postprocessStart = std::chrono::steady_clock::now();
+                    SdfColorPipelinePostprocessOptions postprocessOptions{};
+                    postprocessOptions.output_pixel_step =
+                        ResolveSdfColorPipelinePostprocessPixelStep(renderPacing, forceFullQuality);
+                    SdfColorPipelinePostprocessStats postprocessStats{};
                     if (!ApplyLensSdfColorPipelinePostprocess(
                             lensSdfField.View(),
                             dispatchRender,
                             params,
                             rgba.data(),
-                            &postprocessError)) {
+                            &postprocessError,
+                            &postprocessStats,
+                            &postprocessOptions)) {
                         postprocessOk = false;
                     }
+                    lensSdfProbe.postprocess_pixel_step = postprocessStats.output_pixel_step;
+                    lensSdfProbe.postprocess_direct_sample_count =
+                        static_cast<std::uint64_t>(postprocessStats.direct_sample_count);
+                    lensSdfProbe.postprocess_neighborhood_sample_count =
+                        static_cast<std::uint64_t>(postprocessStats.neighborhood_sample_count);
+                    lensSdfProbe.postprocess_filled_pixel_count =
+                        static_cast<std::uint64_t>(postprocessStats.filled_pixel_count);
                     const auto postprocessEnd = std::chrono::steady_clock::now();
                     lensSdfProbe.postprocess_ms = static_cast<float>(
                         std::chrono::duration<double, std::milli>(postprocessEnd - postprocessStart).count());
