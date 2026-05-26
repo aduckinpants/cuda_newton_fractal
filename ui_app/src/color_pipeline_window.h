@@ -3403,13 +3403,19 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         }
     }
 
+    const ColorPipelineRowState* sourceCompatibilityRow = sourceRows.back();
+    if (hasSdfSourceRows && !hasNonSdfSourceRows) {
+        // SDF postprocess uses the first Source row as the base signal; later SDF rows blend into it.
+        sourceCompatibilityRow = sourceRows.front();
+    }
+
     ColorPipelineSelection pipeline{};
     ColoringMode mode = ColoringMode::root_basin;
     for (const ColorPipelineRowState* paletteRow : paletteRows) {
         ColorPipelineSelection rowPipeline{};
         ColoringMode rowMode = ColoringMode::root_basin;
         if (!TryBuildColorPipelineSelectionFromLaneIds(
-                sourceRows.back()->function_id.c_str(),
+                sourceCompatibilityRow->function_id.c_str(),
                 paletteRow->function_id.c_str(),
                 &rowPipeline,
                 &rowMode)) {

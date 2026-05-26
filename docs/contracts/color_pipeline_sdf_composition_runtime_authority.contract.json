@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_sdf_composition_runtime_authority",
+  "feature_id": "color_pipeline_composition_followups",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/color_pipeline_sdf_composition_runtime_authority_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs",
+    "spec_intake",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "tools",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "disabled Color Pipeline rows must not affect active compatibility/error reporting or runtime evaluation",
+    "SDF-only Source stacks containing sdf_normal_angle and sdf_curvature must be runtime-backed instead of draft-only",
+    "authored dormant rows must remain persisted and re-enableable",
+    "mixed SDF/non-SDF Source stacks must still fail closed",
+    "published no-mouse runtime proof is required for the UI workflow regressions"
+  ],
+  "forbidden_operator_prompts": [
+    "redesign the full Color Pipeline composition UI",
+    "implement per-source SDF downsample",
+    "implement GPU Color Pipeline postprocess",
+    "add authored SDF pack UI or SDF-native lanes",
+    "add new Color Pipeline functions",
+    "use physical mouse automation",
+    "hide compatibility errors without fixing active row authority",
+    "drop disabled authored rows from state"
+  ],
+  "required_defaults": {
+    "disabled_rows_preserved_as_authored_state": true,
+    "disabled_rows_inactive_for_runtime": true,
+    "sdf_only_source_stack_runtime_backed": true,
+    "mixed_sdf_non_sdf_fail_closed": true,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "full_composition_ui_redesign": "deferred",
+    "per_source_downsample": "deferred",
+    "gpu_postprocess": "deferred",
+    "sdf_native_lanes": "deferred",
+    "authored_sdf_pack_ui": "deferred",
+    "new_color_pipeline_functions": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_composition_runtime_authority_core --log artifacts/logs/color_pipeline_sdf_composition_runtime_authority_core.log --out-json artifacts/validation/color_pipeline_sdf_composition_runtime_authority_core.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_composition_runtime_authority_window --log artifacts/logs/color_pipeline_sdf_composition_runtime_authority_window.log --out-json artifacts/validation/color_pipeline_sdf_composition_runtime_authority_window.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_composition_runtime_authority_sdf_postprocess --log artifacts/logs/color_pipeline_sdf_composition_runtime_authority_sdf_postprocess.log --out-json artifacts/validation/color_pipeline_sdf_composition_runtime_authority_sdf_postprocess.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_composition_runtime_authority_publish --log artifacts/logs/color_pipeline_sdf_composition_runtime_authority_publish.log --out-json artifacts/validation/color_pipeline_sdf_composition_runtime_authority_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_composition_runtime_authority_runtime --log artifacts/logs/color_pipeline_sdf_composition_runtime_authority_runtime.log --out-json artifacts/validation/color_pipeline_sdf_composition_runtime_authority_runtime.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py tests/test_fractal_runtime_capture_replay_authority.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_sdf_composition_runtime_authority.contract.json --out-json artifacts/validation/color_pipeline_sdf_composition_runtime_authority_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_sdf_composition_runtime_authority_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_sdf_composition_runtime_authority_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_sdf_composition_runtime_authority_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_sdf_composition_runtime_authority_diff_check --log artifacts/logs/color_pipeline_sdf_composition_runtime_authority_diff_check.log --out-json artifacts/validation/color_pipeline_sdf_composition_runtime_authority_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Color Pipeline SDF composition runtime-authority contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_sdf_composition_runtime_authority_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    }
+  ]
+}

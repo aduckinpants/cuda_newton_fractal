@@ -874,6 +874,53 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_DownsampleAliasHiddenWithoutSdfDraft");
 }
 
+void TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_SyncStartsSupported");
+
+    Check(SelectColorPipelineLaneFunction(&state, 0, "sdf_normal_angle"),
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_SelectNormalAngleBase");
+    Check(AddColorPipelineLaneRow(&state, 0, "sdf_curvature") && state.lanes[0].rows.size() == 2,
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_AddsCurvatureBlendRow");
+    Check(SetRowNumber(state.lanes[0].rows[1], "signal.blend_weight", 0.35) &&
+            SetRowNumber(state.lanes[0].rows[1], "signal.scale", 1.75),
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_EditsCurvatureBlendParams");
+
+    const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(
+        state,
+        FractalType::newton,
+        &params);
+    Check(applyState.status == ColorPipelineDraftApplyStatus::can_apply,
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_NormalAnglePlusCurvatureCanApply");
+
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_AppliesSdfOnlyBlend");
+    Check(params.coloring_mode == ColoringMode::phase &&
+            params.color_pipeline.signal == ColorSignal::sdf_normal_angle &&
+            params.color_pipeline.palette == ColorPalette::phase_wheel &&
+            params.color_source_stack_count == 2 &&
+            params.color_source_stack[0].signal == ColorSignal::sdf_normal_angle &&
+            params.color_source_stack[1].signal == ColorSignal::sdf_curvature &&
+            Near(params.color_source_stack[1].params.blend_weight, 0.35) &&
+            Near(params.color_source_stack[1].params.scale, 1.75),
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_RuntimeStackKeepsBaseSignalAndCurvatureBlend");
+
+    Check(state.live_snapshot.valid && state.live_snapshot.draft_import_supported &&
+            state.lanes[0].rows.size() == 2 &&
+            state.lanes[0].rows[0].function_id == "sdf_normal_angle" &&
+            state.lanes[0].rows[1].function_id == "sdf_curvature",
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_ResyncKeepsAuthoredRows");
+    Check(SetColorPipelineRowEnabledFromUi(&state, 0, 1, false) &&
+            !state.lanes[0].rows[1].enabled,
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_DisablesDormantCurvatureRow");
+    Check(DescribeColorPipelineDraftApplyState(state, FractalType::newton, &params).status !=
+            ColorPipelineDraftApplyStatus::unsupported_tuple,
+        "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_DisabledCurvatureRowDoesNotPoisonCompatibility");
+}
+
 void TestMixedSdfAndNonSdfSourceRowsFailClosed() {
     ColorPipelineWindowState state{};
     KernelParams params = SmoothEscapeParams();
@@ -992,6 +1039,7 @@ int main() {
     TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync();
     TestCandidateDraftOnlyTruthAndCopySurfaces();
     TestSdfSourceRowsApplyThroughDraftLiveBridge();
+    TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority();
     TestMixedSdfAndNonSdfSourceRowsFailClosed();
     TestDraftEditsSurviveCompatibleFractalSwitchSync();
     TestPresetWorkflowTruthSurface();

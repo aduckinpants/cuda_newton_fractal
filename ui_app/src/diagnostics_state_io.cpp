@@ -763,6 +763,43 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
     return true;
 }
 
+bool IsSdfColorSourceStackSignal(ColorSignal signal) {
+    return signal == ColorSignal::sdf_signed_distance ||
+        signal == ColorSignal::sdf_inside_outside ||
+        signal == ColorSignal::sdf_boundary_band ||
+        signal == ColorSignal::sdf_normal_angle ||
+        signal == ColorSignal::sdf_curvature;
+}
+
+bool ColorSourceStackIsAllSdf(const KernelParams& params) {
+    const int count = params.color_source_stack_count;
+    if (count <= 0) {
+        return false;
+    }
+    for (int index = 0; index < count; ++index) {
+        if (!IsSdfColorSourceStackSignal(params.color_source_stack[index].signal)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+const ColorPipelineSourceStackEntry* FindColorSourceStackMirrorEntry(const KernelParams& params) {
+    const int count = params.color_source_stack_count;
+    if (count <= 0) {
+        return nullptr;
+    }
+    const ColorPipelineSourceStackEntry& firstEntry = params.color_source_stack[0];
+    const ColorPipelineSourceStackEntry& finalEntry = params.color_source_stack[count - 1];
+    if (ColorSourceStackIsAllSdf(params) && firstEntry.signal == params.color_pipeline.signal) {
+        return &firstEntry;
+    }
+    if (finalEntry.signal == params.color_pipeline.signal) {
+        return &finalEntry;
+    }
+    return nullptr;
+}
+
 bool ParseOptionalColorSourceStack(const json_min::Value& paramsObject,
                                    KernelParams* ioParams,
                                    std::string* outError) {
@@ -796,12 +833,16 @@ bool ParseOptionalColorSourceStack(const json_min::Value& paramsObject,
         }
     }
     if (!stackArray.empty()) {
-        const ColorPipelineSourceStackEntry& finalEntry = ioParams->color_source_stack[stackArray.size() - 1];
-        if (finalEntry.signal != ioParams->color_pipeline.signal) {
-            if (outError) *outError = "color_source_stack final entry must mirror the saved flat color pipeline signal";
+        const ColorPipelineSourceStackEntry* mirrorEntry = FindColorSourceStackMirrorEntry(*ioParams);
+        if (!mirrorEntry) {
+            if (outError) {
+                *outError = ColorSourceStackIsAllSdf(*ioParams)
+                    ? "color_source_stack SDF entries must mirror the saved flat color pipeline signal on the base or final row"
+                    : "color_source_stack final entry must mirror the saved flat color pipeline signal";
+            }
             return false;
         }
-        MirrorLegacyColorSourceFromStackEntry(finalEntry, ioParams);
+        MirrorLegacyColorSourceFromStackEntry(*mirrorEntry, ioParams);
     }
     return true;
 }

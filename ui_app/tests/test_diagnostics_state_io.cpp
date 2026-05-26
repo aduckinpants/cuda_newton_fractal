@@ -4360,6 +4360,71 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "v3_sdf_source_stack_base_signal_params.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "mandelbrot",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "sdf_signed_distance",
+    "color_shape": "identity",
+    "color_palette": "cyclic_escape",
+    "color_grading": "escape_default",
+    "color_source_stack": [
+      { "signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0 },
+      { "signal": "sdf_inside_outside", "scale": 1.0, "bias": 0.0, "blend_weight": 0.35 },
+      { "signal": "sdf_boundary_band", "scale": 1.0, "bias": 0.0, "blend_weight": 0.5, "sdf_boundary_width_px": 4.0 },
+      { "signal": "sdf_normal_angle", "scale": 1.0, "bias": 0.0, "blend_weight": 0.25 },
+      { "signal": "sdf_curvature", "scale": 0.25, "bias": 0.5, "blend_weight": 0.125 }
+    ],
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        ColorPipelineWindowState windowState{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &windowState, &error)) {
+            std::cerr << "V3 base-owned SDF source-stack load failed: " << error << "\n";
+            return 1;
+        }
+        if (p.color_source_stack_count != 5 ||
+            p.color_pipeline.signal != ColorSignal::sdf_signed_distance ||
+            p.color_pipeline.palette != ColorPalette::cyclic_escape ||
+            p.color_source_stack[0].signal != ColorSignal::sdf_signed_distance ||
+            !NearlyEqual(p.color_source_stack[0].params.scale, 0.05, 0.001) ||
+            !NearlyEqual(p.color_source_stack[0].params.bias, 0.5, 0.001) ||
+            p.color_source_stack[4].signal != ColorSignal::sdf_curvature ||
+            !NearlyEqual(p.color_source_stack[4].params.blend_weight, 0.125, 0.001) ||
+            !windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes.size() < 4 ||
+            windowState.live_snapshot.lanes[0].rows.size() != 5 ||
+            windowState.live_snapshot.lanes[0].rows[0].function_id != "sdf_signed_distance" ||
+            windowState.live_snapshot.lanes[0].rows[4].function_id != "sdf_curvature") {
+            std::cerr << "Expected base-owned SDF Source stacks to load while preserving the authored SDF Source stack\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "v3_source_stack_root_index_reject.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

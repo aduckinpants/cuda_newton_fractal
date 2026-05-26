@@ -165,6 +165,34 @@ def _capture_all_sdf_source_rows(
     return run_headless_capture(*args)
 
 
+
+def _capture_sdf_normal_angle_curvature_stack(
+    *,
+    exe_path: Path,
+    state_path: Path,
+    curvature_blend_weight: float,
+    curvature_scale: float,
+) -> dict[str, object]:
+    return run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--color-pipeline-action",
+        "select_function:source:0:sdf_normal_angle",
+        "--color-pipeline-action",
+        "set_param:source:0:signal.scale:number:1.0",
+        "--color-pipeline-action",
+        "set_param:source:0:signal.bias:number:0.0",
+        "--color-pipeline-action",
+        "add_row:source:sdf_curvature",
+        "--color-pipeline-action",
+        f"set_param:source:1:signal.blend_weight:number:{curvature_blend_weight}",
+        "--color-pipeline-action",
+        f"set_param:source:1:signal.scale:number:{curvature_scale}",
+        "--capture-diagnostic",
+    )
+
+
 def _assert_sdf_capture_state(
     capture: dict[str, object],
     *,
@@ -253,6 +281,58 @@ def test_color_pipeline_sdf_source_rows_are_live_backed_no_mouse(tmp_path: Path)
         assert edited["frame_hash"] != baseline["frame_hash"], (
             f"expected {function_id} signal.scale/signal.bias edits to change the live rendered frame"
         )
+
+
+def test_sdf_normal_angle_accepts_curvature_blend_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline SDF runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    state_path = write_state_bundle(
+        tmp_path / "sdf_normal_angle_curvature_blend_seed",
+        json.loads(json.dumps(neutral_capture["state"])),
+    )
+
+    base = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_normal_angle",
+        scale=1.0,
+        bias=0.0,
+    )
+    blended = _capture_sdf_normal_angle_curvature_stack(
+        exe_path=exe_path,
+        state_path=state_path,
+        curvature_blend_weight=0.65,
+        curvature_scale=1.75,
+    )
+
+    state = blended["state"]
+    assert isinstance(state, dict)
+    params = state.get("params")
+    assert isinstance(params, dict)
+    assert params.get("coloring_mode") == "phase"
+    assert params.get("color_signal") == "sdf_normal_angle"
+    assert params.get("color_palette") == "phase_wheel"
+    source_stack = params.get("color_source_stack")
+    assert isinstance(source_stack, list) and len(source_stack) == 2
+    assert source_stack[0].get("signal") == "sdf_normal_angle"
+    assert source_stack[1].get("signal") == "sdf_curvature"
+    assert source_stack[1].get("blend_weight") == pytest.approx(0.65, abs=1e-6)
+    assert source_stack[1].get("scale") == pytest.approx(1.75, abs=1e-6)
+    assert blended["frame_hash"] != base["frame_hash"], (
+        "expected a runtime-backed sdf_curvature Source row to blend into the sdf_normal_angle base row"
+    )
 
 
 def test_sdf_source_boundary_gate_changes_normal_angle_frame_no_mouse(tmp_path: Path) -> None:
@@ -436,7 +516,7 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
         command_path=tmp_path / "sdf_source_visible_all_rows_command.json",
         open_color_pipeline=True,
     ) as viewer:
-        viewer.wait_for_report(timeout_seconds=30.0)
+        ready_report = viewer.wait_for_report(timeout_seconds=30.0)
         for function_id, *_ in SDF_SOURCE_ROWS:
             for path in ("signal.scale", "signal.bias", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.blend_weight"):
                 viewer.wait_for_control(
@@ -448,6 +528,24 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
             timeout_seconds=20.0,
         )
         viewer.wait_for_control("color_pipeline.source.sdf_field.downsample.primary", timeout_seconds=20.0)
+
+        source_rows = [
+            row for row in ready_report.get("rows", [])
+            if isinstance(row, dict) and row.get("lane_id") == "source"
+        ]
+        curvature_rows = [row for row in source_rows if row.get("function_id") == "sdf_curvature"]
+        assert len(curvature_rows) == 1, ready_report
+        curvature_row_id = int(curvature_rows[0]["ui_row_id"])
+        curvature_enabled_control = f"color_pipeline.source.{curvature_row_id}.enabled"
+        viewer.wait_for_control(curvature_enabled_control, timeout_seconds=20.0)
+        disabled_report = viewer.click_control(curvature_enabled_control, timeout_seconds=40.0)
+        disabled_rows = [
+            row for row in disabled_report.get("rows", [])
+            if isinstance(row, dict) and row.get("lane_id") == "source" and int(row.get("ui_row_id", -1)) == curvature_row_id
+        ]
+        assert len(disabled_rows) == 1, disabled_report
+        assert disabled_rows[0].get("enabled") is False, disabled_report
+        assert disabled_report.get("validation_messages") == [], disabled_report
 
     boundary_capture = _capture_sdf_source_row(
         exe_path=exe_path,
