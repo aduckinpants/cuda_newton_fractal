@@ -869,6 +869,7 @@ struct ColorPipelineMetadataCatalogStorage {
     std::vector<std::string> lane_defaults;
     std::vector<ColorPipelineLaneCatalog> catalogs;
     std::vector<MaterializedColorPipelineCompatibility> compatibility;
+    std::vector<MaterializedColorPipelineRecipe> recipes;
 };
 
 inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
@@ -889,6 +890,14 @@ inline int CountHardcodedColorPipelineCompanionSuggestions();
 
 inline bool ValidateMaterializedColorPipelineCompanionSuggestions(
     const std::vector<MaterializedColorPipelineCompatibility>& compatibility,
+    std::string* outError);
+
+inline const std::vector<MaterializedColorPipelineRecipe>& GetHardcodedColorPipelineRecipes();
+
+inline int CountHardcodedColorPipelineRecipes();
+
+inline bool ValidateMaterializedColorPipelineRecipes(
+    const std::vector<MaterializedColorPipelineRecipe>& recipes,
     std::string* outError);
 
 inline ColorPipelineMetadataCatalogStorage& MutableColorPipelineMetadataCatalogStorage() {
@@ -1182,6 +1191,10 @@ inline bool TryInstallColorPipelineMetadataCatalog(
     if (!ValidateMaterializedColorPipelineCompanionSuggestions(candidate.compatibility, outError)) {
         return false;
     }
+    if (!ValidateMaterializedColorPipelineRecipes(contract.recipes, outError)) {
+        return false;
+    }
+    candidate.recipes = contract.recipes;
 
     ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
     storage = std::move(candidate);
@@ -1415,6 +1428,96 @@ inline bool ValidateMaterializedColorPipelineCompanionSuggestions(
     return true;
 }
 
+inline const std::vector<MaterializedColorPipelineRecipe>& GetHardcodedColorPipelineRecipes() {
+    static const std::vector<MaterializedColorPipelineRecipe> recipes = {
+        {"default_smooth_escape", "Default Smooth Escape", "smooth_escape_ramp", "identity", "heatmap", "contrast_lift", ""},
+        {"phase_orbit_wheel", "Phase Orbit Wheel", "phase_orbit", "identity", "phase_wheel_palette", "phase_finish", ""},
+        {"sdf_normal_angle_diagnostic", "SDF Normal Angle Diagnostic", "sdf_normal_angle", "identity", "phase_wheel_palette", "phase_finish", ""},
+    };
+    return recipes;
+}
+
+inline const MaterializedColorPipelineRecipe* FindColorPipelineRecipeInRows(
+    const std::vector<MaterializedColorPipelineRecipe>& recipes,
+    const std::string& recipeId) {
+    for (const MaterializedColorPipelineRecipe& recipe : recipes) {
+        if (recipe.id == recipeId) {
+            return &recipe;
+        }
+    }
+    return nullptr;
+}
+
+inline const MaterializedColorPipelineRecipe* FindHardcodedColorPipelineRecipe(
+    const std::string& recipeId) {
+    return FindColorPipelineRecipeInRows(GetHardcodedColorPipelineRecipes(), recipeId);
+}
+
+inline int CountHardcodedColorPipelineRecipes() {
+    return static_cast<int>(GetHardcodedColorPipelineRecipes().size());
+}
+
+inline bool MaterializedColorPipelineRecipeMatchesHardcoded(
+    const MaterializedColorPipelineRecipe& actual,
+    const MaterializedColorPipelineRecipe& expected) {
+    return actual.id == expected.id &&
+        actual.label == expected.label &&
+        actual.source == expected.source &&
+        actual.shape == expected.shape &&
+        actual.palette == expected.palette &&
+        actual.grading == expected.grading &&
+        actual.fail_closed_reason == expected.fail_closed_reason;
+}
+
+inline bool ValidateMaterializedColorPipelineRecipes(
+    const std::vector<MaterializedColorPipelineRecipe>& recipes,
+    std::string* outError) {
+    const std::vector<MaterializedColorPipelineRecipe>& hardcoded = GetHardcodedColorPipelineRecipes();
+    if (recipes.size() != hardcoded.size()) {
+        return SetColorPipelineMetadataCatalogError(
+            outError,
+            "Materialized recipe count does not preserve the hardcoded recipe presets");
+    }
+    for (std::size_t recipeIndex = 0; recipeIndex < hardcoded.size(); ++recipeIndex) {
+        if (!MaterializedColorPipelineRecipeMatchesHardcoded(recipes[recipeIndex], hardcoded[recipeIndex])) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized recipe does not preserve hardcoded preset '") +
+                    hardcoded[recipeIndex].id + "'");
+        }
+        ColorPipelineSelection selection;
+        ColoringMode mode = ColoringMode::smooth_escape;
+        if (!TryBuildHardcodedColorPipelineSelectionFromLaneIds(
+                recipes[recipeIndex].source.c_str(),
+                recipes[recipeIndex].palette.c_str(),
+                &selection,
+                &mode)) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized recipe claims unsupported source/palette bridge for '") +
+                    recipes[recipeIndex].id + "'");
+        }
+        const ColorPipelineLaneCatalog* shapeLane = nullptr;
+        const ColorPipelineLaneCatalog* gradingLane = nullptr;
+        for (const ColorPipelineLaneCatalog& catalog : GetHardcodedColorPipelineLaneCatalogs()) {
+            if (std::strcmp(catalog.lane_id, "shape") == 0) {
+                shapeLane = &catalog;
+            } else if (std::strcmp(catalog.lane_id, "grading") == 0) {
+                gradingLane = &catalog;
+            }
+        }
+        if (!shapeLane || !gradingLane ||
+            !FindColorPipelineFunctionDescriptorInCatalog(*shapeLane, recipes[recipeIndex].shape) ||
+            !FindColorPipelineFunctionDescriptorInCatalog(*gradingLane, recipes[recipeIndex].grading)) {
+            return SetColorPipelineMetadataCatalogError(
+                outError,
+                std::string("Materialized recipe references an unsupported shape/grading row for '") +
+                    recipes[recipeIndex].id + "'");
+        }
+    }
+    return true;
+}
+
 inline bool IsColorPipelineMetadataCompanionSuggestionActive() {
     return IsColorPipelineMetadataCompatibilityActive();
 }
@@ -1504,6 +1607,31 @@ inline int CountActiveColorPipelineCompanionSuggestions() {
         }
     }
     return count;
+}
+
+inline bool IsColorPipelineMetadataRecipeExpansionActive() {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    return storage.active && !storage.recipes.empty();
+}
+
+inline std::string ColorPipelineRecipeExpansionAuthorityId() {
+    return IsColorPipelineMetadataRecipeExpansionActive() ? "materialized_json" : "hardcoded";
+}
+
+inline int CountActiveColorPipelineRecipes() {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    return IsColorPipelineMetadataRecipeExpansionActive()
+        ? static_cast<int>(storage.recipes.size())
+        : CountHardcodedColorPipelineRecipes();
+}
+
+inline const MaterializedColorPipelineRecipe* FindActiveColorPipelineRecipe(
+    const std::string& recipeId) {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    if (IsColorPipelineMetadataRecipeExpansionActive()) {
+        return FindColorPipelineRecipeInRows(storage.recipes, recipeId);
+    }
+    return FindHardcodedColorPipelineRecipe(recipeId);
 }
 
 inline const std::vector<ColorPipelineLaneCatalog>& GetColorPipelineLaneCatalogs() {
@@ -1674,6 +1802,60 @@ inline bool BuildColorPipelineLaneWithSingleRow(
     }
     lane.rows.push_back(std::move(row));
     *outLane = std::move(lane);
+    return true;
+}
+
+inline bool TryBuildColorPipelineRecipeLanes(
+    const std::string& recipeId,
+    std::vector<ColorPipelineLaneState>* outLanes,
+    std::string* outError = nullptr) {
+    if (outLanes) {
+        outLanes->clear();
+    }
+    if (recipeId.empty() || !outLanes) {
+        if (outError) *outError = "Color Pipeline recipe expansion requires a recipe id and output lanes";
+        return false;
+    }
+
+    const MaterializedColorPipelineRecipe* recipe = FindActiveColorPipelineRecipe(recipeId);
+    if (!recipe) {
+        if (outError) *outError = std::string("Unknown Color Pipeline recipe: ") + recipeId;
+        return false;
+    }
+
+    const struct RecipeLaneSpec {
+        const char* lane_id;
+        const std::string* function_id;
+    } laneSpecs[] = {
+        {"source", &recipe->source},
+        {"shape", &recipe->shape},
+        {"palette", &recipe->palette},
+        {"grading", &recipe->grading},
+    };
+
+    std::vector<ColorPipelineLaneState> lanes;
+    lanes.reserve(4);
+    for (std::size_t index = 0; index < 4; ++index) {
+        const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(laneSpecs[index].lane_id);
+        if (!catalog) {
+            if (outError) *outError = std::string("Color Pipeline recipe references missing lane: ") + laneSpecs[index].lane_id;
+            return false;
+        }
+        ColorPipelineLaneState lane;
+        if (!BuildColorPipelineLaneWithSingleRow(
+                *catalog,
+                laneSpecs[index].function_id->c_str(),
+                static_cast<std::uint64_t>(index + 1),
+                &lane,
+                outError)) {
+            return false;
+        }
+        lanes.push_back(std::move(lane));
+    }
+    *outLanes = std::move(lanes);
+    if (outError) {
+        outError->clear();
+    }
     return true;
 }
 

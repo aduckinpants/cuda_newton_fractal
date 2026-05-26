@@ -143,6 +143,31 @@ void ValidateCompatibility(
     }
 }
 
+void ValidateRecipes(
+    const MaterializedColorPipelineContract& contract,
+    ColorPipelineMetadataParityReport* report) {
+    report->recipe_count = static_cast<int>(contract.recipes.size());
+    const std::vector<MaterializedColorPipelineRecipe>& hardcoded =
+        color_pipeline_core::GetHardcodedColorPipelineRecipes();
+    if (contract.recipes.size() != hardcoded.size()) {
+        AddError(report, "recipe count mismatch");
+        return;
+    }
+    for (std::size_t recipeIndex = 0; recipeIndex < hardcoded.size(); ++recipeIndex) {
+        const MaterializedColorPipelineRecipe& expected = hardcoded[recipeIndex];
+        const MaterializedColorPipelineRecipe& actual = contract.recipes[recipeIndex];
+        if (actual.id != expected.id ||
+            actual.label != expected.label ||
+            actual.source != expected.source ||
+            actual.shape != expected.shape ||
+            actual.palette != expected.palette ||
+            actual.grading != expected.grading ||
+            actual.fail_closed_reason != expected.fail_closed_reason) {
+            AddError(report, std::string("recipe metadata mismatch: ") + expected.id);
+        }
+    }
+}
+
 std::string JsonEscape(const std::string& text) {
     std::ostringstream out;
     for (const char ch : text) {
@@ -166,6 +191,7 @@ ColorPipelineMetadataParityReport ValidateColorPipelineMetadataParity(
     report.schema_version = contract.schema_version;
     ValidateLaneCatalogs(contract, &report);
     ValidateCompatibility(contract, &report);
+    ValidateRecipes(contract, &report);
     report.ok = report.errors.empty();
     return report;
 }
@@ -187,6 +213,9 @@ std::string SerializeColorPipelineMetadataParityReportJson(
     out << "  \"active_compatibility_count\": " << report.active_compatibility_count << ",\n";
     out << "  \"companion_suggestion_authority\": \"" << JsonEscape(report.companion_suggestion_authority) << "\",\n";
     out << "  \"active_companion_suggestion_count\": " << report.active_companion_suggestion_count << ",\n";
+    out << "  \"recipe_count\": " << report.recipe_count << ",\n";
+    out << "  \"recipe_expansion_authority\": \"" << JsonEscape(report.recipe_expansion_authority) << "\",\n";
+    out << "  \"active_recipe_count\": " << report.active_recipe_count << ",\n";
     out << "  \"unsupported_pair_count\": " << report.unsupported_pair_count << ",\n";
     out << "  \"errors\": [";
     for (std::size_t index = 0; index < report.errors.size(); ++index) {

@@ -657,6 +657,56 @@ void TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync() {
         "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_DisabledUnsupportedRowClearsValidationNoise");
 }
 
+
+void TestRecipeExpansionUsesExistingWindowDraftRows() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    ColorPipelineWindowState state{};
+    Check(EnsureColorPipelineWindowInitialized(&state),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_Initializes");
+
+    Check(ApplyColorPipelineRecipeToDraft(&state, "sdf_normal_angle_diagnostic"),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_AppliesRecipe");
+    Check(state.lanes.size() == 4,
+        "TestRecipeExpansionUsesExistingWindowDraftRows_LaneCount");
+    const ColorPipelineLaneState* source = FindLane(state, "source");
+    const ColorPipelineLaneState* shape = FindLane(state, "shape");
+    const ColorPipelineLaneState* palette = FindLane(state, "palette");
+    const ColorPipelineLaneState* grading = FindLane(state, "grading");
+    Check(source && source->rows.size() == 1 && source->rows[0].function_id == "sdf_normal_angle",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_SourceRecipeRow");
+    Check(shape && shape->rows.size() == 1 && shape->rows[0].function_id == "identity",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_ShapeRecipeRow");
+    Check(palette && palette->rows.size() == 1 && palette->rows[0].function_id == "phase_wheel_palette",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_PaletteRecipeRow");
+    Check(grading && grading->rows.size() == 1 && grading->rows[0].function_id == "phase_finish",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_GradingRecipeRow");
+
+    KernelParams params = SmoothEscapeParams();
+    const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(
+        state,
+        FractalType::newton,
+        &params);
+    Check(applyState.status == ColorPipelineDraftApplyStatus::can_apply,
+        "TestRecipeExpansionUsesExistingWindowDraftRows_RecipeCanApplyThroughExistingBridge");
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestRecipeExpansionUsesExistingWindowDraftRows_RecipeAppliesThroughDraftBridge");
+    Check(params.coloring_mode == ColoringMode::phase &&
+            params.color_pipeline.signal == ColorSignal::sdf_normal_angle &&
+            params.color_pipeline.palette == ColorPalette::phase_wheel &&
+            params.color_pipeline.grading == ColorGradingPreset::phase_default,
+        "TestRecipeExpansionUsesExistingWindowDraftRows_RuntimeTuple");
+
+    const std::vector<ColorPipelineLaneState> before = state.lanes;
+    Check(!ApplyColorPipelineRecipeToDraft(&state, "missing_recipe"),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_UnknownRecipeRejected");
+    Check(ColorPipelineLaneStatesEqual(state.lanes[0], before[0]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[1], before[1]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[2], before[2]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[3], before[3]),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_UnknownRecipeDoesNotMutate");
+}
+
 void TestCandidateDraftOnlyTruthAndCopySurfaces() {
     ColorPipelineWindowState inheritedUnsupportedState{};
     KernelParams params = SmoothEscapeParams();
@@ -913,6 +963,7 @@ int main() {
     TestSdfSourceRowsApplyThroughDraftLiveBridge();
     TestMixedSdfAndNonSdfSourceRowsFailClosed();
     TestDraftEditsSurviveCompatibleFractalSwitchSync();
+    TestRecipeExpansionUsesExistingWindowDraftRows();
     TestWindowUtilityContracts();
 
     std::printf("test_color_pipeline_window: passed=%d failed=%d\n", g_passed, g_failed);

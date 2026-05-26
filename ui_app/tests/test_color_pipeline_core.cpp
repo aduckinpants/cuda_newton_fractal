@@ -832,14 +832,14 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
     Check(contract.compatibility.size() == 20,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
-    Check(!contract.recipes.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipesPresent");
+    Check(contract.recipes.size() == 3, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(!contract.explaino_entries.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoEntriesPresent");
 
     const ColorPipelineMetadataParityReport parity = ValidateColorPipelineMetadataParity(contract);
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
     Check(parity.lane_count == 4 && parity.function_count == 33 &&
-            parity.compatibility_count == 20 && parity.unsupported_pair_count > 0,
+            parity.compatibility_count == 20 && parity.recipe_count == 3 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
     const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
@@ -1207,6 +1207,106 @@ void TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions() {
         "TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions_ClearRestoresHardcoded");
 }
 
+
+void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    Check(!color_pipeline_core::IsColorPipelineMetadataRecipeExpansionActive(),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcoded");
+    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("hardcoded"),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcodedAuthority");
+    Check(color_pipeline_core::CountHardcodedColorPipelineRecipes() == 3,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeCount");
+    Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedFallbackCountIsTruthful");
+
+    const std::vector<MaterializedColorPipelineRecipe>& hardcodedRecipes =
+        color_pipeline_core::GetHardcodedColorPipelineRecipes();
+    Check(hardcodedRecipes.size() == 3,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeVectorCount");
+    for (const MaterializedColorPipelineRecipe& expectedRecipe : hardcodedRecipes) {
+        const MaterializedColorPipelineRecipe* activeRecipe =
+            color_pipeline_core::FindActiveColorPipelineRecipe(expectedRecipe.id);
+        Check(activeRecipe != nullptr,
+            "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeFindsActive");
+        if (activeRecipe) {
+            Check(activeRecipe->source == expectedRecipe.source &&
+                    activeRecipe->shape == expectedRecipe.shape &&
+                    activeRecipe->palette == expectedRecipe.palette &&
+                    activeRecipe->grading == expectedRecipe.grading,
+                "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeTuple");
+        }
+    }
+
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    const std::string path = ResolveMaterializedContractPath();
+    Check(LoadColorPipelineMaterializedContractJson(path, &contract, &error),
+        (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Loads: ") + error).c_str());
+    if (!error.empty() || contract.schema_version != 1) {
+        Check(false, "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_ContractLoadOrVersion");
+        return;
+    }
+
+    Check(color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error),
+        (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Install: ") + error).c_str());
+    Check(color_pipeline_core::IsColorPipelineMetadataRecipeExpansionActive(),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_MetadataActive");
+    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("materialized_json"),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Authority");
+    Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Count");
+
+    for (const MaterializedColorPipelineRecipe& expectedRecipe : hardcodedRecipes) {
+        const MaterializedColorPipelineRecipe* actualRecipe =
+            color_pipeline_core::FindActiveColorPipelineRecipe(expectedRecipe.id);
+        Check(actualRecipe != nullptr,
+            "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_MetadataRecipeFindsActive");
+        if (!actualRecipe) {
+            continue;
+        }
+        Check(actualRecipe->label == expectedRecipe.label &&
+                actualRecipe->source == expectedRecipe.source &&
+                actualRecipe->shape == expectedRecipe.shape &&
+                actualRecipe->palette == expectedRecipe.palette &&
+                actualRecipe->grading == expectedRecipe.grading,
+            "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_MetadataRecipeTuple");
+
+        std::vector<ColorPipelineLaneState> recipeLanes;
+        error.clear();
+        Check(color_pipeline_core::TryBuildColorPipelineRecipeLanes(
+                actualRecipe->id,
+                &recipeLanes,
+                &error),
+            (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_BuildRecipeLanes: ") + error).c_str());
+        Check(recipeLanes.size() == 4,
+            "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_LaneCount");
+        if (recipeLanes.size() == 4) {
+            Check(recipeLanes[0].lane_id == "source" && recipeLanes[0].rows.size() == 1 &&
+                    recipeLanes[0].rows[0].function_id == expectedRecipe.source,
+                "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_SourceLane");
+            Check(recipeLanes[1].lane_id == "shape" && recipeLanes[1].rows.size() == 1 &&
+                    recipeLanes[1].rows[0].function_id == expectedRecipe.shape,
+                "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_ShapeLane");
+            Check(recipeLanes[2].lane_id == "palette" && recipeLanes[2].rows.size() == 1 &&
+                    recipeLanes[2].rows[0].function_id == expectedRecipe.palette,
+                "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_PaletteLane");
+            Check(recipeLanes[3].lane_id == "grading" && recipeLanes[3].rows.size() == 1 &&
+                    recipeLanes[3].rows[0].function_id == expectedRecipe.grading,
+                "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_GradingLane");
+        }
+    }
+
+    std::vector<ColorPipelineLaneState> rejectedLanes;
+    error.clear();
+    Check(!color_pipeline_core::TryBuildColorPipelineRecipeLanes("missing_recipe", &rejectedLanes, &error) &&
+            rejectedLanes.empty() && error.find("Unknown Color Pipeline recipe") != std::string::npos,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_UnknownRecipeFailsClosed");
+
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    Check(!color_pipeline_core::IsColorPipelineMetadataRecipeExpansionActive(),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_ClearRestoresHardcoded");
+}
+
 void TestMaterializedContractLoaderRejectsTamperedJson() {
     const char* duplicateFunctionJson = R"json({
   "schema_version": 1,
@@ -1307,6 +1407,7 @@ int main() {
     TestMaterializedUiSaltMetadataCanOwnPublicCatalog();
     TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup();
     TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions();
+    TestMaterializedUiSaltMetadataCanOwnRecipeExpansion();
     TestMaterializedContractLoaderRejectsTamperedJson();
 
     std::printf("test_color_pipeline_core: passed=%d failed=%d\n", g_passed, g_failed);

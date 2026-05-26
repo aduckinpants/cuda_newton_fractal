@@ -1036,6 +1036,69 @@ inline bool SelectColorPipelineLaneFunction(
 inline bool AddColorPipelineLaneRow(
     ColorPipelineWindowState* ioState,
     std::size_t laneIndex,
+    const char* functionId);
+
+inline bool ApplyColorPipelineRecipeToDraft(
+    ColorPipelineWindowState* ioState,
+    const char* recipeId) {
+    if (!ioState || !recipeId || recipeId[0] == '\0') {
+        return false;
+    }
+    if (!EnsureColorPipelineWindowInitialized(ioState)) {
+        return false;
+    }
+
+    const MaterializedColorPipelineRecipe* recipe =
+        color_pipeline_core::FindActiveColorPipelineRecipe(recipeId);
+    if (!recipe) {
+        PushColorPipelineValidationMessage(ioState, std::string("Unknown Color Pipeline recipe: ") + recipeId);
+        return false;
+    }
+
+    struct RecipeLaneSpec {
+        const char* lane_id;
+        const std::string* function_id;
+    };
+    const RecipeLaneSpec laneSpecs[] = {
+        {"source", &recipe->source},
+        {"shape", &recipe->shape},
+        {"palette", &recipe->palette},
+        {"grading", &recipe->grading},
+    };
+
+    ColorPipelineWindowState probe = *ioState;
+    for (const RecipeLaneSpec& laneSpec : laneSpecs) {
+        bool foundLane = false;
+        for (std::size_t laneIndex = 0; laneIndex < probe.lanes.size(); ++laneIndex) {
+            ColorPipelineLaneState& lane = probe.lanes[laneIndex];
+            if (lane.lane_id != laneSpec.lane_id) {
+                continue;
+            }
+            foundLane = true;
+            while (lane.rows.size() > 1) {
+                lane.rows.pop_back();
+            }
+            if (lane.rows.empty() && !AddColorPipelineLaneRow(&probe, laneIndex, laneSpec.function_id->c_str())) {
+                return false;
+            }
+            if (!SelectColorPipelineLaneFunction(&probe, laneIndex, laneSpec.function_id->c_str())) {
+                return false;
+            }
+            break;
+        }
+        if (!foundLane) {
+            PushColorPipelineValidationMessage(ioState, std::string("Missing Color Pipeline recipe lane: ") + laneSpec.lane_id);
+            return false;
+        }
+    }
+
+    *ioState = std::move(probe);
+    return true;
+}
+
+inline bool AddColorPipelineLaneRow(
+    ColorPipelineWindowState* ioState,
+    std::size_t laneIndex,
     const char* functionId = nullptr) {
     if (!ioState || laneIndex >= ioState->lanes.size()) {
         return false;
