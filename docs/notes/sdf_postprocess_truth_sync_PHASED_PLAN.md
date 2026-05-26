@@ -53,7 +53,7 @@ Out of scope:
 ## Audit Passes
 
 - [done] Pass 1 - re-read every stale hit and ensure already-shipped work is marked shipped, not active.
-- [done] Pass 2 - verify the next planned SDF implementation decision is specific enough to resume, but does not implement per-row/GPU work in this docs slice.
+- [done] Pass 2 - verify the next planned SDF implementation decision is specific enough to start cleanly later, but does not implement per-row/GPU work in this docs slice.
 - [done] Pass 3 - re-read the composition/preset planning surfaces and ensure shipped effective Source-stack summary work is no longer named as pending.
 - [done] Pass 4 - clean re-read the repaired state: stale active-work phrases now either describe shipped work or the next field quality/downsample decision.
 - [done] Pass 5 - confirmed the repaired state: no edited roadmap claims per-row downsample, GPU postprocess, boundary-masked normal-angle, authored SDF UI, SDF-native lanes, or a preset manager are shipped.
