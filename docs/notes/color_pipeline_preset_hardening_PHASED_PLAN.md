@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - Color Pipeline preset copy hardening is implemented, validated, hostile-audited, and ready for checkpoint/receipt flow.
+Complete - Color Pipeline preset copy hardening is implemented, validated, hostile-audited, and closed on this branch.
 
 ## Phase Checklist
 
@@ -52,6 +52,7 @@ This is a hardening repair on the already-shipped preset workflow, not a new fea
 - GREEN proof: copy pytest passed (`1 passed`), native `test_color_pipeline_window` passed (`passed=198 failed=0`), runtime publish passed, and no-mouse runtime preset proof passed (`1 passed`).
 - Guardrail proof: contract validation, phased-plan sync, hostile-audit validation, code-quality baseline, and `git diff --check` passed for this hardening slice.
 - Hostile readback proof: `rg -n '"Draft |"Live bridge:|Draft Source|Row stack matches|Row stack differs' ui_app\src\color_pipeline_window.h tests\test_color_pipeline_window_copy.py -S` finds only the test guard plus the new row-stack product copy in the UI source.
+- Rearward repair: review artifact `artifacts/hooks/viewer_host_rearward_review/0e7e7a502aa669500b965ccf281e6e7200d25fe3.json` flagged the prior closeout wording as stale; this plan now uses closed-state wording only.
 
 ## Hostile Audit
 
