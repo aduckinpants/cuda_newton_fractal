@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_composition_ui_cleanup",
+  "feature_id": "color_pipeline_composition_preset_ux_review",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/color_pipeline_composition_ui_cleanup_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs",
+    "spec_intake",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "continue after the pushed Color Pipeline preset workflow truth branch",
+    "clean up product-facing composition workflow wording without changing runtime behavior",
+    "harden the unit and smoke tests so visible draft/live-bridge leakage is caught",
+    "preserve current Color Pipeline preset, SDF source-stack, capture/replay, and no-mouse automation behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "redesign the full Color Pipeline UI in this slice",
+    "implement the Factorio-style schedule/workflow layout in this slice",
+    "add new Color Pipeline functions or rows in this slice",
+    "implement boundary-masked SDF normal-angle in this slice",
+    "add SDF operands, masks, or gates as first-class composition nodes in this slice",
+    "integrate Generic Equation Pack viewport work in this slice",
+    "add a Salticid runtime dependency",
+    "rename persisted Color Pipeline draft/state fields",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "visible_ui_change_scope": "composition_workflow_copy_and_affordance_only",
+    "runtime_behavior_change": false,
+    "new_visible_color_pipeline_functions": false,
+    "persisted_state_renames": false,
+    "salticid_runtime_dependency": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "new_color_pipeline_functionality": "forbidden",
+    "runtime_salticid_dependency": "forbidden",
+    "unsupported_recipe_acceptance": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "broad_color_pipeline_redesign": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_composition_copy_pytest --log artifacts/logs/color_pipeline_composition_copy_pytest.log --out-json artifacts/validation/color_pipeline_composition_copy_pytest.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_color_pipeline_window_copy.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_composition_window --log artifacts/logs/color_pipeline_composition_window.log --out-json artifacts/validation/color_pipeline_composition_window.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_composition_core --log artifacts/logs/color_pipeline_composition_core.log --out-json artifacts/validation/color_pipeline_composition_core.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_composition_publish --log artifacts/logs/color_pipeline_composition_publish.log --out-json artifacts/validation/color_pipeline_composition_publish.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_composition_runtime --log artifacts/logs/color_pipeline_composition_runtime.log --out-json artifacts/validation/color_pipeline_composition_runtime.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_presets.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_composition_ui_cleanup.contract.json --out-json artifacts/validation/color_pipeline_composition_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_composition_ui_cleanup_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_composition_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_composition_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_composition_diff_check --log artifacts/logs/color_pipeline_composition_diff_check.log --out-json artifacts/validation/color_pipeline_composition_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Color Pipeline composition UI cleanup contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_composition_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    }
+  ]
+}

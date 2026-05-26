@@ -605,7 +605,7 @@ inline bool ResetColorPipelineDraftFromLiveState(ColorPipelineWindowState* ioSta
     }
     if (!ioState->live_snapshot.draft_import_supported || ioState->live_snapshot.lanes.empty()) {
         PushColorPipelineValidationMessage(ioState,
-            "Current live runtime tuple is outside the shipped advanced catalog; keep editing the programmable draft or switch the simple Color panel first.");
+            "Current color selection is outside the shipped advanced catalog; keep editing the authored row stack or switch the simple Color panel first.");
         return false;
     }
     const std::vector<ColorPipelineLaneState> previousLanes = ioState->lanes;
@@ -1470,7 +1470,7 @@ inline bool CollectEnabledColorPipelineRows(
     }
     if (outRows->empty()) {
         if (outError) {
-            *outError = std::string("Current live bridge requires one enabled row in the ") + lane->label + " lane.";
+            *outError = std::string("Current row editor application requires one enabled row in the ") + lane->label + " lane.";
         }
         return false;
     }
@@ -1627,7 +1627,7 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
     }
     if (!IsSupportedColorPipelineSourceStackFunctionId(row.function_id)) {
         if (outError) {
-            *outError = "Current live bridge only supports shipped non-basin Source rows in the Source stack; root_index stays on the separate root-basin pair schedule.";
+            *outError = "Current row editor application only supports shipped non-basin Source rows in the Source stack; root_index stays on the separate root-basin pair schedule.";
         }
         return false;
     }
@@ -1783,7 +1783,7 @@ inline bool TryBuildColorPipelinePaletteStackEntryFromRow(
     }
     if (!IsSupportedColorPipelinePaletteStackFunctionId(row.function_id)) {
         if (outError) {
-            *outError = "Current live bridge only supports Heatmap, Phase Wheel, Banded Heatmap, and ExplainO CMap in the Palette stack.";
+            *outError = "Current row editor application only supports Heatmap, Phase Wheel, Banded Heatmap, and ExplainO CMap in the Palette stack.";
         }
         return false;
     }
@@ -2039,13 +2039,13 @@ inline bool TryBuildRootBasinPairSelectionsFromRows(
     outSelections->clear();
     if (sourceRows.empty() || paletteRows.empty() || sourceRows.size() != paletteRows.size()) {
         if (outError) {
-            *outError = "Current live bridge only supports row-indexed root-basin schedules when enabled Source and Palette row counts match.";
+            *outError = "Current row editor application only supports row-indexed root-basin schedules when enabled Source and Palette row counts match.";
         }
         return false;
     }
     if (sourceRows.size() > static_cast<std::size_t>(kColorPipelineMaxRootBasinPairCount)) {
         if (outError) {
-            *outError = "Current live bridge only supports a bounded number of enabled root-basin Source / Palette pairs.";
+            *outError = "Current row editor application only supports a bounded number of enabled root-basin Source / Palette pairs.";
         }
         return false;
     }
@@ -2054,7 +2054,7 @@ inline bool TryBuildRootBasinPairSelectionsFromRows(
         const ColorPipelineRowState* paletteRow = paletteRows[index];
         if (!sourceRow || !paletteRow || sourceRow->function_id != "root_index" || !IsSupportedRootBasinPaletteFunctionId(paletteRow->function_id)) {
             if (outError) {
-                *outError = "Current live bridge only supports row-indexed root-basin pairs of root_index with root_classic_palette or joy_root_palette.";
+                *outError = "Current row editor application only supports row-indexed root-basin pairs of root_index with root_classic_palette or joy_root_palette.";
             }
             return false;
         }
@@ -2334,7 +2334,7 @@ inline bool TryBuildColorPipelineGradingStackEntryFromRow(
     }
     if (!IsSupportedColorPipelineGradingFunctionId(row.function_id)) {
         if (outError) {
-            *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, grade_glow, and balance_void_grade in the Grading stack.";
+            *outError = "Current row editor application only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, grade_glow, and balance_void_grade in the Grading stack.";
         }
         return false;
     }
@@ -2827,13 +2827,13 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     }
     if (!rootBasinPairSchedule && sourceRowsForStacks.size() > static_cast<std::size_t>(kColorPipelineMaxSourceStackCount)) {
         if (outError) {
-            *outError = "Current live bridge only supports a bounded number of enabled Source rows in the Source stack.";
+            *outError = "Current row editor application only supports a bounded number of enabled Source rows in the Source stack.";
         }
         return false;
     }
     if (shapeRows.size() > static_cast<std::size_t>(kColorPipelineMaxShapeStackCount)) {
         if (outError) {
-            *outError = "Current live bridge only supports a bounded number of enabled Shape rows in the schedule lane.";
+            *outError = "Current row editor application only supports a bounded number of enabled Shape rows in the schedule lane.";
         }
         return false;
     }
@@ -2847,7 +2847,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     }
     if (gradingRows.size() > static_cast<std::size_t>(kColorPipelineMaxGradingStackCount)) {
         if (outError) {
-            *outError = "Current live bridge only supports a bounded number of enabled Grading rows in the schedule lane.";
+            *outError = "Current row editor application only supports a bounded number of enabled Grading rows in the schedule lane.";
         }
         return false;
     }
@@ -2961,7 +2961,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     if (!rootBasinPairSchedule) {
         if (paletteRows.size() > static_cast<std::size_t>(kColorPipelineMaxPaletteStackCount)) {
             if (outError) {
-                *outError = "Current live bridge only supports a bounded number of enabled Palette rows in the schedule lane.";
+                *outError = "Current row editor application only supports a bounded number of enabled Palette rows in the schedule lane.";
             }
             return false;
         }
@@ -3251,7 +3251,7 @@ inline const ColorPipelineRowState* FindSingleEnabledColorPipelineRow(
         }
         if (singleRow) {
             if (outError) {
-                *outError = std::string("Current live bridge only supports one enabled row in the ") + lane->label + " lane.";
+                *outError = std::string("Current row editor application only supports one enabled row in the ") + lane->label + " lane.";
             }
             return nullptr;
         }
@@ -3259,7 +3259,7 @@ inline const ColorPipelineRowState* FindSingleEnabledColorPipelineRow(
     }
     if (!singleRow) {
         if (outError) {
-            *outError = std::string("Current live bridge requires one enabled row in the ") + lane->label + " lane.";
+            *outError = std::string("Current row editor application requires one enabled row in the ") + lane->label + " lane.";
         }
         return nullptr;
     }
@@ -3314,13 +3314,13 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     if (!hasRootBasinPairFamily &&
         paletteRows.size() > static_cast<std::size_t>(kColorPipelineMaxPaletteStackCount)) {
         if (outError) {
-            *outError = "Current live bridge only supports a bounded number of enabled Palette rows in the schedule lane.";
+            *outError = "Current row editor application only supports a bounded number of enabled Palette rows in the schedule lane.";
         }
         return false;
     }
     if (shapeRows.size() > static_cast<std::size_t>(kColorPipelineMaxShapeStackCount)) {
         if (outError) {
-            *outError = "Current live bridge only supports a bounded number of enabled Shape rows in the schedule lane.";
+            *outError = "Current row editor application only supports a bounded number of enabled Shape rows in the schedule lane.";
         }
         return false;
     }
@@ -3352,14 +3352,14 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
 
     if (sourceRows.size() > static_cast<std::size_t>(kColorPipelineMaxSourceStackCount)) {
         if (outError) {
-            *outError = "Current live bridge only supports a bounded number of enabled Source rows in the Source stack.";
+            *outError = "Current row editor application only supports a bounded number of enabled Source rows in the Source stack.";
         }
         return false;
     }
     for (const ColorPipelineRowState* sourceRow : sourceRows) {
         if (!sourceRow || !IsSupportedColorPipelineSourceStackFunctionId(sourceRow->function_id)) {
             if (outError) {
-                *outError = "Current live bridge only supports shipped non-basin Source rows in the Source stack; root_index stays on the separate root-basin pair schedule.";
+                *outError = "Current row editor application only supports shipped non-basin Source rows in the Source stack; root_index stays on the separate root-basin pair schedule.";
             }
             return false;
         }
@@ -3367,7 +3367,7 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     for (const ColorPipelineRowState* paletteRow : paletteRows) {
         if (!paletteRow || !IsSupportedColorPipelinePaletteStackFunctionId(paletteRow->function_id)) {
             if (outError) {
-                *outError = "Current live bridge only supports Heatmap, Phase Wheel, Banded Heatmap, and ExplainO CMap in the Palette stack.";
+                *outError = "Current row editor application only supports Heatmap, Phase Wheel, Banded Heatmap, and ExplainO CMap in the Palette stack.";
             }
             return false;
         }
@@ -3407,14 +3407,14 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         }
         if (gradingRows.size() > static_cast<std::size_t>(kColorPipelineMaxGradingStackCount)) {
             if (outError) {
-                *outError = "Current live bridge only supports a bounded number of enabled Grading rows in the schedule lane.";
+                *outError = "Current row editor application only supports a bounded number of enabled Grading rows in the schedule lane.";
             }
             return false;
         }
         for (const ColorPipelineRowState* gradingRow : gradingRows) {
             if (!gradingRow || !IsSupportedColorPipelineGradingFunctionId(gradingRow->function_id)) {
                 if (outError) {
-                    *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, grade_glow, and balance_void_grade in the Grading stack.";
+                    *outError = "Current row editor application only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, grade_glow, and balance_void_grade in the Grading stack.";
                 }
                 return false;
             }
@@ -3808,7 +3808,7 @@ inline bool TryApplyColorPipelineUiAutomationSetValue(
         ioDirty,
         ioInteraction);
     if (!applied) {
-        ioState->ui_automation_set_error = std::string("color pipeline draft/live bridge rejected visible control: ") + primaryControlId;
+        ioState->ui_automation_set_error = std::string("color pipeline row editor rejected visible control: ") + primaryControlId;
         return false;
     }
     if (ioWidgetValue) {
@@ -4215,19 +4215,19 @@ inline void RenderColorPipelineWindowSummary(
                 shapeId = ioState->live_snapshot.lanes[1].rows[0].function_id.c_str();
             }
             ImGui::TextWrapped(
-                "Live selection: %s -> %s / %s / %s",
+                "Current color selection: %s -> %s / %s / %s",
                 ColoringModeId(ioState->live_snapshot.coloring_mode),
                 signalId ? signalId : "(unsupported signal)",
                 shapeId,
                 paletteId ? paletteId : "(unsupported palette)");
         } else if (ioState->live_snapshot.valid) {
             ImGui::TextWrapped(
-                "Live selection: %s (outside the current Source / Shape / Palette preset path)",
+                "Current color selection: %s (outside the current Source / Shape / Palette preset path)",
                 ColoringModeId(ioState->live_snapshot.coloring_mode));
-            ImGui::TextDisabled("The row editor keeps its own starter state until live runtime maps onto a supported Source / Shape / Palette preset.");
+            ImGui::TextDisabled("The row editor keeps its own starter state until the current color selection maps onto a supported Source / Shape / Palette preset.");
         } else {
-            ImGui::TextWrapped("Live selection: current runtime color state is invalid or out of sync with the row editor.");
-            ImGui::TextDisabled("The current supported row stack can still repair the runtime; reset-from-live returns once the state is coherent again.");
+            ImGui::TextWrapped("Current color selection is invalid or out of sync with the row editor.");
+            ImGui::TextDisabled("The current supported row stack can still repair the selection; reset from current color returns once the state is coherent again.");
         }
         const bool canApply = applyState.status == ColorPipelineDraftApplyStatus::can_apply;
         if (applyState.status == ColorPipelineDraftApplyStatus::matches_live) {
@@ -4238,13 +4238,13 @@ inline void RenderColorPipelineWindowSummary(
                 : ImVec4(1.0f, 0.62f, 0.48f, 1.0f);
             ImGui::TextColored(statusColor, "%s", applyState.message.c_str());
             if (!canApply) {
-                ImGui::TextDisabled("Supported runtime presets right now: Smooth Escape / Escape Magnitude / Root Proximity with Heatmap or Explaino Cmap, Phase Orbit / Orbit Stripe with Phase Wheel, Iteration Bands with Banded Heatmap, and Root Index with Root Classic Palette or Joy Root Palette.");
+                ImGui::TextDisabled("Supported selections right now: Smooth Escape / Escape Magnitude / Root Proximity with Heatmap or Explaino Cmap, Phase Orbit / Orbit Stripe with Phase Wheel, Iteration Bands with Banded Heatmap, and Root Index with Root Classic Palette or Joy Root Palette.");
             }
         }
         if (!ioState->live_snapshot.valid || !ioState->live_snapshot.draft_import_supported) {
             ImGui::BeginDisabled();
         }
-        if (ImGui::Button("Reset Draft From Live")) {
+        if (ImGui::Button("Reset From Current Color")) {
             ResetColorPipelineDraftFromLiveState(ioState);
         }
         if (!ioState->live_snapshot.valid || !ioState->live_snapshot.draft_import_supported) {
@@ -4393,7 +4393,7 @@ inline void RenderColorPipelineWindowLane(
                         liveParams);
                     std::string optionLabel = candidate.name;
                     if (!isSelected && candidateDraftOnly) {
-                        optionLabel += " (draft only)";
+                        optionLabel += " (unsupported for current selection)";
                     }
                     if (ImGui::Selectable(optionLabel.c_str(), isSelected)) {
                         if (ioInteraction) {
@@ -4438,7 +4438,7 @@ inline void RenderColorPipelineWindowLane(
             }
             if (currentDescriptor->parameters.empty() &&
                 (lane.lane_id == "source" || lane.lane_id == "palette")) {
-                ImGui::TextDisabled("This fixed %s row has no tunable parameters; choosing it changes the live bridge tuple directly.", lane.label.c_str());
+                ImGui::TextDisabled("This fixed %s row has no tunable parameters; choosing it changes the current Color Pipeline selection directly.", lane.label.c_str());
             } else if (!currentDescriptor->parameters.empty() && renderableParamIndexes.empty()) {
                 ImGui::TextDisabled("Parameter tuning preview only in this slice.");
             } else if (hasHiddenParams) {

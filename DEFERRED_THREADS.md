@@ -19,7 +19,7 @@ This table is the current backlog order after reconciling the older deferred not
 | 4 | Categorized selector + view presets | Medium | High | Organize the growing catalog and add per-fractal view preset choices before more catalog growth; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 5 | Camera/dive behavior | Medium | High | Make auto-dive dt-aware and implement at least one real behavior mode instead of flat zoom stubs; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 6 | Smooth-escape/color tuning | Medium | Medium/High | Per-family color tuning and interior treatment, without reopening Color Pipeline architecture broadly; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
-| 7 | Color Pipeline preset workflow truth | Medium | High | UI-Salt backend authority is shipped; current active slice makes the visible preset workflow truthful without a broad redesign. |
+| 7 | Color Pipeline composition follow-ups | Medium | High | UI-Salt backend authority and preset workflow truth are shipped; current composition cleanup removes visible draft/live-bridge wording. Remaining bounded follow-ups are boundary-masked phase source, SDF masks/gates, and function-library taxonomy/layout work. |
 | 8 | SDF performance follow-up after preview policy | Medium/High | High | Preview postprocess quality policy is shipped; next choose between per-row/multi-field downsample design and GPU Color Pipeline postprocess with measured client evidence. |
 | 9 | Generic equation-pack productization | Medium/High | High strategic | Persistence first, then catalog picker, authoring UX, Salticid adapter, performance profiling. |
 | 10 | Callable/transpiler handoff | High | High strategic | Finish the handoff boundary without pretending dynamic backend execution already exists. |
@@ -158,8 +158,8 @@ Shipped since the original deferred note:
 - SDF preview postprocess quality policy is shipped: shared field downsample remains the authority, interactive preview reports a stepped postprocess path, and full-quality render/capture stays step 1.
 
 Active follow-up:
-- Broader composition/preset UX is active now as `color_pipeline_preset_workflow_truth`; keep it bounded to preset workflow truth and do not mix SDF per-row quality choices into it.
-- After that, choose the next SDF performance/design slice explicitly: per-row/multi-field downsample authority or GPU Color Pipeline postprocess with measured client evidence.
+- Broader composition/preset UX now has preset workflow truth and visible implementation-wording cleanup covered by bounded slices. Keep later composition work split by topic instead of turning it into a broad redesign.
+- Choose the next SDF performance/design slice explicitly when returning to performance: per-row/multi-field downsample authority or GPU Color Pipeline postprocess with measured client evidence.
 
 Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.

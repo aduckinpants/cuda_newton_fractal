@@ -110,16 +110,16 @@ Next correct step:
 
 ## P1 - Color Pipeline composition and effective-source UX are underdeveloped
 
-**Status:** active bounded follow-up for preset workflow truth; broader composition redesign remains deferred
+**Status:** preset workflow truth and visible implementation-wording cleanup are shipped; broader composition redesign remains deferred
 **Area:** advanced color / SDF source rows / presets
 
-The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows, but the authoring model still exposes implementation seams too directly. Effective Source-stack summary/report clarity is shipped, and UI-Salt materialized metadata now owns catalog descriptors, compatibility lookup, companion suggestions, and recipe expansion backend seams. The remaining active issue is that the visible preset workflow still needs to present that authority without misleading draft/live implementation wording or silent projection.
+The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows. Effective Source-stack summary/report clarity is shipped, UI-Salt materialized metadata now owns catalog descriptors, compatibility lookup, companion suggestions, and recipe expansion backend seams, product-facing preset workflow truth is shipped, and the current composition cleanup removes remaining visible draft/live-bridge wording without changing the internal row-stack implementation.
 
 Remaining review direction:
 - Preserve full-field `sdf_normal_angle` as a diagnostic phase view.
 - Add a later boundary-masked normal-angle beauty mode rather than deleting the diagnostic behavior.
 - Treat SDF fields as typed Source signals now, with SDF masks/gates as the next plausible composition operand.
-- Improve preset/workflow truth so compatible fractal switches preserve authored work and unsupported rows project safely.
+- Keep preset/workflow truth green so compatible fractal switches preserve authored work and unsupported rows project safely.
 - Keep full preset manager UI, authored SDF pack viewport integration, and SDF-native lanes as separate slices.
 
 ---

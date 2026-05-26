@@ -69,12 +69,12 @@ Current useful function families:
 
 Current gaps:
 
-- Effective Source-stack summary/report clarity is shipped, but the user-facing authoring workflow still needs better preset/projection semantics and less implementation-wording leakage.
+- Effective Source-stack summary/report clarity is shipped. Product-facing preset/projection semantics are shipped, and the current composition UI cleanup removes the remaining visible draft/live-bridge wording without changing the internal row-stack implementation.
 - Signal kind metadata exists, but phase/categorical kinds do not yet strongly guide row affordances, warning text, or phase-safe defaults.
 - There is no first-class mask/gate segment. Users can blend rows, but cannot easily say "apply this source only near an SDF boundary" or "use this inside/outside field as a rule".
 - Function picker/library presentation is flat enough that growing the library will become confusing.
-- Draft/live wording still leaks implementation state instead of presenting a clean authored composition workflow.
-- Preset behavior needs an explicit authored-intent versus live-projection model so supported fractal switches preserve work while unsupported switches fail visibly and safely.
+- Visible draft/live wording cleanup is shipped; internal draft/live names remain as implementation seams and persisted-state compatibility.
+- Preset behavior now has an explicit authored-intent versus live-projection model so supported fractal switches preserve work while unsupported rows project safely.
 
 ## SDF Operand Review
 
@@ -95,17 +95,17 @@ The important boundary is that SDF should become a typed operand in the composit
    - Diagnostic state exports now identify flat-signal versus source-stack authority with source row signal kinds and blend weights.
    - Keep legacy top-level fields for compatibility, but do not treat them as the only product-facing summary.
 
-2. Preset workflow truth.
+2. Preset workflow truth - shipped.
    - Size/reward: medium / high user value.
    - Separate saved author intent from target-fractal projection.
    - Preserve compatible pipelines across fractal switches.
    - Treat unsupported rows as explicit projections, not silent resets.
 
-3. Composition workflow UI cleanup.
+3. Composition workflow UI cleanup - shipped for visible implementation wording.
    - Size/reward: medium / high user value.
    - Replace confusing draft-state labels and row affordances with a clearer authoring model before adding more functions.
    - Use the existing Source/Shape/Palette/Grading stack model as the authority; do not add a second composition system.
-   - Record a later UI layout inspired by schedule/ordered-rule editors: ordered rows, enabled state, function picker, row params, and per-row status.
+   - Later UI layout inspired by schedule/ordered-rule editors remains deferred: ordered rows, enabled state, function picker, row params, and per-row status.
 
 4. Boundary-masked phase source.
    - Size/reward: small/medium / medium-high visual value.
@@ -131,7 +131,7 @@ The important boundary is that SDF should become a typed operand in the composit
 - Investigation finding: the referenced `152625_625__halley` capture is Halley with a four-row SDF source stack, not a Multibrot/signed-distance-only kernel repro.
 - Investigation finding: `sdf_normal_angle` contributes to that stack but is not the full-weight dominant row in that capture.
 - Investigation finding: the real product risk is effective-source/state-summary clarity plus phase-safe/beauty-mode follow-up, not deletion of full-field normal-angle diagnostics.
-- Current follow-up selection at review close was source-stack authority summary/report clarity; this shipped later at `ck:6b8e3f61`. UI-Salt backend authority for catalog descriptors, compatibility, companion suggestions, and recipe expansion shipped through `d908c54`. Active branch `codex/color-pipeline-preset-workflow-truth` now owns the next follow-up: product-facing preset workflow truth. Remaining later composition follow-ups are composition UI cleanup, boundary-masked phase source, SDF masks/gates, and function-library taxonomy.
+- Current follow-up selection at review close was source-stack authority summary/report clarity; this shipped later at `ck:6b8e3f61`. UI-Salt backend authority for catalog descriptors, compatibility, companion suggestions, and recipe expansion shipped through `d908c54`. Product-facing preset workflow truth is shipped, and the current `color_pipeline_composition_ui_cleanup` slice ships visible implementation-wording cleanup. Remaining later composition follow-ups are boundary-masked phase source, SDF masks/gates, and function-library taxonomy/layout work.
 - Roadmap sync: `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`, `docs/notes/sdf_field_pack_near_term_TODO.md`, and the parked preset pit-of-success plan now point at this review and its selected follow-up order. A later truth-sync marks source-stack summary as shipped and moves SDF performance work to field quality/downsample policy.
 
 ## Hostile Audit
