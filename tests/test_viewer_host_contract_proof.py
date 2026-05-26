@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from tools.viewer_host_write_contract_proof_receipt import main as write_contract_proof_main
 from tools.viewer_host_contract_proof import (
     build_validation_evidence_entries,
     evaluate_assertion,
@@ -782,3 +783,63 @@ def test_contract_proof_writer_requires_evidence_entry_for_each_required_validat
 
     assert proc.returncode != 0
     assert "missing parseable evidence" in (proc.stderr or proc.stdout).lower()
+
+
+def test_contract_proof_receipt_reports_missing_commands_and_evidence_together(monkeypatch, tmp_path: Path, capsys) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    opaque_command = "opaque required command"
+    missing_command = "missing required command"
+
+    monkeypatch.setattr("tools.viewer_host_write_contract_proof_receipt.discover_repo_root", lambda _path: repo_root)
+    monkeypatch.setattr(
+        "tools.viewer_host_write_contract_proof_receipt.capture_repo_snapshot",
+        lambda _repo_root: {"clean": True, "head": "abc123"},
+    )
+    monkeypatch.setattr(
+        "tools.viewer_host_write_contract_proof_receipt.validate_locked_contract_state",
+        lambda _session_id, _repo_root: (
+            {
+                "contract_id": "contract",
+                "contract_path": "docs/contracts/contract.json",
+                "contract_hash": "hash",
+            },
+            "",
+        ),
+    )
+    monkeypatch.setattr(
+        "tools.viewer_host_write_contract_proof_receipt.load_and_validate_slice_contract",
+        lambda _contract_path, _repo_root: (
+            {
+                "required_validation_commands": [
+                    opaque_command,
+                    missing_command,
+                ],
+                "required_acceptance_assertions": [],
+            },
+            type("_Result", (), {"ok": True, "errors": []})(),
+        ),
+    )
+    monkeypatch.setattr(
+        "tools.viewer_host_write_contract_proof_receipt.load_validation_receipt",
+        lambda _head, _repo_root: {
+            "head": "abc123",
+            "commands": [opaque_command],
+            "evidence": [],
+        },
+    )
+
+    rc = write_contract_proof_main([
+        "--session-id",
+        "session-1",
+        "--cwd",
+        str(repo_root),
+    ])
+
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "contract proof preflight failed" in err
+    assert "missing required validation commands" in err
+    assert missing_command in err
+    assert "missing parseable evidence for required validation commands" in err
+    assert opaque_command in err

@@ -8,12 +8,14 @@ from pathlib import Path
 try:
     from tools.viewer_host_append_handoff import build_handoff_append_commands
     from tools.viewer_host_checkpoint_guard import discover_repo_root
-    from tools.viewer_host_contract_state import file_path_is_in_contract_scope, validate_locked_contract_state
+    from tools.viewer_host_contract_proof import validation_evidence_spec_for_command
+    from tools.viewer_host_contract_state import file_path_is_in_contract_scope, load_and_validate_slice_contract, validate_locked_contract_state
     from tools.viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
 except ModuleNotFoundError:
     from viewer_host_append_handoff import build_handoff_append_commands
     from viewer_host_checkpoint_guard import discover_repo_root
-    from viewer_host_contract_state import file_path_is_in_contract_scope, validate_locked_contract_state
+    from viewer_host_contract_proof import validation_evidence_spec_for_command
+    from viewer_host_contract_state import file_path_is_in_contract_scope, load_and_validate_slice_contract, validate_locked_contract_state
     from viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
 
 
@@ -68,6 +70,73 @@ def _validate_scoped_commit_paths(contract_state: dict[str, object] | None, repo
         if not file_path_is_in_contract_scope(path, contract_state, repo_root):
             return f"scoped checkpoint path outside contract scope: {path}"
     return ""
+
+
+def _append_error_section(lines: list[str], title: str, items: list[str]) -> None:
+    if not items:
+        return
+    lines.append(f"- {title}:")
+    for item in items:
+        lines.append(f"  - {item}")
+
+
+def _collect_write_receipts_preflight_errors(
+    contract_state: dict[str, object],
+    repo_root: Path,
+    validation_commands: list[str],
+) -> list[str]:
+    contract_path_text = str(contract_state.get("contract_path", "")).strip()
+    if not contract_path_text:
+        return ["- active contract path is missing from locked contract state"]
+
+    contract_path = repo_root / contract_path_text
+    contract_payload, contract_result = load_and_validate_slice_contract(contract_path, repo_root)
+    if contract_payload is None or not bool(getattr(contract_result, "ok", False)):
+        errors = ["- active contract failed validation"]
+        for error in list(getattr(contract_result, "errors", []) or []):
+            errors.append(f"  - {error}")
+        return errors
+
+    required_commands = [
+        str(command)
+        for command in list(contract_payload.get("required_validation_commands", []) or [])
+        if str(command).strip()
+    ]
+    provided_commands = [str(command) for command in validation_commands if str(command).strip()]
+    provided_set = set(provided_commands)
+
+    missing_required = [command for command in required_commands if command not in provided_set]
+    missing_parseable_evidence = [
+        command
+        for command in required_commands
+        if command in provided_set and validation_evidence_spec_for_command(command) is None
+    ]
+
+    missing_artifacts: list[str] = []
+    for command in provided_commands:
+        spec = validation_evidence_spec_for_command(command)
+        if spec is None:
+            continue
+        artifact_path = repo_root / spec.artifact_path
+        if not artifact_path.exists():
+            missing_artifacts.append(f"{command} | expected {spec.artifact_path}")
+
+    lines: list[str] = []
+    _append_error_section(lines, "missing required validation commands", missing_required)
+    _append_error_section(lines, "missing parseable evidence for required validation commands", missing_parseable_evidence)
+    _append_error_section(lines, "missing validation artifacts for provided commands", missing_artifacts)
+    return lines
+
+
+def _write_receipts_preflight_error_text(errors: list[str]) -> str:
+    if not errors:
+        return ""
+    return (
+        "viewer_host_checkpoint_slice: write-receipts preflight failed; "
+        "no validation receipt was written\n"
+        + "\n".join(errors)
+        + "\n"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -132,6 +201,15 @@ def main(argv: list[str] | None = None) -> int:
     hostile_audit_error = _validate_hostile_audit_before_commit(_contract_state or {}, repo_root)
     if hostile_audit_error:
         sys.stderr.write("viewer_host_checkpoint_slice: hostile review is incomplete: " + hostile_audit_error + "\n")
+        return 2
+
+    preflight_errors = _collect_write_receipts_preflight_errors(
+        _contract_state or {},
+        repo_root,
+        list(args.validation_command),
+    )
+    if preflight_errors:
+        sys.stderr.write(_write_receipts_preflight_error_text(preflight_errors))
         return 2
 
     validation_command_args: list[str] = []

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "contract_id": "workflow_error_aggregation_hardening",
+  "feature_id": "viewer_host_workflow_error_aggregation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/workflow_error_aggregation_hardening_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "tools/viewer_host_checkpoint_slice.py",
+    "tools/viewer_host_write_contract_proof_receipt.py",
+    "tests/test_agent_workflow_tools.py",
+    "tests/test_viewer_host_contract_proof.py",
+    "docs/contracts/workflow_error_aggregation_hardening.contract.json",
+    "docs/notes/workflow_error_aggregation_hardening_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "harden the agent protocol workflow before moving on",
+    "report all predictable write-receipts closure errors in one run",
+    "avoid partial validation-receipt writes when contract-proof preflight is already known to fail"
+  ],
+  "forbidden_operator_prompts": [
+    "product viewer feature work",
+    "relax receipt or contract proof requirements",
+    "hide proof errors behind broad workflow rewrite",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "workflow_scope": "repo_local_only",
+    "error_reporting": "aggregate_predictable_errors",
+    "partial_receipt_on_known_failure": false
+  },
+  "forbidden_defaults": {
+    "product_scope_blend": "forbidden",
+    "proof_requirement_relaxation": "forbidden",
+    "single_error_multi_trip_known_failures": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml",
+    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py::test_contract_proof_receipt_reports_missing_commands_and_evidence_together -q --junitxml artifacts/pytest/test_viewer_host_contract_proof.junit.xml",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/workflow_error_aggregation_hardening.contract.json --out-json artifacts/validation/workflow_error_aggregation_hardening_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/workflow_error_aggregation_hardening_PHASED_PLAN.md --out-json artifacts/validation/workflow_error_aggregation_hardening_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/workflow_error_aggregation_hardening_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label workflow_error_aggregation_hardening_diff_check --log artifacts/logs/workflow_error_aggregation_hardening_diff_check.log --out-json artifacts/validation/workflow_error_aggregation_hardening_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "workflow_error_aggregation_contract_schema_valid",
+      "description": "The workflow error aggregation hardening contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/workflow_error_aggregation_hardening_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "contract_proof_writer_aggregates_errors",
+      "description": "The direct contract-proof writer test proves proof blockers are aggregated instead of reported one class per run",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_contract_proof_receipt_reports_missing_commands_and_evidence_together"
+    },
+    {
+      "assertion_id": "write_receipts_preflight_aggregates_errors",
+      "description": "The workflow tool test proves write-receipts aggregates predictable proof blockers before writing partial receipts",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_agent_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_agent_workflow_tools.py::test_checkpoint_slice_write_receipts_preflights_contract_proof_errors_before_partial_receipt"
+    }
+  ]
+}

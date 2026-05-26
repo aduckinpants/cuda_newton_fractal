@@ -26,6 +26,38 @@ except ModuleNotFoundError:
     from viewer_host_contract_proof import evaluate_assertion, validation_evidence_spec_for_command
 
 
+def _append_error_section(lines: list[str], title: str, items: list[str]) -> None:
+    if not items:
+        return
+    lines.append(f"- {title}:")
+    for item in items:
+        lines.append(f"  - {item}")
+
+
+def _write_contract_proof_error_text(
+    missing_commands: list[str],
+    missing_evidence_commands: list[str],
+    failed_results: list[dict[str, object]],
+) -> str:
+    lines: list[str] = []
+    _append_error_section(lines, "missing required validation commands", missing_commands)
+    _append_error_section(lines, "missing parseable evidence for required validation commands", missing_evidence_commands)
+    assertion_failures = [
+        str(result.get("assertion_id", "<unknown>"))
+        + ": "
+        + str(result.get("failure_detail", "assertion failed"))
+        for result in failed_results
+    ]
+    _append_error_section(lines, "required assertion evidence failed", assertion_failures)
+    if not lines:
+        return ""
+    return (
+        "viewer_host_write_contract_proof_receipt: contract proof preflight failed\n"
+        + "\n".join(lines)
+        + "\n"
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Write a machine-derived contract-proof receipt for the current clean committed HEAD")
     parser.add_argument("--session-id", required=True, help="Current host session id")
@@ -63,11 +95,6 @@ def main(argv: list[str] | None = None) -> int:
         for command in required_commands
         if command not in executed_commands
     ]
-    if missing_commands:
-        sys.stderr.write("viewer_host_write_contract_proof_receipt: missing required validation commands\n")
-        for command in missing_commands:
-            sys.stderr.write(f"- {command}\n")
-        return 2
 
     evidence_entries = list(validation_receipt.get("evidence", []) or [])
     evidence_by_command = {
@@ -75,35 +102,26 @@ def main(argv: list[str] | None = None) -> int:
         for entry in evidence_entries
         if isinstance(entry, dict) and str(entry.get("command", "")).strip()
     }
+    executed_command_set = set(executed_commands)
     missing_evidence_commands: list[str] = []
     for command in required_commands:
+        if command not in executed_command_set:
+            continue
         spec = validation_evidence_spec_for_command(command)
         if spec is None:
             missing_evidence_commands.append(command)
             continue
         if command not in evidence_by_command:
             missing_evidence_commands.append(command)
-    if missing_evidence_commands:
-        sys.stderr.write("viewer_host_write_contract_proof_receipt: missing parseable evidence for required validation commands\n")
-        for command in missing_evidence_commands:
-            sys.stderr.write(f"- {command}\n")
-        return 2
 
     assertion_results = [
         evaluate_assertion(assertion, repo_root, validation_receipt)
         for assertion in contract_payload.get("required_acceptance_assertions", [])
     ]
     failed_results = [result for result in assertion_results if not bool(result.get("ok", False))]
-    if failed_results:
-        sys.stderr.write("viewer_host_write_contract_proof_receipt: required assertion evidence failed\n")
-        for result in failed_results:
-            sys.stderr.write(
-                "- "
-                + str(result.get("assertion_id", "<unknown>"))
-                + ": "
-                + str(result.get("failure_detail", "assertion failed"))
-                + "\n"
-            )
+    preflight_error = _write_contract_proof_error_text(missing_commands, missing_evidence_commands, failed_results)
+    if preflight_error:
+        sys.stderr.write(preflight_error)
         return 2
 
     receipt_path = contract_proof_receipt_path(str(snapshot["head"]), repo_root)

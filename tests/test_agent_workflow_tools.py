@@ -1040,3 +1040,87 @@ def test_checkpoint_slice_write_receipts_refuses_pending_hostile_audit(monkeypat
 
     assert rc != 0
     assert commands == []
+
+
+def test_checkpoint_slice_write_receipts_preflights_contract_proof_errors_before_partial_receipt(monkeypatch, tmp_path: Path, capsys) -> None:
+    repo_root = tmp_path / "repo"
+    plan_path = repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(
+        "# Plan\n\n"
+        "## Current Phase\n\n"
+        "Phase 1 in progress\n\n"
+        "## Phase Checklist\n\n"
+        "- [ ] Phase 1 - X\n",
+        encoding="utf-8",
+    )
+
+    pytest_command = (
+        "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q "
+        "--junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml"
+    )
+    opaque_command = "opaque required command"
+    missing_command = "missing required command"
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.discover_repo_root", lambda _path: repo_root)
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.validate_locked_contract_state",
+        lambda _session_id, _repo_root: (
+            {
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "contract_path": "docs/contracts/contract.json",
+            },
+            "",
+        ),
+    )
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.load_and_validate_slice_contract",
+        lambda _contract_path, _repo_root: (
+            {
+                "required_validation_commands": [
+                    pytest_command,
+                    opaque_command,
+                    missing_command,
+                ],
+                "required_acceptance_assertions": [],
+            },
+            type("_Result", (), {"ok": True, "errors": []})(),
+        ),
+        raising=False,
+    )
+
+    commands: list[list[str]] = []
+
+    class _Proc:
+        returncode = 0
+
+    def fake_run(command: list[str], cwd: str, check: bool = False):
+        commands.append(command)
+        return _Proc()
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.subprocess.run", fake_run)
+
+    rc = checkpoint_slice_main([
+        "write-receipts",
+        "--session-id",
+        "session-1",
+        "--cwd",
+        str(repo_root),
+        "--validation-summary",
+        "tests passed",
+        "--validation-command",
+        pytest_command,
+        "--validation-command",
+        opaque_command,
+    ])
+
+    assert rc == 2
+    assert commands == []
+    err = capsys.readouterr().err
+    assert "write-receipts preflight failed" in err
+    assert "missing required validation commands" in err
+    assert missing_command in err
+    assert "missing parseable evidence for required validation commands" in err
+    assert opaque_command in err
+    assert "missing validation artifacts for provided commands" in err
+    assert "artifacts/pytest/test_agent_workflow_tools.junit.xml" in err
