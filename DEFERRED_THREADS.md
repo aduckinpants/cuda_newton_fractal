@@ -5,7 +5,7 @@ Purpose: keep intentionally paused threads visible so they do not vanish between
 Active specs: see `spec_intake/_STATUS.md` for the current planning surface.
 Agent protocol: see `AGENT_WORKING_PROTOCOL.md` for working rules.
 
-Last reconciled: 2026-05-26 on `codex/color-pipeline-preset-workflow-truth` at `d908c54` before code mutation.
+Last reconciled: 2026-05-26 on `codex/color-pipeline-sdf-postprocess-performance` during the SDF postprocess performance slice.
 
 ## Current Difficulty / Reward Priority
 
@@ -40,6 +40,7 @@ Current shipped state:
 - SDF realtime pacing telemetry now reports base render, SDF field, SDF postprocess, and SDF total timing.
 - SDF postprocess signal specialization now avoids derivative/neighborhood sampling for scalar-only SDF Source rows.
 - SDF preview postprocess quality policy now reduces CPU SDF source samples during interactive preview through a reportable postprocess pixel step; full-quality render and capture stay step 1.
+- Full-quality SDF postprocess now reuses one computed source color per downsampled SDF field cell, so shared `SDF Field Downsample` reduces CPU postprocess samples without adding another persisted downsample authority or changing expanded pixels.
 
 Remaining risk:
 - The existing proof focuses on render dimensions, timing reports, and no-mouse camera/control edits. It does not fully prove whole-PC responsiveness or end-to-end input-to-frame latency under every extreme f64 workload.
@@ -156,10 +157,11 @@ Shipped since the original deferred note:
 - SDF realtime pacing telemetry is shipped and identifies SDF postprocess as a measured FPS bottleneck.
 - SDF postprocess signal specialization is shipped: scalar-only rows no longer pay for derivative neighborhoods, while derivative sources preserve their sampling behavior.
 - SDF preview postprocess quality policy is shipped: shared field downsample remains the authority, interactive preview reports a stepped postprocess path, and full-quality render/capture stays step 1.
+- Full-quality downsampled-field cell reuse is shipped: when the shared SDF field is lower resolution than the render target, the Color Pipeline postprocess computes once per field cell and fills the same render pixels that already mapped to that cell.
 
 Active follow-up:
 - Broader composition/preset UX now has preset workflow truth and visible implementation-wording cleanup covered by bounded slices. Keep later composition work split by topic instead of turning it into a broad redesign.
-- Choose the next SDF performance/design slice explicitly when returning to performance: per-row/multi-field downsample authority or GPU Color Pipeline postprocess with measured client evidence.
+- Choose the next larger SDF performance/design slice explicitly when returning to performance: per-row/multi-field downsample authority or GPU Color Pipeline postprocess with measured client evidence.
 
 Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.

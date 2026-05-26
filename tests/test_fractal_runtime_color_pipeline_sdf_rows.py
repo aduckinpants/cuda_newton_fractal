@@ -507,6 +507,15 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
     assert downsample_report.get("lens_sdf_enabled") is False, downsample_report
     assert downsample_report.get("lens_sdf_valid") is True, downsample_report
     assert downsample_report.get("lens_sdf_pixel_scale") == pytest.approx(4.0), downsample_report
+    render_pixels = int(downsample_report["rendered_frame_width"]) * int(downsample_report["rendered_frame_height"])
+    field_pixels = int(downsample_report["lens_sdf_width"]) * int(downsample_report["lens_sdf_height"])
+    direct_samples = int(downsample_report["lens_sdf_postprocess_direct_sample_count"])
+    neighborhood_samples = int(downsample_report["lens_sdf_postprocess_neighborhood_sample_count"])
+    assert int(downsample_report["lens_sdf_postprocess_pixel_step"]) == 1, downsample_report
+    assert int(downsample_report["lens_sdf_postprocess_filled_pixel_count"]) == render_pixels, downsample_report
+    assert direct_samples == field_pixels, downsample_report
+    assert neighborhood_samples == 0, downsample_report
+    assert direct_samples < render_pixels, downsample_report
 
 
 def test_lens_downsample_visible_and_authoritative_for_sdf_source_without_lens_visualization_no_mouse(tmp_path: Path) -> None:
@@ -529,9 +538,9 @@ def test_lens_downsample_visible_and_authoritative_for_sdf_source_without_lens_v
     sdf_capture = _capture_sdf_source_row(
         exe_path=exe_path,
         state_path=seed_state_path,
-        function_id="sdf_signed_distance",
-        scale=0.05,
-        bias=0.5,
+        function_id="sdf_normal_angle",
+        scale=1.0,
+        bias=0.0,
     )
     sdf_state = json.loads(json.dumps(sdf_capture["state"]))
     lens = sdf_state.setdefault("lens", {})
@@ -565,3 +574,12 @@ def test_lens_downsample_visible_and_authoritative_for_sdf_source_without_lens_v
     assert isinstance(render_height, int) and render_height > 0, edited_report
     assert edited_report.get("lens_sdf_width") == (render_width + 3) // 4, edited_report
     assert edited_report.get("lens_sdf_height") == (render_height + 3) // 4, edited_report
+    render_pixels = render_width * render_height
+    field_pixels = int(edited_report["lens_sdf_width"]) * int(edited_report["lens_sdf_height"])
+    direct_samples = int(edited_report["lens_sdf_postprocess_direct_sample_count"])
+    neighborhood_samples = int(edited_report["lens_sdf_postprocess_neighborhood_sample_count"])
+    assert int(edited_report["lens_sdf_postprocess_pixel_step"]) == 1, edited_report
+    assert int(edited_report["lens_sdf_postprocess_filled_pixel_count"]) == render_pixels, edited_report
+    assert direct_samples == 0, edited_report
+    assert neighborhood_samples == field_pixels, edited_report
+    assert neighborhood_samples < render_pixels, edited_report

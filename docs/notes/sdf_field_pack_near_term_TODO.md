@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, and SDF preview postprocess quality policy. The next larger SDF performance choices are per-row/multi-field downsample design and GPU Color Pipeline postprocess; broader composition UX, authored-pack UI, and SDF-native lanes remain separate product slices.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, and full-quality downsampled-field postprocess cell reuse. The next larger SDF performance choices are per-row/multi-field downsample design and GPU Color Pipeline postprocess; broader composition UX, authored-pack UI, and SDF-native lanes remain separate product slices.
 
 Shipped since this roadmap was first written:
 
@@ -25,6 +25,7 @@ Shipped since this roadmap was first written:
 - SDF realtime pacing telemetry: live reports now split base render, SDF field, SDF postprocess, and SDF total timing; pacing now reacts to visible SDF frame cost.
 - SDF postprocess signal specialization: scalar-only SDF Source rows use direct center-distance sampling instead of normal/curvature neighborhoods, while `sdf_normal_angle` and `sdf_curvature` keep derivative neighborhood sampling.
 - SDF preview postprocess quality policy: shared `LensSettings::downsample` remains the single field-resolution authority, interactive preview can use a reportable SDF postprocess pixel step to reduce CPU source samples, and full-quality render/capture remains step 1.
+- SDF downsampled-field postprocess cell reuse: full-quality postprocess now computes once per lower-resolution SDF field cell and expands to the same render pixels already mapped to that field cell.
 
 Next performance/design choices:
 

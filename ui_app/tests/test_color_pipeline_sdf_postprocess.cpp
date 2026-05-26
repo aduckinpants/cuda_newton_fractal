@@ -270,24 +270,85 @@ void TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood() {
 }
 
 
-void TestDownsampledFieldAloneDoesNotReducePostprocessSamples() {
+void TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels() {
     SdfFieldResult field = MakeTestField();
     field.pixel_scale = 4.0f;
     RenderSettings render{};
-    render.resolution = {4, 4};
+    render.resolution = {8, 8};
 
-    KernelParams params = SdfParams(ColorSignal::sdf_signed_distance);
-    std::vector<std::uint32_t> pixels(16, 0x12345678u);
+    KernelParams params = SdfParams(ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel);
+    std::vector<std::uint32_t> pixels(64, 0x12345678u);
     std::string error;
     SdfColorPipelinePostprocessStats stats{};
     Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, pixels.data(), &error, &stats),
-        "TestDownsampledFieldAloneDoesNotReducePostprocessSamples_PostprocessSucceeds");
+        "TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels_PostprocessSucceeds");
     Check(stats.output_pixel_step == 1,
-        "TestDownsampledFieldAloneDoesNotReducePostprocessSamples_DefaultStepOne");
+        "TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels_DefaultStepOne");
+    Check(stats.neighborhood_sample_count == 16,
+        "TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels_SamplesOnePerFieldCell");
+    Check(stats.filled_pixel_count == 64,
+        "TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels_FillsEveryRenderPixel");
+
+    RenderSettings fieldResolutionRender{};
+    fieldResolutionRender.resolution = {4, 4};
+    std::vector<std::uint32_t> fieldPixels(16, 0x12345678u);
+    SdfColorPipelinePostprocessStats fieldStats{};
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(
+            field.View(),
+            fieldResolutionRender,
+            params,
+            fieldPixels.data(),
+            &error,
+            &fieldStats),
+        "TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels_FieldReferenceSucceeds");
+    std::vector<std::uint32_t> expected(64, 0u);
+    for (int y = 0; y < 8; ++y) {
+        const int fy = (y * field.height) / 8;
+        for (int x = 0; x < 8; ++x) {
+            const int fx = (x * field.width) / 8;
+            expected[static_cast<std::size_t>(y * 8 + x)] =
+                fieldPixels[static_cast<std::size_t>(fy * field.width + fx)];
+        }
+    }
+    Check(pixels == expected,
+        "TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels_ExpandedPixelsMatchReference");
+}
+
+void TestDownsampledFieldUnevenRenderSizeMatchesReference() {
+    SdfFieldResult field = MakeTestField();
+    field.pixel_scale = 2.0f;
+    RenderSettings render{};
+    render.resolution = {7, 5};
+
+    KernelParams params = SdfParams(ColorSignal::sdf_signed_distance);
+    std::vector<std::uint32_t> pixels(35, 0x12345678u);
+    std::string error;
+    SdfColorPipelinePostprocessStats stats{};
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, pixels.data(), &error, &stats),
+        "TestDownsampledFieldUnevenRenderSizeMatchesReference_PostprocessSucceeds");
     Check(stats.direct_sample_count == 16,
-        "TestDownsampledFieldAloneDoesNotReducePostprocessSamples_StillSamplesEveryRenderPixel");
-    Check(stats.filled_pixel_count == 16,
-        "TestDownsampledFieldAloneDoesNotReducePostprocessSamples_FillsEveryPixel");
+        "TestDownsampledFieldUnevenRenderSizeMatchesReference_SamplesOnePerFieldCell");
+    Check(stats.filled_pixel_count == 35,
+        "TestDownsampledFieldUnevenRenderSizeMatchesReference_FillsEveryRenderPixel");
+
+    RenderSettings fieldResolutionRender{};
+    fieldResolutionRender.resolution = {4, 4};
+    std::vector<std::uint32_t> fieldPixels(16, 0x12345678u);
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), fieldResolutionRender, params, fieldPixels.data(), &error),
+        "TestDownsampledFieldUnevenRenderSizeMatchesReference_FieldReferenceSucceeds");
+    std::vector<std::uint32_t> expected(35, 0u);
+    for (int y = 0; y < render.resolution.y; ++y) {
+        const int fy = (y * field.height) / render.resolution.y;
+        for (int x = 0; x < render.resolution.x; ++x) {
+            const int fx = (x * field.width) / render.resolution.x;
+            expected[static_cast<std::size_t>(y * render.resolution.x + x)] =
+                fieldPixels[static_cast<std::size_t>(fy * field.width + fx)];
+        }
+    }
+    Check(pixels == expected,
+        "TestDownsampledFieldUnevenRenderSizeMatchesReference_ExpandedPixelsMatchReference");
 }
 
 void TestPreviewPixelStepReducesSamplesAndFillsFrame() {
@@ -368,7 +429,8 @@ int main() {
     TestBoundaryBandWidthStillAffectsMixedSdfStack();
     TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood();
     TestNormalAngleRequiresNeighborhoodSamples();
-    TestDownsampledFieldAloneDoesNotReducePostprocessSamples();
+    TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels();
+    TestDownsampledFieldUnevenRenderSizeMatchesReference();
     TestPreviewPixelStepReducesSamplesAndFillsFrame();
     TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution();
 

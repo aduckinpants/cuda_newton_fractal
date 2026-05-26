@@ -25,6 +25,13 @@ int ClampIntLocal(int value, int lo, int hi) {
     return value;
 }
 
+int CeilDivNonNegativeLocal(long long numerator, int denominator) {
+    if (denominator <= 0) return 0;
+    if (numerator <= 0) return 0;
+    return static_cast<int>((numerator + static_cast<long long>(denominator) - 1) /
+        static_cast<long long>(denominator));
+}
+
 int NormalizePostprocessPixelStep(int value) {
     if (value <= 1) return 1;
     if (value <= 2) return 2;
@@ -282,6 +289,53 @@ std::uint32_t PackRgba(Rgba8 color) {
         (static_cast<std::uint32_t>(color.w) << 24);
 }
 
+bool ResolveAndFillSdfPostprocessBlock(
+    const SdfFieldView& field,
+    int fx,
+    int fy,
+    const KernelParams& params,
+    bool useDirectSamples,
+    std::uint32_t* ioRgba,
+    int renderWidth,
+    int xBegin,
+    int xEnd,
+    int yBegin,
+    int yEnd,
+    std::string* outError,
+    SdfColorPipelinePostprocessStats* outStats) {
+    if (xBegin >= xEnd || yBegin >= yEnd) {
+        return true;
+    }
+    float signal = 0.0f;
+    const bool resolved = useDirectSamples
+        ? ResolveDirectSdfPipelineSignal(field, fx, fy, params, &signal, outError)
+        : ResolveSdfPipelineSignal(field, fx, fy, params, &signal, outError);
+    if (!resolved) {
+        return false;
+    }
+    if (outStats) {
+        if (useDirectSamples) {
+            ++outStats->direct_sample_count;
+        } else {
+            ++outStats->neighborhood_sample_count;
+        }
+    }
+    const float shapedSignal = ApplyColorPipelineShapeValue(signal, params);
+    Rgba8 color = SampleProgrammableEscapeTimePalette<Rgba8>(shapedSignal, true, params);
+    color = ApplyFractalColorGrading(color, params);
+    const std::uint32_t packed = PackRgba(color);
+    for (int yy = yBegin; yy < yEnd; ++yy) {
+        const std::size_t rowOffset = static_cast<std::size_t>(yy) * static_cast<std::size_t>(renderWidth);
+        for (int xx = xBegin; xx < xEnd; ++xx) {
+            ioRgba[rowOffset + static_cast<std::size_t>(xx)] = packed;
+            if (outStats) {
+                ++outStats->filled_pixel_count;
+            }
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 bool IsColorPipelineSdfSourceSignal(ColorSignal signal) {
@@ -386,6 +440,45 @@ bool ApplyLensSdfColorPipelinePostprocess(
     const bool useDirectSamples = ColorPipelineSdfPostprocessCanUseDirectSamples(params);
     const int width = render.resolution.x;
     const int height = render.resolution.y;
+    if (outputPixelStep == 1 &&
+        field.width <= width &&
+        field.height <= height &&
+        (field.width < width || field.height < height)) {
+        for (int fy = 0; fy < field.height; ++fy) {
+            const int yBegin = CeilDivNonNegativeLocal(
+                static_cast<long long>(fy) * static_cast<long long>(height),
+                field.height);
+            const int yEnd = CeilDivNonNegativeLocal(
+                static_cast<long long>(fy + 1) * static_cast<long long>(height),
+                field.height);
+            for (int fx = 0; fx < field.width; ++fx) {
+                const int xBegin = CeilDivNonNegativeLocal(
+                    static_cast<long long>(fx) * static_cast<long long>(width),
+                    field.width);
+                const int xEnd = CeilDivNonNegativeLocal(
+                    static_cast<long long>(fx + 1) * static_cast<long long>(width),
+                    field.width);
+                if (!ResolveAndFillSdfPostprocessBlock(
+                        field,
+                        fx,
+                        fy,
+                        params,
+                        useDirectSamples,
+                        ioRgba,
+                        width,
+                        xBegin,
+                        xEnd,
+                        yBegin,
+                        yEnd,
+                        outError,
+                        outStats)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     for (int y = 0; y < height; y += outputPixelStep) {
         const int blockHeight = ClampIntLocal(height - y, 1, outputPixelStep);
         const int sampleY = ClampIntLocal(y + blockHeight / 2, 0, height - 1);
@@ -394,32 +487,21 @@ bool ApplyLensSdfColorPipelinePostprocess(
             const int blockWidth = ClampIntLocal(width - x, 1, outputPixelStep);
             const int sampleX = ClampIntLocal(x + blockWidth / 2, 0, width - 1);
             const int fx = ClampIntLocal((static_cast<long long>(sampleX) * field.width) / width, 0, field.width - 1);
-            float signal = 0.0f;
-            const bool resolved = useDirectSamples
-                ? ResolveDirectSdfPipelineSignal(field, fx, fy, params, &signal, outError)
-                : ResolveSdfPipelineSignal(field, fx, fy, params, &signal, outError);
-            if (!resolved) {
+            if (!ResolveAndFillSdfPostprocessBlock(
+                    field,
+                    fx,
+                    fy,
+                    params,
+                    useDirectSamples,
+                    ioRgba,
+                    width,
+                    x,
+                    x + blockWidth,
+                    y,
+                    y + blockHeight,
+                    outError,
+                    outStats)) {
                 return false;
-            }
-            if (outStats) {
-                if (useDirectSamples) {
-                    ++outStats->direct_sample_count;
-                } else {
-                    ++outStats->neighborhood_sample_count;
-                }
-            }
-            const float shapedSignal = ApplyColorPipelineShapeValue(signal, params);
-            Rgba8 color = SampleProgrammableEscapeTimePalette<Rgba8>(shapedSignal, true, params);
-            color = ApplyFractalColorGrading(color, params);
-            const std::uint32_t packed = PackRgba(color);
-            for (int yy = y; yy < y + blockHeight; ++yy) {
-                const std::size_t rowOffset = static_cast<std::size_t>(yy) * static_cast<std::size_t>(width);
-                for (int xx = x; xx < x + blockWidth; ++xx) {
-                    ioRgba[rowOffset + static_cast<std::size_t>(xx)] = packed;
-                    if (outStats) {
-                        ++outStats->filled_pixel_count;
-                    }
-                }
             }
         }
     }

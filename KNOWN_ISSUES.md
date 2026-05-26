@@ -3,7 +3,7 @@
 Catalogued issues for the CUDA fractal viewer clone repo.
 Priority tiers: **P0** (blocks demo quality), **P1** (materially degrades experience), **P2** (nice to fix).
 
-Last reconciled: 2026-05-26 on `codex/color-pipeline-preset-workflow-truth` at `d908c54` before code mutation.
+Last reconciled: 2026-05-26 on `codex/color-pipeline-sdf-postprocess-performance` during the SDF postprocess performance slice.
 
 ---
 
@@ -101,7 +101,8 @@ Next correct step:
 - Do not change pacing policy again until that harness shows the actual failure mode.
 - For SDF Color Pipeline workloads specifically, scalar-only SDF postprocess optimization is shipped: scalar SDF Source rows no longer compute normal/curvature neighborhoods.
 - SDF preview postprocess quality policy is shipped: interactive preview can reduce CPU SDF source samples through a reportable postprocess pixel step, while full-quality render and capture stay step 1.
-- Remaining SDF performance work is a separate decision between per-row/multi-field downsample authority and GPU Color Pipeline postprocess.
+- Full-quality downsampled-field postprocess cell reuse is shipped: shared `SDF Field Downsample` now reduces CPU postprocess samples by computing once per SDF field cell and expanding the same pixels the old nearest field-cell mapping produced.
+- Remaining larger SDF performance work is a separate decision between per-row/multi-field downsample authority and GPU Color Pipeline postprocess.
 - Do not treat SDF postprocess cost as a fractal kernel problem; the current telemetry distinguishes base render, field generation, and postprocess cost.
 
 **Files:** `ui_app/src/viewer_render_pacing.*`, `ui_app/src/main.cpp`, `tests/test_fractal_runtime_resolution_pacing.py`
