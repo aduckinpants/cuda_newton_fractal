@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "contract_id": "sdf_performance_design_preflight",
+  "feature_id": "sdf_performance_design",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_performance_design_preflight_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_performance_design_preflight_PHASED_PLAN.md",
+    "docs/contracts/sdf_performance_design_preflight.contract.json",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "prepare the next SDF performance/design branch without product-code mutation",
+    "record a high-level problem breakdown for discussion and refinement",
+    "keep full Salticid backend and legacy-layer removal deferred",
+    "do not choose per-row downsample or GPU postprocess without measured evidence"
+  ],
+  "forbidden_operator_prompts": [
+    "change product code, tests, schema, renderer, runtime harness, or Color Pipeline behavior",
+    "start authored SDF pack UI or SDF-native lanes",
+    "claim GPU postprocess or per-row downsample is selected before measurement",
+    "remove the legacy layer",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "documentation_only",
+    "branch_purpose": "planning_and_discussion_preflight",
+    "next_product_slice": "sdf_performance_measurement_then_design_choice",
+    "legacy_removal": "deferred_long_term_goal"
+  },
+  "forbidden_defaults": {
+    "product_mutation": "forbidden",
+    "runtime_publish": "not_required_for_docs_only",
+    "physical_mouse": "forbidden",
+    "salticid_runtime_dependency": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_performance_design_preflight.contract.json --out-json artifacts/validation/sdf_performance_design_preflight_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_performance_design_preflight_PHASED_PLAN.md --out-json artifacts/validation/sdf_performance_design_preflight_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_performance_design_preflight_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_performance_design_preflight_diff_check --log artifacts/logs/sdf_performance_design_preflight_diff_check.log --out-json artifacts/validation/sdf_performance_design_preflight_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF performance/design preflight contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_performance_design_preflight_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF performance/design preflight hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_performance_design_preflight_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
