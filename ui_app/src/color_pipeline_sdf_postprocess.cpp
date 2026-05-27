@@ -25,6 +25,11 @@ constexpr float kBoundaryBandConfigEpsilon = 1.0e-6f;
 constexpr std::size_t kParallelPostprocessSampleThreshold = 4096;
 constexpr int kMaxAutomaticSdfPostprocessWorkers = 6;
 
+SdfColorPipelinePostprocessBackendFn& RegisteredCudaDirectScalarBackend() {
+    static SdfColorPipelinePostprocessBackendFn backendFn = nullptr;
+    return backendFn;
+}
+
 struct PlannedSdfSourceRow {
     ColorSignal signal{ColorSignal::sdf_signed_distance};
     SdfFieldSignalKind kind{SdfFieldSignalKind::signed_distance_px};
@@ -718,6 +723,17 @@ void AccumulatePostprocessStats(
     total.filled_pixel_count += next.filled_pixel_count;
 }
 
+void StampBackendStats(
+    SdfColorPipelinePostprocessStats* outStats,
+    SdfColorPipelinePostprocessBackend backend,
+    bool fallbackUsed) {
+    if (!outStats) {
+        return;
+    }
+    outStats->backend_used = backend;
+    outStats->backend_fallback_used = fallbackUsed;
+}
+
 std::uint32_t PackRgba(Rgba8 color) {
     return static_cast<std::uint32_t>(color.x) |
         (static_cast<std::uint32_t>(color.y) << 8) |
@@ -936,6 +952,22 @@ bool RunPostprocessWorkers(
 
 } // namespace
 
+const char* SdfColorPipelinePostprocessBackendId(SdfColorPipelinePostprocessBackend backend) {
+    switch (backend) {
+    case SdfColorPipelinePostprocessBackend::cpu:
+        return "cpu";
+    case SdfColorPipelinePostprocessBackend::cuda_direct_scalar:
+        return "cuda_direct_scalar";
+    case SdfColorPipelinePostprocessBackend::auto_backend:
+        return "auto";
+    }
+    return "unknown";
+}
+
+void RegisterSdfColorPipelineCudaDirectScalarBackend(SdfColorPipelinePostprocessBackendFn backendFn) {
+    RegisteredCudaDirectScalarBackend() = backendFn;
+}
+
 bool IsColorPipelineSdfSourceSignal(ColorSignal signal) {
     return signal == ColorSignal::sdf_signed_distance ||
         signal == ColorSignal::sdf_inside_outside ||
@@ -993,6 +1025,19 @@ bool ColorPipelineSdfPostprocessCanUseDirectSamples(const KernelParams& params) 
         !SdfSignalNeedsNeighborhood(params.color_pipeline.signal);
 }
 
+bool ColorPipelineSdfPostprocessCanUseCudaDirectScalar(const KernelParams& params) {
+    if (!ColorPipelineSdfPostprocessCanUseDirectSamples(params)) {
+        return false;
+    }
+    const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
+    for (int index = 0; index < sourceStackCount; ++index) {
+        if (NormalizeSdfSourceSampleStep(params.color_source_stack[index].params.sdf_sample_step) > 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
 int ResolveSdfColorPipelinePostprocessOutputPixelStep(
     const KernelParams& params,
     bool previewActive,
@@ -1026,6 +1071,46 @@ bool ApplyLensSdfColorPipelinePostprocess(
         if (outError) *outError = "SDF Color Pipeline postprocess requires a valid Lens SDF field";
         return false;
     }
+    const SdfColorPipelinePostprocessBackend requestedBackend = options
+        ? options->backend_preference
+        : SdfColorPipelinePostprocessBackend::auto_backend;
+    bool cpuFallbackUsed = false;
+    if (requestedBackend == SdfColorPipelinePostprocessBackend::cuda_direct_scalar ||
+        requestedBackend == SdfColorPipelinePostprocessBackend::auto_backend) {
+        if (ColorPipelineSdfPostprocessCanUseCudaDirectScalar(params)) {
+            SdfColorPipelinePostprocessBackendFn cudaBackend = RegisteredCudaDirectScalarBackend();
+            if (cudaBackend) {
+                SdfColorPipelinePostprocessStats cudaStats{};
+                std::string cudaError;
+                if (cudaBackend(field, render, params, ioRgba, &cudaError, &cudaStats, options)) {
+                    if (outStats) {
+                        *outStats = cudaStats;
+                    }
+                    return true;
+                }
+                if (requestedBackend == SdfColorPipelinePostprocessBackend::cuda_direct_scalar) {
+                    if (outError) *outError = cudaError.empty()
+                        ? "CUDA direct scalar SDF Color Pipeline postprocess failed"
+                        : cudaError;
+                    return false;
+                }
+                cpuFallbackUsed = true;
+                if (outError) {
+                    outError->clear();
+                }
+            } else if (requestedBackend == SdfColorPipelinePostprocessBackend::cuda_direct_scalar) {
+                if (outError) *outError = "CUDA direct scalar SDF Color Pipeline postprocess backend is not registered";
+                return false;
+            } else {
+                cpuFallbackUsed = true;
+            }
+        } else if (requestedBackend == SdfColorPipelinePostprocessBackend::cuda_direct_scalar) {
+            if (outError) *outError = "CUDA direct scalar SDF Color Pipeline postprocess does not support this Source stack";
+            return false;
+        } else {
+            cpuFallbackUsed = true;
+        }
+    }
     SdfPostprocessExecutionPlan plan;
     const int outputPixelStep = NormalizePostprocessPixelStep(options ? options->output_pixel_step : 1);
     if (!BuildSdfPostprocessExecutionPlan(params, outputPixelStep, plan, outError)) {
@@ -1040,7 +1125,7 @@ bool ApplyLensSdfColorPipelinePostprocess(
         (field.width < width || field.height < height)) {
         const std::size_t sampleCount = static_cast<std::size_t>(field.width) * static_cast<std::size_t>(field.height);
         plan.worker_count = ResolveSdfPostprocessWorkerCount(sampleCount, field.height, options);
-        return RunPostprocessWorkers(
+        const bool ok = RunPostprocessWorkers(
             field.height,
             plan,
             [&](int begin, int end, SdfColorPipelinePostprocessStats& localStats, std::string* localError) {
@@ -1057,13 +1142,15 @@ bool ApplyLensSdfColorPipelinePostprocess(
             },
             outError,
             outStats);
+        StampBackendStats(outStats, SdfColorPipelinePostprocessBackend::cpu, cpuFallbackUsed);
+        return ok;
     }
 
     const int blockRows = CeilDivNonNegativeLocal(height, outputPixelStep);
     const int blockCols = CeilDivNonNegativeLocal(width, outputPixelStep);
     const std::size_t sampleCount = static_cast<std::size_t>(blockRows) * static_cast<std::size_t>(blockCols);
     plan.worker_count = ResolveSdfPostprocessWorkerCount(sampleCount, blockRows, options);
-    return RunPostprocessWorkers(
+    const bool ok = RunPostprocessWorkers(
         blockRows,
         plan,
         [&](int begin, int end, SdfColorPipelinePostprocessStats& localStats, std::string* localError) {
@@ -1080,4 +1167,6 @@ bool ApplyLensSdfColorPipelinePostprocess(
         },
         outError,
         outStats);
+    StampBackendStats(outStats, SdfColorPipelinePostprocessBackend::cpu, cpuFallbackUsed);
+    return ok;
 }

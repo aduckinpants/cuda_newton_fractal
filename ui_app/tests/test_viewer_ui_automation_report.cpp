@@ -79,6 +79,8 @@ void TestLensSdfProbeDefaults() {
     Check(!probe.color_pipeline_active && probe.base_render_ms == 0.0f &&
             probe.field_ms == 0.0f && probe.postprocess_ms == 0.0f && probe.total_ms == 0.0f,
         "lens SDF automation probe reports stable timing defaults");
+    Check(probe.postprocess_backend_used == "cpu" && !probe.postprocess_backend_fallback_used,
+        "lens SDF automation probe reports stable postprocess backend defaults");
 }
 
 void TestLensSdfProbeTimingFields() {
@@ -89,6 +91,8 @@ void TestLensSdfProbeTimingFields() {
     probe.postprocess_ms = 7.5f;
     probe.total_ms = probe.field_ms + probe.postprocess_ms;
     probe.postprocess_worker_count = 3;
+    probe.postprocess_backend_used = "cuda_direct_scalar";
+    probe.postprocess_backend_fallback_used = true;
     probe.postprocess_source_direct_sample_count = 11;
     probe.postprocess_source_neighborhood_sample_count = 22;
     Check(probe.color_pipeline_active && probe.base_render_ms == 3.0f &&
@@ -96,6 +100,8 @@ void TestLensSdfProbeTimingFields() {
         "lens SDF automation probe carries separate field/postprocess timing");
     Check(probe.postprocess_worker_count == 3,
         "lens SDF automation probe carries postprocess worker count");
+    Check(probe.postprocess_backend_used == "cuda_direct_scalar" && probe.postprocess_backend_fallback_used,
+        "lens SDF automation probe carries actual postprocess backend");
     Check(probe.postprocess_source_direct_sample_count == 11 &&
             probe.postprocess_source_neighborhood_sample_count == 22,
         "lens SDF automation probe carries per-row source sample counts");

@@ -74,6 +74,7 @@ if /I "%FOCUSED_TEST%"=="test_safe_mode_schema" goto focused_test_safe_mode_sche
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_core" goto focused_test_color_pipeline_core
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_window" goto focused_test_color_pipeline_window
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess" goto focused_test_color_pipeline_sdf_postprocess
+if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess_cuda" goto focused_test_color_pipeline_sdf_postprocess_cuda
 if /I "%FOCUSED_TEST%"=="test_escape_time_coloring" goto focused_test_escape_time_coloring
 if /I "%FOCUSED_TEST%"=="test_fractal_parameter_surface_descriptor" goto focused_test_fractal_parameter_surface_descriptor
 if /I "%FOCUSED_TEST%"=="test_fractal_catalog_authority" goto focused_test_fractal_catalog_authority
@@ -832,6 +833,17 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_color_pipeline_sdf_postprocess.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_color_pipeline_sdf_postprocess.exe" || exit /b 1
+exit /b 0
+
+:focused_test_color_pipeline_sdf_postprocess_cuda
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\src\lens_sdf.cpp .\src\sdf_field_signal.cpp .\src\color_pipeline_sdf_postprocess.cpp .\src\color_pipeline_sdf_postprocess_cuda.cu .\tests\test_color_pipeline_sdf_postprocess_cuda.cu ^
+  -o "%TESTROOT%\test_color_pipeline_sdf_postprocess_cuda.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_color_pipeline_sdf_postprocess_cuda.exe" || exit /b 1
 exit /b 0
 
 :focused_test_escape_time_coloring

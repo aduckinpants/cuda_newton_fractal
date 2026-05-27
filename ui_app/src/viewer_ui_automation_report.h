@@ -56,6 +56,8 @@ struct ViewerUiAutomationLensSdfProbe {
     float total_ms = 0.0f;
     int postprocess_pixel_step = 1;
     int postprocess_worker_count = 1;
+    std::string postprocess_backend_used = "cpu";
+    bool postprocess_backend_fallback_used = false;
     std::uint64_t postprocess_direct_sample_count = 0;
     std::uint64_t postprocess_neighborhood_sample_count = 0;
     std::uint64_t postprocess_source_direct_sample_count = 0;

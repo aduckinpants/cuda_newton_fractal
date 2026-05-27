@@ -723,6 +723,8 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
     source_direct_samples = int(downsample_report["lens_sdf_postprocess_source_direct_sample_count"])
     source_neighborhood_samples = int(downsample_report["lens_sdf_postprocess_source_neighborhood_sample_count"])
     assert int(downsample_report["lens_sdf_postprocess_pixel_step"]) == 1, downsample_report
+    assert downsample_report.get("lens_sdf_postprocess_backend_used") == "cuda_direct_scalar", downsample_report
+    assert downsample_report.get("lens_sdf_postprocess_backend_fallback_used") is False, downsample_report
     assert int(downsample_report["lens_sdf_postprocess_filled_pixel_count"]) == render_pixels, downsample_report
     assert direct_samples == field_pixels, downsample_report
     assert neighborhood_samples == 0, downsample_report
@@ -730,6 +732,8 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
     assert source_neighborhood_samples == 0, downsample_report
     assert direct_samples < render_pixels, downsample_report
     assert sample_step_report.get("lens_sdf_pixel_scale") == pytest.approx(4.0), sample_step_report
+    assert sample_step_report.get("lens_sdf_postprocess_backend_used") == "cpu", sample_step_report
+    assert sample_step_report.get("lens_sdf_postprocess_backend_fallback_used") is True, sample_step_report
     assert sample_step_report.get("rendered_frame_hash") != downsample_report.get("rendered_frame_hash"), sample_step_report
     assert int(sample_step_report["lens_sdf_postprocess_source_direct_sample_count"]) < source_direct_samples, sample_step_report
     assert int(sample_step_report["lens_sdf_postprocess_source_neighborhood_sample_count"]) == 0, sample_step_report
@@ -796,6 +800,8 @@ def test_lens_downsample_visible_and_authoritative_for_sdf_source_without_lens_v
     direct_samples = int(edited_report["lens_sdf_postprocess_direct_sample_count"])
     neighborhood_samples = int(edited_report["lens_sdf_postprocess_neighborhood_sample_count"])
     assert int(edited_report["lens_sdf_postprocess_pixel_step"]) == 1, edited_report
+    assert edited_report.get("lens_sdf_postprocess_backend_used") == "cpu", edited_report
+    assert edited_report.get("lens_sdf_postprocess_backend_fallback_used") is True, edited_report
     assert int(edited_report["lens_sdf_postprocess_filled_pixel_count"]) == render_pixels, edited_report
     assert direct_samples == 0, edited_report
     assert neighborhood_samples == field_pixels, edited_report

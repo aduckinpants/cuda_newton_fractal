@@ -76,6 +76,11 @@ void WriteLensSdfReportFields(
     out << "  \"lens_sdf_total_ms\": " << std::setprecision(12) << lensSdfProbe.total_ms << ",\n";
     out << "  \"lens_sdf_postprocess_pixel_step\": " << lensSdfProbe.postprocess_pixel_step << ",\n";
     out << "  \"lens_sdf_postprocess_worker_count\": " << lensSdfProbe.postprocess_worker_count << ",\n";
+    out << "  \"lens_sdf_postprocess_backend_used\": ";
+    WriteAutomationReportString(out, lensSdfProbe.postprocess_backend_used);
+    out << ",\n";
+    out << "  \"lens_sdf_postprocess_backend_fallback_used\": " <<
+        (lensSdfProbe.postprocess_backend_fallback_used ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_postprocess_direct_sample_count\": " << lensSdfProbe.postprocess_direct_sample_count << ",\n";
     out << "  \"lens_sdf_postprocess_neighborhood_sample_count\": " << lensSdfProbe.postprocess_neighborhood_sample_count << ",\n";
     out << "  \"lens_sdf_postprocess_source_direct_sample_count\": " << lensSdfProbe.postprocess_source_direct_sample_count << ",\n";

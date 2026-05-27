@@ -141,6 +141,9 @@ def measurement_from_payload(
     rendered_hash = payload.get("rendered_frame_hash")
     if not isinstance(rendered_hash, str):
         rendered_hash = ""
+    postprocess_backend = payload.get("lens_sdf_postprocess_backend_used", "unknown")
+    if not isinstance(postprocess_backend, str):
+        postprocess_backend = "unknown"
 
     return {
         "name": name,
@@ -167,6 +170,8 @@ def measurement_from_payload(
         "lens_sdf_pixel_scale": _as_float(payload, "lens_sdf_pixel_scale", 1.0),
         "lens_sdf_postprocess_pixel_step": _as_int(payload, "lens_sdf_postprocess_pixel_step", 1),
         "lens_sdf_postprocess_worker_count": _as_int(payload, "lens_sdf_postprocess_worker_count", 1),
+        "lens_sdf_postprocess_backend_used": postprocess_backend,
+        "lens_sdf_postprocess_backend_fallback_used": payload.get("lens_sdf_postprocess_backend_fallback_used") is True,
         "lens_sdf_postprocess_direct_sample_count": _as_int(payload, "lens_sdf_postprocess_direct_sample_count"),
         "lens_sdf_postprocess_neighborhood_sample_count": _as_int(payload, "lens_sdf_postprocess_neighborhood_sample_count"),
         "lens_sdf_postprocess_filled_pixel_count": _as_int(payload, "lens_sdf_postprocess_filled_pixel_count"),
@@ -239,17 +244,19 @@ def write_markdown_report(report: dict[str, object], out_path: Path) -> None:
         f"- Recommendation: `{report.get('summary', {}).get('recommendation', '')}`",
         f"- Persistent viewer launches: `{report.get('persistent_viewer_launch_count', '')}`",
         "",
-        "| Scenario | Phase | Class | Base ms | Field ms | Post ms | SDF total ms | Last ms | Step | Workers |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Scenario | Phase | Class | Backend | Fallback | Base ms | Field ms | Post ms | SDF total ms | Last ms | Step | Workers |",
+        "|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for item in report.get("scenarios", []):
         if not isinstance(item, dict):
             continue
         lines.append(
-            "| {name} | {phase} | {classification} | {base:.3f} | {field:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} | {workers} |".format(
+            "| {name} | {phase} | {classification} | {backend} | {fallback} | {base:.3f} | {field:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} | {workers} |".format(
                 name=item.get("name", ""),
                 phase=item.get("phase", ""),
                 classification=item.get("classification", ""),
+                backend=item.get("lens_sdf_postprocess_backend_used", "unknown"),
+                fallback="yes" if item.get("lens_sdf_postprocess_backend_fallback_used") else "no",
                 base=float(item.get("base_render_ms", 0.0)),
                 field=float(item.get("lens_sdf_field_ms", 0.0)),
                 post=float(item.get("lens_sdf_postprocess_ms", 0.0)),

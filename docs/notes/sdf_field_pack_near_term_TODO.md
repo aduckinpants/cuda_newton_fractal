@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, and full-quality downsampled-field postprocess cell reuse. The next larger SDF performance choices are per-row/multi-field downsample design and GPU Color Pipeline postprocess; broader composition UX, authored-pack UI, and SDF-native lanes remain separate product slices.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, and a CUDA direct-scalar SDF postprocess backend. The next larger SDF performance choices are per-row/multi-field downsample design and GPU phase/curvature/neighborhood Color Pipeline postprocess; broader composition UX, authored-pack UI, and SDF-native lanes remain separate product slices.
 
 Shipped since this roadmap was first written:
 
@@ -26,11 +26,12 @@ Shipped since this roadmap was first written:
 - SDF postprocess signal specialization: scalar-only SDF Source rows use direct center-distance sampling instead of normal/curvature neighborhoods, while `sdf_normal_angle` and `sdf_curvature` keep derivative neighborhood sampling.
 - SDF preview postprocess quality policy: shared `LensSettings::downsample` remains the single field-resolution authority, interactive preview can use a reportable SDF postprocess pixel step to reduce CPU source samples, and full-quality render/capture remains step 1.
 - SDF downsampled-field postprocess cell reuse: full-quality postprocess now computes once per lower-resolution SDF field cell and expands to the same render pixels already mapped to that field cell.
+- CUDA direct-scalar SDF postprocess: supported `sdf_signed_distance`, `sdf_inside_outside`, and `sdf_boundary_band` source stacks can run through a CUDA backend with exact CPU parity and runtime backend reporting; phase, curvature, row sample-step greater than `1`, and unsupported stacks fall back to CPU.
 
 Next performance/design choices:
 
 - Per-row or per-function SDF downsample still needs a deliberate authority model: multiple fields, high-resolution field with row-local coarse sampling, or a source-stack-level quality policy. Current SDF Source rows all share `LensSettings::downsample`, so a layered stack cannot set a different field resolution per SDF Source row yet.
-- GPU Color Pipeline postprocess remains a larger follow-up after the CPU preview policy and reports are measured in real client use.
+- GPU phase/curvature/neighborhood Color Pipeline postprocess remains a larger follow-up after the direct-scalar backend; the current CUDA path intentionally does not cover `sdf_normal_angle`, `sdf_curvature`, or row sample-step greater than `1`.
 - Color Pipeline composition/preset UX, boundary-masked normal-angle, SDF-backed masks/gates, authored-pack UI, and SDF-native lanes remain planned product work after the next performance/design choice is selected.
 
 Still deferred:
@@ -491,8 +492,8 @@ Current state:
   runtime-walk headless/report paths consume source-neutral SDF signal samples.
 - Live Color Pipeline SDF source rows are shipped on `codex/color-pipeline-sdf-source-rows` and proved by `tests/test_fractal_runtime_color_pipeline_sdf_rows.py`.
 - Normal viewport SDF overlays are shipped and proved by `tests/test_fractal_runtime_sdf_viewport_overlay.py`.
-- SDF Source customization, capture/replay authority, phase-signal metadata, fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, and SDF preview postprocess quality policy are shipped on this branch.
-- Per-row/multi-field downsample and GPU postprocess remain unimplemented follow-ups.
+- SDF Source customization, capture/replay authority, phase-signal metadata, fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, and CUDA direct-scalar SDF postprocess are shipped on this branch.
+- Per-row/multi-field downsample and GPU phase/curvature/neighborhood postprocess remain unimplemented follow-ups.
 - See `docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md`, `docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md`, `docs/notes/color_pipeline_sdf_source_rows_PHASED_PLAN.md`, `docs/notes/sdf_viewport_overlay_productization_PHASED_PLAN.md`, and `docs/notes/sdf_postprocess_signal_specialization_PHASED_PLAN.md`.
 
 ### Slice 7 - Viewport Overlay Productization - Shipped
@@ -614,7 +615,7 @@ Recommended immediate ordering:
 16. SDF postprocess signal specialization. Shipped.
 17. SDF preview postprocess quality policy. Shipped.
 18. Per-row/multi-field SDF downsample design. Deferred until the authored authority model is explicit.
-19. GPU Color Pipeline SDF postprocess. Deferred behind measured CPU preview-policy proof and explicit quality requirements.
+19. GPU Color Pipeline SDF postprocess. Direct-scalar SDF source stacks shipped; phase/curvature/neighborhood GPU postprocess remains deferred behind explicit quality requirements and parity proof.
 20. First SDF-native fractal lane. Deferred.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
