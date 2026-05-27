@@ -66,6 +66,7 @@ enum class ColorSignal : int {
     sdf_boundary_band = 10,
     sdf_normal_angle = 11,
     sdf_curvature = 12,
+    lens_field_v2_distance = 13,
 };
 
 enum class ColorPalette : int {

@@ -957,6 +957,7 @@ inline constexpr ColorPipelineSelection kSelectableColorPipelines[] = {
     {ColorSignal::sdf_boundary_band, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default},
     {ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default},
     {ColorSignal::sdf_curvature, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default},
+    {ColorSignal::lens_field_v2_distance, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default},
 };
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
@@ -1081,7 +1082,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline
         pipeline.signal == ColorSignal::sdf_signed_distance ||
         pipeline.signal == ColorSignal::sdf_inside_outside ||
         pipeline.signal == ColorSignal::sdf_boundary_band ||
-        pipeline.signal == ColorSignal::sdf_curvature;
+        pipeline.signal == ColorSignal::sdf_curvature ||
+        pipeline.signal == ColorSignal::lens_field_v2_distance;
     if (isSdfHeatmapSignal &&
         (pipeline.palette == ColorPalette::cyclic_escape || pipeline.palette == ColorPalette::explaino_cmap) &&
         isEscapeLikeGrading) {

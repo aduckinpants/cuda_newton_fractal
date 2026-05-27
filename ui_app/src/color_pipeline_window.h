@@ -1517,7 +1517,8 @@ inline bool IsSupportedColorPipelineSourceStackFunctionId(const std::string& fun
         functionId == "sdf_inside_outside" ||
         functionId == "sdf_boundary_band" ||
         functionId == "sdf_normal_angle" ||
-        functionId == "sdf_curvature";
+        functionId == "sdf_curvature" ||
+        functionId == "lens_field_v2_distance";
 }
 
 inline bool IsSdfColorPipelineSourceFunctionId(const std::string& functionId) {
@@ -1525,7 +1526,8 @@ inline bool IsSdfColorPipelineSourceFunctionId(const std::string& functionId) {
         functionId == "sdf_inside_outside" ||
         functionId == "sdf_boundary_band" ||
         functionId == "sdf_normal_angle" ||
-        functionId == "sdf_curvature";
+        functionId == "sdf_curvature" ||
+        functionId == "lens_field_v2_distance";
 }
 
 inline bool ColorPipelineSourceRuntimeParamsEqual(

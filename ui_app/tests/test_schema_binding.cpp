@@ -2288,7 +2288,7 @@ int main() {
         const ColorPipelineLaneCatalog* coreSourceCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("source");
         if (!coreSourceCatalog ||
             coreSourceCatalog->default_function_id != std::string("smooth_escape_ramp") ||
-            coreSourceCatalog->functions.size() != 12 ||
+            coreSourceCatalog->functions.size() != 13 ||
             coreSourceCatalog->functions[0].id != "smooth_escape_ramp" ||
             coreSourceCatalog->functions[1].id != "phase_orbit" ||
             coreSourceCatalog->functions[2].id != "banded_signal" ||
@@ -2300,7 +2300,8 @@ int main() {
             coreSourceCatalog->functions[8].id != "sdf_inside_outside" ||
             coreSourceCatalog->functions[9].id != "sdf_boundary_band" ||
             coreSourceCatalog->functions[10].id != "sdf_normal_angle" ||
-            coreSourceCatalog->functions[11].id != "sdf_curvature") {
+            coreSourceCatalog->functions[11].id != "sdf_curvature" ||
+            coreSourceCatalog->functions[12].id != "lens_field_v2_distance") {
             std::cerr << "Expected the extracted advanced color core to widen the shipped Source catalog through runtime-real source rows, including root_index and Lens SDF source tuples\n";
             return 1;
         }

@@ -816,7 +816,8 @@ bool IsSdfColorSourceStackSignal(ColorSignal signal) {
         signal == ColorSignal::sdf_inside_outside ||
         signal == ColorSignal::sdf_boundary_band ||
         signal == ColorSignal::sdf_normal_angle ||
-        signal == ColorSignal::sdf_curvature;
+        signal == ColorSignal::sdf_curvature ||
+        signal == ColorSignal::lens_field_v2_distance;
 }
 
 bool ColorSourceStackIsAllSdf(const KernelParams& params) {

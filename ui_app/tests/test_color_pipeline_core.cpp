@@ -167,8 +167,12 @@ void TestFunctionIdMappingsRoundTrip() {
         "TestFunctionIdMappingsRoundTrip_SignalParse");
     Check(std::string(color_pipeline_core::AdvancedColorSignalFunctionId(ColorSignal::sdf_signed_distance)) == "sdf_signed_distance",
         "TestFunctionIdMappingsRoundTrip_SdfSignalId");
+    Check(std::string(color_pipeline_core::AdvancedColorSignalFunctionId(ColorSignal::lens_field_v2_distance)) == "lens_field_v2_distance",
+        "TestFunctionIdMappingsRoundTrip_LensFieldV2SignalId");
     Check(color_pipeline_core::TryParseAdvancedColorSignalFunctionId("sdf_curvature", &signal) && signal == ColorSignal::sdf_curvature,
         "TestFunctionIdMappingsRoundTrip_SdfSignalParse");
+    Check(color_pipeline_core::TryParseAdvancedColorSignalFunctionId("lens_field_v2_distance", &signal) && signal == ColorSignal::lens_field_v2_distance,
+        "TestFunctionIdMappingsRoundTrip_LensFieldV2SignalParse");
     signal = ColorSignal::orbit_stripe;
     Check(!color_pipeline_core::TryParseAdvancedColorSignalFunctionId("missing_source", &signal) && signal == ColorSignal::orbit_stripe,
         "TestFunctionIdMappingsRoundTrip_SignalRejectPreservesValue");
@@ -227,7 +231,7 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
     Check(source && shape && palette && grading, "TestLaneCatalogFiltersRuntimeBackedRows_AllCatalogsDiscoverable");
     if (!source || !shape || !palette || !grading) return;
 
-    Check(source->default_function_id == std::string("smooth_escape_ramp") && source->functions.size() == 12,
+    Check(source->default_function_id == std::string("smooth_escape_ramp") && source->functions.size() == 13,
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceShape");
     Check(HasFunction(*source, "smooth_escape_ramp") && HasFunction(*source, "phase_orbit") &&
             HasFunction(*source, "banded_signal") && HasFunction(*source, "escape_magnitude") &&
@@ -237,7 +241,8 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*source, "sdf_inside_outside") &&
             HasFunction(*source, "sdf_boundary_band") &&
             HasFunction(*source, "sdf_normal_angle") &&
-            HasFunction(*source, "sdf_curvature"),
+            HasFunction(*source, "sdf_curvature") &&
+            HasFunction(*source, "lens_field_v2_distance"),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctions");
     Check(shape->default_function_id == std::string("identity") && shape->functions.size() == 7 &&
             HasFunction(*shape, "smooth_window"),
@@ -261,7 +266,8 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             "sdf_inside_outside",
             "sdf_boundary_band",
             "sdf_normal_angle",
-            "sdf_curvature"}),
+            "sdf_curvature",
+            "lens_field_v2_distance"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctionOrder");
     Check(CatalogIdsEqual(*shape, {"identity", "offset_scale", "repeat", "posterize", "mirror_repeat", "bias_gain_curve", "smooth_window"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
@@ -348,6 +354,7 @@ void TestSourceSignalKindMetadata() {
         ColorSignal::escape_magnitude,
         ColorSignal::root_proximity,
         ColorSignal::sdf_signed_distance,
+        ColorSignal::lens_field_v2_distance,
         ColorSignal::sdf_boundary_band,
         ColorSignal::sdf_curvature,
     };
@@ -362,6 +369,9 @@ void TestSourceSignalKindMetadata() {
     Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("sdf_signed_distance") ==
             ColorPipelineSourceSignalKind::scalar,
         "TestSourceSignalKindMetadata_SdfSignedDistanceFunctionIsScalar");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("lens_field_v2_distance") ==
+            ColorPipelineSourceSignalKind::scalar,
+        "TestSourceSignalKindMetadata_LensFieldV2FunctionIsScalar");
     Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("sdf_boundary_band") ==
             ColorPipelineSourceSignalKind::scalar,
         "TestSourceSignalKindMetadata_SdfBoundaryBandFunctionIsScalar");
@@ -731,6 +741,10 @@ void TestSelectionAndScheduleBridgeIds() {
             selection.signal == ColorSignal::sdf_signed_distance && selection.palette == ColorPalette::cyclic_escape &&
             selection.grading == ColorGradingPreset::escape_default && mode == ColoringMode::smooth_escape,
         "TestSelectionAndScheduleBridgeIds_SdfSignedDistanceHeatmapSelection");
+    Check(color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds("lens_field_v2_distance", "heatmap", &selection, &mode) &&
+            selection.signal == ColorSignal::lens_field_v2_distance && selection.palette == ColorPalette::cyclic_escape &&
+            selection.grading == ColorGradingPreset::escape_default && mode == ColoringMode::smooth_escape,
+        "TestSelectionAndScheduleBridgeIds_LensFieldV2HeatmapSelection");
     Check(color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds("sdf_normal_angle", "phase_wheel_palette", &selection, &mode) &&
             selection.signal == ColorSignal::sdf_normal_angle && selection.palette == ColorPalette::phase_wheel &&
             selection.grading == ColorGradingPreset::phase_default && mode == ColoringMode::phase,
@@ -773,6 +787,11 @@ void TestSelectionAndScheduleBridgeIds() {
             std::string(sourceFunction ? sourceFunction : "") == "sdf_boundary_band" &&
             std::string(paletteFunction ? paletteFunction : "") == "heatmap",
         "TestSelectionAndScheduleBridgeIds_SdfHeatmapBridge");
+    const ColorPipelineSelection lensFieldV2Pipeline = {ColorSignal::lens_field_v2_distance, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(lensFieldV2Pipeline, &sourceFunction, &paletteFunction) &&
+            std::string(sourceFunction ? sourceFunction : "") == "lens_field_v2_distance" &&
+            std::string(paletteFunction ? paletteFunction : "") == "heatmap",
+        "TestSelectionAndScheduleBridgeIds_LensFieldV2Bridge");
     const ColorPipelineSelection sdfNormalAnglePipeline = {ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
     Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(sdfNormalAnglePipeline, &sourceFunction, &paletteFunction) &&
             std::string(sourceFunction ? sourceFunction : "") == "sdf_normal_angle" &&
@@ -802,6 +821,7 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
         {"sdf_boundary_band", 1.0, 0.0},
         {"sdf_normal_angle", 1.0, 0.0},
         {"sdf_curvature", 0.25, 0.5},
+        {"lens_field_v2_distance", 0.05, 0.5},
     };
     for (const ExpectedSdfSource& expected : sdfSourceIds) {
         const FunctionDescriptor* descriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*source, expected.id);
@@ -847,7 +867,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
 
     Check(contract.lanes.size() == color_pipeline_core::GetColorPipelineLaneCatalogs().size(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
-    Check(contract.compatibility.size() == 20,
+    Check(contract.compatibility.size() == 22,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
     Check(contract.recipes.size() == 3, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(!contract.explaino_entries.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoEntriesPresent");
@@ -855,9 +875,9 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     const ColorPipelineMetadataParityReport parity = ValidateColorPipelineMetadataParity(contract);
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
-    Check(parity.lane_count == 4 && parity.function_count == 33 &&
-            parity.compatibility_count == 20 && parity.recipe_count == 3 &&
-            parity.taxonomy_group_count == 23 && parity.unsupported_pair_count > 0,
+    Check(parity.lane_count == 4 && parity.function_count == 34 &&
+            parity.compatibility_count == 22 && parity.recipe_count == 3 &&
+            parity.taxonomy_group_count == 24 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
     const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
@@ -1070,7 +1090,7 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_MetadataActive");
     Check(color_pipeline_core::ColorPipelineCompatibilityAuthorityId() == std::string("materialized_json"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Authority");
-    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 20,
+    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 22,
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Count");
 
     const ColorPipelineLaneCatalog* sourceLane = color_pipeline_core::FindColorPipelineLaneCatalog("source");

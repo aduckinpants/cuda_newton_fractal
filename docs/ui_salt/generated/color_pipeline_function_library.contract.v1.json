@@ -317,6 +317,15 @@
                 "default": 2.0
               },
               {
+                "path": "signal.sdf_sample_step",
+                "type": "int",
+                "label": "SDF Row Step",
+                "min": 1,
+                "max": 8,
+                "step": 1,
+                "default": 1
+              },
+              {
                 "path": "signal.blend_weight",
                 "type": "float",
                 "label": "Blend Weight",
@@ -373,6 +382,15 @@
                 "max": 16.0,
                 "step": 0.25,
                 "default": 2.0
+              },
+              {
+                "path": "signal.sdf_sample_step",
+                "type": "int",
+                "label": "SDF Row Step",
+                "min": 1,
+                "max": 8,
+                "step": 1,
+                "default": 1
               },
               {
                 "path": "signal.blend_weight",
@@ -442,6 +460,15 @@
                 "default": 2.0
               },
               {
+                "path": "signal.sdf_sample_step",
+                "type": "int",
+                "label": "SDF Row Step",
+                "min": 1,
+                "max": 8,
+                "step": 1,
+                "default": 1
+              },
+              {
                 "path": "signal.blend_weight",
                 "type": "float",
                 "label": "Blend Weight",
@@ -500,6 +527,15 @@
                 "default": 2.0
               },
               {
+                "path": "signal.sdf_sample_step",
+                "type": "int",
+                "label": "SDF Row Step",
+                "min": 1,
+                "max": 8,
+                "step": 1,
+                "default": 1
+              },
+              {
                 "path": "signal.blend_weight",
                 "type": "float",
                 "label": "Blend Weight",
@@ -556,6 +592,82 @@
                 "max": 16.0,
                 "step": 0.25,
                 "default": 2.0
+              },
+              {
+                "path": "signal.sdf_sample_step",
+                "type": "int",
+                "label": "SDF Row Step",
+                "min": 1,
+                "max": 8,
+                "step": 1,
+                "default": 1
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "scalar"
+          },
+          {
+            "id": "lens_field_v2_distance",
+            "label": "Lens Field V2 Distance",
+            "description": "Use the GPU-backed Lens Field v2 signed-distance source while preserving the legacy Lens panel.",
+            "taxonomy_group": "lens_field_v2",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.scale",
+                "type": "float",
+                "label": "Field Scale",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.05
+              },
+              {
+                "path": "signal.bias",
+                "type": "float",
+                "label": "Field Bias",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.5
+              },
+              {
+                "path": "signal.sdf_gate",
+                "type": "enum",
+                "label": "SDF Gate",
+                "default": "none",
+                "options": [
+                  "none",
+                  "boundary_band"
+                ]
+              },
+              {
+                "path": "signal.sdf_gate_width_px",
+                "type": "float",
+                "label": "Gate Width",
+                "min": 0.25,
+                "max": 16.0,
+                "step": 0.25,
+                "default": 2.0
+              },
+              {
+                "path": "signal.sdf_sample_step",
+                "type": "int",
+                "label": "SDF Row Step",
+                "min": 1,
+                "max": 8,
+                "step": 1,
+                "default": 1
               },
               {
                 "path": "signal.blend_weight",
@@ -1439,6 +1551,24 @@
         "source": "sdf_curvature",
         "palette": "explaino_cmap",
         "signal": "sdf_curvature",
+        "palette_runtime": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "lens_field_v2_distance",
+        "palette": "heatmap",
+        "signal": "lens_field_v2_distance",
+        "palette_runtime": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "lens_field_v2_distance",
+        "palette": "explaino_cmap",
+        "signal": "lens_field_v2_distance",
         "palette_runtime": "explaino_cmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",

@@ -120,6 +120,7 @@ SdfFieldSignalKind SignalKindForColorSignal(ColorSignal signal) {
         return SdfFieldSignalKind::normal_angle_radians;
     case ColorSignal::sdf_curvature:
         return SdfFieldSignalKind::curvature_estimate;
+    case ColorSignal::lens_field_v2_distance:
     case ColorSignal::sdf_signed_distance:
     default:
         return SdfFieldSignalKind::signed_distance_px;
@@ -328,7 +329,8 @@ bool ResolveDirectSdfSourceValueFromCenter(
         value = center < 0.0f ? 1.0f : 0.0f;
     } else if (entry.signal == ColorSignal::sdf_boundary_band) {
         value = ResolveSdfBoundaryBandFromSignedDistancePx(center, SignalConfigForSourceEntry(entry));
-    } else if (entry.signal != ColorSignal::sdf_signed_distance) {
+    } else if (entry.signal != ColorSignal::sdf_signed_distance &&
+        entry.signal != ColorSignal::lens_field_v2_distance) {
         return false;
     }
     value = value * entry.params.scale + entry.params.bias;
@@ -348,7 +350,8 @@ bool ResolveDirectPlannedSdfSourceValueFromCenter(
         value = center < 0.0f ? 1.0f : 0.0f;
     } else if (row.signal == ColorSignal::sdf_boundary_band) {
         value = ResolveSdfBoundaryBandFromSignedDistancePx(center, SignalConfigForPlannedRow(row));
-    } else if (row.signal != ColorSignal::sdf_signed_distance) {
+    } else if (row.signal != ColorSignal::sdf_signed_distance &&
+        row.signal != ColorSignal::lens_field_v2_distance) {
         return false;
     }
     value = value * row.scale + row.bias;
@@ -984,7 +987,8 @@ bool IsColorPipelineSdfSourceSignal(ColorSignal signal) {
         signal == ColorSignal::sdf_inside_outside ||
         signal == ColorSignal::sdf_boundary_band ||
         signal == ColorSignal::sdf_normal_angle ||
-        signal == ColorSignal::sdf_curvature;
+        signal == ColorSignal::sdf_curvature ||
+        signal == ColorSignal::lens_field_v2_distance;
 }
 
 bool ColorPipelineUsesSdfSource(const KernelParams& params) {

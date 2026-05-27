@@ -87,7 +87,8 @@ __device__ bool ResolveDirectSdfSourceValueDevice(
         value = ResolveBoundaryBandDevice(
             center,
             EscapeTimeColorClamp(entry.params.sdf_boundary_width_px, 0.25f, 16.0f));
-    } else if (entry.signal != ColorSignal::sdf_signed_distance) {
+    } else if (entry.signal != ColorSignal::sdf_signed_distance &&
+        entry.signal != ColorSignal::lens_field_v2_distance) {
         return false;
     }
 
@@ -226,7 +227,8 @@ __device__ bool ResolveFieldSdfSourceValueDevice(
         value = (angle + kPi) / kTwoPi;
     } else if (entry.signal == ColorSignal::sdf_curvature) {
         value = sample.left + sample.right + sample.up + sample.down - (4.0f * sample.center);
-    } else if (entry.signal != ColorSignal::sdf_signed_distance) {
+    } else if (entry.signal != ColorSignal::sdf_signed_distance &&
+        entry.signal != ColorSignal::lens_field_v2_distance) {
         return false;
     }
 
