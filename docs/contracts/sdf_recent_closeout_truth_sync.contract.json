@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "contract_id": "sdf_recent_closeout_truth_sync",
+  "feature_id": "sdf_recent_closeout_truth_sync",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_recent_closeout_truth_sync_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_recent_closeout_truth_sync_PHASED_PLAN.md",
+    "docs/contracts/sdf_recent_closeout_truth_sync.contract.json",
+    "docs/notes/color_pipeline_sdf_postprocess_performance_PHASED_PLAN.md",
+    "docs/notes/sdf_adaptive_preview_pacing_PHASED_PLAN.md",
+    "docs/notes/sdf_performance_measurement_witness_PHASED_PLAN.md",
+    "docs/notes/sdf_postprocess_hotpath_specialization_PHASED_PLAN.md",
+    "docs/notes/sdf_postprocess_truth_sync_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "repair recent SDF phased-plan closeout text that still marks already-closed slices as pending",
+    "preserve the shipped SDF postprocess performance, hotpath specialization, measurement witness, adaptive preview pacing, animation pacing, and capture parity truth",
+    "do not change runtime behavior or product code in this workflow-only repair",
+    "make the next SDF performance/design slice start from honest planning surfaces"
+  ],
+  "forbidden_operator_prompts": [
+    "implement per-row or multi-field SDF downsample in this slice",
+    "implement GPU Color Pipeline postprocess in this slice",
+    "change Color Pipeline, SDF, capture, pacing, renderer, or runtime behavior",
+    "add authored SDF pack UI or SDF-native lanes",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "workflow_only": true,
+    "runtime_visible_change": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "runtime_visible_change": "forbidden",
+    "per_row_sdf_downsample": "deferred",
+    "gpu_postprocess": "deferred",
+    "authored_sdf_ui": "deferred",
+    "sdf_native_lanes": "deferred"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_recent_closeout_truth_sync.contract.json --out-json artifacts/validation/sdf_recent_closeout_truth_sync_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_recent_closeout_truth_sync_PHASED_PLAN.md --out-json artifacts/validation/sdf_recent_closeout_truth_sync_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_recent_closeout_truth_sync_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_recent_closeout_truth_sync_diff_check --log artifacts/logs/sdf_recent_closeout_truth_sync_diff_check.log --out-json artifacts/validation/sdf_recent_closeout_truth_sync_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The recent SDF closeout truth-sync contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_recent_closeout_truth_sync_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The recent SDF closeout truth-sync hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_recent_closeout_truth_sync_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

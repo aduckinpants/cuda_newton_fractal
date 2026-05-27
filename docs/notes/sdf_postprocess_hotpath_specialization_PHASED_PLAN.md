@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - validation, hostile audit, receipts, rearward review, push, and clean-tree closeout.
+Complete - SDF postprocess hotpath specialization is validated, audited, checkpointed, and closed.
 
 ## Phase Checklist
 
@@ -11,7 +11,7 @@ Phase 5 - validation, hostile audit, receipts, rearward review, push, and clean-
 - [x] Phase 2 - add focused RED native/reporting tests for postprocess plan stats, worker-count reporting, and serial-vs-parallel exact-pixel parity.
 - [x] Phase 3 - implement private SDF postprocess plan construction and bounded serial/parallel tile execution without visible UI changes.
 - [x] Phase 4 - publish runtime and rerun focused SDF rows, pacing, capture/replay, and performance witness rails.
-- [ ] Phase 5 - hostile audit, validation receipts, contract proof receipt, rearward review, push, and clean-tree closeout.
+- [x] Phase 5 - hostile audit, validation receipts, contract proof receipt, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 

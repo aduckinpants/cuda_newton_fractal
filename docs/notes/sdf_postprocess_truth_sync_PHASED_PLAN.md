@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - stale SDF postprocess and Color Pipeline composition roadmap text is repaired, audited, and ready for wrapper-managed checkpoint closure.
+Complete - stale SDF postprocess and Color Pipeline composition roadmap text is repaired, audited, checkpointed, and closed.
 
 ## Phase Checklist
 

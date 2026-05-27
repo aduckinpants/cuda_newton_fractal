@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - runtime measurement witness is implemented, validated, checkpoint-ready, and prepared for the next decision slice.
+Complete - runtime measurement witness is implemented, validated, checkpointed, and prepared for the next decision slice.
 
 ## Phase Checklist
 

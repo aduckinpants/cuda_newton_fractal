@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - hostile audit, plan sync, receipts, rearward review, push, and clean-tree closeout
+Complete - SDF postprocess performance repair is validated, audited, checkpointed, and closed.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - hostile audit, plan sync, receipts, rearward review, push, and clean-t
 - [x] Phase 2 - add RED measurement/proof coverage for SDF postprocess cost and current optimization gap
 - [x] Phase 3 - implement the narrowest measured SDF postprocess optimization that preserves full-quality capture/render output
 - [x] Phase 4 - prove SDF source rows, capture/replay, viewport overlay, pacing telemetry, and Color Pipeline behavior stay green
-- [ ] Phase 5 - hostile audit, plan sync, receipts, rearward review, push, and clean-tree closeout
+- [x] Phase 5 - hostile audit, plan sync, receipts, rearward review, push, and clean-tree closeout
 
 ## Explicit User Asks
 

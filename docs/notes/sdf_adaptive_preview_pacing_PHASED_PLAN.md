@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - hostile audit, validation receipts, contract proof receipt, rearward review, push, and clean-tree closeout.
+Complete - SDF adaptive preview pacing is validated, audited, checkpointed, and closed.
 
 ## Phase Checklist
 
@@ -11,7 +11,7 @@ Phase 5 - hostile audit, validation receipts, contract proof receipt, rearward r
 - [x] Phase 2 - add the smallest telemetry/reporting seam needed to measure command-to-preview and command-to-settle timing in one persistent no-mouse viewer process.
 - [x] Phase 3 - make the preview floor adaptive from measured visible-frame cost while preserving the user `preview_min_scale` as the normal floor.
 - [x] Phase 4 - publish runtime and prove fast/no-loss interaction stays full quality, severe SDF interaction drops low enough to help, and settle returns to full quality.
-- [ ] Phase 5 - hostile audit, validation receipts, contract proof receipt, rearward review, push, and clean-tree closeout.
+- [x] Phase 5 - hostile audit, validation receipts, contract proof receipt, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
