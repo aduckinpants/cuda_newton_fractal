@@ -104,7 +104,7 @@ Next correct step:
 - Full-quality downsampled-field postprocess cell reuse is shipped: shared `SDF Field Downsample` now reduces CPU postprocess samples by computing once per SDF field cell and expanding the same pixels the old nearest field-cell mapping produced.
 - CUDA direct-scalar and field-signal SDF postprocess backends are shipped.
 - Live-only adaptive SDF field resolution is shipped: interaction preview can temporarily use a higher effective SDF field downsample while settled, capture, and replay stay on the requested `LensSettings::downsample`.
-- Remaining larger SDF performance work is a separate decision between field-generation algorithm/caching work and per-row/multi-field downsample authority.
+- Remaining larger SDF performance work is now routed first through field-generation algorithm/caching measurement and optimization. Per-row/multi-field downsample authority remains useful, but is deferred until the base field producer is measured and hardened.
 - Do not treat SDF postprocess cost as a fractal kernel problem; the current telemetry distinguishes base render, field generation, and postprocess cost.
 
 **Files:** `ui_app/src/viewer_render_pacing.*`, `ui_app/src/main.cpp`, `tests/test_fractal_runtime_resolution_pacing.py`
