@@ -46,7 +46,26 @@ struct LensSdfBackendReport {
     bool fallback_used{false};
 };
 
+enum class LensSdfQualityMode {
+    requested,
+    interactive_adaptive,
+};
+
+struct LensSdfEffectiveDownsample {
+    int requested_downsample{1};
+    int effective_downsample{1};
+    LensSdfQualityMode quality_mode{LensSdfQualityMode::requested};
+};
+
 int NormalizeLensDownsamplePow2(int value);
+const char* LensSdfQualityModeId(LensSdfQualityMode mode);
+
+LensSdfEffectiveDownsample ResolveEffectiveLensSdfDownsample(
+    int requested_downsample,
+    bool preview_active,
+    bool force_full_quality,
+    double previous_field_ms,
+    double target_frame_ms);
 
 bool DownsampleMaskPow2(
     const uint8_t* inMask,

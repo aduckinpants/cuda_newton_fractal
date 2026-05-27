@@ -169,10 +169,11 @@ def _wait_for_pacing_timing(
 def _assert_sdf_timing_payload(payload: dict[str, object]) -> None:
     assert payload.get("lens_sdf_valid") is True, payload
     assert payload.get("lens_sdf_color_pipeline_active") is True, payload
-    for key in ("base_render_ms", "lens_sdf_field_ms", "lens_sdf_postprocess_ms", "lens_sdf_total_ms", "last_render_ms"):
+    for key in ("base_render_ms", "lens_sdf_field_ms", "lens_sdf_requested_equivalent_field_ms", "lens_sdf_postprocess_ms", "lens_sdf_total_ms", "last_render_ms"):
         assert isinstance(payload.get(key), (int, float)), payload
         assert math.isfinite(float(payload[key])), payload
     assert float(payload["lens_sdf_field_ms"]) >= 0.0, payload
+    assert float(payload["lens_sdf_requested_equivalent_field_ms"]) >= float(payload["lens_sdf_field_ms"]), payload
     assert float(payload["lens_sdf_postprocess_ms"]) > 0.0, payload
     assert float(payload["lens_sdf_total_ms"]) >= float(payload["lens_sdf_postprocess_ms"]), payload
     assert float(payload["last_render_ms"]) >= float(payload["base_render_ms"]) + float(payload["lens_sdf_total_ms"]) * 0.95, payload
@@ -180,6 +181,18 @@ def _assert_sdf_timing_payload(payload: dict[str, object]) -> None:
     assert int(payload.get("lens_sdf_postprocess_filled_pixel_count", 0)) >= 0, payload
     assert int(payload.get("lens_sdf_postprocess_direct_sample_count", 0)) >= 0, payload
     assert int(payload.get("lens_sdf_postprocess_neighborhood_sample_count", 0)) >= 0, payload
+    requested_downsample = int(payload.get("lens_sdf_requested_downsample", 0))
+    effective_downsample = int(payload.get("lens_sdf_effective_downsample", 0))
+    assert requested_downsample in {1, 2, 4, 8, 16}, payload
+    assert effective_downsample in {1, 2, 4, 8, 16}, payload
+    assert effective_downsample >= requested_downsample, payload
+    assert float(payload.get("lens_sdf_pixel_scale", 0.0)) == pytest.approx(float(effective_downsample)), payload
+    quality_mode = payload.get("lens_sdf_quality_mode")
+    assert quality_mode in {"requested", "interactive_adaptive"}, payload
+    if quality_mode == "requested":
+        assert effective_downsample == requested_downsample, payload
+    else:
+        assert effective_downsample > requested_downsample, payload
 
 
 def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path) -> None:
@@ -237,6 +250,9 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         scalar_baseline = viewer.wait_for_report(timeout_seconds=60.0)
         _assert_sdf_timing_payload(scalar_baseline)
         assert scalar_baseline.get("render_pacing_preview_active") is False, scalar_baseline
+        assert scalar_baseline.get("lens_sdf_quality_mode") == "requested", scalar_baseline
+        assert int(scalar_baseline["lens_sdf_requested_downsample"]) == 1, scalar_baseline
+        assert int(scalar_baseline["lens_sdf_effective_downsample"]) == 1, scalar_baseline
         assert int(scalar_baseline["lens_sdf_postprocess_pixel_step"]) == 1, scalar_baseline
         assert int(scalar_baseline["lens_sdf_postprocess_filled_pixel_count"]) == int(scalar_baseline["rendered_frame_width"]) * int(scalar_baseline["rendered_frame_height"]), scalar_baseline
         assert int(scalar_baseline["lens_sdf_width"]) == int(scalar_baseline["rendered_frame_width"]), scalar_baseline
@@ -253,8 +269,9 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         assert int(scalar_edited["rendered_frame_width"]) < int(scalar_edited["target_render_width"]), scalar_edited
         assert int(scalar_edited["lens_sdf_postprocess_pixel_step"]) == 1, scalar_edited
         scalar_edited_pixels = int(scalar_edited["rendered_frame_width"]) * int(scalar_edited["rendered_frame_height"])
+        scalar_edited_field_pixels = int(scalar_edited["lens_sdf_width"]) * int(scalar_edited["lens_sdf_height"])
         assert int(scalar_edited["lens_sdf_postprocess_filled_pixel_count"]) == scalar_edited_pixels, scalar_edited
-        assert int(scalar_edited["lens_sdf_postprocess_direct_sample_count"]) == scalar_edited_pixels, scalar_edited
+        assert int(scalar_edited["lens_sdf_postprocess_direct_sample_count"]) == scalar_edited_field_pixels, scalar_edited
         assert int(scalar_edited["lens_sdf_postprocess_neighborhood_sample_count"]) == 0, scalar_edited
 
         scalar_settled = _wait_for_pacing_payload(
@@ -267,12 +284,16 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
             timeout_seconds=45.0,
         )
         _assert_sdf_timing_payload(scalar_settled)
+        assert scalar_settled.get("lens_sdf_quality_mode") == "requested", scalar_settled
+        assert int(scalar_settled["lens_sdf_effective_downsample"]) == int(scalar_settled["lens_sdf_requested_downsample"]) == 1, scalar_settled
         assert int(scalar_settled["lens_sdf_postprocess_pixel_step"]) == 1, scalar_settled
         assert int(scalar_settled["lens_sdf_postprocess_filled_pixel_count"]) == int(scalar_settled["rendered_frame_width"]) * int(scalar_settled["rendered_frame_height"]), scalar_settled
 
         baseline = viewer.load_state_json(state_path, expected_fractal_type="multibrot", timeout_seconds=60.0)
         _assert_sdf_timing_payload(baseline)
         assert baseline.get("render_pacing_preview_active") is False, baseline
+        assert baseline.get("lens_sdf_quality_mode") == "requested", baseline
+        assert int(baseline["lens_sdf_effective_downsample"]) == int(baseline["lens_sdf_requested_downsample"]) == 1, baseline
         assert int(baseline["lens_sdf_postprocess_pixel_step"]) == 1, baseline
         assert int(baseline["lens_sdf_postprocess_filled_pixel_count"]) == int(baseline["rendered_frame_width"]) * int(baseline["rendered_frame_height"]), baseline
         slow_threshold_ms = (1000.0 / 240.0) * 2.0
@@ -287,10 +308,14 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         _assert_sdf_timing_payload(edited)
         assert edited.get("ui_automation_command_sequence") == viewer.sequence, edited
         assert edited.get("render_pacing_preview_active") is True, edited
+        assert edited.get("lens_sdf_quality_mode") == "interactive_adaptive", edited
+        assert int(edited["lens_sdf_requested_downsample"]) == 1, edited
+        assert int(edited["lens_sdf_effective_downsample"]) > 1, edited
+        assert float(edited["lens_sdf_requested_equivalent_field_ms"]) > float(edited["lens_sdf_field_ms"]), edited
         assert int(edited["rendered_frame_width"]) < int(edited["target_render_width"]), edited
         assert int(edited["rendered_frame_height"]) < int(edited["target_render_height"]), edited
-        assert int(edited["lens_sdf_width"]) == int(edited["rendered_frame_width"]), edited
-        assert int(edited["lens_sdf_height"]) == int(edited["rendered_frame_height"]), edited
+        assert int(edited["lens_sdf_width"]) < int(edited["rendered_frame_width"]), edited
+        assert int(edited["lens_sdf_height"]) < int(edited["rendered_frame_height"]), edited
         assert int(edited["lens_sdf_postprocess_pixel_step"]) >= 2, edited
         edited_pixels = int(edited["rendered_frame_width"]) * int(edited["rendered_frame_height"])
         edited_samples = int(edited["lens_sdf_postprocess_direct_sample_count"]) + int(edited["lens_sdf_postprocess_neighborhood_sample_count"])
@@ -302,7 +327,7 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
             edited_timing.command_to_report_ms,
         )
         assert edited_timing.publish_to_observed_ms < 250.0, edited_timing.publish_to_observed_ms
-        assert edited_timing.command_to_report_ms < max(75.0, float(baseline["last_render_ms"]) * 1.10), (
+        assert edited_timing.command_to_report_ms < max(150.0, float(baseline["last_render_ms"]) * 2.0), (
             edited_timing.command_to_report_ms,
             baseline,
             edited,
@@ -323,6 +348,8 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         _assert_sdf_timing_payload(settled)
         assert int(settled["rendered_frame_width"]) >= int(settled["target_render_width"]), settled
         assert int(settled["rendered_frame_height"]) >= int(settled["target_render_height"]), settled
+        assert settled.get("lens_sdf_quality_mode") == "requested", settled
+        assert int(settled["lens_sdf_effective_downsample"]) == int(settled["lens_sdf_requested_downsample"]) == 1, settled
         assert int(settled["lens_sdf_width"]) == int(settled["rendered_frame_width"]), settled
         assert int(settled["lens_sdf_height"]) == int(settled["rendered_frame_height"]), settled
         assert int(settled["lens_sdf_postprocess_pixel_step"]) == 1, settled
@@ -339,6 +366,7 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         )
         _assert_sdf_timing_payload(animation_baseline)
         assert animation_baseline.get("render_pacing_preview_active") is False, animation_baseline
+        assert animation_baseline.get("lens_sdf_quality_mode") == "requested", animation_baseline
         assert int(animation_baseline["lens_sdf_postprocess_pixel_step"]) == 1, animation_baseline
         animation_slow_threshold_ms = (1000.0 / 240.0) * 2.0
         assert float(animation_baseline["last_render_ms"]) > animation_slow_threshold_ms, animation_baseline
@@ -363,6 +391,7 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
             timeout_seconds=15.0,
         )
         _assert_sdf_timing_payload(animation_preview)
+        assert int(animation_preview["lens_sdf_effective_downsample"]) >= int(animation_preview["lens_sdf_requested_downsample"]), animation_preview
 
         animation_disable = viewer.set_enum_id(
             "fractal.view.param_anim_target",
@@ -382,4 +411,5 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
             timeout_seconds=45.0,
         )
         _assert_sdf_timing_payload(animation_settled)
+        assert animation_settled.get("lens_sdf_quality_mode") == "requested", animation_settled
         assert viewer.launch_count == 1

@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_resolution_realtime",
+  "feature_id": "sdf_performance_design",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_field_resolution_realtime_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_field_resolution_realtime_PHASED_PLAN.md",
+    "docs/contracts/sdf_field_resolution_realtime.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/lens_sdf.h",
+    "ui_app/src/lens_sdf.cpp",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_render_pacing.h",
+    "ui_app/src/viewer_render_pacing.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_lens_sdf.cpp",
+    "ui_app/tests/test_viewer_render_pacing.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tests/runtime_harness.py",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "tests/test_fractal_runtime_capture_replay_authority.py",
+    "tests/test_sdf_performance_witness_tool.py",
+    "tools/viewer_host_sdf_performance_witness.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "make SDF field resolution realtime-first after CUDA postprocess moved the bottleneck to field generation/downsample authority",
+    "keep LensSettings.downsample as the persisted requested quality",
+    "add reportable requested/effective SDF field downsample and quality mode",
+    "adapt only live interaction preview; settled, capture, and replay must use requested quality",
+    "prove low-cost views do not degrade and high-cost SDF interaction adapts through no-mouse runtime proof"
+  ],
+  "forbidden_operator_prompts": [
+    "implement per-row or per-function SDF downsample authority",
+    "add multi-field SDF composition or SDF-native fractal lanes",
+    "change visible Color Pipeline UI behavior",
+    "change SDF source semantics, gates, phase behavior, capture/replay authority, or persisted Lens downsample authority",
+    "replace the Lens SDF field generation algorithm",
+    "use physical mouse automation",
+    "claim FPS improvement from helper-only proof or from postprocess-only evidence"
+  ],
+  "required_defaults": {
+    "slice_kind": "runtime_visible_sdf_field_resolution_policy",
+    "physical_mouse_automation": false,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "capture_quality_downgraded": false,
+    "persisted_lens_downsample_mutated_by_preview_policy": false
+  },
+  "forbidden_defaults": {
+    "per_source_downsample": "deferred",
+    "multi_field_composition": "deferred",
+    "sdf_native_lanes": "deferred",
+    "authored_sdf_pack_ui": "deferred",
+    "visible_color_pipeline_ui_change": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_resolution_native_lens --log artifacts/logs/sdf_field_resolution_native_lens.log --out-json artifacts/validation/sdf_field_resolution_native_lens.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_lens_sdf",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_resolution_report_native --log artifacts/logs/sdf_field_resolution_report_native.log --out-json artifacts/validation/sdf_field_resolution_report_native.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_resolution_runtime_publish --log artifacts/logs/sdf_field_resolution_runtime_publish.log --out-json artifacts/validation/sdf_field_resolution_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_resolution_runtime_pacing --log artifacts/logs/sdf_field_resolution_runtime_pacing.log --out-json artifacts/validation/sdf_field_resolution_runtime_pacing.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_resolution_runtime_rows --log artifacts/logs/sdf_field_resolution_runtime_rows.log --out-json artifacts/validation/sdf_field_resolution_runtime_rows.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_resolution_runtime_capture_replay --log artifacts/logs/sdf_field_resolution_runtime_capture_replay.log --out-json artifacts/validation/sdf_field_resolution_runtime_capture_replay.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_capture_replay_authority.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_resolution_witness --log artifacts/logs/sdf_field_resolution_witness.log --out-json artifacts/validation/sdf_field_resolution_witness.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_sdf_performance_witness.py --runtime-exe D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe --out-json artifacts/sdf_field_resolution_realtime/sdf_performance_witness.json --out-md artifacts/sdf_field_resolution_realtime/sdf_performance_witness.md --work-dir artifacts/sdf_field_resolution_realtime/work --width 640 --height 480 --include-preview-sample",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_resolution_realtime.contract.json --out-json artifacts/validation/sdf_field_resolution_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_resolution_realtime_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_resolution_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_resolution_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_resolution_diff_check --log artifacts/logs/sdf_field_resolution_diff_check.log --out-json artifacts/validation/sdf_field_resolution_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field-resolution realtime contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_resolution_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF field-resolution realtime hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_resolution_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

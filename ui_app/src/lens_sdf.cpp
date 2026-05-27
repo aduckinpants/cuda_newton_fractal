@@ -1,5 +1,6 @@
 #include "lens_sdf.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -105,6 +106,47 @@ int NormalizeLensDownsamplePow2(int value) {
     if (value <= 4) return 4;
     if (value <= 8) return 8;
     return 16;
+}
+
+const char* LensSdfQualityModeId(LensSdfQualityMode mode) {
+    switch (mode) {
+    case LensSdfQualityMode::requested: return "requested";
+    case LensSdfQualityMode::interactive_adaptive: return "interactive_adaptive";
+    default: return "requested";
+    }
+}
+
+LensSdfEffectiveDownsample ResolveEffectiveLensSdfDownsample(
+    int requested_downsample,
+    bool preview_active,
+    bool force_full_quality,
+    double previous_field_ms,
+    double target_frame_ms) {
+    LensSdfEffectiveDownsample decision{};
+    decision.requested_downsample = NormalizeLensDownsamplePow2(requested_downsample);
+    decision.effective_downsample = decision.requested_downsample;
+    decision.quality_mode = LensSdfQualityMode::requested;
+
+    if (!preview_active || force_full_quality) {
+        return decision;
+    }
+    if (!std::isfinite(previous_field_ms) || previous_field_ms <= 0.0 ||
+        !std::isfinite(target_frame_ms) || target_frame_ms <= 0.0) {
+        return decision;
+    }
+
+    const double fieldBudgetMs = std::max(1.0, target_frame_ms * 0.20);
+    if (previous_field_ms <= fieldBudgetMs) {
+        return decision;
+    }
+
+    const int budgetDownsample = NormalizeLensDownsamplePow2(
+        static_cast<int>(std::ceil(std::sqrt(previous_field_ms / fieldBudgetMs))));
+    if (budgetDownsample > decision.effective_downsample) {
+        decision.effective_downsample = budgetDownsample;
+        decision.quality_mode = LensSdfQualityMode::interactive_adaptive;
+    }
+    return decision;
 }
 
 bool DownsampleMaskPow2(

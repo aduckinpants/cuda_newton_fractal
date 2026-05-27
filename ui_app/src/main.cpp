@@ -895,6 +895,10 @@ static void DispatchRenderFrame(
     if (!ShouldDispatchRender(autoRefresh, dirty, renderOnce, captureDiag, captureFinding, renderPacing.full_quality_due))
         return;
 
+    const float previousLensSdfFieldMs =
+        lensSdfProbe.requested_equivalent_field_ms > 0.0f
+            ? lensSdfProbe.requested_equivalent_field_ms
+            : lensSdfProbe.field_ms;
     lensSdfProbe = {};
     lensSdfProbe.enabled = lens.enabled;
     lensSdfProbe.color_pipeline_active = ColorPipelineUsesSdfSource(params);
@@ -968,19 +972,36 @@ static void DispatchRenderFrame(
             }
             SdfFieldResult lensSdfField;
             LensSdfBackendReport backendReport{};
+            const LensSdfEffectiveDownsample fieldQuality = ResolveEffectiveLensSdfDownsample(
+                lens.downsample,
+                renderPacing.preview_active,
+                forceFullQuality,
+                previousLensSdfFieldMs,
+                1000.0 / static_cast<double>(render.preview_target_fps > 0.0f ? render.preview_target_fps : RenderSettings::kDefaultPreviewTargetFps));
+            lensSdfProbe.requested_downsample = fieldQuality.requested_downsample;
+            lensSdfProbe.effective_downsample = fieldQuality.effective_downsample;
+            lensSdfProbe.quality_mode = LensSdfQualityModeId(fieldQuality.quality_mode);
             const auto fieldStart = std::chrono::steady_clock::now();
             if (ComputeLensSdfFieldForMaskWithBackend(
                     maskPtr,
                     dispatchRender.resolution.x,
                     dispatchRender.resolution.y,
-                    lens.downsample,
+                    fieldQuality.effective_downsample,
                     LensSdfBackend::auto_backend,
                     lensSdfField,
                     &backendReport)) {
                 const auto fieldEnd = std::chrono::steady_clock::now();
                 lensSdfProbe.field_ms = static_cast<float>(
                     std::chrono::duration<double, std::milli>(fieldEnd - fieldStart).count());
-                const float lowMaxAbsPx = 48.0f / static_cast<float>(NormalizeLensDownsamplePow2(lens.downsample));
+                lensSdfProbe.requested_equivalent_field_ms = lensSdfProbe.field_ms;
+                if (fieldQuality.effective_downsample > fieldQuality.requested_downsample) {
+                    const double fieldScaleRatio =
+                        static_cast<double>(fieldQuality.effective_downsample) /
+                        static_cast<double>(fieldQuality.requested_downsample);
+                    lensSdfProbe.requested_equivalent_field_ms =
+                        static_cast<float>(static_cast<double>(lensSdfProbe.field_ms) * fieldScaleRatio * fieldScaleRatio);
+                }
+                const float lowMaxAbsPx = 48.0f / static_cast<float>(fieldQuality.effective_downsample);
                 lensSdfProbe.valid = true;
                 lensSdfProbe.overlay_active = lensSdfOverlayEnabled;
                 lensSdfProbe.width = lensSdfField.width;

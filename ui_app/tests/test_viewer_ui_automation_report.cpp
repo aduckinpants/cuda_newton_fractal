@@ -77,17 +77,26 @@ void TestLensSdfProbeDefaults() {
     Check(probe.overlay_mode == "off" && !probe.overlay_active && probe.overlay_opacity > 0.5f,
         "lens SDF automation probe reports stable overlay defaults");
     Check(!probe.color_pipeline_active && probe.base_render_ms == 0.0f &&
-            probe.field_ms == 0.0f && probe.postprocess_ms == 0.0f && probe.total_ms == 0.0f,
+            probe.field_ms == 0.0f && probe.requested_equivalent_field_ms == 0.0f &&
+            probe.postprocess_ms == 0.0f && probe.total_ms == 0.0f,
         "lens SDF automation probe reports stable timing defaults");
     Check(probe.postprocess_backend_used == "cpu" && !probe.postprocess_backend_fallback_used,
         "lens SDF automation probe reports stable postprocess backend defaults");
+    Check(probe.requested_downsample == 1 &&
+            probe.effective_downsample == 1 &&
+            probe.quality_mode == "requested",
+        "lens SDF automation probe reports stable requested/effective quality defaults");
 }
 
 void TestLensSdfProbeTimingFields() {
     ViewerUiAutomationLensSdfProbe probe{};
     probe.color_pipeline_active = true;
+    probe.requested_downsample = 1;
+    probe.effective_downsample = 4;
+    probe.quality_mode = "interactive_adaptive";
     probe.base_render_ms = 3.0f;
     probe.field_ms = 2.0f;
+    probe.requested_equivalent_field_ms = 8.0f;
     probe.postprocess_ms = 7.5f;
     probe.total_ms = probe.field_ms + probe.postprocess_ms;
     probe.postprocess_worker_count = 3;
@@ -96,7 +105,8 @@ void TestLensSdfProbeTimingFields() {
     probe.postprocess_source_direct_sample_count = 11;
     probe.postprocess_source_neighborhood_sample_count = 22;
     Check(probe.color_pipeline_active && probe.base_render_ms == 3.0f &&
-            probe.field_ms == 2.0f && probe.postprocess_ms == 7.5f && probe.total_ms == 9.5f,
+            probe.field_ms == 2.0f && probe.requested_equivalent_field_ms == 8.0f &&
+            probe.postprocess_ms == 7.5f && probe.total_ms == 9.5f,
         "lens SDF automation probe carries separate field/postprocess timing");
     Check(probe.postprocess_worker_count == 3,
         "lens SDF automation probe carries postprocess worker count");
@@ -105,6 +115,10 @@ void TestLensSdfProbeTimingFields() {
     Check(probe.postprocess_source_direct_sample_count == 11 &&
             probe.postprocess_source_neighborhood_sample_count == 22,
         "lens SDF automation probe carries per-row source sample counts");
+    Check(probe.requested_downsample == 1 &&
+            probe.effective_downsample == 4 &&
+            probe.quality_mode == "interactive_adaptive",
+        "lens SDF automation probe carries requested/effective field quality");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {

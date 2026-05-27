@@ -20,6 +20,73 @@ int main() {
     }
 
     {
+        const LensSdfEffectiveDownsample requested =
+            ResolveEffectiveLensSdfDownsample(1, false, false, 10.0, 33.333);
+        if (requested.requested_downsample != 1 ||
+            requested.effective_downsample != 1 ||
+            requested.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Settled SDF field quality should use requested downsample\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample normalized =
+            ResolveEffectiveLensSdfDownsample(3, false, false, 10.0, 33.333);
+        if (normalized.requested_downsample != 4 ||
+            normalized.effective_downsample != 4 ||
+            normalized.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Requested SDF downsample should normalize to the visible pow2 authority\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample lowCost =
+            ResolveEffectiveLensSdfDownsample(1, true, false, 1.0, 33.333);
+        if (lowCost.effective_downsample != 1 ||
+            lowCost.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Low-cost preview should not degrade SDF field quality\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample adaptive =
+            ResolveEffectiveLensSdfDownsample(1, true, false, 14.0, 33.333);
+        if (adaptive.requested_downsample != 1 ||
+            adaptive.effective_downsample != 2 ||
+            adaptive.quality_mode != LensSdfQualityMode::interactive_adaptive) {
+            std::cerr << "Over-budget preview should adapt effective SDF field downsample\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample severe =
+            ResolveEffectiveLensSdfDownsample(1, true, false, 70.0, 33.333);
+        if (severe.effective_downsample < 4 ||
+            severe.quality_mode != LensSdfQualityMode::interactive_adaptive) {
+            std::cerr << "Severe preview should adapt SDF field quality beyond 2x when needed\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample requestedAlreadyCoarse =
+            ResolveEffectiveLensSdfDownsample(4, true, false, 14.0, 33.333);
+        if (requestedAlreadyCoarse.requested_downsample != 4 ||
+            requestedAlreadyCoarse.effective_downsample != 4 ||
+            requestedAlreadyCoarse.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Adaptive policy should not improve or rewrite a coarse requested downsample\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample forcedFullQuality =
+            ResolveEffectiveLensSdfDownsample(1, true, true, 70.0, 33.333);
+        if (forcedFullQuality.effective_downsample != 1 ||
+            forcedFullQuality.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Forced full-quality paths should use requested SDF field quality\n";
+            return 1;
+        }
+
+        if (std::string(LensSdfQualityModeId(LensSdfQualityMode::interactive_adaptive)) != "interactive_adaptive") {
+            std::cerr << "SDF field quality mode id should be stable for automation reports\n";
+            return 1;
+        }
+    }
+
+    {
         const int srcW = 5;
         const int srcH = 3;
         const uint8_t source[srcW * srcH] = {
