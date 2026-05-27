@@ -616,8 +616,8 @@
           },
           {
             "id": "lens_field_v2_distance",
-            "label": "Lens Field V2 Distance",
-            "description": "Use the GPU-backed Lens Field v2 signed-distance source while preserving the legacy Lens panel.",
+            "label": "Lens Field V2 Response",
+            "description": "Use the GPU-backed Lens Field v2 legacy distance response while preserving the legacy Lens panel.",
             "taxonomy_group": "lens_field_v2",
             "runtime_backed": true,
             "input_kind": "scalar",
@@ -630,7 +630,7 @@
                 "min": -2.0,
                 "max": 2.0,
                 "step": 0.01,
-                "default": 0.05
+                "default": 1.0
               },
               {
                 "path": "signal.bias",
@@ -639,7 +639,7 @@
                 "min": -2.0,
                 "max": 2.0,
                 "step": 0.01,
-                "default": 0.5
+                "default": 0.0
               },
               {
                 "path": "signal.sdf_gate",

@@ -89,6 +89,13 @@ int main() {
             std::cerr << "SDF field cache status id should be stable for automation reports\n";
             return 1;
         }
+        if (std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(0.0f, 1.0f) - 0.5f) > 0.0001f ||
+            std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(48.0f, 1.0f) - 1.0f) > 0.0001f ||
+            std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(-48.0f, 1.0f) - 0.0f) > 0.0001f ||
+            std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(12.0f, 4.0f) - 1.0f) > 0.0001f) {
+            std::cerr << "Lens Field v2 response should preserve the legacy Lens 48px normalized response shape\n";
+            return 1;
+        }
     }
 
     {

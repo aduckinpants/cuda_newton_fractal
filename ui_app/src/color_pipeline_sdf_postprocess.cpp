@@ -121,6 +121,7 @@ SdfFieldSignalKind SignalKindForColorSignal(ColorSignal signal) {
     case ColorSignal::sdf_curvature:
         return SdfFieldSignalKind::curvature_estimate;
     case ColorSignal::lens_field_v2_distance:
+        return SdfFieldSignalKind::lens_field_v2_response;
     case ColorSignal::sdf_signed_distance:
     default:
         return SdfFieldSignalKind::signed_distance_px;
@@ -319,18 +320,20 @@ bool ResolveSdfSourceValue(
 
 bool ResolveDirectSdfSourceValueFromCenter(
     float center,
+    float fieldPixelScale,
     const ColorPipelineSourceStackEntry& entry,
     float* outValue) {
     if (!outValue || SdfSignalNeedsNeighborhood(entry.signal)) {
         return false;
     }
     float value = center;
-    if (entry.signal == ColorSignal::sdf_inside_outside) {
+    if (entry.signal == ColorSignal::lens_field_v2_distance) {
+        value = ResolveLensFieldV2ResponseFromSignedDistancePx(center, fieldPixelScale);
+    } else if (entry.signal == ColorSignal::sdf_inside_outside) {
         value = center < 0.0f ? 1.0f : 0.0f;
     } else if (entry.signal == ColorSignal::sdf_boundary_band) {
         value = ResolveSdfBoundaryBandFromSignedDistancePx(center, SignalConfigForSourceEntry(entry));
-    } else if (entry.signal != ColorSignal::sdf_signed_distance &&
-        entry.signal != ColorSignal::lens_field_v2_distance) {
+    } else if (entry.signal != ColorSignal::sdf_signed_distance) {
         return false;
     }
     value = value * entry.params.scale + entry.params.bias;
@@ -340,18 +343,20 @@ bool ResolveDirectSdfSourceValueFromCenter(
 
 bool ResolveDirectPlannedSdfSourceValueFromCenter(
     float center,
+    float fieldPixelScale,
     const PlannedSdfSourceRow& row,
     float* outValue) {
     if (!outValue || row.needs_neighborhood) {
         return false;
     }
     float value = center;
-    if (row.signal == ColorSignal::sdf_inside_outside) {
+    if (row.signal == ColorSignal::lens_field_v2_distance) {
+        value = ResolveLensFieldV2ResponseFromSignedDistancePx(center, fieldPixelScale);
+    } else if (row.signal == ColorSignal::sdf_inside_outside) {
         value = center < 0.0f ? 1.0f : 0.0f;
     } else if (row.signal == ColorSignal::sdf_boundary_band) {
         value = ResolveSdfBoundaryBandFromSignedDistancePx(center, SignalConfigForPlannedRow(row));
-    } else if (row.signal != ColorSignal::sdf_signed_distance &&
-        row.signal != ColorSignal::lens_field_v2_distance) {
+    } else if (row.signal != ColorSignal::sdf_signed_distance) {
         return false;
     }
     value = value * row.scale + row.bias;
@@ -388,7 +393,7 @@ bool ResolveDirectSdfPipelineSignal(
             if (outError) *outError = "SDF Color Pipeline postprocess was requested without an SDF source signal";
             return false;
         }
-        if (!ResolveDirectSdfSourceValueFromCenter(center, FlatSdfSourceEntry(params), outSignal)) {
+        if (!ResolveDirectSdfSourceValueFromCenter(center, field.pixel_scale, FlatSdfSourceEntry(params), outSignal)) {
             if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
             return false;
         }
@@ -401,7 +406,7 @@ bool ResolveDirectSdfPipelineSignal(
         return false;
     }
     float signal = 0.0f;
-    if (!ResolveDirectSdfSourceValueFromCenter(center, first, &signal)) {
+    if (!ResolveDirectSdfSourceValueFromCenter(center, field.pixel_scale, first, &signal)) {
         if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
         return false;
     }
@@ -412,7 +417,7 @@ bool ResolveDirectSdfPipelineSignal(
             return false;
         }
         float nextSignal = 0.0f;
-        if (!ResolveDirectSdfSourceValueFromCenter(center, entry, &nextSignal)) {
+        if (!ResolveDirectSdfSourceValueFromCenter(center, field.pixel_scale, entry, &nextSignal)) {
             if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
             return false;
         }
@@ -447,13 +452,13 @@ bool ResolveDirectPlannedSdfPipelineSignal(
     }
 
     float signal = 0.0f;
-    if (!ResolveDirectPlannedSdfSourceValueFromCenter(center, plan.rows[0], &signal)) {
+    if (!ResolveDirectPlannedSdfSourceValueFromCenter(center, field.pixel_scale, plan.rows[0], &signal)) {
         if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
         return false;
     }
     for (int index = 1; index < plan.row_count; ++index) {
         float nextSignal = 0.0f;
-        if (!ResolveDirectPlannedSdfSourceValueFromCenter(center, plan.rows[index], &nextSignal)) {
+        if (!ResolveDirectPlannedSdfSourceValueFromCenter(center, field.pixel_scale, plan.rows[index], &nextSignal)) {
             if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
             return false;
         }
@@ -593,7 +598,7 @@ bool ResolvePlannedSdfSourceRowValue(
 
     float center = 0.0f;
     if (!SampleSdfCenterValue(field, fx, fy, &center) ||
-        !ResolveDirectPlannedSdfSourceValueFromCenter(center, row, outValue)) {
+        !ResolveDirectPlannedSdfSourceValueFromCenter(center, field.pixel_scale, row, outValue)) {
         if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
         return false;
     }

@@ -46,6 +46,17 @@ float ResolveSdfBoundaryBandFromSignedDistancePx(float signed_distance_px, const
     return boundaryBand;
 }
 
+float ResolveLensFieldV2ResponseFromSignedDistancePx(float signed_distance_px, float field_pixel_scale) {
+    const float safeScale = std::isfinite(field_pixel_scale) && field_pixel_scale > 0.000001f
+        ? field_pixel_scale
+        : 1.0f;
+    const float fullResolutionSignedPx = std::isfinite(signed_distance_px) ? signed_distance_px * safeScale : 0.0f;
+    float response = 0.5f + (fullResolutionSignedPx / (2.0f * 48.0f));
+    if (response < 0.0f) response = 0.0f;
+    if (response > 1.0f) response = 1.0f;
+    return response;
+}
+
 bool SampleSdfFieldSignals(
     const SdfFieldView& field,
     int x,
@@ -75,6 +86,7 @@ bool SampleSdfFieldSignals(
 
     outSample.ok = true;
     outSample.signed_distance_px = center;
+    outSample.lens_field_v2_response = ResolveLensFieldV2ResponseFromSignedDistancePx(center, field.pixel_scale);
     outSample.inside = center < 0.0f;
     outSample.inside_outside = outSample.inside ? 1.0f : 0.0f;
     outSample.boundary_band = boundaryBand;
@@ -86,6 +98,7 @@ bool SampleSdfFieldSignals(
 float ResolveSdfFieldSignalValue(const SdfFieldSignalSample& sample, SdfFieldSignalKind kind) {
     switch (kind) {
     case SdfFieldSignalKind::signed_distance_px: return sample.signed_distance_px;
+    case SdfFieldSignalKind::lens_field_v2_response: return sample.lens_field_v2_response;
     case SdfFieldSignalKind::inside_outside: return sample.inside_outside;
     case SdfFieldSignalKind::boundary_band: return sample.boundary_band;
     case SdfFieldSignalKind::normal_angle_radians: return sample.normal_angle_radians;

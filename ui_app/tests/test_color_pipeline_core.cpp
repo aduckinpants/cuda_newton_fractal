@@ -821,7 +821,7 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
         {"sdf_boundary_band", 1.0, 0.0},
         {"sdf_normal_angle", 1.0, 0.0},
         {"sdf_curvature", 0.25, 0.5},
-        {"lens_field_v2_distance", 0.05, 0.5},
+        {"lens_field_v2_distance", 1.0, 0.0},
     };
     for (const ExpectedSdfSource& expected : sdfSourceIds) {
         const FunctionDescriptor* descriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*source, expected.id);

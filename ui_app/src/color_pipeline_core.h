@@ -699,12 +699,12 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             }),
         MakeColorPipelineFunction(
             "lens_field_v2_distance",
-            "Lens Field V2 Distance",
-            "Use the GPU-backed Lens Field v2 signed-distance source while preserving the legacy Lens panel.",
+            "Lens Field V2 Response",
+            "Use the GPU-backed Lens Field v2 legacy distance response while preserving the legacy Lens panel.",
             "lens_field_v2",
             {
-                MakeColorPipelineSourceScaleParam("Field Scale", "Scale the Lens Field v2 signed-distance source before palette lookup.", -2.0, 2.0, 0.01, 0.05),
-                MakeColorPipelineSourceBiasParam("Field Bias", "Shift the Lens Field v2 signed-distance source before palette lookup.", -2.0, 2.0, 0.01, 0.5),
+                MakeColorPipelineSourceScaleParam("Field Scale", "Scale the normalized Lens Field v2 response before palette lookup.", -2.0, 2.0, 0.01, 1.0),
+                MakeColorPipelineSourceBiasParam("Field Bias", "Shift the normalized Lens Field v2 response before palette lookup.", -2.0, 2.0, 0.01, 0.0),
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
                 MakeColorPipelineSdfSampleStepParam(),

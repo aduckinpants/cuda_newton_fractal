@@ -131,6 +131,18 @@ void TestSupportedDirectScalarStacksUseCudaWithExactPixels() {
         Render(16, 12),
         SdfParams(ColorSignal::sdf_signed_distance));
     CheckCpuGpuParity(
+        "TestSupportedDirectScalarStacksUseCudaWithExactPixels_LensFieldV2PixelsMatch",
+        field,
+        Render(16, 12),
+        SdfParams(ColorSignal::lens_field_v2_distance));
+    SdfFieldResult scaledField = field;
+    scaledField.pixel_scale = 4.0f;
+    CheckCpuGpuParity(
+        "TestSupportedDirectScalarStacksUseCudaWithExactPixels_LensFieldV2ScaledPixelsMatch",
+        scaledField,
+        Render(16, 12),
+        SdfParams(ColorSignal::lens_field_v2_distance));
+    CheckCpuGpuParity(
         "TestSupportedDirectScalarStacksUseCudaWithExactPixels_InsideOutsidePixelsMatch",
         field,
         Render(16, 12),

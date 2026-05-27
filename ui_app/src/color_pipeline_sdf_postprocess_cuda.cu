@@ -72,8 +72,18 @@ __device__ float ResolveBoundaryBandDevice(float signedDistancePx, float boundar
     return boundaryBand;
 }
 
+__device__ float ResolveLensFieldV2ResponseDevice(float signedDistancePx, float fieldPixelScale) {
+    const float safeScale = isfinite(fieldPixelScale) && fieldPixelScale > 0.000001f ? fieldPixelScale : 1.0f;
+    const float fullResolutionSignedPx = isfinite(signedDistancePx) ? signedDistancePx * safeScale : 0.0f;
+    float response = 0.5f + (fullResolutionSignedPx / (2.0f * 48.0f));
+    if (response < 0.0f) response = 0.0f;
+    if (response > 1.0f) response = 1.0f;
+    return response;
+}
+
 __device__ bool ResolveDirectSdfSourceValueDevice(
     float center,
+    float fieldPixelScale,
     const ColorPipelineSourceStackEntry& entry,
     float* outValue) {
     if (!outValue || !isfinite(center)) {
@@ -81,14 +91,15 @@ __device__ bool ResolveDirectSdfSourceValueDevice(
     }
 
     float value = center;
-    if (entry.signal == ColorSignal::sdf_inside_outside) {
+    if (entry.signal == ColorSignal::lens_field_v2_distance) {
+        value = ResolveLensFieldV2ResponseDevice(center, fieldPixelScale);
+    } else if (entry.signal == ColorSignal::sdf_inside_outside) {
         value = center < 0.0f ? 1.0f : 0.0f;
     } else if (entry.signal == ColorSignal::sdf_boundary_band) {
         value = ResolveBoundaryBandDevice(
             center,
             EscapeTimeColorClamp(entry.params.sdf_boundary_width_px, 0.25f, 16.0f));
-    } else if (entry.signal != ColorSignal::sdf_signed_distance &&
-        entry.signal != ColorSignal::lens_field_v2_distance) {
+    } else if (entry.signal != ColorSignal::sdf_signed_distance) {
         return false;
     }
 
@@ -115,6 +126,7 @@ __device__ bool ResolveDirectSdfPipelineSignalDevice(
     int fieldHeight,
     int fx,
     int fy,
+    float fieldPixelScale,
     const KernelParams& params,
     float* outSignal) {
     if (!field || !outSignal || fx < 0 || fy < 0 || fx >= fieldWidth || fy >= fieldHeight) {
@@ -123,16 +135,16 @@ __device__ bool ResolveDirectSdfPipelineSignalDevice(
     const float center = field[fy * fieldWidth + fx];
     const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
     if (sourceStackCount <= 0) {
-        return ResolveDirectSdfSourceValueDevice(center, FlatSdfSourceEntryDevice(params), outSignal);
+        return ResolveDirectSdfSourceValueDevice(center, fieldPixelScale, FlatSdfSourceEntryDevice(params), outSignal);
     }
 
     float signal = 0.0f;
-    if (!ResolveDirectSdfSourceValueDevice(center, params.color_source_stack[0], &signal)) {
+    if (!ResolveDirectSdfSourceValueDevice(center, fieldPixelScale, params.color_source_stack[0], &signal)) {
         return false;
     }
     for (int index = 1; index < sourceStackCount; ++index) {
         float nextSignal = 0.0f;
-        if (!ResolveDirectSdfSourceValueDevice(center, params.color_source_stack[index], &nextSignal)) {
+        if (!ResolveDirectSdfSourceValueDevice(center, fieldPixelScale, params.color_source_stack[index], &nextSignal)) {
             return false;
         }
         signal = EscapeTimeColorLerp(
@@ -206,6 +218,7 @@ __device__ bool SampleFieldSignalDevice(
 
 __device__ bool ResolveFieldSdfSourceValueDevice(
     const SdfFieldSignalSampleDevice& sample,
+    float fieldPixelScale,
     const ColorPipelineSourceStackEntry& entry,
     float* outValue) {
     if (!outValue) {
@@ -213,7 +226,9 @@ __device__ bool ResolveFieldSdfSourceValueDevice(
     }
 
     float value = sample.center;
-    if (entry.signal == ColorSignal::sdf_inside_outside) {
+    if (entry.signal == ColorSignal::lens_field_v2_distance) {
+        value = ResolveLensFieldV2ResponseDevice(sample.center, fieldPixelScale);
+    } else if (entry.signal == ColorSignal::sdf_inside_outside) {
         value = sample.center < 0.0f ? 1.0f : 0.0f;
     } else if (entry.signal == ColorSignal::sdf_boundary_band) {
         value = ResolveBoundaryBandDevice(
@@ -227,8 +242,7 @@ __device__ bool ResolveFieldSdfSourceValueDevice(
         value = (angle + kPi) / kTwoPi;
     } else if (entry.signal == ColorSignal::sdf_curvature) {
         value = sample.left + sample.right + sample.up + sample.down - (4.0f * sample.center);
-    } else if (entry.signal != ColorSignal::sdf_signed_distance &&
-        entry.signal != ColorSignal::lens_field_v2_distance) {
+    } else if (entry.signal != ColorSignal::sdf_signed_distance) {
         return false;
     }
 
@@ -249,6 +263,7 @@ __device__ bool ResolveFieldSdfPipelineSignalDevice(
     int fieldHeight,
     int fx,
     int fy,
+    float fieldPixelScale,
     const KernelParams& params,
     float* outSignal) {
     if (!field || !outSignal || fx < 0 || fy < 0 || fx >= fieldWidth || fy >= fieldHeight) {
@@ -262,16 +277,16 @@ __device__ bool ResolveFieldSdfPipelineSignalDevice(
 
     const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
     if (sourceStackCount <= 0) {
-        return ResolveFieldSdfSourceValueDevice(sample, FlatSdfSourceEntryDevice(params), outSignal);
+        return ResolveFieldSdfSourceValueDevice(sample, fieldPixelScale, FlatSdfSourceEntryDevice(params), outSignal);
     }
 
     float signal = 0.0f;
-    if (!ResolveFieldSdfSourceValueDevice(sample, params.color_source_stack[0], &signal)) {
+    if (!ResolveFieldSdfSourceValueDevice(sample, fieldPixelScale, params.color_source_stack[0], &signal)) {
         return false;
     }
     for (int index = 1; index < sourceStackCount; ++index) {
         float nextSignal = 0.0f;
-        if (!ResolveFieldSdfSourceValueDevice(sample, params.color_source_stack[index], &nextSignal)) {
+        if (!ResolveFieldSdfSourceValueDevice(sample, fieldPixelScale, params.color_source_stack[index], &nextSignal)) {
             return false;
         }
         signal = EscapeTimeColorLerp(
@@ -296,9 +311,10 @@ __device__ std::uint32_t ResolvePackedColorDevice(
     int fieldHeight,
     int fx,
     int fy,
+    float fieldPixelScale,
     const KernelParams& params) {
     float signal = 0.0f;
-    if (!ResolveDirectSdfPipelineSignalDevice(field, fieldWidth, fieldHeight, fx, fy, params, &signal)) {
+    if (!ResolveDirectSdfPipelineSignalDevice(field, fieldWidth, fieldHeight, fx, fy, fieldPixelScale, params, &signal)) {
         return 0xff000000u;
     }
     const float shapedSignal = ApplyColorPipelineShapeValue(signal, params);
@@ -313,9 +329,10 @@ __device__ std::uint32_t ResolveFieldPackedColorDevice(
     int fieldHeight,
     int fx,
     int fy,
+    float fieldPixelScale,
     const KernelParams& params) {
     float signal = 0.0f;
-    if (!ResolveFieldSdfPipelineSignalDevice(field, fieldWidth, fieldHeight, fx, fy, params, &signal)) {
+    if (!ResolveFieldSdfPipelineSignalDevice(field, fieldWidth, fieldHeight, fx, fy, fieldPixelScale, params, &signal)) {
         return 0xff000000u;
     }
     const float shapedSignal = ApplyColorPipelineShapeValue(signal, params);
@@ -330,6 +347,7 @@ __global__ void SdfDirectScalarFieldCellKernel(
     int fieldHeight,
     int renderWidth,
     int renderHeight,
+    float fieldPixelScale,
     KernelParams params,
     std::uint32_t* outRgba) {
     const int fieldCount = fieldWidth * fieldHeight;
@@ -343,7 +361,7 @@ __global__ void SdfDirectScalarFieldCellKernel(
     const int yEnd = CeilDivDevice(static_cast<long long>(fy + 1) * static_cast<long long>(renderHeight), fieldHeight);
     const int xBegin = CeilDivDevice(static_cast<long long>(fx) * static_cast<long long>(renderWidth), fieldWidth);
     const int xEnd = CeilDivDevice(static_cast<long long>(fx + 1) * static_cast<long long>(renderWidth), fieldWidth);
-    const std::uint32_t packed = ResolvePackedColorDevice(field, fieldWidth, fieldHeight, fx, fy, params);
+    const std::uint32_t packed = ResolvePackedColorDevice(field, fieldWidth, fieldHeight, fx, fy, fieldPixelScale, params);
     for (int yy = yBegin; yy < yEnd; ++yy) {
         const int rowOffset = yy * renderWidth;
         for (int xx = xBegin; xx < xEnd; ++xx) {
@@ -361,6 +379,7 @@ __global__ void SdfDirectScalarRenderBlockKernel(
     int outputPixelStep,
     int blockCols,
     int blockRows,
+    float fieldPixelScale,
     KernelParams params,
     std::uint32_t* outRgba) {
     const int blockCount = blockCols * blockRows;
@@ -384,7 +403,7 @@ __global__ void SdfDirectScalarRenderBlockKernel(
         static_cast<int>((static_cast<long long>(sampleY) * static_cast<long long>(fieldHeight)) / renderHeight),
         0,
         fieldHeight - 1);
-    const std::uint32_t packed = ResolvePackedColorDevice(field, fieldWidth, fieldHeight, fx, fy, params);
+    const std::uint32_t packed = ResolvePackedColorDevice(field, fieldWidth, fieldHeight, fx, fy, fieldPixelScale, params);
     for (int yy = yBegin; yy < yBegin + blockHeight; ++yy) {
         const int rowOffset = yy * renderWidth;
         for (int xx = xBegin; xx < xBegin + blockWidth; ++xx) {
@@ -399,6 +418,7 @@ __global__ void SdfFieldSignalFieldCellKernel(
     int fieldHeight,
     int renderWidth,
     int renderHeight,
+    float fieldPixelScale,
     KernelParams params,
     std::uint32_t* outRgba) {
     const int fieldCount = fieldWidth * fieldHeight;
@@ -412,7 +432,7 @@ __global__ void SdfFieldSignalFieldCellKernel(
     const int yEnd = CeilDivDevice(static_cast<long long>(fy + 1) * static_cast<long long>(renderHeight), fieldHeight);
     const int xBegin = CeilDivDevice(static_cast<long long>(fx) * static_cast<long long>(renderWidth), fieldWidth);
     const int xEnd = CeilDivDevice(static_cast<long long>(fx + 1) * static_cast<long long>(renderWidth), fieldWidth);
-    const std::uint32_t packed = ResolveFieldPackedColorDevice(field, fieldWidth, fieldHeight, fx, fy, params);
+    const std::uint32_t packed = ResolveFieldPackedColorDevice(field, fieldWidth, fieldHeight, fx, fy, fieldPixelScale, params);
     for (int yy = yBegin; yy < yEnd; ++yy) {
         const int rowOffset = yy * renderWidth;
         for (int xx = xBegin; xx < xEnd; ++xx) {
@@ -430,6 +450,7 @@ __global__ void SdfFieldSignalRenderBlockKernel(
     int outputPixelStep,
     int blockCols,
     int blockRows,
+    float fieldPixelScale,
     KernelParams params,
     std::uint32_t* outRgba) {
     const int blockCount = blockCols * blockRows;
@@ -453,7 +474,7 @@ __global__ void SdfFieldSignalRenderBlockKernel(
         static_cast<int>((static_cast<long long>(sampleY) * static_cast<long long>(fieldHeight)) / renderHeight),
         0,
         fieldHeight - 1);
-    const std::uint32_t packed = ResolveFieldPackedColorDevice(field, fieldWidth, fieldHeight, fx, fy, params);
+    const std::uint32_t packed = ResolveFieldPackedColorDevice(field, fieldWidth, fieldHeight, fx, fy, fieldPixelScale, params);
     for (int yy = yBegin; yy < yBegin + blockHeight; ++yy) {
         const int rowOffset = yy * renderWidth;
         for (int xx = xBegin; xx < xBegin + blockWidth; ++xx) {
@@ -619,6 +640,7 @@ bool ApplyLensSdfColorPipelinePostprocessCudaDirectScalar(
             field.height,
             render.resolution.x,
             render.resolution.y,
+            field.pixel_scale,
             params,
             buffers.rgba);
     } else {
@@ -635,6 +657,7 @@ bool ApplyLensSdfColorPipelinePostprocessCudaDirectScalar(
             outputPixelStep,
             blockCols,
             blockRows,
+            field.pixel_scale,
             params,
             buffers.rgba);
     }
@@ -706,6 +729,7 @@ bool ApplyLensSdfColorPipelinePostprocessCudaFieldSignal(
             field.height,
             render.resolution.x,
             render.resolution.y,
+            field.pixel_scale,
             params,
             buffers.rgba);
     } else {
@@ -722,6 +746,7 @@ bool ApplyLensSdfColorPipelinePostprocessCudaFieldSignal(
             outputPixelStep,
             blockCols,
             blockRows,
+            field.pixel_scale,
             params,
             buffers.rgba);
     }

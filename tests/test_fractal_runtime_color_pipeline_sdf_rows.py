@@ -27,7 +27,7 @@ SDF_SOURCE_ROWS = (
     ("sdf_boundary_band", "smooth_escape", "cyclic_escape", 1.0, 0.0, 1.75, -0.25),
     ("sdf_normal_angle", "phase", "phase_wheel", 1.0, 0.0, -0.75, 0.35),
     ("sdf_curvature", "smooth_escape", "cyclic_escape", 0.25, 0.5, 1.25, -0.35),
-    ("lens_field_v2_distance", "smooth_escape", "cyclic_escape", 0.05, 0.5, -0.35, 0.85),
+    ("lens_field_v2_distance", "smooth_escape", "cyclic_escape", 1.0, 0.0, -0.35, 0.85),
 )
 
 
@@ -315,8 +315,18 @@ def test_lens_field_v2_distance_source_reports_gpu_backed_no_mouse(tmp_path: Pat
         exe_path=exe_path,
         state_path=state_path,
         function_id="lens_field_v2_distance",
-        scale=0.05,
-        bias=0.5,
+        scale=1.0,
+        bias=0.0,
+    )
+    raw_sdf_capture = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_signed_distance",
+        scale=1.0,
+        bias=0.0,
+    )
+    assert lens_field_capture["frame_hash"] != raw_sdf_capture["frame_hash"], (
+        "Lens Field v2 should expose the legacy Lens response shape, not alias raw sdf_signed_distance"
     )
     lens_field_state = json.loads(json.dumps(lens_field_capture["state"]))
     lens = lens_field_state.setdefault("lens", {})
