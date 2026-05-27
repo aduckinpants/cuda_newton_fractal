@@ -20,7 +20,7 @@ This table is the current backlog order after reconciling the older deferred not
 | 5 | Camera/dive behavior | Medium | High | Make auto-dive dt-aware and implement at least one real behavior mode instead of flat zoom stubs; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 6 | Smooth-escape/color tuning | Medium | Medium/High | Per-family color tuning and interior treatment, without reopening Color Pipeline architecture broadly; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 7 | Color Pipeline composition follow-ups | Medium | High | UI-Salt backend authority and preset workflow truth are shipped; current composition cleanup removes visible draft/live-bridge wording. Remaining bounded follow-ups are boundary-masked phase source, SDF masks/gates, and function-library taxonomy/layout work. |
-| 8 | SDF performance follow-up after preview policy | Medium/High | High | Preview postprocess quality policy is shipped; shared SDF Field Downsample is not per Source row/layer yet. Next choose between per-row/multi-field downsample design and GPU Color Pipeline postprocess with measured client evidence. |
+| 8 | SDF performance follow-up after preview policy | Medium/High | High | Preview postprocess quality policy, CUDA SDF postprocess, adaptive field resolution, and Lens Field v2 sign contrast are shipped. Next work is field-generation algorithm/caching measurement and optimization before per-row/multi-field downsample authority or higher-level SDF composition. |
 | 9 | Generic equation-pack productization | Medium/High | High strategic | Persistence first, then catalog picker, authoring UX, Salticid adapter, performance profiling. |
 | 10 | Callable/transpiler handoff | High | High strategic | Finish the handoff boundary without pretending dynamic backend execution already exists. |
 | 11 | Catalog/family authority refactor | High | High | Move remaining family defaults, visibility, and validation out of brittle monolithic paths before larger families. |
@@ -162,7 +162,7 @@ Shipped since the original deferred note:
 Active follow-up:
 - Broader composition/preset UX now has preset workflow truth and visible implementation-wording cleanup covered by bounded slices. Keep later composition work split by topic instead of turning it into a broad redesign.
 - The immediate composition repair for disabled-row compatibility/error authority and `sdf_curvature` plus `sdf_normal_angle` SDF-only Source-stack blending is shipped on `08e62b6`.
-- Choose the next larger SDF performance/design slice explicitly before returning to authored-pack UI or SDF-native lanes: field-generation algorithm/caching work or per-row/multi-field downsample authority with measured client evidence.
+- The next larger SDF performance/design slice has been selected: field-generation algorithm/caching measurement and optimization before returning to authored-pack UI, SDF-native lanes, or per-row/multi-field downsample authority.
 
 Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.

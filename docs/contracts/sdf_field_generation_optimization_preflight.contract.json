@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_generation_optimization_preflight",
+  "feature_id": "sdf_performance_design",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_field_generation_optimization_preflight_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_field_generation_optimization_preflight_PHASED_PLAN.md",
+    "docs/contracts/sdf_field_generation_optimization_preflight.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "select SDF field-generation/optimization as the next foundational SDF performance path",
+    "keep this preflight docs-only before product-code mutation",
+    "preserve Lens Field v2 sign contrast, SDF capture/replay, CUDA SDF postprocess, and adaptive field-resolution assumptions",
+    "start the next implementation with measurement guardrails before algorithm or cache changes"
+  ],
+  "forbidden_operator_prompts": [
+    "change product code, tests, schema, renderer, runtime harness, or Color Pipeline behavior in this preflight slice",
+    "implement per-row or per-function SDF downsample authority",
+    "add SDF-native fractal lanes, authored SDF pack UI, boundary-masked normal-angle UX, or broader Color Pipeline redesign",
+    "change GPU SDF postprocess backends",
+    "use physical mouse automation",
+    "claim FPS improvement without a published runtime measurement witness"
+  ],
+  "required_defaults": {
+    "scope": "documentation_only",
+    "branch_purpose": "field_generation_optimization_preflight",
+    "next_product_slice": "sdf_field_generation_measurement_then_optimization",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "product_mutation": "forbidden",
+    "per_source_downsample": "deferred",
+    "sdf_native_lanes": "deferred",
+    "authored_sdf_pack_ui": "deferred",
+    "visible_color_pipeline_ui_change": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_generation_optimization_preflight.contract.json --out-json artifacts/validation/sdf_field_generation_optimization_preflight_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_generation_optimization_preflight_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_generation_optimization_preflight_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_generation_optimization_preflight_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_generation_optimization_preflight_diff_check --log artifacts/logs/sdf_field_generation_optimization_preflight_diff_check.log --out-json artifacts/validation/sdf_field_generation_optimization_preflight_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field-generation optimization preflight contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_generation_optimization_preflight_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF field-generation optimization preflight hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_generation_optimization_preflight_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
