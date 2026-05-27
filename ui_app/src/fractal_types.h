@@ -124,6 +124,7 @@ struct ColorPipelineSourceRuntimeParams {
     float proximity_scale{1.0f};
     float proximity_bias{0.0f};
     float sdf_boundary_width_px{2.0f};
+    float lens_field_v2_sign_contrast{0.0f};
     ColorPipelineSdfGateMode sdf_gate{ColorPipelineSdfGateMode::none};
     float sdf_gate_width_px{2.0f};
     int sdf_sample_step{1};

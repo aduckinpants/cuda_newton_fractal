@@ -159,4 +159,9 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert taxonomy_groups["identity"] == "identity"
     assert taxonomy_groups["phase_wheel_palette"] == "palette_phase"
     assert taxonomy_groups["balance_void_grade"] == "grade_manifold"
+    lens_v2 = next(fn for fn in lanes["source"]["functions"] if fn["id"] == "lens_field_v2_distance")
+    lens_v2_params = {param["path"]: param for param in lens_v2["params"]}
+    assert lens_v2_params["signal.sign_contrast"]["default"] == 0.35
+    assert lens_v2_params["signal.sign_contrast"]["min"] == 0.0
+    assert lens_v2_params["signal.sign_contrast"]["max"] == 1.0
     assert len(actual["composition_recipe_contract"]["compatibility"]) == 22

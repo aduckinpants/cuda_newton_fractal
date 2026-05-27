@@ -1185,6 +1185,12 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
         return path == "signal.scale" || path == "signal.bias" || path == "signal.blend_weight";
     }
     if (IsSdfColorPipelineSourceFunctionId(functionId)) {
+        if (functionId == "lens_field_v2_distance") {
+            return path == "signal.scale" || path == "signal.bias" ||
+                path == "signal.blend_weight" || path == "signal.sign_contrast" ||
+                path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px" ||
+                path == "signal.sdf_sample_step";
+        }
         if (functionId == "sdf_boundary_band") {
             return path == "signal.scale" || path == "signal.bias" ||
                 path == "signal.blend_weight" || path == "signal.boundary_width_px" ||
@@ -1433,6 +1439,11 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
                 return false;
             }
         }
+        if (ioRow->function_id == "lens_field_v2_distance") {
+            if (!SetColorPipelineParamNumber(ioRow, "signal.sign_contrast", sourceEntry.params.lens_field_v2_sign_contrast, outError)) {
+                return false;
+            }
+        }
         const char* gateId = color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate);
         return SetColorPipelineParamEnum(ioRow, "signal.sdf_gate", gateId ? gateId : "none", outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.sdf_gate_width_px", sourceEntry.params.sdf_gate_width_px, outError) &&
@@ -1546,6 +1557,7 @@ inline bool ColorPipelineSourceRuntimeParamsEqual(
         std::fabs(left.proximity_scale - right.proximity_scale) <= 1.0e-6f &&
         std::fabs(left.proximity_bias - right.proximity_bias) <= 1.0e-6f &&
         std::fabs(left.sdf_boundary_width_px - right.sdf_boundary_width_px) <= 1.0e-6f &&
+        std::fabs(left.lens_field_v2_sign_contrast - right.lens_field_v2_sign_contrast) <= 1.0e-6f &&
         left.sdf_gate == right.sdf_gate &&
         std::fabs(left.sdf_gate_width_px - right.sdf_gate_width_px) <= 1.0e-6f &&
         left.sdf_sample_step == right.sdf_sample_step &&
@@ -1702,6 +1714,14 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
                 return false;
             }
             entry.params.sdf_boundary_width_px = static_cast<float>(boundaryWidthPx);
+        }
+        if (row.function_id == "lens_field_v2_distance") {
+            double signContrast = entry.params.lens_field_v2_sign_contrast;
+            if (!TryGetColorPipelineParamNumber(row, "signal.sign_contrast", &signContrast, outError) ||
+                !ValidateColorPipelineParamRange("signal.sign_contrast", signContrast, 0.0, 1.0, outError)) {
+                return false;
+            }
+            entry.params.lens_field_v2_sign_contrast = static_cast<float>(signContrast);
         }
         std::string gateId = "none";
         double gateWidthPx = entry.params.sdf_gate_width_px;

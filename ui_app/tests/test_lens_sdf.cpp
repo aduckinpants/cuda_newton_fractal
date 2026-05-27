@@ -96,6 +96,23 @@ int main() {
             std::cerr << "Lens Field v2 response should preserve the legacy Lens 48px normalized response shape\n";
             return 1;
         }
+        if (std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(12.0f, 1.0f, 0.0f) -
+                ResolveLensFieldV2ResponseFromSignedDistancePx(12.0f, 1.0f)) > 0.0001f ||
+            std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(-12.0f, 1.0f, 0.0f) -
+                ResolveLensFieldV2ResponseFromSignedDistancePx(-12.0f, 1.0f)) > 0.0001f) {
+            std::cerr << "Zero Lens Field v2 sign contrast should preserve the legacy response\n";
+            return 1;
+        }
+        const float positiveContrasted = ResolveLensFieldV2ResponseFromSignedDistancePx(4.0f, 1.0f, 0.75f);
+        const float negativeContrasted = ResolveLensFieldV2ResponseFromSignedDistancePx(-4.0f, 1.0f, 0.75f);
+        const float positiveBase = ResolveLensFieldV2ResponseFromSignedDistancePx(4.0f, 1.0f);
+        const float negativeBase = ResolveLensFieldV2ResponseFromSignedDistancePx(-4.0f, 1.0f);
+        if (positiveContrasted <= positiveBase ||
+            negativeContrasted >= negativeBase ||
+            (positiveContrasted - negativeContrasted) <= (positiveBase - negativeBase)) {
+            std::cerr << "Lens Field v2 sign contrast should strengthen inside/outside separation without changing the source function\n";
+            return 1;
+        }
     }
 
     {

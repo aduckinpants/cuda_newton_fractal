@@ -375,6 +375,8 @@ def test_lens_field_v2_distance_source_reports_gpu_backed_no_mouse(tmp_path: Pat
     assert lens_field_capture["frame_hash"] != raw_sdf_capture["frame_hash"], (
         "Lens Field v2 should expose the legacy Lens response shape, not alias raw sdf_signed_distance"
     )
+    lens_source_row = _first_color_pipeline_row(lens_field_capture["state"], "source")
+    assert _row_number(lens_source_row, "signal.sign_contrast") == pytest.approx(0.35, abs=1e-6)
     lens_field_state = json.loads(json.dumps(lens_field_capture["state"]))
     lens = lens_field_state.setdefault("lens", {})
     assert isinstance(lens, dict)
@@ -394,6 +396,15 @@ def test_lens_field_v2_distance_source_reports_gpu_backed_no_mouse(tmp_path: Pat
             "color_pipeline.source.lens_field_v2_distance.signal.scale.primary",
             timeout_seconds=20.0,
         )
+        viewer.wait_for_control(
+            "color_pipeline.source.lens_field_v2_distance.signal.sign_contrast.primary",
+            timeout_seconds=20.0,
+        )
+        contrast_report = viewer.set_control_value(
+            "color_pipeline.source.lens_field_v2_distance.signal.sign_contrast.primary",
+            0.85,
+            timeout_seconds=40.0,
+        )
         edited_report = viewer.set_control_value(
             "color_pipeline.source.lens_field_v2_distance.signal.scale.primary",
             -0.35,
@@ -411,6 +422,7 @@ def test_lens_field_v2_distance_source_reports_gpu_backed_no_mouse(tmp_path: Pat
     assert ready_report.get("lens_sdf_postprocess_backend_used") == "cuda_direct_scalar", ready_report
     assert ready_report.get("lens_sdf_postprocess_backend_fallback_used") is False, ready_report
     assert ready_report.get("lens_sdf_quality_mode") == "requested", ready_report
+    assert contrast_report.get("rendered_frame_hash") != ready_report.get("rendered_frame_hash"), contrast_report
     assert edited_report.get("rendered_frame_hash") != ready_report.get("rendered_frame_hash"), edited_report
     assert edited_report.get("lens_sdf_field_cache_hit") is True, edited_report
     assert edited_report.get("lens_sdf_field_cache_status") == "hit", edited_report

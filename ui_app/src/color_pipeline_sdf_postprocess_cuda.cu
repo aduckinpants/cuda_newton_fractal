@@ -72,10 +72,19 @@ __device__ float ResolveBoundaryBandDevice(float signedDistancePx, float boundar
     return boundaryBand;
 }
 
-__device__ float ResolveLensFieldV2ResponseDevice(float signedDistancePx, float fieldPixelScale) {
+__device__ float ResolveLensFieldV2ResponseDevice(float signedDistancePx, float fieldPixelScale, float signContrast) {
     const float safeScale = isfinite(fieldPixelScale) && fieldPixelScale > 0.000001f ? fieldPixelScale : 1.0f;
     const float fullResolutionSignedPx = isfinite(signedDistancePx) ? signedDistancePx * safeScale : 0.0f;
     float response = 0.5f + (fullResolutionSignedPx / (2.0f * 48.0f));
+    if (response < 0.0f) response = 0.0f;
+    if (response > 1.0f) response = 1.0f;
+    const float safeContrast = isfinite(signContrast) ? signContrast : 0.0f;
+    const float contrast = EscapeTimeColorClamp(safeContrast, 0.0f, 1.0f);
+    if (contrast <= 0.0f) {
+        return response;
+    }
+    const float sign = fullResolutionSignedPx < 0.0f ? -1.0f : (fullResolutionSignedPx > 0.0f ? 1.0f : 0.0f);
+    response = 0.5f + ((response - 0.5f) * (1.0f + 1.25f * contrast)) + (0.22f * contrast * sign);
     if (response < 0.0f) response = 0.0f;
     if (response > 1.0f) response = 1.0f;
     return response;
@@ -92,7 +101,7 @@ __device__ bool ResolveDirectSdfSourceValueDevice(
 
     float value = center;
     if (entry.signal == ColorSignal::lens_field_v2_distance) {
-        value = ResolveLensFieldV2ResponseDevice(center, fieldPixelScale);
+        value = ResolveLensFieldV2ResponseDevice(center, fieldPixelScale, entry.params.lens_field_v2_sign_contrast);
     } else if (entry.signal == ColorSignal::sdf_inside_outside) {
         value = center < 0.0f ? 1.0f : 0.0f;
     } else if (entry.signal == ColorSignal::sdf_boundary_band) {
@@ -227,7 +236,7 @@ __device__ bool ResolveFieldSdfSourceValueDevice(
 
     float value = sample.center;
     if (entry.signal == ColorSignal::lens_field_v2_distance) {
-        value = ResolveLensFieldV2ResponseDevice(sample.center, fieldPixelScale);
+        value = ResolveLensFieldV2ResponseDevice(sample.center, fieldPixelScale, entry.params.lens_field_v2_sign_contrast);
     } else if (entry.signal == ColorSignal::sdf_inside_outside) {
         value = sample.center < 0.0f ? 1.0f : 0.0f;
     } else if (entry.signal == ColorSignal::sdf_boundary_band) {

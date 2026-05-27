@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "contract_id": "lens_field_v2_sign_contrast",
+  "feature_id": "lens_field_v2_single_source_sign_contrast",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/lens_field_v2_sign_contrast_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/lens_field_v2_sign_contrast_PHASED_PLAN.md",
+    "docs/contracts/lens_field_v2_sign_contrast.contract.json",
+    "HANDOFF_LOG.md",
+    "docs/ui_salt/color_pipeline_function_library.ui.salt",
+    "docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_sdf_postprocess.cpp",
+    "ui_app/src/color_pipeline_sdf_postprocess_cuda.cu",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/sdf_field_signal.cpp",
+    "ui_app/src/sdf_field_signal.h",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess_cuda.cu",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_diagnostics_capture.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_lens_sdf.cpp",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "tests/test_fractal_runtime_ui_salt_contract.py",
+    "tests/test_ui_salt_materializer.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "Keep Lens Field v2 as one visible source function",
+    "Restore the missing original Lens inside/outside contrast feel without reverting to black-and-white-only output",
+    "Defer SDF Normal Angle phase seam work"
+  ],
+  "forbidden_operator_prompts": [
+    "split Lens Field v2 into a second visible source function",
+    "change sdf_normal_angle behavior in this slice",
+    "replace the legacy Lens panel",
+    "redesign the Color Pipeline",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_visible_lens_field_v2_polish",
+    "physical_mouse_automation": false,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "single_visible_source_function": true
+  },
+  "forbidden_defaults": {
+    "new_lens_field_v2_visible_source": "forbidden",
+    "normal_angle_behavior_change": "forbidden",
+    "color_pipeline_redesign": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "PowerShell focused native loop for test_lens_sdf, test_color_pipeline_core, test_color_pipeline_window, test_color_pipeline_sdf_postprocess, test_color_pipeline_sdf_postprocess_cuda, test_diagnostics_state_io, test_diagnostics_capture > artifacts/validation/lens_field_v2_sign_contrast_focused_native.log 2>&1",
+    "py -3.14 -m pytest tests/test_ui_salt_materializer.py -q --junitxml artifacts/pytest/lens_field_v2_sign_contrast_ui_salt_materializer.junit.xml",
+    ".\\ui_app\\build_vsdevcmd.cmd > artifacts/validation/lens_field_v2_sign_contrast_runtime_publish.log 2>&1",
+    "py -3.14 -m pytest tests/test_fractal_runtime_color_pipeline_sdf_rows.py::test_color_pipeline_sdf_source_rows_are_live_backed_no_mouse tests/test_fractal_runtime_color_pipeline_sdf_rows.py::test_lens_field_v2_distance_source_reports_gpu_backed_no_mouse -q --junitxml artifacts/pytest/lens_field_v2_sign_contrast_runtime_rows.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_runtime_ui_salt_contract.py -q --junitxml artifacts/pytest/lens_field_v2_sign_contrast_runtime_ui_salt_contract.junit.xml",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/lens_field_v2_sign_contrast.contract.json --out-json artifacts/validation/lens_field_v2_sign_contrast_contract.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/lens_field_v2_sign_contrast_PHASED_PLAN.md --out-json artifacts/validation/lens_field_v2_sign_contrast_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/lens_field_v2_sign_contrast_code_quality.json",
+    "git diff --check > artifacts/validation/lens_field_v2_sign_contrast_diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Lens Field v2 sign contrast contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/lens_field_v2_sign_contrast_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Lens Field v2 sign contrast hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/lens_field_v2_sign_contrast_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

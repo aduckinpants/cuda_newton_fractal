@@ -748,6 +748,7 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
     double proximityScale = entry.params.proximity_scale;
     double proximityBias = entry.params.proximity_bias;
     double sdfBoundaryWidthPx = entry.params.sdf_boundary_width_px;
+    double lensFieldV2SignContrast = entry.params.lens_field_v2_sign_contrast;
     std::string sdfGateId = color_pipeline_core::ColorPipelineSdfGateModeId(entry.params.sdf_gate);
     double sdfGateWidthPx = entry.params.sdf_gate_width_px;
     double sdfSampleStepRaw = static_cast<double>(entry.params.sdf_sample_step);
@@ -766,6 +767,7 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
         !GetOptionalNumber(entryValue, "proximity_scale", &proximityScale, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "proximity_bias", &proximityBias, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "sdf_boundary_width_px", &sdfBoundaryWidthPx, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "lens_field_v2_sign_contrast", &lensFieldV2SignContrast, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "sdf_gate_width_px", &sdfGateWidthPx, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "sdf_sample_step", &sdfSampleStepRaw, &hasSdfSampleStep, outError) ||
         !GetOptionalNumber(entryValue, "blend_weight", &blendWeight, nullptr, outError)) {
@@ -805,6 +807,7 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
     entry.params.proximity_scale = static_cast<float>(proximityScale);
     entry.params.proximity_bias = static_cast<float>(proximityBias);
     entry.params.sdf_boundary_width_px = static_cast<float>(sdfBoundaryWidthPx);
+    entry.params.lens_field_v2_sign_contrast = static_cast<float>(lensFieldV2SignContrast);
     entry.params.sdf_gate_width_px = static_cast<float>(sdfGateWidthPx);
     entry.params.blend_weight = static_cast<float>(blendWeight);
     *outEntry = entry;

@@ -1,5 +1,6 @@
 #include "../src/color_pipeline_sdf_postprocess.h"
 #include "../src/color_pipeline_core.h"
+#include "../src/sdf_field_signal.h"
 
 #include <cmath>
 #include <cstdio>
@@ -154,6 +155,34 @@ void TestLensFieldV2ResponseDoesNotAliasRawSignedDistance() {
         "TestLensFieldV2ResponseDoesNotAliasRawSignedDistance_LensSucceeds");
     Check(HashFrame(rawPixels) != HashFrame(lensPixels),
         "TestLensFieldV2ResponseDoesNotAliasRawSignedDistance_FramesDiffer");
+}
+
+void TestLensFieldV2SignContrastChangesFrameAndZeroPreservesLegacyResponse() {
+    SdfFieldResult field = MakeLargeTestField(8, 8);
+    field.pixel_scale = 2.0f;
+    RenderSettings render{};
+    render.resolution = {8, 8};
+
+    KernelParams zeroContrast = SdfParams(ColorSignal::lens_field_v2_distance);
+    zeroContrast.color_source_stack[0].params.scale = 1.0f;
+    zeroContrast.color_source_stack[0].params.bias = 0.0f;
+    zeroContrast.color_source_stack[0].params.lens_field_v2_sign_contrast = 0.0f;
+    KernelParams strongContrast = zeroContrast;
+    strongContrast.color_source_stack[0].params.lens_field_v2_sign_contrast = 0.85f;
+
+    std::vector<std::uint32_t> zeroPixels(64, 0x12345678u);
+    std::vector<std::uint32_t> strongPixels(64, 0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, zeroContrast, zeroPixels.data(), &error),
+        "TestLensFieldV2SignContrastChangesFrame_ZeroSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, strongContrast, strongPixels.data(), &error),
+        "TestLensFieldV2SignContrastChangesFrame_StrongSucceeds");
+    Check(HashFrame(zeroPixels) != HashFrame(strongPixels),
+        "TestLensFieldV2SignContrastChangesFrame_StrongContrastChangesFrame");
+    Check(std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(8.0f, 2.0f, 0.0f) -
+            ResolveLensFieldV2ResponseFromSignedDistancePx(8.0f, 2.0f)) <= 0.0001f,
+        "TestLensFieldV2SignContrastChangesFrame_ZeroContrastPreservesLegacyHelper");
 }
 
 std::uint64_t RenderSdfSourceHashWithIdentityHeatmap(
@@ -642,6 +671,7 @@ int main() {
     TestEachSdfSourceSignalPostprocessesFrame();
     TestBoundaryBandWidthChangesPostprocessFrame();
     TestLensFieldV2ResponseDoesNotAliasRawSignedDistance();
+    TestLensFieldV2SignContrastChangesFrameAndZeroPreservesLegacyResponse();
     TestLensFieldV2ResponseHonorsFieldPixelScaleWithoutChangingRawSignedDistance();
     TestSdfSourceDistinctnessMatrixRejectsRawSignedDistanceAliases();
     TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources();

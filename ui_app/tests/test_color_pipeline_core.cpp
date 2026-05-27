@@ -839,6 +839,8 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
             "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowsExposeBoundaryGateParams");
         Check((std::string(expected.id) == "sdf_boundary_band") == HasParam(*descriptor, "signal.boundary_width_px"),
             "TestSdfSourceRowsAreRuntimeBackedCatalogRows_BoundaryWidthIsBoundaryBandOnly");
+        Check((std::string(expected.id) == "lens_field_v2_distance") == HasParam(*descriptor, "signal.sign_contrast"),
+            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_LensFieldV2SignContrastIsLensOnly");
 
         ColorPipelineRowState row;
         std::string error;
@@ -849,7 +851,8 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
                 RowNumber(row, "signal.blend_weight", 1.0) &&
                 RowEnum(row, "signal.sdf_gate", "none") &&
                 RowNumber(row, "signal.sdf_gate_width_px", 2.0) &&
-                (std::string(expected.id) != "sdf_boundary_band" || RowNumber(row, "signal.boundary_width_px", 2.0)),
+                (std::string(expected.id) != "sdf_boundary_band" || RowNumber(row, "signal.boundary_width_px", 2.0)) &&
+                (std::string(expected.id) != "lens_field_v2_distance" || RowNumber(row, "signal.sign_contrast", 0.35)),
             "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowBuildsWithVisibleTuningControls");
     }
 }

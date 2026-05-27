@@ -705,6 +705,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineSourceScaleParam("Field Scale", "Scale the normalized Lens Field v2 response before palette lookup.", -2.0, 2.0, 0.01, 1.0),
                 MakeColorPipelineSourceBiasParam("Field Bias", "Shift the normalized Lens Field v2 response before palette lookup.", -2.0, 2.0, 0.01, 0.0),
+                MakeColorPipelineFloatParam("signal.sign_contrast", "Sign Contrast", "Restore inside/outside separation in the Lens Field v2 response without collapsing it to a binary mask.", 0.0, 1.0, 0.01, 0.35),
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
                 MakeColorPipelineSdfSampleStepParam(),

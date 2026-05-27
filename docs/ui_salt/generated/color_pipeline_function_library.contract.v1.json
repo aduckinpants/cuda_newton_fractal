@@ -642,6 +642,15 @@
                 "default": 0.0
               },
               {
+                "path": "signal.sign_contrast",
+                "type": "float",
+                "label": "Sign Contrast",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.35
+              },
+              {
                 "path": "signal.sdf_gate",
                 "type": "enum",
                 "label": "SDF Gate",

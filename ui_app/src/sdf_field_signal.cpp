@@ -47,11 +47,24 @@ float ResolveSdfBoundaryBandFromSignedDistancePx(float signed_distance_px, const
 }
 
 float ResolveLensFieldV2ResponseFromSignedDistancePx(float signed_distance_px, float field_pixel_scale) {
+    return ResolveLensFieldV2ResponseFromSignedDistancePx(signed_distance_px, field_pixel_scale, 0.0f);
+}
+
+float ResolveLensFieldV2ResponseFromSignedDistancePx(float signed_distance_px, float field_pixel_scale, float sign_contrast) {
     const float safeScale = std::isfinite(field_pixel_scale) && field_pixel_scale > 0.000001f
         ? field_pixel_scale
         : 1.0f;
     const float fullResolutionSignedPx = std::isfinite(signed_distance_px) ? signed_distance_px * safeScale : 0.0f;
     float response = 0.5f + (fullResolutionSignedPx / (2.0f * 48.0f));
+    if (response < 0.0f) response = 0.0f;
+    if (response > 1.0f) response = 1.0f;
+    const float safeContrast = std::isfinite(sign_contrast) ? sign_contrast : 0.0f;
+    const float contrast = safeContrast < 0.0f ? 0.0f : (safeContrast > 1.0f ? 1.0f : safeContrast);
+    if (contrast <= 0.0f) {
+        return response;
+    }
+    const float sign = fullResolutionSignedPx < 0.0f ? -1.0f : (fullResolutionSignedPx > 0.0f ? 1.0f : 0.0f);
+    response = 0.5f + ((response - 0.5f) * (1.0f + 1.25f * contrast)) + (0.22f * contrast * sign);
     if (response < 0.0f) response = 0.0f;
     if (response > 1.0f) response = 1.0f;
     return response;

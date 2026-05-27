@@ -28,6 +28,7 @@ struct SdfFieldSignalSample {
 
 float ResolveSdfBoundaryBandFromSignedDistancePx(float signed_distance_px, const SdfFieldSignalConfig& config);
 float ResolveLensFieldV2ResponseFromSignedDistancePx(float signed_distance_px, float field_pixel_scale);
+float ResolveLensFieldV2ResponseFromSignedDistancePx(float signed_distance_px, float field_pixel_scale, float sign_contrast);
 
 bool SampleSdfFieldSignals(
     const SdfFieldView& field,
