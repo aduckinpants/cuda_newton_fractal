@@ -30,6 +30,13 @@ SDF_SOURCE_ROWS = (
     ("lens_field_v2_distance", "smooth_escape", "cyclic_escape", 1.0, 0.0, -0.35, 0.85),
 )
 
+SDF_SOURCE_ROWS_DISTINCT_FROM_RAW = (
+    "sdf_inside_outside",
+    "sdf_boundary_band",
+    "sdf_curvature",
+    "lens_field_v2_distance",
+)
+
 
 @pytest.fixture(autouse=True)
 def _serialize_runtime_automation():
@@ -289,6 +296,46 @@ def test_color_pipeline_sdf_source_rows_are_live_backed_no_mouse(tmp_path: Path)
         )
         assert edited["frame_hash"] != baseline["frame_hash"], (
             f"expected {function_id} signal.scale/signal.bias edits to change the live rendered frame"
+        )
+
+
+def test_scalar_sdf_source_rows_do_not_alias_raw_signed_distance_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline SDF runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    state_path = write_state_bundle(
+        tmp_path / "sdf_source_distinctness_seed",
+        json.loads(json.dumps(neutral_capture["state"])),
+    )
+    raw_sdf_capture = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_signed_distance",
+        scale=1.0,
+        bias=0.0,
+    )
+
+    for function_id in SDF_SOURCE_ROWS_DISTINCT_FROM_RAW:
+        capture = _capture_sdf_source_row(
+            exe_path=exe_path,
+            state_path=state_path,
+            function_id=function_id,
+            scale=1.0,
+            bias=0.0,
+        )
+        assert capture["frame_hash"] != raw_sdf_capture["frame_hash"], (
+            f"expected {function_id} to have distinct runtime semantics from raw sdf_signed_distance"
         )
 
 

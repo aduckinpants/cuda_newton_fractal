@@ -156,6 +156,56 @@ void TestLensFieldV2ResponseDoesNotAliasRawSignedDistance() {
         "TestLensFieldV2ResponseDoesNotAliasRawSignedDistance_FramesDiffer");
 }
 
+std::uint64_t RenderSdfSourceHashWithIdentityHeatmap(
+    const SdfFieldResult& field,
+    const RenderSettings& render,
+    ColorSignal signal) {
+    KernelParams params = SdfParams(signal, ColorPalette::cyclic_escape);
+    params.color_source_stack[0].params.scale = 1.0f;
+    params.color_source_stack[0].params.bias = 0.0f;
+    if (signal == ColorSignal::sdf_boundary_band) {
+        params.color_source_stack[0].params.sdf_boundary_width_px = 3.0f;
+    }
+
+    std::vector<std::uint32_t> pixels(
+        static_cast<std::size_t>(render.resolution.x) * static_cast<std::size_t>(render.resolution.y),
+        0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, pixels.data(), &error),
+        "RenderSdfSourceHashWithIdentityHeatmap_PostprocessSucceeds");
+    return HashFrame(pixels);
+}
+
+void TestSdfSourceDistinctnessMatrixRejectsRawSignedDistanceAliases() {
+    SdfFieldResult field = MakeLargeTestField(8, 8);
+    field.pixel_scale = 4.0f;
+    RenderSettings render{};
+    render.resolution = {8, 8};
+    const std::uint64_t rawHash = RenderSdfSourceHashWithIdentityHeatmap(
+        field,
+        render,
+        ColorSignal::sdf_signed_distance);
+
+    struct ExpectedDistinctSource {
+        ColorSignal signal;
+        const char* message;
+    };
+    const ExpectedDistinctSource expectedDistinctSources[] = {
+        {ColorSignal::sdf_inside_outside, "TestSdfSourceDistinctnessMatrix_InsideOutsideDoesNotAliasRaw"},
+        {ColorSignal::sdf_boundary_band, "TestSdfSourceDistinctnessMatrix_BoundaryBandDoesNotAliasRaw"},
+        {ColorSignal::sdf_normal_angle, "TestSdfSourceDistinctnessMatrix_NormalAngleDoesNotAliasRaw"},
+        {ColorSignal::sdf_curvature, "TestSdfSourceDistinctnessMatrix_CurvatureDoesNotAliasRaw"},
+        {ColorSignal::lens_field_v2_distance, "TestSdfSourceDistinctnessMatrix_LensFieldV2DoesNotAliasRaw"},
+    };
+    for (const ExpectedDistinctSource& expected : expectedDistinctSources) {
+        const std::uint64_t sourceHash = RenderSdfSourceHashWithIdentityHeatmap(
+            field,
+            render,
+            expected.signal);
+        Check(sourceHash != rawHash, expected.message);
+    }
+}
+
 void TestLensFieldV2ResponseHonorsFieldPixelScaleWithoutChangingRawSignedDistance() {
     SdfFieldResult field1x = MakeTestField();
     field1x.pixel_scale = 1.0f;
@@ -593,6 +643,7 @@ int main() {
     TestBoundaryBandWidthChangesPostprocessFrame();
     TestLensFieldV2ResponseDoesNotAliasRawSignedDistance();
     TestLensFieldV2ResponseHonorsFieldPixelScaleWithoutChangingRawSignedDistance();
+    TestSdfSourceDistinctnessMatrixRejectsRawSignedDistanceAliases();
     TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources();
     TestNormalAngleBoundaryGateMasksFullFieldDiagnostic();
     TestNormalAngleGateWidthIsInactiveWhenGateIsOff();
