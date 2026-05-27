@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - Lens Field v2 sign contrast is implemented, audited, and ready for checkpoint closeout.
+Complete - Lens Field v2 sign contrast is implemented, audited, checkpointed, and closed.
 
 ## Phase Checklist
 
