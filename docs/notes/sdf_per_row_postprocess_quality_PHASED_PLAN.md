@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - implementation, hostile audit, focused native rails, runtime publish, no-mouse proof, and performance witness are complete; closure validators, receipts, rearward review, push, and clean-tree proof remain.
+Complete - SDF per-row postprocess quality is validated, audited, checkpointed, receipted, rearward-reviewed, pushed, and closed on a clean tree.
 
 ## Phase Checklist
 
@@ -11,7 +11,7 @@ Phase 5 - implementation, hostile audit, focused native rails, runtime publish, 
 - [x] Phase 2 - add RED/native and runtime-facing proof for missing per-row SDF quality/sample-step authority.
 - [x] Phase 3 - add row-local SDF postprocess quality authority while preserving shared Lens SDF field downsample and default pixels.
 - [x] Phase 4 - add state/window/runtime proof that the control is visible, saved, loaded, and no-mouse editable on SDF Source rows.
-- [ ] Phase 5 - publish runtime, run focused native/runtime/performance rails, hostile audit, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 5 - publish runtime, run focused native/runtime/performance rails, hostile audit, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -80,6 +80,7 @@ The first implementation target is conservative:
 - Runtime publish: `sdf_per_row_quality_runtime_publish` passed and refreshed `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
 - Runtime no-mouse proof: `sdf_per_row_quality_runtime_sdf_rows` passed with 7 tests; it proved the visible SDF Source row control ids, no-mouse edit of `color_pipeline.source.sdf_boundary_band.signal.sdf_sample_step.primary`, source sample count reduction, changed frame hash, and unchanged shared field downsample authority.
 - Performance witness: `sdf_per_row_quality_witness` passed after the final publish; `artifacts/sdf_per_row_quality/sdf_performance_witness.md` still recommends `postprocess_optimization_candidate`, with the large settled full-quality SDF stack at `101.153 ms` postprocess and `109.772 ms` SDF total.
+- Closure: commit `88c8ccf` was checkpointed, validation and contract-proof receipts were written, `py -3.14 tools/viewer_host_rearward_review.py` returned `status=ok`, `origin/codex/sdf-adaptive-preview-pacing` was pushed, and `git status --short --branch` reported a clean branch matching origin.
 
 ## Hostile Audit
 
