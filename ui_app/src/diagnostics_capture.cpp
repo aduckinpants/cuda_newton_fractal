@@ -52,6 +52,7 @@ const char* CaptureColorSignalId(ColorSignal signal) {
     case ColorSignal::sdf_boundary_band: return "sdf_boundary_band";
     case ColorSignal::sdf_normal_angle: return "sdf_normal_angle";
     case ColorSignal::sdf_curvature: return "sdf_curvature";
+    case ColorSignal::lens_field_v2_distance: return "lens_field_v2_distance";
     }
     return "unknown";
 }
@@ -71,6 +72,7 @@ const char* CaptureColorSignalKindId(ColorSignal signal) {
     case ColorSignal::escape_magnitude:
     case ColorSignal::root_proximity:
     case ColorSignal::sdf_signed_distance:
+    case ColorSignal::lens_field_v2_distance:
     case ColorSignal::sdf_boundary_band:
     case ColorSignal::sdf_curvature:
         return "scalar";
@@ -318,6 +320,7 @@ void WriteColorSourceStackJson(std::ostringstream& js, const KernelParams& param
         js << "        \"proximity_scale\": " << static_cast<double>(sourceEntry.params.proximity_scale) << ",\n";
         js << "        \"proximity_bias\": " << static_cast<double>(sourceEntry.params.proximity_bias) << ",\n";
         js << "        \"sdf_boundary_width_px\": " << static_cast<double>(sourceEntry.params.sdf_boundary_width_px) << ",\n";
+        js << "        \"lens_field_v2_sign_contrast\": " << static_cast<double>(sourceEntry.params.lens_field_v2_sign_contrast) << ",\n";
         js << "        \"sdf_gate\": \"" << (color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) ? color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) : "none") << "\",\n";
         js << "        \"sdf_gate_width_px\": " << static_cast<double>(sourceEntry.params.sdf_gate_width_px) << ",\n";
         js << "        \"sdf_sample_step\": " << sourceEntry.params.sdf_sample_step << ",\n";

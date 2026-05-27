@@ -160,6 +160,7 @@ def measurement_from_payload(
         "rendered_frame_height": _as_int(payload, "rendered_frame_height"),
         "base_render_ms": base_ms,
         "lens_sdf_field_ms": field_ms,
+        "lens_sdf_requested_equivalent_field_ms": _as_float(payload, "lens_sdf_requested_equivalent_field_ms", field_ms),
         "lens_sdf_postprocess_ms": postprocess_ms,
         "lens_sdf_total_ms": total_ms,
         "last_render_ms": last_render_ms,
@@ -168,6 +169,12 @@ def measurement_from_payload(
         "lens_sdf_width": _as_int(payload, "lens_sdf_width"),
         "lens_sdf_height": _as_int(payload, "lens_sdf_height"),
         "lens_sdf_pixel_scale": _as_float(payload, "lens_sdf_pixel_scale", 1.0),
+        "lens_sdf_requested_downsample": _as_int(payload, "lens_sdf_requested_downsample", int(lens_downsample)),
+        "lens_sdf_effective_downsample": _as_int(payload, "lens_sdf_effective_downsample", int(lens_downsample)),
+        "lens_sdf_quality_mode": str(payload.get("lens_sdf_quality_mode", "requested")),
+        "lens_sdf_field_cache_status": str(payload.get("lens_sdf_field_cache_status", "disabled")),
+        "lens_sdf_field_cache_hit": payload.get("lens_sdf_field_cache_hit") is True,
+        "lens_sdf_field_cache_mask_bytes": _as_int(payload, "lens_sdf_field_cache_mask_bytes"),
         "lens_sdf_postprocess_pixel_step": _as_int(payload, "lens_sdf_postprocess_pixel_step", 1),
         "lens_sdf_postprocess_worker_count": _as_int(payload, "lens_sdf_postprocess_worker_count", 1),
         "lens_sdf_postprocess_backend_used": postprocess_backend,
@@ -208,6 +215,7 @@ def build_measurement_report(
         (float(item.get("field_fraction_of_sdf_total", 0.0)) for item in sdf_measurements),
         default=0.0,
     )
+    field_cache_hit_count = sum(1 for item in sdf_measurements if item.get("lens_sdf_field_cache_hit") is True)
 
     return {
         "schema_version": 1,
@@ -230,6 +238,7 @@ def build_measurement_report(
             },
             "max_postprocess_fraction_of_sdf_total": max_postprocess_fraction,
             "max_field_fraction_of_sdf_total": max_field_fraction,
+            "field_cache_hit_count": field_cache_hit_count,
             "recommendation": _recommendation(votes),
         },
         "scenarios": measurements,
@@ -244,19 +253,23 @@ def write_markdown_report(report: dict[str, object], out_path: Path) -> None:
         f"- Recommendation: `{report.get('summary', {}).get('recommendation', '')}`",
         f"- Persistent viewer launches: `{report.get('persistent_viewer_launch_count', '')}`",
         "",
-        "| Scenario | Phase | Class | Backend | Fallback | Base ms | Field ms | Post ms | SDF total ms | Last ms | Step | Workers |",
-        "|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Scenario | Phase | Class | Backend | Fallback | Field Cache | Req DS | Eff DS | Quality | Base ms | Field ms | Post ms | SDF total ms | Last ms | Step | Workers |",
+        "|---|---|---|---|---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for item in report.get("scenarios", []):
         if not isinstance(item, dict):
             continue
         lines.append(
-            "| {name} | {phase} | {classification} | {backend} | {fallback} | {base:.3f} | {field:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} | {workers} |".format(
+            "| {name} | {phase} | {classification} | {backend} | {fallback} | {cache} | {requested} | {effective} | {quality} | {base:.3f} | {field:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} | {workers} |".format(
                 name=item.get("name", ""),
                 phase=item.get("phase", ""),
                 classification=item.get("classification", ""),
                 backend=item.get("lens_sdf_postprocess_backend_used", "unknown"),
                 fallback="yes" if item.get("lens_sdf_postprocess_backend_fallback_used") else "no",
+                cache=item.get("lens_sdf_field_cache_status", "disabled"),
+                requested=int(item.get("lens_sdf_requested_downsample", item.get("lens_downsample", 0))),
+                effective=int(item.get("lens_sdf_effective_downsample", item.get("lens_downsample", 0))),
+                quality=item.get("lens_sdf_quality_mode", "requested"),
                 base=float(item.get("base_render_ms", 0.0)),
                 field=float(item.get("lens_sdf_field_ms", 0.0)),
                 post=float(item.get("lens_sdf_postprocess_ms", 0.0)),

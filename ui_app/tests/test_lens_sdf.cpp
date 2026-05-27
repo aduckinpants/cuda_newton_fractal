@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 int main() {
@@ -17,6 +18,101 @@ int main() {
         NormalizeLensDownsamplePow2(17) != 16) {
         std::cerr << "Lens downsample normalization should match visible pow2 controls through 16x\n";
         return 1;
+    }
+
+    {
+        const LensSdfEffectiveDownsample requested =
+            ResolveEffectiveLensSdfDownsample(1, false, false, 10.0, 33.333);
+        if (requested.requested_downsample != 1 ||
+            requested.effective_downsample != 1 ||
+            requested.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Settled SDF field quality should use requested downsample\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample normalized =
+            ResolveEffectiveLensSdfDownsample(3, false, false, 10.0, 33.333);
+        if (normalized.requested_downsample != 4 ||
+            normalized.effective_downsample != 4 ||
+            normalized.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Requested SDF downsample should normalize to the visible pow2 authority\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample lowCost =
+            ResolveEffectiveLensSdfDownsample(1, true, false, 1.0, 33.333);
+        if (lowCost.effective_downsample != 1 ||
+            lowCost.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Low-cost preview should not degrade SDF field quality\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample adaptive =
+            ResolveEffectiveLensSdfDownsample(1, true, false, 14.0, 33.333);
+        if (adaptive.requested_downsample != 1 ||
+            adaptive.effective_downsample != 2 ||
+            adaptive.quality_mode != LensSdfQualityMode::interactive_adaptive) {
+            std::cerr << "Over-budget preview should adapt effective SDF field downsample\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample severe =
+            ResolveEffectiveLensSdfDownsample(1, true, false, 70.0, 33.333);
+        if (severe.effective_downsample < 4 ||
+            severe.quality_mode != LensSdfQualityMode::interactive_adaptive) {
+            std::cerr << "Severe preview should adapt SDF field quality beyond 2x when needed\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample requestedAlreadyCoarse =
+            ResolveEffectiveLensSdfDownsample(4, true, false, 14.0, 33.333);
+        if (requestedAlreadyCoarse.requested_downsample != 4 ||
+            requestedAlreadyCoarse.effective_downsample != 4 ||
+            requestedAlreadyCoarse.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Adaptive policy should not improve or rewrite a coarse requested downsample\n";
+            return 1;
+        }
+
+        const LensSdfEffectiveDownsample forcedFullQuality =
+            ResolveEffectiveLensSdfDownsample(1, true, true, 70.0, 33.333);
+        if (forcedFullQuality.effective_downsample != 1 ||
+            forcedFullQuality.quality_mode != LensSdfQualityMode::requested) {
+            std::cerr << "Forced full-quality paths should use requested SDF field quality\n";
+            return 1;
+        }
+
+        if (std::string(LensSdfQualityModeId(LensSdfQualityMode::interactive_adaptive)) != "interactive_adaptive") {
+            std::cerr << "SDF field quality mode id should be stable for automation reports\n";
+            return 1;
+        }
+        if (std::string(LensSdfFieldCacheStatusId(LensSdfFieldCacheStatus::hit)) != "hit") {
+            std::cerr << "SDF field cache status id should be stable for automation reports\n";
+            return 1;
+        }
+        if (std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(0.0f, 1.0f) - 0.5f) > 0.0001f ||
+            std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(48.0f, 1.0f) - 1.0f) > 0.0001f ||
+            std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(-48.0f, 1.0f) - 0.0f) > 0.0001f ||
+            std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(12.0f, 4.0f) - 1.0f) > 0.0001f) {
+            std::cerr << "Lens Field v2 response should preserve the legacy Lens 48px normalized response shape\n";
+            return 1;
+        }
+        if (std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(12.0f, 1.0f, 0.0f) -
+                ResolveLensFieldV2ResponseFromSignedDistancePx(12.0f, 1.0f)) > 0.0001f ||
+            std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(-12.0f, 1.0f, 0.0f) -
+                ResolveLensFieldV2ResponseFromSignedDistancePx(-12.0f, 1.0f)) > 0.0001f) {
+            std::cerr << "Zero Lens Field v2 sign contrast should preserve the legacy response\n";
+            return 1;
+        }
+        const float positiveContrasted = ResolveLensFieldV2ResponseFromSignedDistancePx(4.0f, 1.0f, 0.75f);
+        const float negativeContrasted = ResolveLensFieldV2ResponseFromSignedDistancePx(-4.0f, 1.0f, 0.75f);
+        const float positiveBase = ResolveLensFieldV2ResponseFromSignedDistancePx(4.0f, 1.0f);
+        const float negativeBase = ResolveLensFieldV2ResponseFromSignedDistancePx(-4.0f, 1.0f);
+        if (positiveContrasted <= positiveBase ||
+            negativeContrasted >= negativeBase ||
+            (positiveContrasted - negativeContrasted) <= (positiveBase - negativeBase)) {
+            std::cerr << "Lens Field v2 sign contrast should strengthen inside/outside separation without changing the source function\n";
+            return 1;
+        }
     }
 
     {
@@ -241,6 +337,119 @@ int main() {
         }
         if (ComputeLensSdfRgbaForMask(nullptr, srcW, srcH, 2, 8.0f, lensRgba, lensW, lensH)) {
             std::cerr << "ComputeLensSdfRgbaForMask should reject invalid masks\n";
+            return 1;
+        }
+    }
+
+    {
+        LensSdfFieldFrameCache cache;
+        LensSdfFieldCacheReport cacheReport;
+        const SdfFieldResult* cachedField = nullptr;
+        LensSdfBackendReport cachedBackendReport;
+        std::vector<uint8_t> cacheMask(16, 0);
+        cacheMask[5] = 255;
+        if (TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                4,
+                4,
+                1,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            cacheReport.status != LensSdfFieldCacheStatus::miss ||
+            cacheReport.hit ||
+            cacheReport.mask_bytes != cacheMask.size()) {
+            std::cerr << "Fresh SDF field cache should report a miss with current mask byte count\n";
+            return 1;
+        }
+
+        SdfFieldResult field;
+        LensSdfBackendReport backendReport;
+        backendReport.requested = LensSdfBackend::auto_backend;
+        backendReport.used = LensSdfBackend::cuda_jfa;
+        if (!ComputeLensSdfFieldForMask(cacheMask.data(), 4, 4, 1, field)) {
+            std::cerr << "Expected cache test field generation to succeed\n";
+            return 1;
+        }
+        StoreLensSdfFieldCache(
+            cache,
+            cacheMask.data(),
+            4,
+            4,
+            1,
+            std::move(field),
+            backendReport,
+            &cacheReport);
+        if (cacheReport.status != LensSdfFieldCacheStatus::miss || cacheReport.hit || !cache.valid) {
+            std::cerr << "Storing an SDF field cache entry should keep the current frame classified as a miss\n";
+            return 1;
+        }
+
+        if (!TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                4,
+                4,
+                1,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            !cacheReport.hit ||
+            cacheReport.status != LensSdfFieldCacheStatus::hit ||
+            cachedField != &cache.field ||
+            cachedBackendReport.used != LensSdfBackend::cuda_jfa) {
+            std::cerr << "Unchanged mask/render/downsample should reuse the cached SDF field exactly\n";
+            return 1;
+        }
+
+        cacheMask[6] = 255;
+        cachedField = nullptr;
+        if (TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                4,
+                4,
+                1,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            cacheReport.hit ||
+            cacheReport.status != LensSdfFieldCacheStatus::miss ||
+            cachedField != nullptr) {
+            std::cerr << "Changed mask bytes must miss the SDF field cache\n";
+            return 1;
+        }
+        cacheMask[6] = 0;
+        if (TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                8,
+                2,
+                1,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            cacheReport.status != LensSdfFieldCacheStatus::miss) {
+            std::cerr << "Changed render dimensions must miss the SDF field cache\n";
+            return 1;
+        }
+        if (TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                4,
+                4,
+                2,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            cacheReport.status != LensSdfFieldCacheStatus::miss) {
+            std::cerr << "Changed effective downsample must miss the SDF field cache\n";
+            return 1;
+        }
+        cache.Clear();
+        if (cache.valid || !cache.mask_bytes.empty() || !cache.field.signed_distance_px.empty()) {
+            std::cerr << "Clearing SDF field cache should release mask and field data\n";
             return 1;
         }
     }

@@ -1,6 +1,9 @@
 #include "lens_sdf.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <utility>
 
 namespace {
 
@@ -105,6 +108,150 @@ int NormalizeLensDownsamplePow2(int value) {
     if (value <= 4) return 4;
     if (value <= 8) return 8;
     return 16;
+}
+
+void LensSdfFieldFrameCache::Clear() {
+    valid = false;
+    source_width = 0;
+    source_height = 0;
+    effective_downsample = 1;
+    mask_bytes.clear();
+    field.Clear();
+    backend_report = {};
+}
+
+const char* LensSdfQualityModeId(LensSdfQualityMode mode) {
+    switch (mode) {
+    case LensSdfQualityMode::requested: return "requested";
+    case LensSdfQualityMode::interactive_adaptive: return "interactive_adaptive";
+    default: return "requested";
+    }
+}
+
+const char* LensSdfFieldCacheStatusId(LensSdfFieldCacheStatus status) {
+    switch (status) {
+    case LensSdfFieldCacheStatus::disabled: return "disabled";
+    case LensSdfFieldCacheStatus::miss: return "miss";
+    case LensSdfFieldCacheStatus::hit: return "hit";
+    default: return "disabled";
+    }
+}
+
+bool TryReuseLensSdfFieldCache(
+    const LensSdfFieldFrameCache& cache,
+    const uint8_t* mask,
+    int width,
+    int height,
+    int effective_downsample,
+    const SdfFieldResult** outField,
+    LensSdfBackendReport* outBackendReport,
+    LensSdfFieldCacheReport* outCacheReport) {
+    if (outField) {
+        *outField = nullptr;
+    }
+    const std::size_t maskByteCount =
+        (mask && width > 0 && height > 0)
+            ? static_cast<std::size_t>(width) * static_cast<std::size_t>(height)
+            : 0u;
+    if (outCacheReport) {
+        outCacheReport->status = LensSdfFieldCacheStatus::miss;
+        outCacheReport->hit = false;
+        outCacheReport->mask_bytes = maskByteCount;
+    }
+    if (!mask || width <= 0 || height <= 0 || effective_downsample <= 0) {
+        return false;
+    }
+    if (!cache.valid ||
+        cache.source_width != width ||
+        cache.source_height != height ||
+        cache.effective_downsample != NormalizeLensDownsamplePow2(effective_downsample) ||
+        cache.mask_bytes.size() != maskByteCount ||
+        cache.field.width <= 0 ||
+        cache.field.height <= 0 ||
+        cache.field.signed_distance_px.empty()) {
+        return false;
+    }
+    if (std::memcmp(cache.mask_bytes.data(), mask, maskByteCount) != 0) {
+        return false;
+    }
+
+    if (outField) {
+        *outField = &cache.field;
+    }
+    if (outBackendReport) {
+        *outBackendReport = cache.backend_report;
+    }
+    if (outCacheReport) {
+        outCacheReport->status = LensSdfFieldCacheStatus::hit;
+        outCacheReport->hit = true;
+    }
+    return true;
+}
+
+void StoreLensSdfFieldCache(
+    LensSdfFieldFrameCache& cache,
+    const uint8_t* mask,
+    int width,
+    int height,
+    int effective_downsample,
+    SdfFieldResult&& field,
+    const LensSdfBackendReport& backendReport,
+    LensSdfFieldCacheReport* outCacheReport) {
+    cache.Clear();
+    const std::size_t maskByteCount =
+        (mask && width > 0 && height > 0)
+            ? static_cast<std::size_t>(width) * static_cast<std::size_t>(height)
+            : 0u;
+    if (outCacheReport) {
+        outCacheReport->status = LensSdfFieldCacheStatus::miss;
+        outCacheReport->hit = false;
+        outCacheReport->mask_bytes = maskByteCount;
+    }
+    if (!mask || width <= 0 || height <= 0 || effective_downsample <= 0 ||
+        field.width <= 0 || field.height <= 0 || field.signed_distance_px.empty()) {
+        return;
+    }
+
+    cache.valid = true;
+    cache.source_width = width;
+    cache.source_height = height;
+    cache.effective_downsample = NormalizeLensDownsamplePow2(effective_downsample);
+    cache.mask_bytes.assign(mask, mask + maskByteCount);
+    cache.field = std::move(field);
+    cache.backend_report = backendReport;
+}
+
+LensSdfEffectiveDownsample ResolveEffectiveLensSdfDownsample(
+    int requested_downsample,
+    bool preview_active,
+    bool force_full_quality,
+    double previous_field_ms,
+    double target_frame_ms) {
+    LensSdfEffectiveDownsample decision{};
+    decision.requested_downsample = NormalizeLensDownsamplePow2(requested_downsample);
+    decision.effective_downsample = decision.requested_downsample;
+    decision.quality_mode = LensSdfQualityMode::requested;
+
+    if (!preview_active || force_full_quality) {
+        return decision;
+    }
+    if (!std::isfinite(previous_field_ms) || previous_field_ms <= 0.0 ||
+        !std::isfinite(target_frame_ms) || target_frame_ms <= 0.0) {
+        return decision;
+    }
+
+    const double fieldBudgetMs = std::max(1.0, target_frame_ms * 0.20);
+    if (previous_field_ms <= fieldBudgetMs) {
+        return decision;
+    }
+
+    const int budgetDownsample = NormalizeLensDownsamplePow2(
+        static_cast<int>(std::ceil(std::sqrt(previous_field_ms / fieldBudgetMs))));
+    if (budgetDownsample > decision.effective_downsample) {
+        decision.effective_downsample = budgetDownsample;
+        decision.quality_mode = LensSdfQualityMode::interactive_adaptive;
+    }
+    return decision;
 }
 
 bool DownsampleMaskPow2(

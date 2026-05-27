@@ -4,6 +4,7 @@
 
 enum class SdfFieldSignalKind {
     signed_distance_px,
+    lens_field_v2_response,
     inside_outside,
     boundary_band,
     normal_angle_radians,
@@ -17,6 +18,7 @@ struct SdfFieldSignalConfig {
 struct SdfFieldSignalSample {
     bool ok{false};
     float signed_distance_px{0.0f};
+    float lens_field_v2_response{0.5f};
     bool inside{false};
     float inside_outside{0.0f};
     float boundary_band{0.0f};
@@ -25,6 +27,8 @@ struct SdfFieldSignalSample {
 };
 
 float ResolveSdfBoundaryBandFromSignedDistancePx(float signed_distance_px, const SdfFieldSignalConfig& config);
+float ResolveLensFieldV2ResponseFromSignedDistancePx(float signed_distance_px, float field_pixel_scale);
+float ResolveLensFieldV2ResponseFromSignedDistancePx(float signed_distance_px, float field_pixel_scale, float sign_contrast);
 
 bool SampleSdfFieldSignals(
     const SdfFieldView& field,

@@ -46,7 +46,51 @@ struct LensSdfBackendReport {
     bool fallback_used{false};
 };
 
+enum class LensSdfFieldCacheStatus {
+    disabled,
+    miss,
+    hit,
+};
+
+struct LensSdfFieldCacheReport {
+    LensSdfFieldCacheStatus status{LensSdfFieldCacheStatus::disabled};
+    bool hit{false};
+    std::size_t mask_bytes{0};
+};
+
+struct LensSdfFieldFrameCache {
+    bool valid{false};
+    int source_width{0};
+    int source_height{0};
+    int effective_downsample{1};
+    std::vector<uint8_t> mask_bytes;
+    SdfFieldResult field;
+    LensSdfBackendReport backend_report{};
+
+    void Clear();
+};
+
+enum class LensSdfQualityMode {
+    requested,
+    interactive_adaptive,
+};
+
+struct LensSdfEffectiveDownsample {
+    int requested_downsample{1};
+    int effective_downsample{1};
+    LensSdfQualityMode quality_mode{LensSdfQualityMode::requested};
+};
+
 int NormalizeLensDownsamplePow2(int value);
+const char* LensSdfQualityModeId(LensSdfQualityMode mode);
+const char* LensSdfFieldCacheStatusId(LensSdfFieldCacheStatus status);
+
+LensSdfEffectiveDownsample ResolveEffectiveLensSdfDownsample(
+    int requested_downsample,
+    bool preview_active,
+    bool force_full_quality,
+    double previous_field_ms,
+    double target_frame_ms);
 
 bool DownsampleMaskPow2(
     const uint8_t* inMask,
@@ -106,6 +150,26 @@ bool ComputeLensSdfFieldForMaskWithBackend(
     LensSdfBackend backend,
     SdfFieldResult& outField,
     LensSdfBackendReport* outReport = nullptr);
+
+bool TryReuseLensSdfFieldCache(
+    const LensSdfFieldFrameCache& cache,
+    const uint8_t* mask,
+    int width,
+    int height,
+    int effective_downsample,
+    const SdfFieldResult** outField,
+    LensSdfBackendReport* outBackendReport,
+    LensSdfFieldCacheReport* outCacheReport);
+
+void StoreLensSdfFieldCache(
+    LensSdfFieldFrameCache& cache,
+    const uint8_t* mask,
+    int width,
+    int height,
+    int effective_downsample,
+    SdfFieldResult&& field,
+    const LensSdfBackendReport& backendReport,
+    LensSdfFieldCacheReport* outCacheReport = nullptr);
 
 bool ComputeLensSdfRgbaForMask(
     const uint8_t* mask,

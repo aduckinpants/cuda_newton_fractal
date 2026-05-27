@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "contract_id": "sdf_source_distinctness_smoke_matrix",
+  "feature_id": "color_pipeline_sdf_source_runtime_distinctness",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_source_distinctness_smoke_matrix_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_source_distinctness_smoke_matrix_PHASED_PLAN.md",
+    "docs/contracts/sdf_source_distinctness_smoke_matrix.contract.json",
+    "HANDOFF_LOG.md",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess_cuda.cu",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "The Lens Field v2 alias bug exposed a missing unit/smoke test class",
+    "SDF source rows with distinct catalog identities must prove distinct runtime semantics",
+    "Use no physical mouse automation"
+  ],
+  "forbidden_operator_prompts": [
+    "change SDF source product semantics",
+    "start unrelated SDF feature work",
+    "rewrite the Color Pipeline",
+    "use physical mouse automation",
+    "claim coverage from helper-only tests"
+  ],
+  "required_defaults": {
+    "slice_kind": "test_authority_hardening",
+    "physical_mouse_automation": false,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "product_behavior_changes": false
+  },
+  "forbidden_defaults": {
+    "new_user_features": "forbidden",
+    "color_pipeline_redesign": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_source_distinctness_native --log artifacts/logs/sdf_source_distinctness_native.log --out-json artifacts/validation/sdf_source_distinctness_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core test_color_pipeline_sdf_postprocess test_color_pipeline_sdf_postprocess_cuda",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_source_distinctness_runtime_publish --log artifacts/logs/sdf_source_distinctness_runtime_publish.log --out-json artifacts/validation/sdf_source_distinctness_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_source_distinctness_runtime_rows --log artifacts/logs/sdf_source_distinctness_runtime_rows.log --out-json artifacts/validation/sdf_source_distinctness_runtime_rows.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_source_distinctness_smoke_matrix.contract.json --out-json artifacts/validation/sdf_source_distinctness_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_source_distinctness_smoke_matrix_PHASED_PLAN.md --out-json artifacts/validation/sdf_source_distinctness_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_source_distinctness_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_source_distinctness_diff_check --log artifacts/logs/sdf_source_distinctness_diff_check.log --out-json artifacts/validation/sdf_source_distinctness_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF source distinctness hardening contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_source_distinctness_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF source distinctness hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_source_distinctness_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

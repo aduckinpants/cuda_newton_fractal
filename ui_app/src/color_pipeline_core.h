@@ -328,6 +328,7 @@ inline ColorPipelineSourceSignalKind ColorPipelineSourceSignalKindForSignal(Colo
     case ColorSignal::escape_magnitude:
     case ColorSignal::root_proximity:
     case ColorSignal::sdf_signed_distance:
+    case ColorSignal::lens_field_v2_distance:
     case ColorSignal::sdf_boundary_band:
     case ColorSignal::sdf_curvature:
         return ColorPipelineSourceSignalKind::scalar;
@@ -351,6 +352,8 @@ inline const char* AdvancedColorSignalFunctionId(ColorSignal value) {
         return "root_proximity";
     case ColorSignal::sdf_signed_distance:
         return "sdf_signed_distance";
+    case ColorSignal::lens_field_v2_distance:
+        return "lens_field_v2_distance";
     case ColorSignal::sdf_inside_outside:
         return "sdf_inside_outside";
     case ColorSignal::sdf_boundary_band:
@@ -392,6 +395,10 @@ inline bool TryParseAdvancedColorSignalFunctionId(const std::string& functionId,
     }
     if (functionId == "sdf_signed_distance") {
         if (outValue) *outValue = ColorSignal::sdf_signed_distance;
+        return true;
+    }
+    if (functionId == "lens_field_v2_distance") {
+        if (outValue) *outValue = ColorSignal::lens_field_v2_distance;
         return true;
     }
     if (functionId == "sdf_inside_outside") {
@@ -690,6 +697,20 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSdfSampleStepParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
+        MakeColorPipelineFunction(
+            "lens_field_v2_distance",
+            "Lens Field V2 Response",
+            "Use the GPU-backed Lens Field v2 legacy distance response while preserving the legacy Lens panel.",
+            "lens_field_v2",
+            {
+                MakeColorPipelineSourceScaleParam("Field Scale", "Scale the normalized Lens Field v2 response before palette lookup.", -2.0, 2.0, 0.01, 1.0),
+                MakeColorPipelineSourceBiasParam("Field Bias", "Shift the normalized Lens Field v2 response before palette lookup.", -2.0, 2.0, 0.01, 0.0),
+                MakeColorPipelineFloatParam("signal.sign_contrast", "Sign Contrast", "Restore inside/outside separation in the Lens Field v2 response without collapsing it to a binary mask.", 0.0, 1.0, 0.01, 0.35),
+                MakeColorPipelineSdfGateParam(),
+                MakeColorPipelineSdfGateWidthParam(),
+                MakeColorPipelineSdfSampleStepParam(),
+                MakeColorPipelineSourceBlendWeightParam(),
+            }),
     };
 }
 
@@ -917,7 +938,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "sdf_inside_outside" ||
             functionId == "sdf_boundary_band" ||
             functionId == "sdf_normal_angle" ||
-            functionId == "sdf_curvature";
+            functionId == "sdf_curvature" ||
+            functionId == "lens_field_v2_distance";
     }
     if (std::string(laneId) == "shape") {
         return functionId == "identity" ||
@@ -1440,7 +1462,8 @@ inline bool TrySuggestHardcodedColorPipelineCompanionFunction(
             return SetColorPipelineCompanionSuggestion("palette", "phase_wheel_palette", outCompanionLaneId, outCompanionFunctionId);
         }
         if (function == "sdf_signed_distance" || function == "sdf_inside_outside" ||
-            function == "sdf_boundary_band" || function == "sdf_curvature") {
+            function == "sdf_boundary_band" || function == "sdf_curvature" ||
+            function == "lens_field_v2_distance") {
             return SetColorPipelineCompanionSuggestion("palette", "heatmap", outCompanionLaneId, outCompanionFunctionId);
         }
     } else if (lane == "palette") {
@@ -2107,7 +2130,8 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
         ioRow->function_id == "sdf_inside_outside" ||
         ioRow->function_id == "sdf_boundary_band" ||
         ioRow->function_id == "sdf_normal_angle" ||
-        ioRow->function_id == "sdf_curvature") {
+        ioRow->function_id == "sdf_curvature" ||
+        ioRow->function_id == "lens_field_v2_distance") {
         return true;
     }
     if (ioRow->function_id == "phase_wheel_palette") {
@@ -2220,7 +2244,8 @@ inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
         std::strcmp(sourceFunctionId, "sdf_signed_distance") == 0 ||
         std::strcmp(sourceFunctionId, "sdf_inside_outside") == 0 ||
         std::strcmp(sourceFunctionId, "sdf_boundary_band") == 0 ||
-        std::strcmp(sourceFunctionId, "sdf_curvature") == 0;
+        std::strcmp(sourceFunctionId, "sdf_curvature") == 0 ||
+        std::strcmp(sourceFunctionId, "lens_field_v2_distance") == 0;
     if (sdfHeatmapSource &&
         (std::strcmp(paletteFunctionId, "heatmap") == 0 ||
          std::strcmp(paletteFunctionId, "explaino_cmap") == 0)) {
@@ -2647,7 +2672,8 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         pipeline.signal == ColorSignal::sdf_signed_distance ||
         pipeline.signal == ColorSignal::sdf_inside_outside ||
         pipeline.signal == ColorSignal::sdf_boundary_band ||
-        pipeline.signal == ColorSignal::sdf_curvature;
+        pipeline.signal == ColorSignal::sdf_curvature ||
+        pipeline.signal == ColorSignal::lens_field_v2_distance;
     if (isSdfHeatmapSignal &&
         (pipeline.palette == ColorPalette::cyclic_escape || pipeline.palette == ColorPalette::explaino_cmap) &&
         isEscapeLikeGrading) {

@@ -136,7 +136,7 @@ Timing rule:
 
 ## 5. Lens SDF Follow-Ups
 
-Status: partially shipped substrate. Capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, and SDF preview postprocess quality policy are shipped.
+Status: partially shipped substrate. Capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, CUDA SDF postprocess backends, and live-only adaptive SDF field resolution are shipped.
 
 Shipped since the original deferred note:
 - `lens.downsample` control truth is repaired.
@@ -162,7 +162,7 @@ Shipped since the original deferred note:
 Active follow-up:
 - Broader composition/preset UX now has preset workflow truth and visible implementation-wording cleanup covered by bounded slices. Keep later composition work split by topic instead of turning it into a broad redesign.
 - The immediate composition repair for disabled-row compatibility/error authority and `sdf_curvature` plus `sdf_normal_angle` SDF-only Source-stack blending is shipped on `08e62b6`.
-- Choose the next larger SDF performance/design slice explicitly before returning to authored-pack UI or SDF-native lanes: per-row/multi-field downsample authority or GPU Color Pipeline postprocess with measured client evidence.
+- Choose the next larger SDF performance/design slice explicitly before returning to authored-pack UI or SDF-native lanes: field-generation algorithm/caching work or per-row/multi-field downsample authority with measured client evidence.
 
 Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.

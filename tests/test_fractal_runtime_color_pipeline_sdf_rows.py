@@ -27,6 +27,14 @@ SDF_SOURCE_ROWS = (
     ("sdf_boundary_band", "smooth_escape", "cyclic_escape", 1.0, 0.0, 1.75, -0.25),
     ("sdf_normal_angle", "phase", "phase_wheel", 1.0, 0.0, -0.75, 0.35),
     ("sdf_curvature", "smooth_escape", "cyclic_escape", 0.25, 0.5, 1.25, -0.35),
+    ("lens_field_v2_distance", "smooth_escape", "cyclic_escape", 1.0, 0.0, -0.35, 0.85),
+)
+
+SDF_SOURCE_ROWS_DISTINCT_FROM_RAW = (
+    "sdf_inside_outside",
+    "sdf_boundary_band",
+    "sdf_curvature",
+    "lens_field_v2_distance",
 )
 
 
@@ -289,6 +297,141 @@ def test_color_pipeline_sdf_source_rows_are_live_backed_no_mouse(tmp_path: Path)
         assert edited["frame_hash"] != baseline["frame_hash"], (
             f"expected {function_id} signal.scale/signal.bias edits to change the live rendered frame"
         )
+
+
+def test_scalar_sdf_source_rows_do_not_alias_raw_signed_distance_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline SDF runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    state_path = write_state_bundle(
+        tmp_path / "sdf_source_distinctness_seed",
+        json.loads(json.dumps(neutral_capture["state"])),
+    )
+    raw_sdf_capture = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_signed_distance",
+        scale=1.0,
+        bias=0.0,
+    )
+
+    for function_id in SDF_SOURCE_ROWS_DISTINCT_FROM_RAW:
+        capture = _capture_sdf_source_row(
+            exe_path=exe_path,
+            state_path=state_path,
+            function_id=function_id,
+            scale=1.0,
+            bias=0.0,
+        )
+        assert capture["frame_hash"] != raw_sdf_capture["frame_hash"], (
+            f"expected {function_id} to have distinct runtime semantics from raw sdf_signed_distance"
+        )
+
+
+def test_lens_field_v2_distance_source_reports_gpu_backed_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Lens Field v2 runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    state_path = write_state_bundle(
+        tmp_path / "lens_field_v2_seed",
+        json.loads(json.dumps(neutral_capture["state"])),
+    )
+    lens_field_capture = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="lens_field_v2_distance",
+        scale=1.0,
+        bias=0.0,
+    )
+    raw_sdf_capture = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_signed_distance",
+        scale=1.0,
+        bias=0.0,
+    )
+    assert lens_field_capture["frame_hash"] != raw_sdf_capture["frame_hash"], (
+        "Lens Field v2 should expose the legacy Lens response shape, not alias raw sdf_signed_distance"
+    )
+    lens_source_row = _first_color_pipeline_row(lens_field_capture["state"], "source")
+    assert _row_number(lens_source_row, "signal.sign_contrast") == pytest.approx(0.35, abs=1e-6)
+    lens_field_state = json.loads(json.dumps(lens_field_capture["state"]))
+    lens = lens_field_state.setdefault("lens", {})
+    assert isinstance(lens, dict)
+    lens["enabled"] = False
+    lens["downsample"] = 1
+    live_state_path = write_state_bundle(tmp_path / "lens_field_v2_live", lens_field_state)
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=live_state_path,
+        report_path=tmp_path / "lens_field_v2_report.json",
+        command_path=tmp_path / "lens_field_v2_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        ready_report = viewer.wait_for_report(timeout_seconds=30.0)
+        viewer.wait_for_control(
+            "color_pipeline.source.lens_field_v2_distance.signal.scale.primary",
+            timeout_seconds=20.0,
+        )
+        viewer.wait_for_control(
+            "color_pipeline.source.lens_field_v2_distance.signal.sign_contrast.primary",
+            timeout_seconds=20.0,
+        )
+        contrast_report = viewer.set_control_value(
+            "color_pipeline.source.lens_field_v2_distance.signal.sign_contrast.primary",
+            0.85,
+            timeout_seconds=40.0,
+        )
+        edited_report = viewer.set_control_value(
+            "color_pipeline.source.lens_field_v2_distance.signal.scale.primary",
+            -0.35,
+            timeout_seconds=40.0,
+        )
+        camera_report = viewer.set_control_value(
+            "fractal_control.center_x.primary",
+            -0.35,
+            timeout_seconds=40.0,
+        )
+
+    assert ready_report.get("lens_sdf_enabled") is False, ready_report
+    assert ready_report.get("lens_sdf_valid") is True, ready_report
+    assert ready_report.get("lens_sdf_backend_used") == "cuda_jfa", ready_report
+    assert ready_report.get("lens_sdf_postprocess_backend_used") == "cuda_direct_scalar", ready_report
+    assert ready_report.get("lens_sdf_postprocess_backend_fallback_used") is False, ready_report
+    assert ready_report.get("lens_sdf_quality_mode") == "requested", ready_report
+    assert contrast_report.get("rendered_frame_hash") != ready_report.get("rendered_frame_hash"), contrast_report
+    assert edited_report.get("rendered_frame_hash") != ready_report.get("rendered_frame_hash"), edited_report
+    assert edited_report.get("lens_sdf_field_cache_hit") is True, edited_report
+    assert edited_report.get("lens_sdf_field_cache_status") == "hit", edited_report
+    assert int(edited_report.get("lens_sdf_field_cache_mask_bytes", 0)) == (
+        int(edited_report["rendered_frame_width"]) * int(edited_report["rendered_frame_height"])
+    ), edited_report
+    assert camera_report.get("rendered_frame_hash") != edited_report.get("rendered_frame_hash"), camera_report
+    assert camera_report.get("lens_sdf_field_cache_hit") is False, camera_report
+    assert camera_report.get("lens_sdf_field_cache_status") == "miss", camera_report
 
 
 def test_sdf_normal_angle_accepts_curvature_blend_no_mouse(tmp_path: Path) -> None:

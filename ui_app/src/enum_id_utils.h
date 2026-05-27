@@ -100,6 +100,7 @@ inline constexpr EnumIdPair<ColorSignal> kColorSignalIds[] = {
     {ColorSignal::sdf_boundary_band, "sdf_boundary_band"},
     {ColorSignal::sdf_normal_angle, "sdf_normal_angle"},
     {ColorSignal::sdf_curvature, "sdf_curvature"},
+    {ColorSignal::lens_field_v2_distance, "lens_field_v2_distance"},
 };
 
 inline constexpr EnumIdPair<ColorPalette> kColorPaletteIds[] = {

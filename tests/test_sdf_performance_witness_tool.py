@@ -36,12 +36,19 @@ def _payload(
         "lens_sdf_valid": True,
         "lens_sdf_color_pipeline_active": True,
         "lens_sdf_field_ms": field_ms,
+        "lens_sdf_requested_equivalent_field_ms": field_ms,
         "lens_sdf_postprocess_ms": postprocess_ms,
         "lens_sdf_total_ms": sdf_total,
         "last_render_ms": 4.0 + sdf_total,
         "lens_sdf_width": 320,
         "lens_sdf_height": 240,
         "lens_sdf_pixel_scale": 1.0,
+        "lens_sdf_requested_downsample": 1,
+        "lens_sdf_effective_downsample": 1,
+        "lens_sdf_quality_mode": "requested",
+        "lens_sdf_field_cache_status": "hit",
+        "lens_sdf_field_cache_hit": True,
+        "lens_sdf_field_cache_mask_bytes": 320 * 240,
         "lens_sdf_postprocess_pixel_step": pixel_step,
         "lens_sdf_postprocess_worker_count": 3,
         "lens_sdf_postprocess_direct_sample_count": direct_samples,
@@ -91,10 +98,17 @@ def test_sdf_measurement_report_classifies_field_and_postprocess_pressure() -> N
     assert report["summary"]["bottleneck_votes"]["field_generation_pressure"] == 1
     assert report["summary"]["bottleneck_votes"]["postprocess_pressure"] == 1
     assert report["summary"]["bottleneck_votes"]["preview_quality_sample"] == 1
+    assert report["summary"]["field_cache_hit_count"] == 3
     assert report["scenarios"][0]["classification"] == "field_generation_pressure"
     assert report["scenarios"][1]["classification"] == "postprocess_pressure"
     assert report["scenarios"][2]["classification"] == "preview_quality_sample"
     assert report["scenarios"][1]["lens_sdf_postprocess_worker_count"] == 3
+    assert report["scenarios"][0]["lens_sdf_requested_downsample"] == 1
+    assert report["scenarios"][0]["lens_sdf_effective_downsample"] == 1
+    assert report["scenarios"][0]["lens_sdf_quality_mode"] == "requested"
+    assert report["scenarios"][0]["lens_sdf_field_cache_status"] == "hit"
+    assert report["scenarios"][0]["lens_sdf_field_cache_hit"] is True
+    assert report["scenarios"][0]["lens_sdf_field_cache_mask_bytes"] == 320 * 240
     assert report["summary"]["recommendation"] == "mixed_or_inconclusive_measurement_review_required"
 
 

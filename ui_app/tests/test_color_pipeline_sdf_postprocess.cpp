@@ -1,5 +1,6 @@
 #include "../src/color_pipeline_sdf_postprocess.h"
 #include "../src/color_pipeline_core.h"
+#include "../src/sdf_field_signal.h"
 
 #include <cmath>
 #include <cstdio>
@@ -93,6 +94,7 @@ void TestEachSdfSourceSignalPostprocessesFrame() {
         ColorSignal::sdf_boundary_band,
         ColorSignal::sdf_normal_angle,
         ColorSignal::sdf_curvature,
+        ColorSignal::lens_field_v2_distance,
     };
     for (ColorSignal signal : signals) {
         KernelParams params = SdfParams(
@@ -128,6 +130,147 @@ void TestBoundaryBandWidthChangesPostprocessFrame() {
         "TestBoundaryBandWidthChangesPostprocessFrame_WideSucceeds");
     Check(HashFrame(narrowPixels) != HashFrame(widePixels),
         "TestBoundaryBandWidthChangesPostprocessFrame_WidthChangesFrame");
+}
+
+void TestLensFieldV2ResponseDoesNotAliasRawSignedDistance() {
+    SdfFieldResult field = MakeTestField();
+    field.pixel_scale = 1.0f;
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams rawSigned = SdfParams(ColorSignal::sdf_signed_distance);
+    rawSigned.color_source_stack[0].params.scale = 1.0f;
+    rawSigned.color_source_stack[0].params.bias = 0.0f;
+    KernelParams lensField = SdfParams(ColorSignal::lens_field_v2_distance);
+    lensField.color_source_stack[0].params.scale = 1.0f;
+    lensField.color_source_stack[0].params.bias = 0.0f;
+
+    std::vector<std::uint32_t> rawPixels(16, 0x12345678u);
+    std::vector<std::uint32_t> lensPixels(16, 0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, rawSigned, rawPixels.data(), &error),
+        "TestLensFieldV2ResponseDoesNotAliasRawSignedDistance_RawSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, lensField, lensPixels.data(), &error),
+        "TestLensFieldV2ResponseDoesNotAliasRawSignedDistance_LensSucceeds");
+    Check(HashFrame(rawPixels) != HashFrame(lensPixels),
+        "TestLensFieldV2ResponseDoesNotAliasRawSignedDistance_FramesDiffer");
+}
+
+void TestLensFieldV2SignContrastChangesFrameAndZeroPreservesLegacyResponse() {
+    SdfFieldResult field = MakeLargeTestField(8, 8);
+    field.pixel_scale = 2.0f;
+    RenderSettings render{};
+    render.resolution = {8, 8};
+
+    KernelParams zeroContrast = SdfParams(ColorSignal::lens_field_v2_distance);
+    zeroContrast.color_source_stack[0].params.scale = 1.0f;
+    zeroContrast.color_source_stack[0].params.bias = 0.0f;
+    zeroContrast.color_source_stack[0].params.lens_field_v2_sign_contrast = 0.0f;
+    KernelParams strongContrast = zeroContrast;
+    strongContrast.color_source_stack[0].params.lens_field_v2_sign_contrast = 0.85f;
+
+    std::vector<std::uint32_t> zeroPixels(64, 0x12345678u);
+    std::vector<std::uint32_t> strongPixels(64, 0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, zeroContrast, zeroPixels.data(), &error),
+        "TestLensFieldV2SignContrastChangesFrame_ZeroSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, strongContrast, strongPixels.data(), &error),
+        "TestLensFieldV2SignContrastChangesFrame_StrongSucceeds");
+    Check(HashFrame(zeroPixels) != HashFrame(strongPixels),
+        "TestLensFieldV2SignContrastChangesFrame_StrongContrastChangesFrame");
+    Check(std::fabs(ResolveLensFieldV2ResponseFromSignedDistancePx(8.0f, 2.0f, 0.0f) -
+            ResolveLensFieldV2ResponseFromSignedDistancePx(8.0f, 2.0f)) <= 0.0001f,
+        "TestLensFieldV2SignContrastChangesFrame_ZeroContrastPreservesLegacyHelper");
+}
+
+std::uint64_t RenderSdfSourceHashWithIdentityHeatmap(
+    const SdfFieldResult& field,
+    const RenderSettings& render,
+    ColorSignal signal) {
+    KernelParams params = SdfParams(signal, ColorPalette::cyclic_escape);
+    params.color_source_stack[0].params.scale = 1.0f;
+    params.color_source_stack[0].params.bias = 0.0f;
+    if (signal == ColorSignal::sdf_boundary_band) {
+        params.color_source_stack[0].params.sdf_boundary_width_px = 3.0f;
+    }
+
+    std::vector<std::uint32_t> pixels(
+        static_cast<std::size_t>(render.resolution.x) * static_cast<std::size_t>(render.resolution.y),
+        0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, pixels.data(), &error),
+        "RenderSdfSourceHashWithIdentityHeatmap_PostprocessSucceeds");
+    return HashFrame(pixels);
+}
+
+void TestSdfSourceDistinctnessMatrixRejectsRawSignedDistanceAliases() {
+    SdfFieldResult field = MakeLargeTestField(8, 8);
+    field.pixel_scale = 4.0f;
+    RenderSettings render{};
+    render.resolution = {8, 8};
+    const std::uint64_t rawHash = RenderSdfSourceHashWithIdentityHeatmap(
+        field,
+        render,
+        ColorSignal::sdf_signed_distance);
+
+    struct ExpectedDistinctSource {
+        ColorSignal signal;
+        const char* message;
+    };
+    const ExpectedDistinctSource expectedDistinctSources[] = {
+        {ColorSignal::sdf_inside_outside, "TestSdfSourceDistinctnessMatrix_InsideOutsideDoesNotAliasRaw"},
+        {ColorSignal::sdf_boundary_band, "TestSdfSourceDistinctnessMatrix_BoundaryBandDoesNotAliasRaw"},
+        {ColorSignal::sdf_normal_angle, "TestSdfSourceDistinctnessMatrix_NormalAngleDoesNotAliasRaw"},
+        {ColorSignal::sdf_curvature, "TestSdfSourceDistinctnessMatrix_CurvatureDoesNotAliasRaw"},
+        {ColorSignal::lens_field_v2_distance, "TestSdfSourceDistinctnessMatrix_LensFieldV2DoesNotAliasRaw"},
+    };
+    for (const ExpectedDistinctSource& expected : expectedDistinctSources) {
+        const std::uint64_t sourceHash = RenderSdfSourceHashWithIdentityHeatmap(
+            field,
+            render,
+            expected.signal);
+        Check(sourceHash != rawHash, expected.message);
+    }
+}
+
+void TestLensFieldV2ResponseHonorsFieldPixelScaleWithoutChangingRawSignedDistance() {
+    SdfFieldResult field1x = MakeTestField();
+    field1x.pixel_scale = 1.0f;
+    SdfFieldResult field4x = field1x;
+    field4x.pixel_scale = 4.0f;
+
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams lensField = SdfParams(ColorSignal::lens_field_v2_distance);
+    lensField.color_source_stack[0].params.scale = 1.0f;
+    lensField.color_source_stack[0].params.bias = 0.0f;
+    KernelParams rawSigned = SdfParams(ColorSignal::sdf_signed_distance);
+    rawSigned.color_source_stack[0].params.scale = 1.0f;
+    rawSigned.color_source_stack[0].params.bias = 0.0f;
+
+    std::vector<std::uint32_t> lens1xPixels(16, 0x12345678u);
+    std::vector<std::uint32_t> lens4xPixels(16, 0x12345678u);
+    std::vector<std::uint32_t> raw1xPixels(16, 0x12345678u);
+    std::vector<std::uint32_t> raw4xPixels(16, 0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field1x.View(), render, lensField, lens1xPixels.data(), &error),
+        "TestLensFieldV2ResponseHonorsFieldPixelScale_Lens1xSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field4x.View(), render, lensField, lens4xPixels.data(), &error),
+        "TestLensFieldV2ResponseHonorsFieldPixelScale_Lens4xSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field1x.View(), render, rawSigned, raw1xPixels.data(), &error),
+        "TestLensFieldV2ResponseHonorsFieldPixelScale_Raw1xSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field4x.View(), render, rawSigned, raw4xPixels.data(), &error),
+        "TestLensFieldV2ResponseHonorsFieldPixelScale_Raw4xSucceeds");
+    Check(HashFrame(lens1xPixels) != HashFrame(lens4xPixels),
+        "TestLensFieldV2ResponseHonorsFieldPixelScale_LensUsesPixelScale");
+    Check(HashFrame(raw1xPixels) == HashFrame(raw4xPixels),
+        "TestLensFieldV2ResponseHonorsFieldPixelScale_RawIgnoresPixelScale");
 }
 
 void TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources() {
@@ -527,6 +670,10 @@ void TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution() {
 int main() {
     TestEachSdfSourceSignalPostprocessesFrame();
     TestBoundaryBandWidthChangesPostprocessFrame();
+    TestLensFieldV2ResponseDoesNotAliasRawSignedDistance();
+    TestLensFieldV2SignContrastChangesFrameAndZeroPreservesLegacyResponse();
+    TestLensFieldV2ResponseHonorsFieldPixelScaleWithoutChangingRawSignedDistance();
+    TestSdfSourceDistinctnessMatrixRejectsRawSignedDistanceAliases();
     TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources();
     TestNormalAngleBoundaryGateMasksFullFieldDiagnostic();
     TestNormalAngleGateWidthIsInactiveWhenGateIsOff();

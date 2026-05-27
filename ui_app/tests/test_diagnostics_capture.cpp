@@ -145,9 +145,10 @@ void TestBundleSummarizesEffectiveColorSourceAuthority() {
     params.color_source_stack[0].params.scale = 1.0f;
     params.color_source_stack[0].params.bias = 0.0f;
     params.color_source_stack[0].params.blend_weight = 1.0f;
-    params.color_source_stack[1].signal = ColorSignal::sdf_signed_distance;
-    params.color_source_stack[1].params.scale = 0.05f;
-    params.color_source_stack[1].params.bias = 0.5f;
+    params.color_source_stack[1].signal = ColorSignal::lens_field_v2_distance;
+    params.color_source_stack[1].params.scale = 1.0f;
+    params.color_source_stack[1].params.bias = 0.0f;
+    params.color_source_stack[1].params.lens_field_v2_sign_contrast = 0.8f;
     params.color_source_stack[1].params.blend_weight = 0.25f;
 
     const fs::path stackOutputDir = FreshTempRoot("stack_effective_source") / "diagnostics_bundle";
@@ -165,9 +166,11 @@ void TestBundleSummarizesEffectiveColorSourceAuthority() {
         Check(json.find("\"signal\": \"sdf_normal_angle\"") != std::string::npos &&
                 json.find("\"kind\": \"phase\"") != std::string::npos,
             "stack state summary records phase source row");
-        Check(json.find("\"signal\": \"sdf_signed_distance\"") != std::string::npos &&
+        Check(json.find("\"signal\": \"lens_field_v2_distance\"") != std::string::npos &&
                 json.find("\"kind\": \"scalar\"") != std::string::npos,
-            "stack state summary records scalar source row");
+            "stack state summary records scalar Lens Field v2 source row");
+        Check(json.find("\"lens_field_v2_sign_contrast\": 0.8") != std::string::npos,
+            "state export preserves Lens Field v2 sign contrast");
     }
 }
 

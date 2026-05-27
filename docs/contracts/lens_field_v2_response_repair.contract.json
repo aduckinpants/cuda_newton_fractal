@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "contract_id": "lens_field_v2_response_repair",
+  "feature_id": "lens_field_v2_source_authority",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/lens_field_v2_response_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/lens_field_v2_response_repair_PHASED_PLAN.md",
+    "docs/contracts/lens_field_v2_response_repair.contract.json",
+    "HANDOFF_LOG.md",
+    "docs/ui_salt/color_pipeline_function_library.ui.salt",
+    "docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_sdf_postprocess.cpp",
+    "ui_app/src/color_pipeline_sdf_postprocess_cuda.cu",
+    "ui_app/src/sdf_field_signal.h",
+    "ui_app/src/sdf_field_signal.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess_cuda.cu",
+    "ui_app/tests/test_lens_sdf.cpp",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "tests/test_ui_salt_materializer.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "Lens Field v2 should not visually collapse to normal SDF signed distance",
+    "modernize the original Lens SDF response while preserving the legacy Lens panel",
+    "keep GPU-backed field and postprocess behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "replace the legacy Lens panel",
+    "change normal sdf_signed_distance semantics",
+    "add broad Color Pipeline UI redesign",
+    "add per-source downsample or multi-field composition",
+    "use physical mouse automation",
+    "claim visual parity without runtime proof"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_visible_lens_field_v2_repair",
+    "physical_mouse_automation": false,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "legacy_lens_panel_preserved": true,
+    "normal_sdf_signed_distance_preserved": true
+  },
+  "forbidden_defaults": {
+    "legacy_lens_replacement": "forbidden",
+    "normal_sdf_signed_distance_change": "forbidden",
+    "per_source_downsample": "deferred",
+    "multi_field_composition": "deferred",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_response_native --log artifacts/logs/lens_field_v2_response_native.log --out-json artifacts/validation/lens_field_v2_response_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core test_color_pipeline_sdf_postprocess test_color_pipeline_sdf_postprocess_cuda test_lens_sdf",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_response_ui_salt --log artifacts/logs/lens_field_v2_response_ui_salt.log --out-json artifacts/validation/lens_field_v2_response_ui_salt.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_response_runtime_publish --log artifacts/logs/lens_field_v2_response_runtime_publish.log --out-json artifacts/validation/lens_field_v2_response_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_response_runtime_rows --log artifacts/logs/lens_field_v2_response_runtime_rows.log --out-json artifacts/validation/lens_field_v2_response_runtime_rows.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/lens_field_v2_response_repair.contract.json --out-json artifacts/validation/lens_field_v2_response_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/lens_field_v2_response_repair_PHASED_PLAN.md --out-json artifacts/validation/lens_field_v2_response_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/lens_field_v2_response_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_response_diff_check --log artifacts/logs/lens_field_v2_response_diff_check.log --out-json artifacts/validation/lens_field_v2_response_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Lens Field v2 response repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/lens_field_v2_response_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Lens Field v2 response repair hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/lens_field_v2_response_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

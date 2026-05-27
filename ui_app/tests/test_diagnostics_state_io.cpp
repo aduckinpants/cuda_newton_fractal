@@ -4432,7 +4432,8 @@ int main() {
       { "signal": "sdf_inside_outside", "scale": 1.0, "bias": 0.0, "blend_weight": 0.35 },
       { "signal": "sdf_boundary_band", "scale": 1.0, "bias": 0.0, "blend_weight": 0.5, "sdf_boundary_width_px": 4.0 },
       { "signal": "sdf_normal_angle", "scale": 1.0, "bias": 0.0, "blend_weight": 0.25 },
-      { "signal": "sdf_curvature", "scale": 0.25, "bias": 0.5, "blend_weight": 0.125 }
+      { "signal": "sdf_curvature", "scale": 0.25, "bias": 0.5, "blend_weight": 0.125 },
+      { "signal": "lens_field_v2_distance", "scale": 1.0, "bias": 0.0, "blend_weight": 0.375, "lens_field_v2_sign_contrast": 0.8 }
     ],
     "nova_alpha": 0.5,
     "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
@@ -4453,7 +4454,7 @@ int main() {
             std::cerr << "V3 base-owned SDF source-stack load failed: " << error << "\n";
             return 1;
         }
-        if (p.color_source_stack_count != 5 ||
+        if (p.color_source_stack_count != 6 ||
             p.color_pipeline.signal != ColorSignal::sdf_signed_distance ||
             p.color_pipeline.palette != ColorPalette::cyclic_escape ||
             p.color_source_stack[0].signal != ColorSignal::sdf_signed_distance ||
@@ -4461,12 +4462,16 @@ int main() {
             !NearlyEqual(p.color_source_stack[0].params.bias, 0.5, 0.001) ||
             p.color_source_stack[4].signal != ColorSignal::sdf_curvature ||
             !NearlyEqual(p.color_source_stack[4].params.blend_weight, 0.125, 0.001) ||
+            p.color_source_stack[5].signal != ColorSignal::lens_field_v2_distance ||
+            !NearlyEqual(p.color_source_stack[5].params.lens_field_v2_sign_contrast, 0.8, 0.001) ||
             !windowState.live_snapshot.valid ||
             !windowState.live_snapshot.draft_import_supported ||
             windowState.live_snapshot.lanes.size() < 4 ||
-            windowState.live_snapshot.lanes[0].rows.size() != 5 ||
+            windowState.live_snapshot.lanes[0].rows.size() != 6 ||
             windowState.live_snapshot.lanes[0].rows[0].function_id != "sdf_signed_distance" ||
-            windowState.live_snapshot.lanes[0].rows[4].function_id != "sdf_curvature") {
+            windowState.live_snapshot.lanes[0].rows[4].function_id != "sdf_curvature" ||
+            windowState.live_snapshot.lanes[0].rows[5].function_id != "lens_field_v2_distance" ||
+            !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[5], "signal.sign_contrast", 0.8, 0.001)) {
             std::cerr << "Expected base-owned SDF Source stacks to load while preserving the authored SDF Source stack\n";
             return 1;
         }

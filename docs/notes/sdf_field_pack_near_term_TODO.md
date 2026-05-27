@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, and CUDA field-signal SDF postprocess for normal-angle/curvature stacks. The next larger SDF performance choices are field-generation/downsample authority and per-row/multi-field downsample design; broader composition UX, authored-pack UI, and SDF-native lanes remain separate product slices.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, and live-only adaptive SDF field resolution. The next larger SDF performance choices are field-generation algorithm/caching work and per-row/multi-field downsample design; broader composition UX, authored-pack UI, and SDF-native lanes remain separate product slices.
 
 Shipped since this roadmap was first written:
 
@@ -28,11 +28,12 @@ Shipped since this roadmap was first written:
 - SDF downsampled-field postprocess cell reuse: full-quality postprocess now computes once per lower-resolution SDF field cell and expands to the same render pixels already mapped to that field cell.
 - CUDA direct-scalar SDF postprocess: supported `sdf_signed_distance`, `sdf_inside_outside`, and `sdf_boundary_band` source stacks can run through a CUDA backend with exact CPU parity and runtime backend reporting; phase, curvature, row sample-step greater than `1`, and unsupported stacks fall back to CPU.
 - CUDA field-signal SDF postprocess: supported SDF-only `sdf_normal_angle` and `sdf_curvature` stacks with row sample step `1` can run through a CUDA backend with exact CPU parity and runtime backend reporting; row sample-step greater than `1` and unsupported stacks fall back to CPU.
+- Live-only adaptive SDF field resolution: the viewer reports requested versus effective SDF field downsample, can temporarily increase effective field downsample during interaction when previous requested-equivalent field timing exceeds budget, and returns settled/capture/replay output to the requested `LensSettings::downsample` authority.
 
 Next performance/design choices:
 
 - Per-row or per-function SDF downsample still needs a deliberate authority model: multiple fields, high-resolution field with row-local coarse sampling, or a source-stack-level quality policy. Current SDF Source rows all share `LensSettings::downsample`, so a layered stack cannot set a different field resolution per SDF Source row yet.
-- Field generation and downsample authority are now the next measured performance seams; the focused witness no longer classifies CPU SDF postprocess as the dominant cost for direct scalar or normal-angle/curvature stacks.
+- Field generation remains the next measured performance seam; the focused witness no longer classifies CPU SDF postprocess as the dominant cost for direct scalar or normal-angle/curvature stacks, and live interaction now has source-stack-level adaptive effective downsample before any per-row/multi-field model exists.
 - Color Pipeline composition/preset UX, boundary-masked normal-angle, SDF-backed masks/gates, authored-pack UI, and SDF-native lanes remain planned product work after the next performance/design choice is selected.
 
 Still deferred:

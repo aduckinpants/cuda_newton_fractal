@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "contract_id": "lens_field_v2_source_authority",
+  "feature_id": "sdf_field_source_authority",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/lens_field_v2_source_authority_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/lens_field_v2_source_authority_PHASED_PLAN.md",
+    "docs/contracts/lens_field_v2_source_authority.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "docs/ui_salt/color_pipeline_function_library.ui.salt",
+    "docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/color_pipeline_sdf_postprocess.h",
+    "ui_app/src/color_pipeline_sdf_postprocess.cpp",
+    "ui_app/src/color_pipeline_sdf_postprocess_cuda.cu",
+    "ui_app/src/lens_sdf.h",
+    "ui_app/src/lens_sdf.cpp",
+    "ui_app/src/lens_sdf_cuda.cu",
+    "ui_app/src/main.cpp",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "ui_app/tests/test_lens_sdf.cpp",
+    "ui_app/tests/test_lens_sdf_cuda.cu",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tests/test_ui_salt_materializer.py",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "tests/test_fractal_runtime_capture_replay_authority.py",
+    "tests/test_sdf_performance_witness_tool.py",
+    "tools/viewer_host_sdf_performance_witness.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "modernize the original Lens SDF idea as a first-class GPU-backed field/source authority",
+    "keep the original Lens panel/debug path unchanged",
+    "make the new source usable from the Color Pipeline source-function system",
+    "preserve capture/replay quality and existing adaptive SDF field reporting"
+  ],
+  "forbidden_operator_prompts": [
+    "replace or remove the original Lens SDF panel/debug path",
+    "implement per-row or per-function downsample authority",
+    "add multi-field composition, authored SDF pack UI, or SDF-native fractal lanes",
+    "change the CUDA JFA field-generation algorithm",
+    "use physical mouse automation",
+    "claim GPU-backed source behavior without published runtime proof"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_visible_color_pipeline_source_authority",
+    "legacy_lens_path_preserved": true,
+    "physical_mouse_automation": false,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "capture_quality_downgraded": false
+  },
+  "forbidden_defaults": {
+    "legacy_lens_replacement": "forbidden",
+    "per_source_downsample": "deferred",
+    "multi_field_composition": "deferred",
+    "sdf_native_lanes": "deferred",
+    "authored_sdf_pack_ui": "deferred",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_native_core --log artifacts/logs/lens_field_v2_native_core.log --out-json artifacts/validation/lens_field_v2_native_core.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core test_color_pipeline_sdf_postprocess test_lens_sdf",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_native_window --log artifacts/logs/lens_field_v2_native_window.log --out-json artifacts/validation/lens_field_v2_native_window.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_native_schema_binding --log artifacts/logs/lens_field_v2_native_schema_binding.log --out-json artifacts/validation/lens_field_v2_native_schema_binding.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_schema_binding",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_ui_salt_materializer --log artifacts/logs/lens_field_v2_ui_salt_materializer.log --out-json artifacts/validation/lens_field_v2_ui_salt_materializer.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_runtime_publish --log artifacts/logs/lens_field_v2_runtime_publish.log --out-json artifacts/validation/lens_field_v2_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_runtime_rows --log artifacts/logs/lens_field_v2_runtime_rows.log --out-json artifacts/validation/lens_field_v2_runtime_rows.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_runtime_pacing --log artifacts/logs/lens_field_v2_runtime_pacing.log --out-json artifacts/validation/lens_field_v2_runtime_pacing.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_runtime_capture_replay --log artifacts/logs/lens_field_v2_runtime_capture_replay.log --out-json artifacts/validation/lens_field_v2_runtime_capture_replay.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_capture_replay_authority.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/lens_field_v2_source_authority.contract.json --out-json artifacts/validation/lens_field_v2_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/lens_field_v2_source_authority_PHASED_PLAN.md --out-json artifacts/validation/lens_field_v2_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/lens_field_v2_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label lens_field_v2_diff_check --log artifacts/logs/lens_field_v2_diff_check.log --out-json artifacts/validation/lens_field_v2_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Lens Field v2 source-authority contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/lens_field_v2_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Lens Field v2 hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/lens_field_v2_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

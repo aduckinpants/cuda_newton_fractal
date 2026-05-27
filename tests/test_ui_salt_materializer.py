@@ -139,13 +139,14 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "palette",
         "grading",
     ]
-    assert len(lanes["source"]["functions"]) == 12
+    assert len(lanes["source"]["functions"]) == 13
     assert len(lanes["shape"]["functions"]) == 7
     assert len(lanes["palette"]["functions"]) == 6
     assert len(lanes["grading"]["functions"]) == 8
     signal_kinds = {fn["id"]: fn.get("signal_kind") for fn in lanes["source"]["functions"]}
     assert signal_kinds["sdf_normal_angle"] == "phase"
     assert signal_kinds["sdf_inside_outside"] == "categorical"
+    assert signal_kinds["lens_field_v2_distance"] == "scalar"
     taxonomy_groups = {
         fn["id"]: fn.get("taxonomy_group")
         for lane in actual["function_library"]["lanes"]
@@ -154,7 +155,13 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert all(taxonomy_groups.values())
     assert taxonomy_groups["smooth_escape_ramp"] == "escape"
     assert taxonomy_groups["sdf_normal_angle"] == "sdf_phase"
+    assert taxonomy_groups["lens_field_v2_distance"] == "lens_field_v2"
     assert taxonomy_groups["identity"] == "identity"
     assert taxonomy_groups["phase_wheel_palette"] == "palette_phase"
     assert taxonomy_groups["balance_void_grade"] == "grade_manifold"
-    assert len(actual["composition_recipe_contract"]["compatibility"]) == 20
+    lens_v2 = next(fn for fn in lanes["source"]["functions"] if fn["id"] == "lens_field_v2_distance")
+    lens_v2_params = {param["path"]: param for param in lens_v2["params"]}
+    assert lens_v2_params["signal.sign_contrast"]["default"] == 0.35
+    assert lens_v2_params["signal.sign_contrast"]["min"] == 0.0
+    assert lens_v2_params["signal.sign_contrast"]["max"] == 1.0
+    assert len(actual["composition_recipe_contract"]["compatibility"]) == 22

@@ -841,6 +841,33 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
             std::string("color_pipeline.source.sdf_field.downsample.primary"),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_DownsampleAliasControlIdStable");
 
+    ColorPipelineWindowState lensFieldState{};
+    KernelParams lensFieldParams = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&lensFieldState, FractalType::newton, &lensFieldParams),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_LensFieldV2SyncStartsSupported");
+    Check(SelectColorPipelineLaneFunction(&lensFieldState, 0, "lens_field_v2_distance"),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_SelectLensFieldV2");
+    Check(RenderablePathsEqual(lensFieldState.lanes[0].rows[0],
+              {"signal.scale", "signal.bias", "signal.sign_contrast", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.sdf_sample_step", "signal.blend_weight"}),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_LensFieldV2RenderableParams");
+    Check(RowNumber(lensFieldState.lanes[0].rows[0], "signal.sign_contrast", 0.35),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_LensFieldV2DefaultRestoresSignContrast");
+    Check(SetRowNumber(lensFieldState.lanes[0].rows[0], "signal.sign_contrast", 0.8) &&
+            SetRowNumber(lensFieldState.lanes[0].rows[0], "signal.sdf_sample_step", 2.0),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_EditsLensFieldV2SignContrast");
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&lensFieldState, FractalType::newton, &lensFieldParams, &changed) && changed,
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_ApplyLensFieldV2");
+    Check(lensFieldParams.color_source_stack_count == 1 &&
+            lensFieldParams.color_source_stack[0].signal == ColorSignal::lens_field_v2_distance &&
+            Near(lensFieldParams.color_source_stack[0].params.lens_field_v2_sign_contrast, 0.8) &&
+            lensFieldParams.color_source_stack[0].params.sdf_sample_step == 2,
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_LensFieldV2RuntimeStackOwnsSignContrast");
+    Check(lensFieldState.live_snapshot.valid && lensFieldState.live_snapshot.draft_import_supported &&
+            RowNumber(lensFieldState.lanes[0].rows[0], "signal.sign_contrast", 0.8) &&
+            RowNumber(lensFieldState.lanes[0].rows[0], "signal.sdf_sample_step", 2.0),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_LensFieldV2ResyncImportsSignContrast");
+
     ColorPipelineWindowState normalState{};
     KernelParams normalParams = SmoothEscapeParams();
     Check(SyncColorPipelineWindowFromLiveState(&normalState, FractalType::newton, &normalParams),

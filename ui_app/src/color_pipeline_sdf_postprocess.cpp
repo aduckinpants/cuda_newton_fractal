@@ -41,6 +41,7 @@ struct PlannedSdfSourceRow {
     SdfFieldSignalConfig config{};
     ColorPipelineSdfGateMode gate{ColorPipelineSdfGateMode::none};
     float gate_width_px{2.0f};
+    float lens_field_v2_sign_contrast{0.0f};
     float scale{1.0f};
     float bias{0.0f};
     float blend_weight{1.0f};
@@ -120,6 +121,8 @@ SdfFieldSignalKind SignalKindForColorSignal(ColorSignal signal) {
         return SdfFieldSignalKind::normal_angle_radians;
     case ColorSignal::sdf_curvature:
         return SdfFieldSignalKind::curvature_estimate;
+    case ColorSignal::lens_field_v2_distance:
+        return SdfFieldSignalKind::lens_field_v2_response;
     case ColorSignal::sdf_signed_distance:
     default:
         return SdfFieldSignalKind::signed_distance_px;
@@ -149,6 +152,7 @@ PlannedSdfSourceRow PlannedRowForSourceEntry(const ColorPipelineSourceStackEntry
     row.config = SignalConfigForSourceEntry(entry);
     row.gate = entry.params.sdf_gate;
     row.gate_width_px = EscapeTimeColorClamp(entry.params.sdf_gate_width_px, 0.25f, 16.0f);
+    row.lens_field_v2_sign_contrast = EscapeTimeColorClamp(entry.params.lens_field_v2_sign_contrast, 0.0f, 1.0f);
     row.scale = entry.params.scale;
     row.bias = entry.params.bias;
     row.blend_weight = EscapeTimeColorClamp(entry.params.blend_weight, 0.0f, 1.0f);
@@ -243,8 +247,15 @@ float ApplyPlannedSdfGateToSourceValue(
 
 float ResolveSdfSourceValueFromSample(
     const SdfFieldSignalSample& sample,
+    float fieldPixelScale,
     const ColorPipelineSourceStackEntry& entry) {
     float value = ResolveSdfFieldSignalValue(sample, SignalKindForColorSignal(entry.signal));
+    if (entry.signal == ColorSignal::lens_field_v2_distance) {
+        value = ResolveLensFieldV2ResponseFromSignedDistancePx(
+            sample.signed_distance_px,
+            fieldPixelScale,
+            entry.params.lens_field_v2_sign_contrast);
+    }
     if (entry.signal == ColorSignal::sdf_normal_angle) {
         value = (value + kPi) / kTwoPi;
     }
@@ -254,8 +265,15 @@ float ResolveSdfSourceValueFromSample(
 
 float ResolvePlannedSdfSourceValueFromSample(
     const SdfFieldSignalSample& sample,
+    float fieldPixelScale,
     const PlannedSdfSourceRow& row) {
     float value = ResolveSdfFieldSignalValue(sample, row.kind);
+    if (row.signal == ColorSignal::lens_field_v2_distance) {
+        value = ResolveLensFieldV2ResponseFromSignedDistancePx(
+            sample.signed_distance_px,
+            fieldPixelScale,
+            row.lens_field_v2_sign_contrast);
+    }
     if (row.signal == ColorSignal::sdf_normal_angle) {
         value = (value + kPi) / kTwoPi;
     }
@@ -312,19 +330,25 @@ bool ResolveSdfSourceValue(
     if (!SampleSdfFieldSignals(field, fx, fy, SignalConfigForSourceEntry(entry), sample)) {
         return false;
     }
-    *outValue = ResolveSdfSourceValueFromSample(sample, entry);
+    *outValue = ResolveSdfSourceValueFromSample(sample, field.pixel_scale, entry);
     return true;
 }
 
 bool ResolveDirectSdfSourceValueFromCenter(
     float center,
+    float fieldPixelScale,
     const ColorPipelineSourceStackEntry& entry,
     float* outValue) {
     if (!outValue || SdfSignalNeedsNeighborhood(entry.signal)) {
         return false;
     }
     float value = center;
-    if (entry.signal == ColorSignal::sdf_inside_outside) {
+    if (entry.signal == ColorSignal::lens_field_v2_distance) {
+        value = ResolveLensFieldV2ResponseFromSignedDistancePx(
+            center,
+            fieldPixelScale,
+            entry.params.lens_field_v2_sign_contrast);
+    } else if (entry.signal == ColorSignal::sdf_inside_outside) {
         value = center < 0.0f ? 1.0f : 0.0f;
     } else if (entry.signal == ColorSignal::sdf_boundary_band) {
         value = ResolveSdfBoundaryBandFromSignedDistancePx(center, SignalConfigForSourceEntry(entry));
@@ -338,13 +362,19 @@ bool ResolveDirectSdfSourceValueFromCenter(
 
 bool ResolveDirectPlannedSdfSourceValueFromCenter(
     float center,
+    float fieldPixelScale,
     const PlannedSdfSourceRow& row,
     float* outValue) {
     if (!outValue || row.needs_neighborhood) {
         return false;
     }
     float value = center;
-    if (row.signal == ColorSignal::sdf_inside_outside) {
+    if (row.signal == ColorSignal::lens_field_v2_distance) {
+        value = ResolveLensFieldV2ResponseFromSignedDistancePx(
+            center,
+            fieldPixelScale,
+            row.lens_field_v2_sign_contrast);
+    } else if (row.signal == ColorSignal::sdf_inside_outside) {
         value = center < 0.0f ? 1.0f : 0.0f;
     } else if (row.signal == ColorSignal::sdf_boundary_band) {
         value = ResolveSdfBoundaryBandFromSignedDistancePx(center, SignalConfigForPlannedRow(row));
@@ -385,7 +415,7 @@ bool ResolveDirectSdfPipelineSignal(
             if (outError) *outError = "SDF Color Pipeline postprocess was requested without an SDF source signal";
             return false;
         }
-        if (!ResolveDirectSdfSourceValueFromCenter(center, FlatSdfSourceEntry(params), outSignal)) {
+        if (!ResolveDirectSdfSourceValueFromCenter(center, field.pixel_scale, FlatSdfSourceEntry(params), outSignal)) {
             if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
             return false;
         }
@@ -398,7 +428,7 @@ bool ResolveDirectSdfPipelineSignal(
         return false;
     }
     float signal = 0.0f;
-    if (!ResolveDirectSdfSourceValueFromCenter(center, first, &signal)) {
+    if (!ResolveDirectSdfSourceValueFromCenter(center, field.pixel_scale, first, &signal)) {
         if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
         return false;
     }
@@ -409,7 +439,7 @@ bool ResolveDirectSdfPipelineSignal(
             return false;
         }
         float nextSignal = 0.0f;
-        if (!ResolveDirectSdfSourceValueFromCenter(center, entry, &nextSignal)) {
+        if (!ResolveDirectSdfSourceValueFromCenter(center, field.pixel_scale, entry, &nextSignal)) {
             if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
             return false;
         }
@@ -444,13 +474,13 @@ bool ResolveDirectPlannedSdfPipelineSignal(
     }
 
     float signal = 0.0f;
-    if (!ResolveDirectPlannedSdfSourceValueFromCenter(center, plan.rows[0], &signal)) {
+    if (!ResolveDirectPlannedSdfSourceValueFromCenter(center, field.pixel_scale, plan.rows[0], &signal)) {
         if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
         return false;
     }
     for (int index = 1; index < plan.row_count; ++index) {
         float nextSignal = 0.0f;
-        if (!ResolveDirectPlannedSdfSourceValueFromCenter(center, plan.rows[index], &nextSignal)) {
+        if (!ResolveDirectPlannedSdfSourceValueFromCenter(center, field.pixel_scale, plan.rows[index], &nextSignal)) {
             if (outError) *outError = "SDF Color Pipeline postprocess needs neighborhood sampling for this SDF source";
             return false;
         }
@@ -496,7 +526,7 @@ bool ResolveSdfPipelineSignal(
         if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
         return false;
     }
-    float signal = ResolveSdfSourceValueFromSample(cachedSample, first);
+    float signal = ResolveSdfSourceValueFromSample(cachedSample, field.pixel_scale, first);
     for (int index = 1; index < sourceStackCount; ++index) {
         const ColorPipelineSourceStackEntry& entry = params.color_source_stack[index];
         if (!IsColorPipelineSdfSourceSignal(entry.signal)) {
@@ -512,7 +542,7 @@ bool ResolveSdfPipelineSignal(
             }
             sample = &distinctSample;
         }
-        const float nextSignal = ResolveSdfSourceValueFromSample(*sample, entry);
+        const float nextSignal = ResolveSdfSourceValueFromSample(*sample, field.pixel_scale, entry);
         signal = EscapeTimeColorLerp(
             signal,
             nextSignal,
@@ -544,7 +574,7 @@ bool ResolvePlannedSdfPipelineSignal(
         if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
         return false;
     }
-    float signal = ResolvePlannedSdfSourceValueFromSample(cachedSample, plan.rows[0]);
+    float signal = ResolvePlannedSdfSourceValueFromSample(cachedSample, field.pixel_scale, plan.rows[0]);
     for (int index = 1; index < plan.row_count; ++index) {
         const PlannedSdfSourceRow& row = plan.rows[index];
         const SdfFieldSignalSample* sample = &cachedSample;
@@ -556,7 +586,7 @@ bool ResolvePlannedSdfPipelineSignal(
             }
             sample = &distinctSample;
         }
-        const float nextSignal = ResolvePlannedSdfSourceValueFromSample(*sample, row);
+        const float nextSignal = ResolvePlannedSdfSourceValueFromSample(*sample, field.pixel_scale, row);
         signal = EscapeTimeColorLerp(signal, nextSignal, row.blend_weight);
     }
     *outSignal = signal;
@@ -581,7 +611,7 @@ bool ResolvePlannedSdfSourceRowValue(
             if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
             return false;
         }
-        *outValue = ResolvePlannedSdfSourceValueFromSample(sample, row);
+        *outValue = ResolvePlannedSdfSourceValueFromSample(sample, field.pixel_scale, row);
         if (outStats) {
             ++outStats->source_neighborhood_sample_count;
         }
@@ -590,7 +620,7 @@ bool ResolvePlannedSdfSourceRowValue(
 
     float center = 0.0f;
     if (!SampleSdfCenterValue(field, fx, fy, &center) ||
-        !ResolveDirectPlannedSdfSourceValueFromCenter(center, row, outValue)) {
+        !ResolveDirectPlannedSdfSourceValueFromCenter(center, field.pixel_scale, row, outValue)) {
         if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
         return false;
     }
@@ -984,7 +1014,8 @@ bool IsColorPipelineSdfSourceSignal(ColorSignal signal) {
         signal == ColorSignal::sdf_inside_outside ||
         signal == ColorSignal::sdf_boundary_band ||
         signal == ColorSignal::sdf_normal_angle ||
-        signal == ColorSignal::sdf_curvature;
+        signal == ColorSignal::sdf_curvature ||
+        signal == ColorSignal::lens_field_v2_distance;
 }
 
 bool ColorPipelineUsesSdfSource(const KernelParams& params) {
