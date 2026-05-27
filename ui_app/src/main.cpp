@@ -502,11 +502,23 @@ static bool RenderHeadlessFractalFrame(
     RenderStats* outStats,
     std::string* outError,
     const LensSettings* lensForSdf = nullptr) {
+    const LensSettings defaultLens{};
+    const LensSettings& lensSettings = lensForSdf ? *lensForSdf : defaultLens;
+    Int2 sdfSourceResolution = render.resolution;
+    if (lensSettings.sdf_field_source_resolution.x > 0 &&
+        lensSettings.sdf_field_source_resolution.y > 0) {
+        sdfSourceResolution = lensSettings.sdf_field_source_resolution;
+    }
+    const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
+    const bool sdfSourceDiffersFromRender =
+        colorPipelineNeedsSdf &&
+        (sdfSourceResolution.x != render.resolution.x ||
+         sdfSourceResolution.y != render.resolution.y);
+
     outRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     std::vector<uint8_t> mask;
     uint8_t* maskPtr = nullptr;
-    const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
-    if (colorPipelineNeedsSdf) {
+    if (colorPipelineNeedsSdf && !sdfSourceDiffersFromRender) {
         mask.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
         maskPtr = mask.data();
     }
@@ -521,13 +533,34 @@ static bool RenderHeadlessFractalFrame(
         return true;
     }
 
-    const LensSettings defaultLens{};
-    const LensSettings& lensSettings = lensForSdf ? *lensForSdf : defaultLens;
+    std::vector<uint8_t> sourceMask;
+    const uint8_t* sdfMaskPtr = maskPtr;
+    if (sdfSourceDiffersFromRender) {
+        const std::size_t sourcePixelCount =
+            static_cast<std::size_t>(sdfSourceResolution.x) *
+            static_cast<std::size_t>(sdfSourceResolution.y);
+        std::vector<std::uint32_t> sourceRgba(sourcePixelCount);
+        sourceMask.resize(sourcePixelCount);
+        RenderSettings sourceRender = render;
+        sourceRender.resolution = sdfSourceResolution;
+        RenderStats sourceStats{};
+        const char* sourceRenderError = nullptr;
+        if (!RenderFractalCUDA(view, params, sourceRender, sourceRgba.data(), sourceMask.data(), &sourceStats, &sourceRenderError)) {
+            if (outError) {
+                *outError = sourceRenderError
+                    ? sourceRenderError
+                    : "RenderFractalCUDA failed while rebuilding the SDF field source mask for headless capture.";
+            }
+            return false;
+        }
+        sdfMaskPtr = sourceMask.data();
+    }
+
     SdfFieldResult lensSdfField;
     if (!ComputeLensSdfFieldForMaskWithBackend(
-            maskPtr,
-            render.resolution.x,
-            render.resolution.y,
+            sdfMaskPtr,
+            sdfSourceResolution.x,
+            sdfSourceResolution.y,
             lensSettings.downsample,
             LensSdfBackend::auto_backend,
             lensSdfField,
@@ -662,16 +695,22 @@ static bool RunInLoopFindingCapture(
             ? Int2{renderedFrame.width, renderedFrame.height}
             : render.resolution;
     RenderSettings findingRender = BuildFindingArchiveCaptureRenderForSource(render, captureSourceResolution);
+    LensSettings findingLens = lens;
+    if (ColorPipelineUsesSdfSource(params) &&
+        captureSourceResolution.x > 0 &&
+        captureSourceResolution.y > 0) {
+        findingLens.sdf_field_source_resolution = captureSourceResolution;
+    }
     std::vector<uint32_t> findingRgba;
     findingRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
     RenderStats findingStats{};
     std::string renderError;
-    if (!RenderHeadlessFractalFrame(view, params, findingRender, findingRgba, &findingStats, &renderError, &lens)) {
+    if (!RenderHeadlessFractalFrame(view, params, findingRender, findingRgba, &findingStats, &renderError, &findingLens)) {
         findingStatus = std::string("Capture finding failed: ") + (renderError.empty() ? "unknown error" : renderError);
         return invalidateCaches;
     } else if (!CaptureAndArchiveFindingBundleWithLens(exeDir, view, params, findingRender, findingStats,
             findingRgba.data(), findingRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow,
-            &lens,
+            &findingLens,
             "manual_capture", "Manual viewer capture.",
             &findingDir, &captureError)) {
         findingStatus = "Capture finding failed: " + captureError;

@@ -44,6 +44,14 @@ def _resampling_lanczos():
         return image_module.LANCZOS
 
 
+def _resampling_box():
+    image_module = pytest.importorskip("PIL.Image")
+    try:
+        return image_module.Resampling.BOX
+    except AttributeError:
+        return image_module.BOX
+
+
 def _image_mean_abs_rgb(left, right) -> float:
     assert left.size == right.size
     left_bytes = left.tobytes()
@@ -485,6 +493,104 @@ def test_capture_finding_preserves_sdf_source_row_pixels_no_mouse(tmp_path: Path
             shutil.rmtree(ui_finding_dir, ignore_errors=True)
         shutil.rmtree(headless_group_root, ignore_errors=True)
         DIAGNOSTICS_FRAME_FILE.unlink(missing_ok=True)
+
+
+def test_capture_finding_replays_live_sdf_field_resolution_for_multi_row_stack_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline SDF Capture Finding regression is Windows-only")
+
+    image_module = pytest.importorskip("PIL.Image")
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "julia",
+        "--width",
+        "256",
+        "--height",
+        "160",
+    )
+    neutral_state = json.loads(json.dumps(neutral_capture["state"]))
+    seed_state_path = write_state_bundle(tmp_path / "capture_finding_multirow_seed", neutral_state)
+    sdf_capture = _capture_all_sdf_source_rows(exe_path=exe_path, state_path=seed_state_path)
+    state = json.loads(json.dumps(sdf_capture["state"]))
+    render = state.get("render")
+    assert isinstance(render, dict)
+    render.update({"width": 256, "height": 160, "sample_tier": "fast"})
+    lens = state.setdefault("lens", {})
+    assert isinstance(lens, dict)
+    lens.update({"enabled": False, "downsample": 1, "sdf_overlay_mode": "off"})
+    params = state.get("params")
+    assert isinstance(params, dict)
+    params["max_iter"] = 96
+    state_path = write_state_bundle(tmp_path / "capture_finding_multirow_sdf", state)
+
+    report_path = tmp_path / "viewer_report.json"
+    command_path = tmp_path / "viewer_command.json"
+    before_manual = _manual_capture_dirs()
+    ui_finding_dir: Path | None = None
+
+    try:
+        with PersistentRuntimeViewerAutomation(
+            exe_path=exe_path,
+            state_path=state_path,
+            report_path=report_path,
+            command_path=command_path,
+        ) as viewer:
+            live_report = viewer.wait_for_report(timeout_seconds=60.0)
+            assert live_report.get("lens_sdf_valid") is True, live_report
+            live_width = int(live_report["rendered_frame_width"])
+            live_height = int(live_report["rendered_frame_height"])
+            assert (live_width, live_height) == (256, 160)
+            viewer.wait_for_control("capture_finding", timeout_seconds=20.0)
+            capture_report = viewer.click_control("capture_finding", timeout_seconds=180.0)
+            capture_width = int(capture_report["rendered_frame_width"])
+            capture_height = int(capture_report["rendered_frame_height"])
+
+        ui_finding_dir = _wait_for_new_manual_capture(before_manual, timeout_seconds=180.0)
+        ui_state_path = ui_finding_dir / "state.json"
+        ui_frame_path = ui_finding_dir / "frame.png"
+        assert ui_state_path.exists()
+        assert ui_frame_path.exists()
+
+        ui_state = json.loads(ui_state_path.read_text(encoding="utf-8"))
+        ui_lens = ui_state.get("lens")
+        assert isinstance(ui_lens, dict)
+        assert ui_lens.get("sdf_field_source_width") == capture_width
+        assert ui_lens.get("sdf_field_source_height") == capture_height
+        ui_render = ui_state.get("render")
+        assert isinstance(ui_render, dict)
+        assert int(ui_render["width"]) >= capture_width
+        assert int(ui_render["height"]) >= capture_height
+
+        reference = run_headless_capture(
+            str(exe_path),
+            "--load-state-json",
+            str(ui_state_path),
+            "--width",
+            str(capture_width),
+            "--height",
+            str(capture_height),
+            "--capture-diagnostic",
+        )
+        reference_frame_path = DIAGNOSTICS_FRAME_FILE
+        assert reference_frame_path.exists()
+        assert reference["frame_hash"] != neutral_capture["frame_hash"]
+
+        ui_frame = image_module.open(ui_frame_path).convert("RGB")
+        reference_frame = image_module.open(reference_frame_path).convert("RGB")
+        downsampled_ui = ui_frame.resize(reference_frame.size, _resampling_box())
+        mean_abs_rgb = _image_mean_abs_rgb(downsampled_ui, reference_frame)
+        assert mean_abs_rgb < 6.0, (
+            f"Capture Finding high-res SDF frame no longer matches the live/source SDF field authority: "
+            f"mean_abs_rgb={mean_abs_rgb:.3f}, ui_finding={ui_finding_dir}"
+        )
+    finally:
+        if ui_finding_dir is not None:
+            shutil.rmtree(ui_finding_dir, ignore_errors=True)
+        DIAGNOSTICS_FRAME_FILE.unlink(missing_ok=True)
+
 
 def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_path: Path) -> None:
     if sys.platform != "win32":

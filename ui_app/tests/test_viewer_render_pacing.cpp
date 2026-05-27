@@ -373,6 +373,41 @@ int main() {
 
     {
         RenderSettings render{};
+        render.resolution = {4096, 2542};
+        render.interaction_debounce_ms = 200;
+        RenderStats fullStats{};
+        fullStats.last_render_ms = 4987.0f;
+        RenderStats previewStats{};
+        previewStats.last_render_ms = 30.0f;
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+
+        NoteViewerInteraction(&state);
+        ViewerRenderPacingDecision preview = AdvanceViewerRenderPacing(render, fullStats, 0.0, config, &state);
+        if (!preview.preview_active || !state.settle_render_pending) {
+            std::cerr << "Expected very slow full-quality timing to enter preview during interaction\n";
+            return 1;
+        }
+        if (state.slow_full_quality_settle_seconds < 1.9) {
+            std::cerr << "Expected very slow full-quality timing to extend the settle window\n";
+            return 1;
+        }
+
+        ViewerRenderPacingDecision hold = AdvanceViewerRenderPacing(render, previewStats, 0.25, config, &state);
+        if (!hold.preview_active || hold.full_quality_due) {
+            std::cerr << "Expected SDF-heavy preview to stay active past the fixed debounce instead of flickering to full quality\n";
+            return 1;
+        }
+
+        ViewerRenderPacingDecision settle = AdvanceViewerRenderPacing(render, previewStats, 2.0, config, &state);
+        if (settle.preview_active || !settle.full_quality_due) {
+            std::cerr << "Expected extended settle window to still allow one full-quality settle render\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
         render.resolution = {2048, 1536};
         RenderStats stats{};
         stats.last_render_ms = 90.0f;

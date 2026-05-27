@@ -9,6 +9,7 @@ constexpr double kNoRecentInteraction = 1.0e30;
 constexpr int kDefaultPreviewStepCount = 4;
 constexpr double kPreviewRecoveryBlend = 0.25;
 constexpr double kSevereSlowFrameMultiplier = 8.0;
+constexpr double kMaxSlowFullQualitySettleSeconds = 2.0;
 
 double ClampFinite(double value, double minValue, double maxValue, double fallback) {
     if (!std::isfinite(value)) return fallback;
@@ -42,6 +43,15 @@ bool HasUsableRenderTiming(float renderMs) {
 
 bool HasUsableTargetFrameMs(double targetFrameMs) {
     return std::isfinite(targetFrameMs) && targetFrameMs > 0.0;
+}
+
+double SlowFullQualitySettleSeconds(float renderMs, const ViewerRenderPacingConfig& config) {
+    if (!HasUsableRenderTiming(renderMs) || !HasUsableTargetFrameMs(config.target_frame_ms)) return 0.0;
+    const double renderSeconds = static_cast<double>(renderMs) / 1000.0;
+    if (renderSeconds <= config.debounce_seconds) return 0.0;
+    const double overBudgetThreshold = config.target_frame_ms * config.step_down_hysteresis;
+    if (static_cast<double>(renderMs) <= overBudgetThreshold) return 0.0;
+    return ClampFinite(renderSeconds, 0.0, kMaxSlowFullQualitySettleSeconds, 0.0);
 }
 
 double EffectivePreviewMinScale(float renderMs, const ViewerRenderPacingConfig& config) {
@@ -151,10 +161,18 @@ ViewerRenderPacingDecision AdvanceViewerRenderPacing(
     ioState->interaction_just_noted = false;
     const double delta = (!justNoted && std::isfinite(deltaSeconds) && deltaSeconds > 0.0) ? deltaSeconds : 0.0;
     const double ageAfterFrame = ioState->seconds_since_interaction + delta;
+    if (!IsActivePreviewScale(ioState->active_preview_scale)) {
+        const double slowSettleSeconds = SlowFullQualitySettleSeconds(lastStats.last_render_ms, config);
+        if (slowSettleSeconds > ioState->slow_full_quality_settle_seconds) {
+            ioState->slow_full_quality_settle_seconds = slowSettleSeconds;
+        }
+    }
+    const double effectiveDebounceSeconds = std::fmax(debounceSeconds, ioState->slow_full_quality_settle_seconds);
 
-    if (debounceSeconds <= 0.0 || ageAfterFrame >= debounceSeconds) {
+    if (effectiveDebounceSeconds <= 0.0 || ageAfterFrame >= effectiveDebounceSeconds) {
         ioState->seconds_since_interaction = kNoRecentInteraction;
         ioState->active_preview_scale = 1.0;
+        ioState->slow_full_quality_settle_seconds = 0.0;
         ioState->preview_step_index = 0;
         if (ioState->settle_render_pending) {
             decision.full_quality_due = true;

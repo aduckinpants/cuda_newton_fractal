@@ -620,6 +620,8 @@ void WriteLensStateJson(std::ostringstream& js, const LensSettings& lens) {
     js << "  \"lens\": {\n";
     js << "    \"enabled\": " << (lens.enabled ? "true" : "false") << ",\n";
     js << "    \"downsample\": " << lens.downsample << ",\n";
+    js << "    \"sdf_field_source_width\": " << lens.sdf_field_source_resolution.x << ",\n";
+    js << "    \"sdf_field_source_height\": " << lens.sdf_field_source_resolution.y << ",\n";
     js << "    \"sdf_overlay_mode\": ";
     WriteJsonEscapedString(js, overlayModeId ? overlayModeId : "off");
     js << ",\n";

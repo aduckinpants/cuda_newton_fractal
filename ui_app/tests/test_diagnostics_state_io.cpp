@@ -5667,6 +5667,7 @@ int main() {
         LensSettings lens{};
         lens.enabled = true;
         lens.downsample = 4;
+        lens.sdf_field_source_resolution = {320, 200};
         lens.sdf_overlay_mode = LensSdfOverlayMode::field_debug;
         lens.sdf_overlay_opacity = 0.375f;
         lens.sdf_overlay_band_px = 6.25f;
@@ -5710,6 +5711,8 @@ int main() {
         }
         if (!loadedLens.enabled ||
             loadedLens.downsample != 4 ||
+            loadedLens.sdf_field_source_resolution.x != 320 ||
+            loadedLens.sdf_field_source_resolution.y != 200 ||
             loadedLens.sdf_overlay_mode != LensSdfOverlayMode::field_debug ||
             !NearlyEqual(loadedLens.sdf_overlay_opacity, 0.375, 0.001) ||
             !NearlyEqual(loadedLens.sdf_overlay_band_px, 6.25, 0.001)) {
@@ -5720,6 +5723,7 @@ int main() {
         LensSettings oldStateLens{};
         oldStateLens.enabled = true;
         oldStateLens.downsample = 16;
+        oldStateLens.sdf_field_source_resolution = {640, 360};
         oldStateLens.sdf_overlay_mode = LensSdfOverlayMode::band;
         oldStateLens.sdf_overlay_opacity = 0.1f;
         oldStateLens.sdf_overlay_band_px = 11.0f;
@@ -5757,6 +5761,8 @@ int main() {
         const LensSettings defaultLens{};
         if (oldStateLens.enabled != defaultLens.enabled ||
             oldStateLens.downsample != defaultLens.downsample ||
+            oldStateLens.sdf_field_source_resolution.x != defaultLens.sdf_field_source_resolution.x ||
+            oldStateLens.sdf_field_source_resolution.y != defaultLens.sdf_field_source_resolution.y ||
             oldStateLens.sdf_overlay_mode != defaultLens.sdf_overlay_mode ||
             !NearlyEqual(oldStateLens.sdf_overlay_opacity, defaultLens.sdf_overlay_opacity, 0.001) ||
             !NearlyEqual(oldStateLens.sdf_overlay_band_px, defaultLens.sdf_overlay_band_px, 0.001)) {

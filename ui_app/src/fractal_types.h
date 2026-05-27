@@ -530,6 +530,7 @@ enum class LensSdfOverlayMode : int {
 struct LensSettings {
     bool enabled{false};
     int downsample{2};
+    Int2 sdf_field_source_resolution{0, 0};
     LensSdfOverlayMode sdf_overlay_mode{LensSdfOverlayMode::off};
     float sdf_overlay_opacity{0.55f};
     float sdf_overlay_band_px{1.5f};

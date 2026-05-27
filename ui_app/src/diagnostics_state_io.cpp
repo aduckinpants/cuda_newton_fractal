@@ -139,6 +139,40 @@ bool ParseOptionalLensDownsample(const json_min::Value& lensObject, LensSettings
     return true;
 }
 
+bool ParseOptionalLensSdfFieldSourceResolution(const json_min::Value& lensObject, LensSettings* ioLens, std::string* outError) {
+    double widthRaw = 0.0;
+    double heightRaw = 0.0;
+    bool hasWidth = false;
+    bool hasHeight = false;
+    if (!GetOptionalNumber(lensObject, "sdf_field_source_width", &widthRaw, &hasWidth, outError)) return false;
+    if (!GetOptionalNumber(lensObject, "sdf_field_source_height", &heightRaw, &hasHeight, outError)) return false;
+    if (hasWidth != hasHeight) {
+        if (outError) *outError = "lens.sdf_field_source_width and lens.sdf_field_source_height must be provided together";
+        return false;
+    }
+    if (!hasWidth) {
+        return true;
+    }
+    if (!std::isfinite(widthRaw) || !std::isfinite(heightRaw) ||
+        std::floor(widthRaw) != widthRaw ||
+        std::floor(heightRaw) != heightRaw ||
+        widthRaw < 0.0 ||
+        heightRaw < 0.0 ||
+        widthRaw > static_cast<double>(INT_MAX) ||
+        heightRaw > static_cast<double>(INT_MAX)) {
+        if (outError) *outError = "Invalid lens SDF field source resolution";
+        return false;
+    }
+    const int width = static_cast<int>(widthRaw);
+    const int height = static_cast<int>(heightRaw);
+    if ((width == 0) != (height == 0)) {
+        if (outError) *outError = "lens SDF field source resolution must be both zero or both positive";
+        return false;
+    }
+    ioLens->sdf_field_source_resolution = {width, height};
+    return true;
+}
+
 bool ParseOptionalLensOverlayMode(const json_min::Value& lensObject, LensSettings* ioLens, std::string* outError) {
     std::string overlayModeId;
     if (TryGetOptionalString(lensObject, "sdf_overlay_mode", &overlayModeId)) {
@@ -180,6 +214,7 @@ bool ParseOptionalLensState(const json_min::Value& root, LensSettings* outLens, 
     }
     if (!GetOptionalBool(*lensObject, "enabled", &lens.enabled, nullptr, outError)) return false;
     if (!ParseOptionalLensDownsample(*lensObject, &lens, outError)) return false;
+    if (!ParseOptionalLensSdfFieldSourceResolution(*lensObject, &lens, outError)) return false;
     if (!ParseOptionalLensOverlayMode(*lensObject, &lens, outError)) return false;
     if (!ParseOptionalLensFloat(*lensObject, "sdf_overlay_opacity", &lens.sdf_overlay_opacity, outError)) return false;
     if (!ParseOptionalLensFloat(*lensObject, "sdf_overlay_band_px", &lens.sdf_overlay_band_px, outError)) return false;

@@ -15,6 +15,7 @@ struct ViewerRenderPacingState {
     double seconds_since_interaction{1.0e30};
     bool settle_render_pending{false};
     double active_preview_scale{1.0};
+    double slow_full_quality_settle_seconds{0.0};
     int preview_step_index{0};
     bool interaction_just_noted{false};
 };
