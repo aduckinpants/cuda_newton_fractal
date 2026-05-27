@@ -53,6 +53,9 @@ struct ViewerUiAutomationLensSdfProbe {
     int requested_downsample = 1;
     int effective_downsample = 1;
     std::string quality_mode = "requested";
+    std::string field_cache_status = "disabled";
+    bool field_cache_hit = false;
+    std::uint64_t field_cache_mask_bytes = 0;
     float base_render_ms = 0.0f;
     float field_ms = 0.0f;
     float requested_equivalent_field_ms = 0.0f;

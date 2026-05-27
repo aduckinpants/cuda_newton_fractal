@@ -86,6 +86,10 @@ void TestLensSdfProbeDefaults() {
             probe.effective_downsample == 1 &&
             probe.quality_mode == "requested",
         "lens SDF automation probe reports stable requested/effective quality defaults");
+    Check(!probe.field_cache_hit &&
+            probe.field_cache_status == "disabled" &&
+            probe.field_cache_mask_bytes == 0,
+        "lens SDF automation probe reports stable field cache defaults");
 }
 
 void TestLensSdfProbeTimingFields() {
@@ -104,6 +108,9 @@ void TestLensSdfProbeTimingFields() {
     probe.postprocess_backend_fallback_used = true;
     probe.postprocess_source_direct_sample_count = 11;
     probe.postprocess_source_neighborhood_sample_count = 22;
+    probe.field_cache_status = "hit";
+    probe.field_cache_hit = true;
+    probe.field_cache_mask_bytes = 76800;
     Check(probe.color_pipeline_active && probe.base_render_ms == 3.0f &&
             probe.field_ms == 2.0f && probe.requested_equivalent_field_ms == 8.0f &&
             probe.postprocess_ms == 7.5f && probe.total_ms == 9.5f,
@@ -119,6 +126,10 @@ void TestLensSdfProbeTimingFields() {
             probe.effective_downsample == 4 &&
             probe.quality_mode == "interactive_adaptive",
         "lens SDF automation probe carries requested/effective field quality");
+    Check(probe.field_cache_status == "hit" &&
+            probe.field_cache_hit &&
+            probe.field_cache_mask_bytes == 76800,
+        "lens SDF automation probe carries field cache status");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {

@@ -75,6 +75,11 @@ void WriteLensSdfReportFields(
     out << "  \"lens_sdf_quality_mode\": ";
     WriteAutomationReportString(out, lensSdfProbe.quality_mode);
     out << ",\n";
+    out << "  \"lens_sdf_field_cache_status\": ";
+    WriteAutomationReportString(out, lensSdfProbe.field_cache_status);
+    out << ",\n";
+    out << "  \"lens_sdf_field_cache_hit\": " << (lensSdfProbe.field_cache_hit ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_field_cache_mask_bytes\": " << lensSdfProbe.field_cache_mask_bytes << ",\n";
     out << "  \"base_render_ms\": " << std::setprecision(12) << lensSdfProbe.base_render_ms << ",\n";
     out << "  \"lens_sdf_field_ms\": " << std::setprecision(12) << lensSdfProbe.field_ms << ",\n";
     out << "  \"lens_sdf_requested_equivalent_field_ms\": " << std::setprecision(12) << lensSdfProbe.requested_equivalent_field_ms << ",\n";

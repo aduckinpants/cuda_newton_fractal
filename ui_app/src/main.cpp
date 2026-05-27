@@ -17,6 +17,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 
@@ -890,6 +891,7 @@ static void DispatchRenderFrame(
     const GenericEquationPackWorkbenchState* equationPackWorkbench,
     RenderedFrameState& renderedFrame, RenderStats& stats,
     ViewerUiAutomationLensSdfProbe& lensSdfProbe,
+    LensSdfFieldFrameCache& lensSdfFieldCache,
     bool& dirtyOut) {
 
     if (!ShouldDispatchRender(autoRefresh, dirty, renderOnce, captureDiag, captureFinding, renderPacing.full_quality_due))
@@ -970,8 +972,10 @@ static void DispatchRenderFrame(
                 EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
                 UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
             }
-            SdfFieldResult lensSdfField;
+            SdfFieldResult computedLensSdfField;
+            const SdfFieldResult* lensSdfField = nullptr;
             LensSdfBackendReport backendReport{};
+            LensSdfFieldCacheReport fieldCacheReport{};
             const LensSdfEffectiveDownsample fieldQuality = ResolveEffectiveLensSdfDownsample(
                 lens.downsample,
                 renderPacing.preview_active,
@@ -982,40 +986,73 @@ static void DispatchRenderFrame(
             lensSdfProbe.effective_downsample = fieldQuality.effective_downsample;
             lensSdfProbe.quality_mode = LensSdfQualityModeId(fieldQuality.quality_mode);
             const auto fieldStart = std::chrono::steady_clock::now();
-            if (ComputeLensSdfFieldForMaskWithBackend(
+            bool fieldOk = TryReuseLensSdfFieldCache(
+                lensSdfFieldCache,
+                maskPtr,
+                dispatchRender.resolution.x,
+                dispatchRender.resolution.y,
+                fieldQuality.effective_downsample,
+                &lensSdfField,
+                &backendReport,
+                &fieldCacheReport);
+            if (!fieldOk) {
+                fieldOk = ComputeLensSdfFieldForMaskWithBackend(
                     maskPtr,
                     dispatchRender.resolution.x,
                     dispatchRender.resolution.y,
                     fieldQuality.effective_downsample,
                     LensSdfBackend::auto_backend,
-                    lensSdfField,
-                    &backendReport)) {
+                    computedLensSdfField,
+                    &backendReport);
+                if (fieldOk) {
+                    StoreLensSdfFieldCache(
+                        lensSdfFieldCache,
+                        maskPtr,
+                        dispatchRender.resolution.x,
+                        dispatchRender.resolution.y,
+                        fieldQuality.effective_downsample,
+                        std::move(computedLensSdfField),
+                        backendReport,
+                        &fieldCacheReport);
+                    lensSdfField = &lensSdfFieldCache.field;
+                }
+            }
+            if (fieldOk && lensSdfField) {
                 const auto fieldEnd = std::chrono::steady_clock::now();
                 lensSdfProbe.field_ms = static_cast<float>(
                     std::chrono::duration<double, std::milli>(fieldEnd - fieldStart).count());
-                lensSdfProbe.requested_equivalent_field_ms = lensSdfProbe.field_ms;
-                if (fieldQuality.effective_downsample > fieldQuality.requested_downsample) {
+                lensSdfProbe.field_cache_status = LensSdfFieldCacheStatusId(fieldCacheReport.status);
+                lensSdfProbe.field_cache_hit = fieldCacheReport.hit;
+                lensSdfProbe.field_cache_mask_bytes =
+                    static_cast<std::uint64_t>(fieldCacheReport.mask_bytes);
+                lensSdfProbe.requested_equivalent_field_ms =
+                    fieldCacheReport.hit && previousLensSdfFieldMs > 0.0f
+                        ? previousLensSdfFieldMs
+                        : lensSdfProbe.field_ms;
+                if (!fieldCacheReport.hit &&
+                    fieldQuality.effective_downsample > fieldQuality.requested_downsample) {
                     const double fieldScaleRatio =
                         static_cast<double>(fieldQuality.effective_downsample) /
                         static_cast<double>(fieldQuality.requested_downsample);
                     lensSdfProbe.requested_equivalent_field_ms =
-                        static_cast<float>(static_cast<double>(lensSdfProbe.field_ms) * fieldScaleRatio * fieldScaleRatio);
+                        static_cast<float>(static_cast<double>(lensSdfProbe.requested_equivalent_field_ms) *
+                            fieldScaleRatio * fieldScaleRatio);
                 }
                 const float lowMaxAbsPx = 48.0f / static_cast<float>(fieldQuality.effective_downsample);
                 lensSdfProbe.valid = true;
                 lensSdfProbe.overlay_active = lensSdfOverlayEnabled;
-                lensSdfProbe.width = lensSdfField.width;
-                lensSdfProbe.height = lensSdfField.height;
-                lensSdfProbe.pixel_scale = lensSdfField.pixel_scale;
+                lensSdfProbe.width = lensSdfField->width;
+                lensSdfProbe.height = lensSdfField->height;
+                lensSdfProbe.pixel_scale = lensSdfField->pixel_scale;
                 if (lens.enabled || lensSdfOverlayEnabled) {
                     if (lensSdfOverlayEnabled) {
-                        BuildLensSdfViewportOverlayRgba(lensSdfField.View(), lens, lowMaxAbsPx, lensSdfRgba);
+                        BuildLensSdfViewportOverlayRgba(lensSdfField->View(), lens, lowMaxAbsPx, lensSdfRgba);
                     } else {
-                        BuildSignedDistanceSdfRgba(lensSdfField.View(), lowMaxAbsPx, lensSdfRgba);
+                        BuildSignedDistanceSdfRgba(lensSdfField->View(), lowMaxAbsPx, lensSdfRgba);
                     }
-                    if (lensSdfRgba.size() == static_cast<size_t>(lensSdfField.width) * static_cast<size_t>(lensSdfField.height)) {
-                        EnsureLensSdfTexture(lensSdfField.width, lensSdfField.height);
-                        UploadLensSdfRGBA(lensSdfRgba.data(), lensSdfField.width, lensSdfField.height);
+                    if (lensSdfRgba.size() == static_cast<size_t>(lensSdfField->width) * static_cast<size_t>(lensSdfField->height)) {
+                        EnsureLensSdfTexture(lensSdfField->width, lensSdfField->height);
+                        UploadLensSdfRGBA(lensSdfRgba.data(), lensSdfField->width, lensSdfField->height);
                     } else {
                         lensSdfProbe.valid = false;
                     }
@@ -1027,7 +1064,7 @@ static void DispatchRenderFrame(
                         ResolveSdfColorPipelinePostprocessOutputPixelStep(params, renderPacing.preview_active, renderPacing.preview_scale, forceFullQuality);
                     SdfColorPipelinePostprocessStats postprocessStats{};
                     if (!ApplyLensSdfColorPipelinePostprocess(
-                            lensSdfField.View(),
+                            lensSdfField->View(),
                             dispatchRender,
                             params,
                             rgba.data(),
@@ -3153,6 +3190,7 @@ static void RunViewerFrame(
     std::vector<uint8_t>& maskBuffer,
     std::vector<uint32_t>& lensSdfRgba,
     ViewerUiAutomationLensSdfProbe& lensSdfProbe,
+    LensSdfFieldFrameCache& lensSdfFieldCache,
     PolyKind& lastPolyKind,
     FractalType& lastFractalType,
     std::string& findingStatus,
@@ -3340,7 +3378,8 @@ static void RunViewerFrame(
     DispatchRenderFrame(view, params, render, lens, renderPacing,
         forceFullQualityRender, view.auto_refresh, dirty,
         actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
-        rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, renderedFrame, stats, lensSdfProbe, dirty);
+        rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, renderedFrame, stats, lensSdfProbe,
+        lensSdfFieldCache, dirty);
 
     RunPendingInLoopCaptures(exeDir, actions, view, params, render, lens, stats, rgba,
         renderedFrame, colorPipelineWindow, sidecarState, sidecarStateValid,
@@ -3513,6 +3552,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<uint8_t> maskBuffer;
     std::vector<uint32_t> lensSdfRgba;
     ViewerUiAutomationLensSdfProbe lensSdfProbe;
+    LensSdfFieldFrameCache lensSdfFieldCache;
     RenderedFrameState renderedFrame{};
     ViewerRenderPacingState renderPacingState{};
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
@@ -3601,6 +3641,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             maskBuffer,
             lensSdfRgba,
             lensSdfProbe,
+            lensSdfFieldCache,
             lastPolyKind,
             lastFractalType,
             findingStatus,

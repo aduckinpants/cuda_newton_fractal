@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_cache_color_only_reuse",
+  "feature_id": "sdf_field_resolution_realtime",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_field_cache_color_only_reuse_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_field_cache_color_only_reuse_PHASED_PLAN.md",
+    "docs/contracts/sdf_field_cache_color_only_reuse.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/lens_sdf.h",
+    "ui_app/src/lens_sdf.cpp",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_lens_sdf.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "tests/test_fractal_runtime_capture_replay_authority.py",
+    "tests/test_sdf_performance_witness_tool.py",
+    "tools/viewer_host_sdf_performance_witness.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "harden SDF performance after Lens Field v2",
+    "add measured/reportable field reuse for color-only edits",
+    "preserve existing realtime/capture/replay behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "implement per-row or per-function downsample authority",
+    "add multi-field composition, authored SDF UI, or SDF-native fractal lanes",
+    "change the CUDA JFA field-generation algorithm",
+    "reuse fields without exact mask/render-size/effective-downsample authority",
+    "use physical mouse automation",
+    "claim FPS improvement without performance witness/report evidence"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_visible_sdf_performance_hardening",
+    "physical_mouse_automation": false,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "capture_quality_downgraded": false,
+    "cache_authority": "exact_rendered_mask_plus_dimensions_plus_effective_downsample"
+  },
+  "forbidden_defaults": {
+    "per_source_downsample": "deferred",
+    "multi_field_composition": "deferred",
+    "sdf_native_lanes": "deferred",
+    "authored_sdf_pack_ui": "deferred",
+    "field_algorithm_replacement": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_cache_red_native --log artifacts/logs/sdf_field_cache_red_native.log --out-json artifacts/validation/sdf_field_cache_red_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_lens_sdf test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_cache_native --log artifacts/logs/sdf_field_cache_native.log --out-json artifacts/validation/sdf_field_cache_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_lens_sdf test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_cache_witness_unit --log artifacts/logs/sdf_field_cache_witness_unit.log --out-json artifacts/validation/sdf_field_cache_witness_unit.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_sdf_performance_witness_tool.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_cache_runtime_publish --log artifacts/logs/sdf_field_cache_runtime_publish.log --out-json artifacts/validation/sdf_field_cache_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_cache_runtime_rows --log artifacts/logs/sdf_field_cache_runtime_rows.log --out-json artifacts/validation/sdf_field_cache_runtime_rows.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_cache_runtime_pacing --log artifacts/logs/sdf_field_cache_runtime_pacing.log --out-json artifacts/validation/sdf_field_cache_runtime_pacing.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_cache_runtime_capture_replay --log artifacts/logs/sdf_field_cache_runtime_capture_replay.log --out-json artifacts/validation/sdf_field_cache_runtime_capture_replay.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_capture_replay_authority.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_cache_performance_witness --log artifacts/logs/sdf_field_cache_performance_witness.log --out-json artifacts/validation/sdf_field_cache_performance_witness.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_sdf_performance_witness.py --runtime-exe D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe --out-json artifacts/sdf_field_cache_color_only_reuse/sdf_performance_witness.json --out-md artifacts/sdf_field_cache_color_only_reuse/sdf_performance_witness.md --work-dir artifacts/sdf_field_cache_color_only_reuse/work --width 640 --height 480 --include-preview-sample",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_cache_color_only_reuse.contract.json --out-json artifacts/validation/sdf_field_cache_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_cache_color_only_reuse_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_cache_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_cache_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_cache_diff_check --log artifacts/logs/sdf_field_cache_diff_check.log --out-json artifacts/validation/sdf_field_cache_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field cache contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_cache_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF field cache hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_cache_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

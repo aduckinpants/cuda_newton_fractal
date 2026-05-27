@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 int main() {
@@ -82,6 +83,10 @@ int main() {
 
         if (std::string(LensSdfQualityModeId(LensSdfQualityMode::interactive_adaptive)) != "interactive_adaptive") {
             std::cerr << "SDF field quality mode id should be stable for automation reports\n";
+            return 1;
+        }
+        if (std::string(LensSdfFieldCacheStatusId(LensSdfFieldCacheStatus::hit)) != "hit") {
+            std::cerr << "SDF field cache status id should be stable for automation reports\n";
             return 1;
         }
     }
@@ -308,6 +313,119 @@ int main() {
         }
         if (ComputeLensSdfRgbaForMask(nullptr, srcW, srcH, 2, 8.0f, lensRgba, lensW, lensH)) {
             std::cerr << "ComputeLensSdfRgbaForMask should reject invalid masks\n";
+            return 1;
+        }
+    }
+
+    {
+        LensSdfFieldFrameCache cache;
+        LensSdfFieldCacheReport cacheReport;
+        const SdfFieldResult* cachedField = nullptr;
+        LensSdfBackendReport cachedBackendReport;
+        std::vector<uint8_t> cacheMask(16, 0);
+        cacheMask[5] = 255;
+        if (TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                4,
+                4,
+                1,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            cacheReport.status != LensSdfFieldCacheStatus::miss ||
+            cacheReport.hit ||
+            cacheReport.mask_bytes != cacheMask.size()) {
+            std::cerr << "Fresh SDF field cache should report a miss with current mask byte count\n";
+            return 1;
+        }
+
+        SdfFieldResult field;
+        LensSdfBackendReport backendReport;
+        backendReport.requested = LensSdfBackend::auto_backend;
+        backendReport.used = LensSdfBackend::cuda_jfa;
+        if (!ComputeLensSdfFieldForMask(cacheMask.data(), 4, 4, 1, field)) {
+            std::cerr << "Expected cache test field generation to succeed\n";
+            return 1;
+        }
+        StoreLensSdfFieldCache(
+            cache,
+            cacheMask.data(),
+            4,
+            4,
+            1,
+            std::move(field),
+            backendReport,
+            &cacheReport);
+        if (cacheReport.status != LensSdfFieldCacheStatus::miss || cacheReport.hit || !cache.valid) {
+            std::cerr << "Storing an SDF field cache entry should keep the current frame classified as a miss\n";
+            return 1;
+        }
+
+        if (!TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                4,
+                4,
+                1,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            !cacheReport.hit ||
+            cacheReport.status != LensSdfFieldCacheStatus::hit ||
+            cachedField != &cache.field ||
+            cachedBackendReport.used != LensSdfBackend::cuda_jfa) {
+            std::cerr << "Unchanged mask/render/downsample should reuse the cached SDF field exactly\n";
+            return 1;
+        }
+
+        cacheMask[6] = 255;
+        cachedField = nullptr;
+        if (TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                4,
+                4,
+                1,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            cacheReport.hit ||
+            cacheReport.status != LensSdfFieldCacheStatus::miss ||
+            cachedField != nullptr) {
+            std::cerr << "Changed mask bytes must miss the SDF field cache\n";
+            return 1;
+        }
+        cacheMask[6] = 0;
+        if (TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                8,
+                2,
+                1,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            cacheReport.status != LensSdfFieldCacheStatus::miss) {
+            std::cerr << "Changed render dimensions must miss the SDF field cache\n";
+            return 1;
+        }
+        if (TryReuseLensSdfFieldCache(
+                cache,
+                cacheMask.data(),
+                4,
+                4,
+                2,
+                &cachedField,
+                &cachedBackendReport,
+                &cacheReport) ||
+            cacheReport.status != LensSdfFieldCacheStatus::miss) {
+            std::cerr << "Changed effective downsample must miss the SDF field cache\n";
+            return 1;
+        }
+        cache.Clear();
+        if (cache.valid || !cache.mask_bytes.empty() || !cache.field.signed_distance_px.empty()) {
+            std::cerr << "Clearing SDF field cache should release mask and field data\n";
             return 1;
         }
     }

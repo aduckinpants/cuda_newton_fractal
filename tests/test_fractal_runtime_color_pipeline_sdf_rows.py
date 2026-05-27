@@ -342,6 +342,11 @@ def test_lens_field_v2_distance_source_reports_gpu_backed_no_mouse(tmp_path: Pat
             -0.35,
             timeout_seconds=40.0,
         )
+        camera_report = viewer.set_control_value(
+            "fractal_control.center_x.primary",
+            -0.35,
+            timeout_seconds=40.0,
+        )
 
     assert ready_report.get("lens_sdf_enabled") is False, ready_report
     assert ready_report.get("lens_sdf_valid") is True, ready_report
@@ -350,6 +355,14 @@ def test_lens_field_v2_distance_source_reports_gpu_backed_no_mouse(tmp_path: Pat
     assert ready_report.get("lens_sdf_postprocess_backend_fallback_used") is False, ready_report
     assert ready_report.get("lens_sdf_quality_mode") == "requested", ready_report
     assert edited_report.get("rendered_frame_hash") != ready_report.get("rendered_frame_hash"), edited_report
+    assert edited_report.get("lens_sdf_field_cache_hit") is True, edited_report
+    assert edited_report.get("lens_sdf_field_cache_status") == "hit", edited_report
+    assert int(edited_report.get("lens_sdf_field_cache_mask_bytes", 0)) == (
+        int(edited_report["rendered_frame_width"]) * int(edited_report["rendered_frame_height"])
+    ), edited_report
+    assert camera_report.get("rendered_frame_hash") != edited_report.get("rendered_frame_hash"), camera_report
+    assert camera_report.get("lens_sdf_field_cache_hit") is False, camera_report
+    assert camera_report.get("lens_sdf_field_cache_status") == "miss", camera_report
 
 
 def test_sdf_normal_angle_accepts_curvature_blend_no_mouse(tmp_path: Path) -> None:
