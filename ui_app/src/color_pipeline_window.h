@@ -1188,10 +1188,12 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
         if (functionId == "sdf_boundary_band") {
             return path == "signal.scale" || path == "signal.bias" ||
                 path == "signal.blend_weight" || path == "signal.boundary_width_px" ||
-                path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px";
+                path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px" ||
+                path == "signal.sdf_sample_step";
         }
         return path == "signal.scale" || path == "signal.bias" || path == "signal.blend_weight" ||
-            path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px";
+            path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px" ||
+            path == "signal.sdf_sample_step";
     }
     if (functionId == "heatmap") {
         return path == "palette.cycle_scale" || path == "palette.saturation" ||
@@ -1433,7 +1435,8 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
         }
         const char* gateId = color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate);
         return SetColorPipelineParamEnum(ioRow, "signal.sdf_gate", gateId ? gateId : "none", outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.sdf_gate_width_px", sourceEntry.params.sdf_gate_width_px, outError);
+            SetColorPipelineParamNumber(ioRow, "signal.sdf_gate_width_px", sourceEntry.params.sdf_gate_width_px, outError) &&
+            SetColorPipelineParamNumber(ioRow, "signal.sdf_sample_step", static_cast<double>(sourceEntry.params.sdf_sample_step), outError);
     }
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", sourceEntry.params.phase_offset, outError) &&
@@ -1543,6 +1546,7 @@ inline bool ColorPipelineSourceRuntimeParamsEqual(
         std::fabs(left.sdf_boundary_width_px - right.sdf_boundary_width_px) <= 1.0e-6f &&
         left.sdf_gate == right.sdf_gate &&
         std::fabs(left.sdf_gate_width_px - right.sdf_gate_width_px) <= 1.0e-6f &&
+        left.sdf_sample_step == right.sdf_sample_step &&
         std::fabs(left.blend_weight - right.blend_weight) <= 1.0e-6f;
 }
 
@@ -1699,16 +1703,20 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
         }
         std::string gateId = "none";
         double gateWidthPx = entry.params.sdf_gate_width_px;
+        int sampleStep = entry.params.sdf_sample_step;
         if (!TryGetColorPipelineParamEnum(row, "signal.sdf_gate", &gateId, outError) ||
             !color_pipeline_core::TryParseColorPipelineSdfGateModeId(gateId, &entry.params.sdf_gate) ||
             !TryGetColorPipelineParamNumber(row, "signal.sdf_gate_width_px", &gateWidthPx, outError) ||
-            !ValidateColorPipelineParamRange("signal.sdf_gate_width_px", gateWidthPx, 0.25, 16.0, outError)) {
+            !ValidateColorPipelineParamRange("signal.sdf_gate_width_px", gateWidthPx, 0.25, 16.0, outError) ||
+            !TryReadColorPipelineIntegerParam(row, "signal.sdf_sample_step", &sampleStep, outError) ||
+            !ValidateColorPipelineParamRange("signal.sdf_sample_step", static_cast<double>(sampleStep), 1.0, 8.0, outError)) {
             if (outError && outError->empty()) {
                 *outError = "Invalid SDF Source boundary-gate parameters";
             }
             return false;
         }
         entry.params.sdf_gate_width_px = static_cast<float>(gateWidthPx);
+        entry.params.sdf_sample_step = sampleStep;
     } else if (row.function_id == "phase_orbit") {
         double phaseOffset = 0.0;
         double wrapCycles = 0.0;

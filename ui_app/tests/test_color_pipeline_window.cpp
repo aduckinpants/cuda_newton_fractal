@@ -802,11 +802,12 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
             state.lanes[2].rows[0].function_id == "heatmap",
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandCoSwitchesHeatmap");
     Check(RenderablePathsEqual(state.lanes[0].rows[0],
-              {"signal.scale", "signal.bias", "signal.boundary_width_px", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.blend_weight"}),
+              {"signal.scale", "signal.bias", "signal.boundary_width_px", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.sdf_sample_step", "signal.blend_weight"}),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandRenderableParams");
     Check(SetRowNumber(state.lanes[0].rows[0], "signal.scale", 0.75) &&
             SetRowNumber(state.lanes[0].rows[0], "signal.bias", 0.25) &&
-            SetRowNumber(state.lanes[0].rows[0], "signal.boundary_width_px", 5.0),
+            SetRowNumber(state.lanes[0].rows[0], "signal.boundary_width_px", 5.0) &&
+            SetRowNumber(state.lanes[0].rows[0], "signal.sdf_sample_step", 3.0),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_EditsBoundaryBandSourceParams");
     bool changed = false;
     Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
@@ -818,13 +819,15 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
             params.color_source_stack[0].signal == ColorSignal::sdf_boundary_band &&
             Near(params.color_source_stack[0].params.scale, 0.75) &&
             Near(params.color_source_stack[0].params.bias, 0.25) &&
-            Near(params.color_source_stack[0].params.sdf_boundary_width_px, 5.0),
+            Near(params.color_source_stack[0].params.sdf_boundary_width_px, 5.0) &&
+            params.color_source_stack[0].params.sdf_sample_step == 3,
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandRuntimeStackOwnsParams");
     Check(state.live_snapshot.valid && state.live_snapshot.draft_import_supported &&
             state.lanes[0].rows[0].function_id == "sdf_boundary_band" &&
             RowNumber(state.lanes[0].rows[0], "signal.scale", 0.75) &&
             RowNumber(state.lanes[0].rows[0], "signal.bias", 0.25) &&
-            RowNumber(state.lanes[0].rows[0], "signal.boundary_width_px", 5.0),
+            RowNumber(state.lanes[0].rows[0], "signal.boundary_width_px", 5.0) &&
+            RowNumber(state.lanes[0].rows[0], "signal.sdf_sample_step", 3.0),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandResyncImportsSourceParams");
 
     LensSettings lens{};
@@ -849,10 +852,11 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
             normalState.lanes[3].rows[0].function_id == "phase_finish",
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleCoSwitchesPhaseTuple");
     Check(RenderablePathsEqual(normalState.lanes[0].rows[0],
-              {"signal.scale", "signal.bias", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.blend_weight"}),
+              {"signal.scale", "signal.bias", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.sdf_sample_step", "signal.blend_weight"}),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleRenderableParams");
     Check(SetRowEnum(normalState.lanes[0].rows[0], "signal.sdf_gate", "boundary_band") &&
-            SetRowNumber(normalState.lanes[0].rows[0], "signal.sdf_gate_width_px", 3.5),
+            SetRowNumber(normalState.lanes[0].rows[0], "signal.sdf_gate_width_px", 3.5) &&
+            SetRowNumber(normalState.lanes[0].rows[0], "signal.sdf_sample_step", 4.0),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleEditsBoundaryGate");
     changed = false;
     Check(ApplyColorPipelineDraftToLiveState(&normalState, FractalType::newton, &normalParams, &changed) && changed,
@@ -864,11 +868,13 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
             normalParams.color_source_stack_count == 1 &&
             normalParams.color_source_stack[0].signal == ColorSignal::sdf_normal_angle &&
             normalParams.color_source_stack[0].params.sdf_gate == ColorPipelineSdfGateMode::boundary_band &&
-            Near(normalParams.color_source_stack[0].params.sdf_gate_width_px, 3.5),
+            Near(normalParams.color_source_stack[0].params.sdf_gate_width_px, 3.5) &&
+            normalParams.color_source_stack[0].params.sdf_sample_step == 4,
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleRuntimeStackOwnsSignalAndBoundaryGate");
     Check(normalState.live_snapshot.valid && normalState.live_snapshot.draft_import_supported &&
             RowEnum(normalState.lanes[0].rows[0], "signal.sdf_gate", "boundary_band") &&
-            RowNumber(normalState.lanes[0].rows[0], "signal.sdf_gate_width_px", 3.5),
+            RowNumber(normalState.lanes[0].rows[0], "signal.sdf_gate_width_px", 3.5) &&
+            RowNumber(normalState.lanes[0].rows[0], "signal.sdf_sample_step", 4.0),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_NormalAngleResyncImportsBoundaryGate");
     Check(!ColorPipelineSdfFieldDownsampleControlVisible(ColorPipelineWindowState{}, &lens),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_DownsampleAliasHiddenWithoutSdfDraft");

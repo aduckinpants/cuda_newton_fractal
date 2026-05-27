@@ -409,6 +409,48 @@ void TestNormalAngleRequiresNeighborhoodSamples() {
         "TestNormalAngleRequiresNeighborhoodSamples_NeighborhoodSamplesEveryPixel");
 }
 
+void TestSdfRowSampleStepReducesHeavyRowSourceSamples() {
+    const SdfFieldResult field = MakeLargeTestField(8, 8);
+    RenderSettings render{};
+    render.resolution = {8, 8};
+
+    KernelParams full = SdfParams(ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel);
+    full.color_source_stack_count = 2;
+    full.color_source_stack[0].signal = ColorSignal::sdf_signed_distance;
+    full.color_source_stack[0].params.scale = 0.05f;
+    full.color_source_stack[0].params.bias = 0.5f;
+    full.color_source_stack[0].params.blend_weight = 1.0f;
+    full.color_source_stack[1].signal = ColorSignal::sdf_normal_angle;
+    full.color_source_stack[1].params.scale = 1.0f;
+    full.color_source_stack[1].params.bias = 0.0f;
+    full.color_source_stack[1].params.blend_weight = 0.75f;
+
+    KernelParams coarse = full;
+    coarse.color_source_stack[1].params.sdf_sample_step = 4;
+
+    std::vector<std::uint32_t> fullPixels(64, 0x12345678u);
+    std::vector<std::uint32_t> coarsePixels(64, 0x12345678u);
+    std::string error;
+    SdfColorPipelinePostprocessStats fullStats{};
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, full, fullPixels.data(), &error, &fullStats),
+        "TestSdfRowSampleStepReducesHeavyRowSourceSamples_FullSucceeds");
+    Check(fullStats.source_neighborhood_sample_count == 64,
+        "TestSdfRowSampleStepReducesHeavyRowSourceSamples_FullSamplesNormalAngleEveryPixel");
+
+    SdfColorPipelinePostprocessStats coarseStats{};
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, coarse, coarsePixels.data(), &error, &coarseStats),
+        "TestSdfRowSampleStepReducesHeavyRowSourceSamples_CoarseSucceeds");
+    Check(coarseStats.source_neighborhood_sample_count <= 4,
+        "TestSdfRowSampleStepReducesHeavyRowSourceSamples_CoarseSamplesNormalAngleByBlock");
+    Check(coarseStats.source_direct_sample_count == fullStats.source_direct_sample_count,
+        "TestSdfRowSampleStepReducesHeavyRowSourceSamples_DirectBaseRowStaysFullResolution");
+    Check(coarseStats.filled_pixel_count == 64,
+        "TestSdfRowSampleStepReducesHeavyRowSourceSamples_CoarseStillFillsFrame");
+    Check(HashFrame(coarsePixels) != HashFrame(fullPixels),
+        "TestSdfRowSampleStepReducesHeavyRowSourceSamples_CoarseChangesRequestedQuality");
+}
+
 void TestParallelPostprocessMatchesForcedSerialPixelsAndStats() {
     const SdfFieldResult field = MakeLargeTestField(32, 24);
     RenderSettings render{};
@@ -495,6 +537,7 @@ int main() {
     TestDownsampledFieldReducesPostprocessSamplesWithoutChangingFullQualityPixels();
     TestDownsampledFieldUnevenRenderSizeMatchesReference();
     TestPreviewPixelStepReducesSamplesAndFillsFrame();
+    TestSdfRowSampleStepReducesHeavyRowSourceSamples();
     TestParallelPostprocessMatchesForcedSerialPixelsAndStats();
     TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution();
 

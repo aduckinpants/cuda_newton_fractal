@@ -34,6 +34,7 @@ struct PlannedSdfSourceRow {
     float scale{1.0f};
     float bias{0.0f};
     float blend_weight{1.0f};
+    int sample_step{1};
     bool needs_neighborhood{false};
 };
 
@@ -41,8 +42,20 @@ struct SdfPostprocessExecutionPlan {
     std::array<PlannedSdfSourceRow, kColorPipelineMaxSourceStackCount> rows{};
     int row_count{0};
     bool use_direct_samples{true};
+    bool uses_row_sample_steps{false};
     int output_pixel_step{1};
     int worker_count{1};
+};
+
+struct SdfRowSampleCache {
+    int cached_step{1};
+    int cached_qfy{-1};
+    std::vector<float> values{};
+    std::vector<unsigned char> valid{};
+};
+
+struct SdfPostprocessResolveScratch {
+    std::array<SdfRowSampleCache, kColorPipelineMaxSourceStackCount> row_caches{};
 };
 
 int ClampIntLocal(int value, int lo, int hi) {
@@ -62,6 +75,25 @@ int NormalizePostprocessPixelStep(int value) {
     if (value <= 1) return 1;
     if (value <= 2) return 2;
     return 4;
+}
+
+int NormalizeSdfSourceSampleStep(int value) {
+    if (value <= 1) return 1;
+    if (value > 8) return 8;
+    return value;
+}
+
+int QuantizeSdfSampleCoordinate(int coord, int extent, int sampleStep) {
+    if (extent <= 1 || sampleStep <= 1) {
+        return ClampIntLocal(coord, 0, std::max(0, extent - 1));
+    }
+    const int blockBegin = (coord / sampleStep) * sampleStep;
+    const int blockEnd = std::min(extent, blockBegin + sampleStep);
+    return ClampIntLocal(blockBegin + (blockEnd - blockBegin) / 2, 0, extent - 1);
+}
+
+int SdfSampleBlockCount(int extent, int sampleStep) {
+    return CeilDivNonNegativeLocal(extent, std::max(1, sampleStep));
 }
 
 bool SdfSignalNeedsNeighborhood(ColorSignal signal) {
@@ -110,6 +142,7 @@ PlannedSdfSourceRow PlannedRowForSourceEntry(const ColorPipelineSourceStackEntry
     row.scale = entry.params.scale;
     row.bias = entry.params.bias;
     row.blend_weight = EscapeTimeColorClamp(entry.params.blend_weight, 0.0f, 1.0f);
+    row.sample_step = NormalizeSdfSourceSampleStep(entry.params.sdf_sample_step);
     row.needs_neighborhood = SdfSignalNeedsNeighborhood(entry.signal);
     return row;
 }
@@ -121,6 +154,7 @@ bool AppendPlannedSourceRow(SdfPostprocessExecutionPlan& plan, const ColorPipeli
     const PlannedSdfSourceRow row = PlannedRowForSourceEntry(entry);
     plan.rows[plan.row_count] = row;
     plan.use_direct_samples = plan.use_direct_samples && !row.needs_neighborhood;
+    plan.uses_row_sample_steps = plan.uses_row_sample_steps || row.sample_step > 1;
     ++plan.row_count;
     return true;
 }
@@ -519,6 +553,136 @@ bool ResolvePlannedSdfPipelineSignal(
     return true;
 }
 
+bool ResolvePlannedSdfSourceRowValue(
+    const SdfFieldView& field,
+    int fx,
+    int fy,
+    const PlannedSdfSourceRow& row,
+    float* outValue,
+    std::string* outError,
+    SdfColorPipelinePostprocessStats* outStats) {
+    if (!outValue) {
+        if (outError) *outError = "SDF Color Pipeline postprocess requires output storage";
+        return false;
+    }
+    if (row.needs_neighborhood) {
+        SdfFieldSignalSample sample;
+        if (!SampleSdfFieldSignals(field, fx, fy, SignalConfigForPlannedRow(row), sample)) {
+            if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
+            return false;
+        }
+        *outValue = ResolvePlannedSdfSourceValueFromSample(sample, row);
+        if (outStats) {
+            ++outStats->source_neighborhood_sample_count;
+        }
+        return true;
+    }
+
+    float center = 0.0f;
+    if (!SampleSdfCenterValue(field, fx, fy, &center) ||
+        !ResolveDirectPlannedSdfSourceValueFromCenter(center, row, outValue)) {
+        if (outError) *outError = "SDF Color Pipeline postprocess could not sample the Lens SDF field";
+        return false;
+    }
+    if (outStats) {
+        ++outStats->source_direct_sample_count;
+    }
+    return true;
+}
+
+bool ResolveCachedPlannedSdfSourceRowValue(
+    const SdfFieldView& field,
+    int fx,
+    int fy,
+    const SdfPostprocessExecutionPlan& plan,
+    int rowIndex,
+    SdfPostprocessResolveScratch* scratch,
+    float* outValue,
+    std::string* outError,
+    SdfColorPipelinePostprocessStats* outStats) {
+    if (rowIndex < 0 || rowIndex >= plan.row_count) {
+        if (outError) *outError = "SDF Color Pipeline postprocess row index is invalid";
+        return false;
+    }
+    if (!scratch) {
+        return ResolvePlannedSdfSourceRowValue(field, fx, fy, plan.rows[rowIndex], outValue, outError, outStats);
+    }
+
+    const PlannedSdfSourceRow& row = plan.rows[rowIndex];
+    const int step = std::max(1, row.sample_step);
+    const int qfx = QuantizeSdfSampleCoordinate(fx, field.width, step);
+    const int qfy = QuantizeSdfSampleCoordinate(fy, field.height, step);
+    if (step <= 1) {
+        return ResolvePlannedSdfSourceRowValue(field, qfx, qfy, row, outValue, outError, outStats);
+    }
+
+    SdfRowSampleCache& cache = scratch->row_caches[static_cast<std::size_t>(rowIndex)];
+    const int blockCount = SdfSampleBlockCount(field.width, step);
+    if (cache.cached_step != step || static_cast<int>(cache.values.size()) != blockCount) {
+        cache.cached_step = step;
+        cache.cached_qfy = -1;
+        cache.values.assign(static_cast<std::size_t>(blockCount), 0.0f);
+        cache.valid.assign(static_cast<std::size_t>(blockCount), 0);
+    }
+    if (cache.cached_qfy != qfy) {
+        cache.cached_qfy = qfy;
+        std::fill(cache.valid.begin(), cache.valid.end(), 0);
+    }
+
+    const int blockX = ClampIntLocal(fx / step, 0, std::max(0, blockCount - 1));
+    const std::size_t blockIndex = static_cast<std::size_t>(blockX);
+    if (cache.valid[blockIndex]) {
+        if (outValue) {
+            *outValue = cache.values[blockIndex];
+        }
+        return true;
+    }
+
+    float value = 0.0f;
+    if (!ResolvePlannedSdfSourceRowValue(field, qfx, qfy, row, &value, outError, outStats)) {
+        return false;
+    }
+    cache.values[blockIndex] = value;
+    cache.valid[blockIndex] = 1;
+    if (outValue) {
+        *outValue = value;
+    }
+    return true;
+}
+
+bool ResolveCachedPlannedSdfPipelineSignal(
+    const SdfFieldView& field,
+    int fx,
+    int fy,
+    const SdfPostprocessExecutionPlan& plan,
+    SdfPostprocessResolveScratch* scratch,
+    float* outSignal,
+    std::string* outError,
+    SdfColorPipelinePostprocessStats* outStats) {
+    if (!outSignal) {
+        if (outError) *outError = "SDF Color Pipeline postprocess requires output storage";
+        return false;
+    }
+    if (plan.row_count <= 0) {
+        if (outError) *outError = "SDF Color Pipeline postprocess was requested without an SDF source signal";
+        return false;
+    }
+
+    float signal = 0.0f;
+    if (!ResolveCachedPlannedSdfSourceRowValue(field, fx, fy, plan, 0, scratch, &signal, outError, outStats)) {
+        return false;
+    }
+    for (int index = 1; index < plan.row_count; ++index) {
+        float nextSignal = 0.0f;
+        if (!ResolveCachedPlannedSdfSourceRowValue(field, fx, fy, plan, index, scratch, &nextSignal, outError, outStats)) {
+            return false;
+        }
+        signal = EscapeTimeColorLerp(signal, nextSignal, plan.rows[index].blend_weight);
+    }
+    *outSignal = signal;
+    return true;
+}
+
 int ResolveSdfPostprocessWorkerCount(
     std::size_t sampleCount,
     int workUnitCount,
@@ -549,6 +713,8 @@ void AccumulatePostprocessStats(
     const SdfColorPipelinePostprocessStats& next) {
     total.direct_sample_count += next.direct_sample_count;
     total.neighborhood_sample_count += next.neighborhood_sample_count;
+    total.source_direct_sample_count += next.source_direct_sample_count;
+    total.source_neighborhood_sample_count += next.source_neighborhood_sample_count;
     total.filled_pixel_count += next.filled_pixel_count;
 }
 
@@ -565,6 +731,7 @@ bool ResolveAndFillSdfPostprocessBlock(
     int fy,
     const KernelParams& params,
     const SdfPostprocessExecutionPlan& plan,
+    SdfPostprocessResolveScratch* scratch,
     std::uint32_t* ioRgba,
     int renderWidth,
     int xBegin,
@@ -577,7 +744,9 @@ bool ResolveAndFillSdfPostprocessBlock(
         return true;
     }
     float signal = 0.0f;
-    const bool resolved = plan.use_direct_samples
+    const bool resolved = plan.uses_row_sample_steps
+        ? ResolveCachedPlannedSdfPipelineSignal(field, fx, fy, plan, scratch, &signal, outError, outStats)
+        : plan.use_direct_samples
         ? ResolveDirectPlannedSdfPipelineSignal(field, fx, fy, plan, &signal, outError)
         : ResolvePlannedSdfPipelineSignal(field, fx, fy, plan, &signal, outError);
     if (!resolved) {
@@ -588,6 +757,15 @@ bool ResolveAndFillSdfPostprocessBlock(
             ++outStats->direct_sample_count;
         } else {
             ++outStats->neighborhood_sample_count;
+        }
+        if (!plan.uses_row_sample_steps) {
+            for (int index = 0; index < plan.row_count; ++index) {
+                if (plan.rows[index].needs_neighborhood) {
+                    ++outStats->source_neighborhood_sample_count;
+                } else {
+                    ++outStats->source_direct_sample_count;
+                }
+            }
         }
     }
     const float shapedSignal = ApplyColorPipelineShapeValue(signal, params);
@@ -618,6 +796,7 @@ bool RunDownsampledFieldPostprocessRows(
     SdfColorPipelinePostprocessStats* outStats) {
     const int width = render.resolution.x;
     const int height = render.resolution.y;
+    SdfPostprocessResolveScratch scratch{};
     for (int fy = fyBegin; fy < fyEnd; ++fy) {
         const int yBegin = CeilDivNonNegativeLocal(
             static_cast<long long>(fy) * static_cast<long long>(height),
@@ -638,6 +817,7 @@ bool RunDownsampledFieldPostprocessRows(
                     fy,
                     params,
                     plan,
+                    &scratch,
                     ioRgba,
                     width,
                     xBegin,
@@ -666,6 +846,7 @@ bool RunRenderBlockPostprocessRows(
     const int width = render.resolution.x;
     const int height = render.resolution.y;
     const int outputPixelStep = plan.output_pixel_step;
+    SdfPostprocessResolveScratch scratch{};
     for (int blockY = blockYBegin; blockY < blockYEnd; ++blockY) {
         const int y = blockY * outputPixelStep;
         const int blockHeight = ClampIntLocal(height - y, 1, outputPixelStep);
@@ -681,6 +862,7 @@ bool RunRenderBlockPostprocessRows(
                     fy,
                     params,
                     plan,
+                    &scratch,
                     ioRgba,
                     width,
                     x,

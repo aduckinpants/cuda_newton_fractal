@@ -125,6 +125,7 @@ struct ColorPipelineSourceRuntimeParams {
     float sdf_boundary_width_px{2.0f};
     ColorPipelineSdfGateMode sdf_gate{ColorPipelineSdfGateMode::none};
     float sdf_gate_width_px{2.0f};
+    int sdf_sample_step{1};
     float blend_weight{1.0f};
 };
 

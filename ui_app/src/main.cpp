@@ -1021,6 +1021,10 @@ static void DispatchRenderFrame(
                         static_cast<std::uint64_t>(postprocessStats.direct_sample_count);
                     lensSdfProbe.postprocess_neighborhood_sample_count =
                         static_cast<std::uint64_t>(postprocessStats.neighborhood_sample_count);
+                    lensSdfProbe.postprocess_source_direct_sample_count =
+                        static_cast<std::uint64_t>(postprocessStats.source_direct_sample_count);
+                    lensSdfProbe.postprocess_source_neighborhood_sample_count =
+                        static_cast<std::uint64_t>(postprocessStats.source_neighborhood_sample_count);
                     lensSdfProbe.postprocess_filled_pixel_count =
                         static_cast<std::uint64_t>(postprocessStats.filled_pixel_count);
                     const auto postprocessEnd = std::chrono::steady_clock::now();

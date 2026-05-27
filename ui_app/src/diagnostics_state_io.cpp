@@ -750,6 +750,8 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
     double sdfBoundaryWidthPx = entry.params.sdf_boundary_width_px;
     std::string sdfGateId = color_pipeline_core::ColorPipelineSdfGateModeId(entry.params.sdf_gate);
     double sdfGateWidthPx = entry.params.sdf_gate_width_px;
+    double sdfSampleStepRaw = static_cast<double>(entry.params.sdf_sample_step);
+    bool hasSdfSampleStep = false;
     double blendWeight = entry.params.blend_weight;
     if (!GetOptionalNumber(entryValue, "scale", &scale, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "bias", &bias, nullptr, outError) ||
@@ -765,6 +767,7 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
         !GetOptionalNumber(entryValue, "proximity_bias", &proximityBias, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "sdf_boundary_width_px", &sdfBoundaryWidthPx, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "sdf_gate_width_px", &sdfGateWidthPx, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "sdf_sample_step", &sdfSampleStepRaw, &hasSdfSampleStep, outError) ||
         !GetOptionalNumber(entryValue, "blend_weight", &blendWeight, nullptr, outError)) {
         return false;
     }
@@ -779,6 +782,16 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
             return false;
         }
         entry.params.band_count = static_cast<int>(bandCountRaw);
+    }
+    if (hasSdfSampleStep) {
+        if (!std::isfinite(sdfSampleStepRaw) ||
+            std::floor(sdfSampleStepRaw) != sdfSampleStepRaw ||
+            sdfSampleStepRaw < 1.0 ||
+            sdfSampleStepRaw > 8.0) {
+            if (outError) *outError = "Invalid integer field: color_source_stack.sdf_sample_step";
+            return false;
+        }
+        entry.params.sdf_sample_step = static_cast<int>(sdfSampleStepRaw);
     }
     entry.params.scale = static_cast<float>(scale);
     entry.params.bias = static_cast<float>(bias);

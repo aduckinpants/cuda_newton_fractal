@@ -21,6 +21,8 @@ struct SdfColorPipelinePostprocessOptions {
 struct SdfColorPipelinePostprocessStats {
     std::size_t direct_sample_count{0};
     std::size_t neighborhood_sample_count{0};
+    std::size_t source_direct_sample_count{0};
+    std::size_t source_neighborhood_sample_count{0};
     std::size_t filled_pixel_count{0};
     int output_pixel_step{1};
     int worker_count{1};

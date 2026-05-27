@@ -78,6 +78,8 @@ void WriteLensSdfReportFields(
     out << "  \"lens_sdf_postprocess_worker_count\": " << lensSdfProbe.postprocess_worker_count << ",\n";
     out << "  \"lens_sdf_postprocess_direct_sample_count\": " << lensSdfProbe.postprocess_direct_sample_count << ",\n";
     out << "  \"lens_sdf_postprocess_neighborhood_sample_count\": " << lensSdfProbe.postprocess_neighborhood_sample_count << ",\n";
+    out << "  \"lens_sdf_postprocess_source_direct_sample_count\": " << lensSdfProbe.postprocess_source_direct_sample_count << ",\n";
+    out << "  \"lens_sdf_postprocess_source_neighborhood_sample_count\": " << lensSdfProbe.postprocess_source_neighborhood_sample_count << ",\n";
     out << "  \"lens_sdf_postprocess_filled_pixel_count\": " << lensSdfProbe.postprocess_filled_pixel_count << ",\n";
     out << "  \"lens_sdf_overlay_mode\": ";
     WriteAutomationReportString(out, lensSdfProbe.overlay_mode);

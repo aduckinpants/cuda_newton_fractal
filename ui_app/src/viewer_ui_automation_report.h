@@ -58,6 +58,8 @@ struct ViewerUiAutomationLensSdfProbe {
     int postprocess_worker_count = 1;
     std::uint64_t postprocess_direct_sample_count = 0;
     std::uint64_t postprocess_neighborhood_sample_count = 0;
+    std::uint64_t postprocess_source_direct_sample_count = 0;
+    std::uint64_t postprocess_source_neighborhood_sample_count = 0;
     std::uint64_t postprocess_filled_pixel_count = 0;
     std::string overlay_mode = "off";
     bool overlay_active = false;

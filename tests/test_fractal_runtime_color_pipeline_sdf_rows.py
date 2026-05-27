@@ -624,7 +624,7 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
     ) as viewer:
         ready_report = viewer.wait_for_report(timeout_seconds=30.0)
         for function_id, *_ in SDF_SOURCE_ROWS:
-            for path in ("signal.scale", "signal.bias", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.blend_weight"):
+            for path in ("signal.scale", "signal.bias", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.sdf_sample_step", "signal.blend_weight"):
                 viewer.wait_for_control(
                     f"color_pipeline.source.{function_id}.{path}.primary",
                     timeout_seconds=20.0,
@@ -677,7 +677,7 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
         ready_report = viewer.wait_for_report(timeout_seconds=30.0)
         base_hash = ready_report.get("rendered_frame_hash")
         assert isinstance(base_hash, str), ready_report
-        for path in ("signal.scale", "signal.bias", "signal.blend_weight", "signal.boundary_width_px"):
+        for path in ("signal.scale", "signal.bias", "signal.blend_weight", "signal.boundary_width_px", "signal.sdf_sample_step"):
             viewer.wait_for_control(
                 f"color_pipeline.source.sdf_boundary_band.{path}.primary",
                 timeout_seconds=20.0,
@@ -707,6 +707,11 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
             4.0,
             timeout_seconds=40.0,
         )
+        sample_step_report = viewer.set_control_value(
+            "color_pipeline.source.sdf_boundary_band.signal.sdf_sample_step.primary",
+            4.0,
+            timeout_seconds=40.0,
+        )
 
     assert downsample_report.get("lens_sdf_enabled") is False, downsample_report
     assert downsample_report.get("lens_sdf_valid") is True, downsample_report
@@ -715,11 +720,19 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
     field_pixels = int(downsample_report["lens_sdf_width"]) * int(downsample_report["lens_sdf_height"])
     direct_samples = int(downsample_report["lens_sdf_postprocess_direct_sample_count"])
     neighborhood_samples = int(downsample_report["lens_sdf_postprocess_neighborhood_sample_count"])
+    source_direct_samples = int(downsample_report["lens_sdf_postprocess_source_direct_sample_count"])
+    source_neighborhood_samples = int(downsample_report["lens_sdf_postprocess_source_neighborhood_sample_count"])
     assert int(downsample_report["lens_sdf_postprocess_pixel_step"]) == 1, downsample_report
     assert int(downsample_report["lens_sdf_postprocess_filled_pixel_count"]) == render_pixels, downsample_report
     assert direct_samples == field_pixels, downsample_report
     assert neighborhood_samples == 0, downsample_report
+    assert source_direct_samples == direct_samples, downsample_report
+    assert source_neighborhood_samples == 0, downsample_report
     assert direct_samples < render_pixels, downsample_report
+    assert sample_step_report.get("lens_sdf_pixel_scale") == pytest.approx(4.0), sample_step_report
+    assert sample_step_report.get("rendered_frame_hash") != downsample_report.get("rendered_frame_hash"), sample_step_report
+    assert int(sample_step_report["lens_sdf_postprocess_source_direct_sample_count"]) < source_direct_samples, sample_step_report
+    assert int(sample_step_report["lens_sdf_postprocess_source_neighborhood_sample_count"]) == 0, sample_step_report
 
 
 def test_lens_downsample_visible_and_authoritative_for_sdf_source_without_lens_visualization_no_mouse(tmp_path: Path) -> None:

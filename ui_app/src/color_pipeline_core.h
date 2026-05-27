@@ -249,6 +249,17 @@ inline FunctionParamDescriptor MakeColorPipelineSdfGateWidthParam() {
         2.0);
 }
 
+inline FunctionParamDescriptor MakeColorPipelineSdfSampleStepParam() {
+    return MakeColorPipelineIntParam(
+        "signal.sdf_sample_step",
+        "SDF Row Step",
+        "Reuse this SDF Source row over NxN field-sample blocks; 1 keeps full row detail.",
+        1,
+        8,
+        1,
+        1);
+}
+
 inline FunctionParamDescriptor MakeColorPipelineSourceScaleParam(
     const char* label,
     const char* help,
@@ -623,6 +634,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSourceBiasParam("Distance Bias", "Shift the signed-distance field before palette lookup.", -2.0, 2.0, 0.01, 0.5),
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
+                MakeColorPipelineSdfSampleStepParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -635,6 +647,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSourceBiasParam("Inside Bias", "Shift the inside/outside signal before palette lookup.", -2.0, 2.0, 0.01, 0.0),
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
+                MakeColorPipelineSdfSampleStepParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -648,6 +661,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineFloatParam("signal.boundary_width_px", "Boundary Width", "Set the SDF-field pixel radius used for the boundary-band source.", 0.25, 16.0, 0.25, 2.0),
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
+                MakeColorPipelineSdfSampleStepParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -660,6 +674,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSourceBiasParam("Angle Bias", "Shift the normalized normal angle before palette lookup.", -2.0, 2.0, 0.01, 0.0),
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
+                MakeColorPipelineSdfSampleStepParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -672,6 +687,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSourceBiasParam("Curvature Bias", "Shift the curvature estimate before palette lookup.", -2.0, 2.0, 0.01, 0.5),
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
+                MakeColorPipelineSdfSampleStepParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
     };
