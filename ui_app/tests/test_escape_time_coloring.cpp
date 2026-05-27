@@ -28,6 +28,18 @@ struct InteriorToneSample {
     TestComplex z;
 };
 
+struct SourceSignalDistinctnessCase {
+    const char* label;
+    ColorSignal signal;
+    ColorPipelineSourceRuntimeParams params;
+};
+
+struct SourceSignalDistinctnessSample {
+    int iteration;
+    int max_iter;
+    TestComplex z;
+};
+
 bool Equals(TestColor left, TestColor right) {
     return left.x == right.x && left.y == right.y && left.z == right.z && left.w == right.w;
 }
@@ -120,6 +132,64 @@ TestColor ApplyBalanceVoidGradeForTest(
         1.0f);
 
     return {QuantizeChannel(balancedRed), QuantizeChannel(balancedGreen), QuantizeChannel(balancedBlue), color.w};
+}
+
+ColorPipelineSourceRuntimeParams MakeDistinctnessSourceParams(ColorSignal signal) {
+    ColorPipelineSourceRuntimeParams params{};
+    params.scale = 1.0f;
+    params.bias = 0.0f;
+    params.phase_offset = 0.0f;
+    params.wrap_cycles = 1.0f;
+    params.band_count = 7;
+    params.softness = 0.25f;
+    params.magnitude_scale = 1.0f;
+    params.magnitude_bias = 0.0f;
+    params.stripe_frequency = 2.25f;
+    params.stripe_phase = 0.35f;
+    params.proximity_scale = 1.0f;
+    params.proximity_bias = 0.0f;
+    params.blend_weight = 1.0f;
+    if (signal == ColorSignal::smooth_escape) {
+        params.scale = 1.0f;
+        params.bias = 0.0f;
+    }
+    return params;
+}
+
+float ResolveSingleSourceStackSignal(
+    const KernelParams& baseParams,
+    const SourceSignalDistinctnessCase& sourceCase,
+    const SourceSignalDistinctnessSample& sample) {
+    KernelParams params = baseParams;
+    params.color_source_stack_count = 1;
+    params.color_source_stack[0].signal = sourceCase.signal;
+    params.color_source_stack[0].params = sourceCase.params;
+    return ResolveProgrammableEscapeTimeSignal(
+        FractalType::newton,
+        sample.iteration,
+        sample.max_iter,
+        sample.z,
+        params);
+}
+
+bool SourceSignalSignaturesDiffer(
+    const KernelParams& baseParams,
+    const SourceSignalDistinctnessCase& left,
+    const SourceSignalDistinctnessCase& right) {
+    const SourceSignalDistinctnessSample samples[] = {
+        {7, 100, TestComplex{1.2f, 0.4f}},
+        {21, 100, TestComplex{-0.3f, 1.1f}},
+        {53, 100, TestComplex{-1.4f, -0.2f}},
+        {89, 100, TestComplex{0.2f, -1.6f}},
+    };
+    for (const SourceSignalDistinctnessSample& sample : samples) {
+        const float leftSignal = ResolveSingleSourceStackSignal(baseParams, left, sample);
+        const float rightSignal = ResolveSingleSourceStackSignal(baseParams, right, sample);
+        if (std::fabs(leftSignal - rightSignal) > 1.0e-5f) {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace
@@ -1090,6 +1160,30 @@ int main() {
         if (std::fabs(singleSourceStackValue - smoothSourceValue) > 1.0e-6f) {
             std::cerr << "A one-row Source stack should preserve the existing shipped single-row Source behavior\n";
             return 1;
+        }
+
+        KernelParams distinctnessParams = params;
+        distinctnessParams.poly_kind = PolyKind::z3_minus_1;
+        distinctnessParams.color_shape = ColorPipelineShape::identity;
+        distinctnessParams.color_source_stack_count = 0;
+        distinctnessParams.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        const SourceSignalDistinctnessCase sourceCases[] = {
+            {"smooth_escape_ramp", ColorSignal::smooth_escape, MakeDistinctnessSourceParams(ColorSignal::smooth_escape)},
+            {"phase_orbit", ColorSignal::phase_angle, MakeDistinctnessSourceParams(ColorSignal::phase_angle)},
+            {"banded_signal", ColorSignal::iteration_bands, MakeDistinctnessSourceParams(ColorSignal::iteration_bands)},
+            {"escape_magnitude", ColorSignal::escape_magnitude, MakeDistinctnessSourceParams(ColorSignal::escape_magnitude)},
+            {"orbit_stripe", ColorSignal::orbit_stripe, MakeDistinctnessSourceParams(ColorSignal::orbit_stripe)},
+            {"root_proximity", ColorSignal::root_proximity, MakeDistinctnessSourceParams(ColorSignal::root_proximity)},
+            {"root_index", ColorSignal::root_index, MakeDistinctnessSourceParams(ColorSignal::root_index)},
+        };
+        for (std::size_t left = 0; left < sizeof(sourceCases) / sizeof(sourceCases[0]); ++left) {
+            for (std::size_t right = left + 1; right < sizeof(sourceCases) / sizeof(sourceCases[0]); ++right) {
+                if (!SourceSignalSignaturesDiffer(distinctnessParams, sourceCases[left], sourceCases[right])) {
+                    std::cerr << "Non-SDF Source row '" << sourceCases[left].label << "' should not alias '"
+                              << sourceCases[right].label << "' across the native source-signal matrix\n";
+                    return 1;
+                }
+            }
         }
 
         params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
