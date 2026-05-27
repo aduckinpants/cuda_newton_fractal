@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - checkpoint, receipts, rearward review, push, and clean-tree closeout.
+Complete - adaptive SDF field resolution is checkpointed; final receipts, rearward review, push, and clean-tree proof are the closeout rails for this head.
 
 ## Phase Checklist
 
@@ -11,7 +11,7 @@ Phase 5 - checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 2 - add RED measurement/report proof for requested versus effective SDF field downsample.
 - [x] Phase 3 - implement live-only adaptive effective SDF field downsample during interaction without mutating persisted `LensSettings::downsample`.
 - [x] Phase 4 - publish runtime and prove low-cost views stay at requested quality, high-cost views adapt during interaction, and settled/capture/replay use requested quality.
-- [ ] Phase 5 - hostile audit, plan sync, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 5 - hostile audit, plan sync, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -75,6 +75,9 @@ The policy must be conservative:
 - Code quality: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_resolution_code_quality.json` passed.
 - Diff check: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_resolution_diff_check --log artifacts/logs/sdf_field_resolution_diff_check.log --out-json artifacts/validation/sdf_field_resolution_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed.
 - Runtime proof result: high-pressure no-mouse SDF interaction reports `lens_sdf_requested_downsample=1`, `lens_sdf_effective_downsample>1`, `lens_sdf_quality_mode=interactive_adaptive`, and settled frames return to `requested` quality.
+- Checkpoint commit: `bc7f7a1` (`Add adaptive SDF field resolution policy`) recorded the implementation, plan, contract, docs, tests, witness tooling, and handoff.
+- Machine receipts: validation and contract-proof receipts were written for `bc7f7a1`.
+- Rearward review: `py -3.14 tools/viewer_host_rearward_review.py` returned `status=ok` for `bc7f7a1`.
 
 ## Hostile Audit
 
