@@ -10,3 +10,12 @@ bool ApplyLensSdfColorPipelinePostprocessCudaDirectScalar(
     std::string* outError = nullptr,
     SdfColorPipelinePostprocessStats* outStats = nullptr,
     const SdfColorPipelinePostprocessOptions* options = nullptr);
+
+bool ApplyLensSdfColorPipelinePostprocessCudaFieldSignal(
+    const SdfFieldView& field,
+    const RenderSettings& render,
+    const KernelParams& params,
+    std::uint32_t* ioRgba,
+    std::string* outError = nullptr,
+    SdfColorPipelinePostprocessStats* outStats = nullptr,
+    const SdfColorPipelinePostprocessOptions* options = nullptr);

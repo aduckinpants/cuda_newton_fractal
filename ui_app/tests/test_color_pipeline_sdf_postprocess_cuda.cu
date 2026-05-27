@@ -100,22 +100,25 @@ void CheckCpuGpuParity(
     const SdfFieldResult& field,
     const RenderSettings& render,
     const KernelParams& params,
-    int outputPixelStep = 1) {
+    int outputPixelStep = 1,
+    SdfColorPipelinePostprocessBackend cudaBackend = SdfColorPipelinePostprocessBackend::cuda_direct_scalar) {
     std::vector<std::uint32_t> cpuPixels;
     std::vector<std::uint32_t> gpuPixels;
     SdfColorPipelinePostprocessStats cpuStats{};
     SdfColorPipelinePostprocessStats gpuStats{};
     Check(RunPostprocess(field, render, params, SdfColorPipelinePostprocessBackend::cpu, cpuPixels, cpuStats, outputPixelStep),
         "CheckCpuGpuParity_CPU_Succeeds");
-    Check(RunPostprocess(field, render, params, SdfColorPipelinePostprocessBackend::cuda_direct_scalar, gpuPixels, gpuStats, outputPixelStep),
+    Check(RunPostprocess(field, render, params, cudaBackend, gpuPixels, gpuStats, outputPixelStep),
         "CheckCpuGpuParity_GPU_Succeeds");
     Check(cpuPixels == gpuPixels, label);
-    Check(gpuStats.backend_used == SdfColorPipelinePostprocessBackend::cuda_direct_scalar,
+    Check(gpuStats.backend_used == cudaBackend,
         "CheckCpuGpuParity_GPUReportsCudaBackend");
     Check(!gpuStats.backend_fallback_used,
         "CheckCpuGpuParity_GPUDoesNotReportFallback");
-    Check(gpuStats.neighborhood_sample_count == 0,
-        "CheckCpuGpuParity_GPURemainsDirectOnly");
+    if (cudaBackend == SdfColorPipelinePostprocessBackend::cuda_direct_scalar) {
+        Check(gpuStats.neighborhood_sample_count == 0,
+            "CheckCpuGpuParity_GPURemainsDirectOnly");
+    }
     Check(gpuStats.filled_pixel_count == cpuStats.filled_pixel_count,
         "CheckCpuGpuParity_GPUFilledCountMatchesCPU");
 }
@@ -187,15 +190,127 @@ void TestUnsupportedStacksFallbackToCpuInAutoMode() {
     KernelParams normalAngle = SdfParams(ColorSignal::sdf_normal_angle);
     Check(!ColorPipelineSdfPostprocessCanUseCudaDirectScalar(normalAngle),
         "TestUnsupportedStacksFallbackToCpuInAutoMode_NormalAnglePreflightRejectsCuda");
+    Check(ColorPipelineSdfPostprocessCanUseCudaFieldSignal(normalAngle),
+        "TestUnsupportedStacksFallbackToCpuInAutoMode_NormalAngleFieldSignalPreflightAcceptsCuda");
     Check(RunPostprocess(field, Render(8, 8), normalAngle, SdfColorPipelinePostprocessBackend::auto_backend, autoPixels, autoStats),
         "TestUnsupportedStacksFallbackToCpuInAutoMode_NormalAngleAutoSucceeds");
-    Check(autoStats.backend_used == SdfColorPipelinePostprocessBackend::cpu && autoStats.backend_fallback_used,
-        "TestUnsupportedStacksFallbackToCpuInAutoMode_NormalAngleFallsBackToCpu");
+    Check(autoStats.backend_used == SdfColorPipelinePostprocessBackend::cuda_field_signal && !autoStats.backend_fallback_used,
+        "TestUnsupportedStacksFallbackToCpuInAutoMode_NormalAngleUsesCudaFieldSignal");
 
     KernelParams rowStep = SdfParams(ColorSignal::sdf_signed_distance);
     rowStep.color_source_stack[0].params.sdf_sample_step = 2;
     Check(!ColorPipelineSdfPostprocessCanUseCudaDirectScalar(rowStep),
         "TestUnsupportedStacksFallbackToCpuInAutoMode_RowSampleStepPreflightRejectsCuda");
+    Check(!ColorPipelineSdfPostprocessCanUseCudaFieldSignal(rowStep),
+        "TestUnsupportedStacksFallbackToCpuInAutoMode_RowSampleStepFieldSignalPreflightRejectsCuda");
+}
+
+void TestExplicitUnsupportedGpuBackendsFailClosed() {
+    const SdfFieldResult field = MakeGradientField(8, 8);
+    const RenderSettings render = Render(8, 8);
+    std::vector<std::uint32_t> pixels;
+    SdfColorPipelinePostprocessStats stats{};
+
+    KernelParams normalAngle = SdfParams(ColorSignal::sdf_normal_angle);
+    Check(!RunPostprocess(
+            field,
+            render,
+            normalAngle,
+            SdfColorPipelinePostprocessBackend::cuda_direct_scalar,
+            pixels,
+            stats),
+        "TestExplicitUnsupportedGpuBackendsFailClosed_NormalAngleDoesNotSilentlyRunCpuForDirectScalar");
+
+    KernelParams rowStep = SdfParams(ColorSignal::sdf_normal_angle);
+    rowStep.color_source_stack[0].params.sdf_sample_step = 2;
+    Check(!RunPostprocess(
+            field,
+            render,
+            rowStep,
+            SdfColorPipelinePostprocessBackend::cuda_field_signal,
+            pixels,
+            stats),
+        "TestExplicitUnsupportedGpuBackendsFailClosed_RowStepDoesNotSilentlyRunCpuForFieldSignal");
+
+    KernelParams direct = SdfParams(ColorSignal::sdf_signed_distance);
+    Check(!RunPostprocess(
+            field,
+            render,
+            direct,
+            SdfColorPipelinePostprocessBackend::cuda_field_signal,
+            pixels,
+            stats),
+        "TestExplicitUnsupportedGpuBackendsFailClosed_DirectScalarDoesNotSilentlyUseFieldSignal");
+}
+
+void TestNeighborhoodFieldSignalsUseCudaWithExactPixels() {
+    const SdfFieldResult field = MakeGradientField(17, 13);
+    KernelParams normalAngle = SdfParams(ColorSignal::sdf_normal_angle);
+    normalAngle.color_pipeline.palette = ColorPalette::phase_wheel;
+    normalAngle.color_source_stack[0].params.scale = -0.75f;
+    normalAngle.color_source_stack[0].params.bias = 0.35f;
+    Check(ColorPipelineSdfPostprocessCanUseCudaFieldSignal(normalAngle),
+        "TestNeighborhoodFieldSignalsUseCudaWithExactPixels_NormalAnglePreflightAcceptsCuda");
+    CheckCpuGpuParity(
+        "TestNeighborhoodFieldSignalsUseCudaWithExactPixels_NormalAnglePixelsMatch",
+        field,
+        Render(17, 13),
+        normalAngle,
+        1,
+        SdfColorPipelinePostprocessBackend::cuda_field_signal);
+
+    KernelParams curvature = SdfParams(ColorSignal::sdf_curvature);
+    curvature.color_source_stack[0].params.scale = 0.3f;
+    curvature.color_source_stack[0].params.bias = 0.5f;
+    Check(ColorPipelineSdfPostprocessCanUseCudaFieldSignal(curvature),
+        "TestNeighborhoodFieldSignalsUseCudaWithExactPixels_CurvaturePreflightAcceptsCuda");
+    CheckCpuGpuParity(
+        "TestNeighborhoodFieldSignalsUseCudaWithExactPixels_CurvaturePixelsMatch",
+        field,
+        Render(17, 13),
+        curvature,
+        1,
+        SdfColorPipelinePostprocessBackend::cuda_field_signal);
+}
+
+void TestNeighborhoodMixedSdfStackUsesCudaWithExactPixels() {
+    const SdfFieldResult field = MakeGradientField(9, 7);
+    KernelParams params = SdfParams(ColorSignal::sdf_normal_angle);
+    params.color_pipeline.palette = ColorPalette::phase_wheel;
+    params.color_source_stack_count = 4;
+    params.color_source_stack[0].signal = ColorSignal::sdf_normal_angle;
+    params.color_source_stack[0].params.scale = 1.2f;
+    params.color_source_stack[0].params.bias = -0.15f;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    params.color_source_stack[1].signal = ColorSignal::sdf_curvature;
+    params.color_source_stack[1].params.scale = 0.25f;
+    params.color_source_stack[1].params.bias = 0.4f;
+    params.color_source_stack[1].params.blend_weight = 0.45f;
+    params.color_source_stack[2].signal = ColorSignal::sdf_boundary_band;
+    params.color_source_stack[2].params.sdf_boundary_width_px = 5.0f;
+    params.color_source_stack[2].params.sdf_gate = ColorPipelineSdfGateMode::boundary_band;
+    params.color_source_stack[2].params.sdf_gate_width_px = 3.0f;
+    params.color_source_stack[2].params.blend_weight = 0.3f;
+    params.color_source_stack[3].signal = ColorSignal::sdf_signed_distance;
+    params.color_source_stack[3].params.scale = 0.04f;
+    params.color_source_stack[3].params.bias = 0.5f;
+    params.color_source_stack[3].params.blend_weight = 0.2f;
+    Check(ColorPipelineSdfPostprocessCanUseCudaFieldSignal(params),
+        "TestNeighborhoodMixedSdfStackUsesCudaWithExactPixels_PreflightAcceptsCuda");
+    CheckCpuGpuParity(
+        "TestNeighborhoodMixedSdfStackUsesCudaWithExactPixels_PixelsMatch",
+        field,
+        Render(19, 11),
+        params,
+        1,
+        SdfColorPipelinePostprocessBackend::cuda_field_signal);
+    CheckCpuGpuParity(
+        "TestNeighborhoodMixedSdfStackUsesCudaWithExactPixels_OutputStepPixelsMatch",
+        field,
+        Render(19, 11),
+        params,
+        2,
+        SdfColorPipelinePostprocessBackend::cuda_field_signal);
 }
 
 } // namespace
@@ -206,6 +321,9 @@ int main()
     TestDirectScalarMultiRowStackUsesCudaWithExactPixels();
     TestCudaMatchesCpuForDownsampledFieldAndOutputPixelStep();
     TestUnsupportedStacksFallbackToCpuInAutoMode();
+    TestExplicitUnsupportedGpuBackendsFailClosed();
+    TestNeighborhoodFieldSignalsUseCudaWithExactPixels();
+    TestNeighborhoodMixedSdfStackUsesCudaWithExactPixels();
 
     std::cout << "test_color_pipeline_sdf_postprocess_cuda: passed=" << g_passed
               << " failed=" << g_failed << "\n";

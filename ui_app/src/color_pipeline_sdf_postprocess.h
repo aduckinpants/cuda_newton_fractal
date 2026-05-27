@@ -12,12 +12,14 @@ bool ColorPipelineUsesSdfSource(const KernelParams& params);
 bool ColorPipelineSourceStackIsSdfOnly(const KernelParams& params, std::string* outError = nullptr);
 bool ColorPipelineSdfPostprocessCanUseDirectSamples(const KernelParams& params);
 bool ColorPipelineSdfPostprocessCanUseCudaDirectScalar(const KernelParams& params);
+bool ColorPipelineSdfPostprocessCanUseCudaFieldSignal(const KernelParams& params);
 int ResolveSdfColorPipelinePostprocessOutputPixelStep(const KernelParams& params, bool previewActive, double previewScale, bool forceFullQuality);
 
 enum class SdfColorPipelinePostprocessBackend : int {
     cpu = 0,
     cuda_direct_scalar = 1,
-    auto_backend = 2,
+    cuda_field_signal = 2,
+    auto_backend = 3,
 };
 
 const char* SdfColorPipelinePostprocessBackendId(SdfColorPipelinePostprocessBackend backend);
@@ -50,6 +52,7 @@ using SdfColorPipelinePostprocessBackendFn = bool (*)(
     const SdfColorPipelinePostprocessOptions* options);
 
 void RegisterSdfColorPipelineCudaDirectScalarBackend(SdfColorPipelinePostprocessBackendFn backendFn);
+void RegisterSdfColorPipelineCudaFieldSignalBackend(SdfColorPipelinePostprocessBackendFn backendFn);
 
 bool ApplyLensSdfColorPipelinePostprocess(
     const SdfFieldView& field,

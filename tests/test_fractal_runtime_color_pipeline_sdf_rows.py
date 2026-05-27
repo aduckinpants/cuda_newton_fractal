@@ -800,8 +800,8 @@ def test_lens_downsample_visible_and_authoritative_for_sdf_source_without_lens_v
     direct_samples = int(edited_report["lens_sdf_postprocess_direct_sample_count"])
     neighborhood_samples = int(edited_report["lens_sdf_postprocess_neighborhood_sample_count"])
     assert int(edited_report["lens_sdf_postprocess_pixel_step"]) == 1, edited_report
-    assert edited_report.get("lens_sdf_postprocess_backend_used") == "cpu", edited_report
-    assert edited_report.get("lens_sdf_postprocess_backend_fallback_used") is True, edited_report
+    assert edited_report.get("lens_sdf_postprocess_backend_used") == "cuda_field_signal", edited_report
+    assert edited_report.get("lens_sdf_postprocess_backend_fallback_used") is False, edited_report
     assert int(edited_report["lens_sdf_postprocess_filled_pixel_count"]) == render_pixels, edited_report
     assert direct_samples == 0, edited_report
     assert neighborhood_samples == field_pixels, edited_report

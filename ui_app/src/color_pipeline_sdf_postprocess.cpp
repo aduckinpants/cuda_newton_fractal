@@ -30,6 +30,11 @@ SdfColorPipelinePostprocessBackendFn& RegisteredCudaDirectScalarBackend() {
     return backendFn;
 }
 
+SdfColorPipelinePostprocessBackendFn& RegisteredCudaFieldSignalBackend() {
+    static SdfColorPipelinePostprocessBackendFn backendFn = nullptr;
+    return backendFn;
+}
+
 struct PlannedSdfSourceRow {
     ColorSignal signal{ColorSignal::sdf_signed_distance};
     SdfFieldSignalKind kind{SdfFieldSignalKind::signed_distance_px};
@@ -958,6 +963,8 @@ const char* SdfColorPipelinePostprocessBackendId(SdfColorPipelinePostprocessBack
         return "cpu";
     case SdfColorPipelinePostprocessBackend::cuda_direct_scalar:
         return "cuda_direct_scalar";
+    case SdfColorPipelinePostprocessBackend::cuda_field_signal:
+        return "cuda_field_signal";
     case SdfColorPipelinePostprocessBackend::auto_backend:
         return "auto";
     }
@@ -966,6 +973,10 @@ const char* SdfColorPipelinePostprocessBackendId(SdfColorPipelinePostprocessBack
 
 void RegisterSdfColorPipelineCudaDirectScalarBackend(SdfColorPipelinePostprocessBackendFn backendFn) {
     RegisteredCudaDirectScalarBackend() = backendFn;
+}
+
+void RegisterSdfColorPipelineCudaFieldSignalBackend(SdfColorPipelinePostprocessBackendFn backendFn) {
+    RegisteredCudaFieldSignalBackend() = backendFn;
 }
 
 bool IsColorPipelineSdfSourceSignal(ColorSignal signal) {
@@ -1027,6 +1038,19 @@ bool ColorPipelineSdfPostprocessCanUseDirectSamples(const KernelParams& params) 
 
 bool ColorPipelineSdfPostprocessCanUseCudaDirectScalar(const KernelParams& params) {
     if (!ColorPipelineSdfPostprocessCanUseDirectSamples(params)) {
+        return false;
+    }
+    const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
+    for (int index = 0; index < sourceStackCount; ++index) {
+        if (NormalizeSdfSourceSampleStep(params.color_source_stack[index].params.sdf_sample_step) > 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ColorPipelineSdfPostprocessCanUseCudaFieldSignal(const KernelParams& params) {
+    if (!ColorPipelineSourceStackIsSdfOnly(params)) {
         return false;
     }
     const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
@@ -1107,7 +1131,42 @@ bool ApplyLensSdfColorPipelinePostprocess(
         } else if (requestedBackend == SdfColorPipelinePostprocessBackend::cuda_direct_scalar) {
             if (outError) *outError = "CUDA direct scalar SDF Color Pipeline postprocess does not support this Source stack";
             return false;
-        } else {
+        }
+    }
+    if (requestedBackend == SdfColorPipelinePostprocessBackend::cuda_field_signal ||
+        requestedBackend == SdfColorPipelinePostprocessBackend::auto_backend) {
+        if (ColorPipelineSdfPostprocessCanUseCudaFieldSignal(params) &&
+            !ColorPipelineSdfPostprocessCanUseCudaDirectScalar(params)) {
+            SdfColorPipelinePostprocessBackendFn cudaBackend = RegisteredCudaFieldSignalBackend();
+            if (cudaBackend) {
+                SdfColorPipelinePostprocessStats cudaStats{};
+                std::string cudaError;
+                if (cudaBackend(field, render, params, ioRgba, &cudaError, &cudaStats, options)) {
+                    if (outStats) {
+                        *outStats = cudaStats;
+                    }
+                    return true;
+                }
+                if (requestedBackend == SdfColorPipelinePostprocessBackend::cuda_field_signal) {
+                    if (outError) *outError = cudaError.empty()
+                        ? "CUDA field-signal SDF Color Pipeline postprocess failed"
+                        : cudaError;
+                    return false;
+                }
+                cpuFallbackUsed = true;
+                if (outError) {
+                    outError->clear();
+                }
+            } else if (requestedBackend == SdfColorPipelinePostprocessBackend::cuda_field_signal) {
+                if (outError) *outError = "CUDA field-signal SDF Color Pipeline postprocess backend is not registered";
+                return false;
+            } else {
+                cpuFallbackUsed = true;
+            }
+        } else if (requestedBackend == SdfColorPipelinePostprocessBackend::cuda_field_signal) {
+            if (outError) *outError = "CUDA field-signal SDF Color Pipeline postprocess does not support this Source stack";
+            return false;
+        } else if (!ColorPipelineSdfPostprocessCanUseCudaDirectScalar(params)) {
             cpuFallbackUsed = true;
         }
     }
