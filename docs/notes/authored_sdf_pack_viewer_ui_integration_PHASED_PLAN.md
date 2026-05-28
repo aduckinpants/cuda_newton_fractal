@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 7 - hostile audit, validation, checkpoint, receipts, rearward review, push, and clean tree.
+Closed - Step 5B viewer UI integration is checkpointed at `fa3499a`, receipt-backed, rearward-reviewed, pushed to `origin/codex/authored-sdf-pack-viewer-ui-integration`, and clean.
 
 ## Phase Checklist
 
@@ -12,13 +12,13 @@ Phase 7 - hostile audit, validation, checkpoint, receipts, rearward review, push
 - [x] Phase 4 - add normal viewer flow integration, CLI startup load/open flags, and no-mouse automation routing.
 - [x] Phase 5 - persist authored SDF pack UI state through diagnostics state/capture surfaces.
 - [x] Phase 6 - publish runtime and prove no-mouse load/select/edit behavior.
-- [ ] Phase 7 - hostile audit, validation, checkpoint, receipts, rearward review, push, and clean tree.
+- [x] Phase 7 - hostile audit, validation, checkpoint, receipts, rearward review, push, and clean tree.
 
 ## Explicit User Asks
 
-- [active] Continue down the planned SDF list after Step 5A.
-- [active] Move authored SDF packs toward real viewer use without creating another monolith.
-- [active] Keep this slice bounded: UI state and controls now; Color Pipeline/overlay consumption waits for Step 5C.
+- [done] Continue down the planned SDF list after Step 5A.
+- [done] Move authored SDF packs toward real viewer use without creating another monolith.
+- [done] Keep this slice bounded: UI state and controls now; Color Pipeline/overlay consumption waits for Step 5C.
 
 ## Scope
 
@@ -61,7 +61,11 @@ Out of scope:
 - Hostile audit validation passed: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/authored_sdf_pack_viewer_ui_integration_PHASED_PLAN.md --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_hostile_audit.json`.
 - Code-quality baseline passed: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/authored_sdf_pack_viewer_ui_integration_code_quality.json`.
 - Diff check passed: `py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_viewer_ui_integration_diff_check --out artifacts/validation/authored_sdf_pack_viewer_ui_integration_diff_check.json --log artifacts/logs/authored_sdf_pack_viewer_ui_integration_diff_check.log -- git diff --check`.
-- Pending: checkpoint commit, receipts, rearward review, push, and clean tree.
+- Checkpoint commit: `fa3499a` (`Add authored SDF pack viewer UI integration`).
+- Exact contract command set rerun after checkpoint: contract, plan sync, native UI, native CLI, native diagnostics state, runtime publish, no-mouse runtime lane, hostile audit, code-quality baseline, and diff check all passed.
+- Validation and contract proof receipts written for `fa3499a`.
+- Rearward review for `fa3499a`: `ok`, artifact `artifacts/hooks/viewer_host_rearward_review/fa3499a32a7e9ae6e9cab786cdb3a859e33031d7.json`.
+- Push/clean-tree proof: `origin/codex/authored-sdf-pack-viewer-ui-integration` contains `fa3499a`; `git status --short --branch` shows no dirty files.
 
 ## Hostile Audit
 

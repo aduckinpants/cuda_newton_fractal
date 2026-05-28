@@ -139,3 +139,4 @@
 - `ck:7c4a4255` 2026-05-28 20:16 UTC | score 5 — Checkpoint Step 5A authored SDF pack field producer bridge after focused CPU/CUDA and preservation rails.
 - `ck:4cf2e5e1` 2026-05-28 20:28 UTC — session-start | branch=codex/authored-sdf-pack-viewer-ui-integration | head=a41056f | status=dirty | profile=runtime | intent=authored SDF pack viewer UI integration
 - `ck:4cf2e5e1` 2026-05-28 21:24 UTC | score 93 — Authored SDF pack viewer UI integration exposes pack controls, no-mouse automation, preview hash proof, and capture state merge; focused native/runtime rails green.
+- `ck:4cf2e5e1` 2026-05-28 21:46 UTC | score 93 — Closed stale authored SDF pack viewer UI plan text after validation/receipt/push; Step 5B now records fa3499a proof and Step 5C readiness truthfully.
