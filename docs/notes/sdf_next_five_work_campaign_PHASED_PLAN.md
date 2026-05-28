@@ -86,6 +86,7 @@ Future sessions should create these checked-in artifacts before mutating each st
   - Plan: `docs/notes/authored_sdf_pack_color_pipeline_overlay_PHASED_PLAN.md`
   - Contract: `docs/contracts/authored_sdf_pack_color_pipeline_overlay.contract.json`
   - Branch: `codex/authored-sdf-pack-color-pipeline-overlay`
+  - Status: closed and pushed as `b6d2926` on `codex/authored-sdf-pack-color-pipeline-overlay`; authored pack fields now feed existing SDF Color Pipeline source rows and overlay reporting when explicitly selected, with capture/replay authority proof.
 - Step 6:
   - No implementation plan or contract is predeclared here. Step 6 must start from a fresh evidence review and replan.
 
