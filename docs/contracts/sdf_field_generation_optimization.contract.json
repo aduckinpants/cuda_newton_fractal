@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_generation_optimization",
+  "feature_id": "sdf_performance_design",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_field_generation_optimization_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_field_generation_optimization_PHASED_PLAN.md",
+    "docs/contracts/sdf_field_generation_optimization.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/lens_sdf.h",
+    "ui_app/src/lens_sdf.cpp",
+    "ui_app/src/lens_sdf_cuda.h",
+    "ui_app/src/lens_sdf_cuda.cu",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_lens_sdf_cuda.cu",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tests/test_sdf_performance_witness_tool.py",
+    "tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "tools/viewer_host_sdf_performance_witness.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "add field-generation stage telemetry before optimization",
+    "keep current SDF pixels and capture/replay authority unchanged",
+    "publish runtime and prove no-mouse report fields on the real viewer path",
+    "avoid per-row downsample, authored SDF UI, SDF-native lanes, and Color Pipeline redesign"
+  ],
+  "forbidden_operator_prompts": [
+    "add visible UI controls",
+    "implement per-row or per-function SDF downsample authority",
+    "change SDF source semantics, Lens Field v2 semantics, capture/replay, or full-quality output",
+    "change GPU SDF postprocess backends",
+    "use physical mouse automation",
+    "claim FPS or responsiveness improvement without published runtime witness data"
+  ],
+  "required_defaults": {
+    "slice_kind": "runtime_visible_sdf_field_generation_measurement",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "physical_mouse_automation": false,
+    "pixel_semantics_changed": false
+  },
+  "forbidden_defaults": {
+    "visible_ui_change": "forbidden",
+    "per_source_downsample": "deferred",
+    "sdf_native_lanes": "deferred",
+    "authored_sdf_pack_ui": "deferred",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_generation_native_report --log artifacts/logs/sdf_field_generation_native_report.log --out-json artifacts/validation/sdf_field_generation_native_report.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_generation_native_cuda --log artifacts/logs/sdf_field_generation_native_cuda.log --out-json artifacts/validation/sdf_field_generation_native_cuda.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_lens_sdf_cuda",
+    "py -3.14 -m pytest tests/test_sdf_performance_witness_tool.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_generation_runtime_publish --log artifacts/logs/sdf_field_generation_runtime_publish.log --out-json artifacts/validation/sdf_field_generation_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_generation_runtime_pacing --log artifacts/logs/sdf_field_generation_runtime_pacing.log --out-json artifacts/validation/sdf_field_generation_runtime_pacing.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_realtime_pacing.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_generation_witness --log artifacts/logs/sdf_field_generation_witness.log --out-json artifacts/validation/sdf_field_generation_witness.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_sdf_performance_witness.py --runtime-exe D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe --out-json artifacts/sdf_field_generation_optimization/sdf_performance_witness.json --out-md artifacts/sdf_field_generation_optimization/sdf_performance_witness.md --work-dir artifacts/sdf_field_generation_optimization/work --width 640 --height 480 --include-preview-sample",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_generation_optimization.contract.json --out-json artifacts/validation/sdf_field_generation_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_generation_optimization_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_generation_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_generation_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_generation_diff_check --log artifacts/logs/sdf_field_generation_diff_check.log --out-json artifacts/validation/sdf_field_generation_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field generation optimization contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_generation_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF field generation hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_generation_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

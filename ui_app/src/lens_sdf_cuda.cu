@@ -2,6 +2,7 @@
 
 #include <cuda_runtime.h>
 
+#include <chrono>
 #include <cmath>
 #include <vector>
 
@@ -90,14 +91,36 @@ struct CudaJfaBuffers {
     int2* outsideA{nullptr};
     int2* outsideB{nullptr};
     float* signedDistance{nullptr};
+    size_t maskCapacity{0};
+    size_t seedCapacity{0};
+    size_t distanceCapacity{0};
 
     bool Allocate(size_t maskBytes, size_t seedBytes, size_t distanceBytes) {
-        return cudaMalloc(&deviceMask, maskBytes) == cudaSuccess &&
+        const bool ok = cudaMalloc(&deviceMask, maskBytes) == cudaSuccess &&
             cudaMalloc(&insideA, seedBytes) == cudaSuccess &&
             cudaMalloc(&insideB, seedBytes) == cudaSuccess &&
             cudaMalloc(&outsideA, seedBytes) == cudaSuccess &&
             cudaMalloc(&outsideB, seedBytes) == cudaSuccess &&
             cudaMalloc(&signedDistance, distanceBytes) == cudaSuccess;
+        if (!ok) {
+            Free();
+            return false;
+        }
+        maskCapacity = maskBytes;
+        seedCapacity = seedBytes;
+        distanceCapacity = distanceBytes;
+        return true;
+    }
+
+    bool EnsureCapacity(size_t maskBytes, size_t seedBytes, size_t distanceBytes) {
+        if (deviceMask && insideA && insideB && outsideA && outsideB && signedDistance &&
+            maskCapacity >= maskBytes &&
+            seedCapacity >= seedBytes &&
+            distanceCapacity >= distanceBytes) {
+            return true;
+        }
+        Free();
+        return Allocate(maskBytes, seedBytes, distanceBytes);
     }
 
     void Free() {
@@ -113,6 +136,9 @@ struct CudaJfaBuffers {
         outsideA = nullptr;
         outsideB = nullptr;
         signedDistance = nullptr;
+        maskCapacity = 0;
+        seedCapacity = 0;
+        distanceCapacity = 0;
     }
 
     ~CudaJfaBuffers() {
@@ -133,8 +159,8 @@ bool RunCudaJfa(const uint8_t* mask, int width, int height, std::vector<float>& 
     const size_t seedBytes = count * sizeof(int2);
     const size_t distanceBytes = count * sizeof(float);
 
-    CudaJfaBuffers buffers;
-    if (!buffers.Allocate(maskBytes, seedBytes, distanceBytes) ||
+    static CudaJfaBuffers buffers;
+    if (!buffers.EnsureCapacity(maskBytes, seedBytes, distanceBytes) ||
         cudaMemcpy(buffers.deviceMask, mask, maskBytes, cudaMemcpyHostToDevice) != cudaSuccess) {
         return false;
     }
@@ -185,6 +211,32 @@ void FillReport(LensSdfBackendReport* report, LensSdfBackend requested, LensSdfB
     report->fallback_used = fallbackUsed;
 }
 
+float ElapsedMs(std::chrono::steady_clock::time_point start, std::chrono::steady_clock::time_point end) {
+    return static_cast<float>(std::chrono::duration<double, std::milli>(end - start).count());
+}
+
+void ResetFieldGenerationReport(
+    LensSdfFieldGenerationReport* report,
+    int width,
+    int height,
+    int downsample) {
+    if (!report) {
+        return;
+    }
+    *report = {};
+    report->input_width = width;
+    report->input_height = height;
+    report->downsample = NormalizeLensDownsamplePow2(downsample);
+}
+
+void CompleteFieldGenerationReport(LensSdfFieldGenerationReport* report, const SdfFieldResult& field) {
+    if (!report) {
+        return;
+    }
+    report->field_width = field.width;
+    report->field_height = field.height;
+}
+
 } // namespace
 
 bool ComputeLensSdfFieldCudaJfa(
@@ -214,36 +266,72 @@ bool ComputeLensSdfFieldForMaskWithBackend(
     int downsample,
     LensSdfBackend backend,
     SdfFieldResult& outField,
-    LensSdfBackendReport* outReport) {
+    LensSdfBackendReport* outReport,
+    LensSdfFieldGenerationReport* outFieldReport) {
     outField.Clear();
+    ResetFieldGenerationReport(outFieldReport, width, height, downsample);
     FillReport(outReport, backend, LensSdfBackend::cpu_chamfer, false);
-
-    if (backend == LensSdfBackend::cpu_chamfer) {
-        const bool ok = ComputeLensSdfFieldForMask(mask, width, height, downsample, outField);
-        FillReport(outReport, backend, LensSdfBackend::cpu_chamfer, false);
-        return ok;
-    }
 
     std::vector<uint8_t> lowMask;
     int outWidth = 0;
     int outHeight = 0;
+    const auto downsampleStart = std::chrono::steady_clock::now();
     if (!DownsampleMaskPow2(mask, width, height, downsample, lowMask, outWidth, outHeight)) {
+        if (outFieldReport) {
+            outFieldReport->mask_downsample_ms = ElapsedMs(downsampleStart, std::chrono::steady_clock::now());
+        }
         return false;
     }
+    if (outFieldReport) {
+        outFieldReport->mask_downsample_ms = ElapsedMs(downsampleStart, std::chrono::steady_clock::now());
+    }
 
+    if (backend == LensSdfBackend::cpu_chamfer) {
+        const auto backendStart = std::chrono::steady_clock::now();
+        const bool ok = ComputeSignedDistanceSdfFieldChamfer(lowMask.data(), outWidth, outHeight, outField);
+        if (ok) {
+            outField.pixel_scale = static_cast<float>(NormalizeLensDownsamplePow2(downsample));
+            CompleteFieldGenerationReport(outFieldReport, outField);
+        } else {
+            outField.Clear();
+        }
+        if (outFieldReport) {
+            outFieldReport->backend_ms = ElapsedMs(backendStart, std::chrono::steady_clock::now());
+        }
+        FillReport(outReport, backend, LensSdfBackend::cpu_chamfer, false);
+        return ok;
+    }
+
+    const auto backendStart = std::chrono::steady_clock::now();
     if (ComputeLensSdfFieldCudaJfa(lowMask.data(), outWidth, outHeight, outField)) {
         outField.pixel_scale = static_cast<float>(NormalizeLensDownsamplePow2(downsample));
+        if (outFieldReport) {
+            outFieldReport->backend_ms = ElapsedMs(backendStart, std::chrono::steady_clock::now());
+        }
+        CompleteFieldGenerationReport(outFieldReport, outField);
         FillReport(outReport, backend, LensSdfBackend::cuda_jfa, false);
         return true;
     }
 
     if (backend == LensSdfBackend::auto_backend) {
-        const bool ok = ComputeLensSdfFieldForMask(mask, width, height, downsample, outField);
+        const bool ok = ComputeSignedDistanceSdfFieldChamfer(lowMask.data(), outWidth, outHeight, outField);
+        if (ok) {
+            outField.pixel_scale = static_cast<float>(NormalizeLensDownsamplePow2(downsample));
+            CompleteFieldGenerationReport(outFieldReport, outField);
+        } else {
+            outField.Clear();
+        }
+        if (outFieldReport) {
+            outFieldReport->backend_ms = ElapsedMs(backendStart, std::chrono::steady_clock::now());
+        }
         FillReport(outReport, backend, LensSdfBackend::cpu_chamfer, ok);
         return ok;
     }
 
     outField.Clear();
+    if (outFieldReport) {
+        outFieldReport->backend_ms = ElapsedMs(backendStart, std::chrono::steady_clock::now());
+    }
     FillReport(outReport, backend, LensSdfBackend::cuda_jfa, false);
     return false;
 }

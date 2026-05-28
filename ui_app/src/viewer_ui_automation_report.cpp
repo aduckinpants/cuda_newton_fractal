@@ -83,6 +83,10 @@ void WriteLensSdfReportFields(
     out << "  \"base_render_ms\": " << std::setprecision(12) << lensSdfProbe.base_render_ms << ",\n";
     out << "  \"lens_sdf_field_ms\": " << std::setprecision(12) << lensSdfProbe.field_ms << ",\n";
     out << "  \"lens_sdf_requested_equivalent_field_ms\": " << std::setprecision(12) << lensSdfProbe.requested_equivalent_field_ms << ",\n";
+    out << "  \"lens_sdf_field_cache_lookup_ms\": " << std::setprecision(12) << lensSdfProbe.field_cache_lookup_ms << ",\n";
+    out << "  \"lens_sdf_field_mask_downsample_ms\": " << std::setprecision(12) << lensSdfProbe.field_mask_downsample_ms << ",\n";
+    out << "  \"lens_sdf_field_backend_ms\": " << std::setprecision(12) << lensSdfProbe.field_backend_ms << ",\n";
+    out << "  \"lens_sdf_field_cache_store_ms\": " << std::setprecision(12) << lensSdfProbe.field_cache_store_ms << ",\n";
     out << "  \"lens_sdf_postprocess_ms\": " << std::setprecision(12) << lensSdfProbe.postprocess_ms << ",\n";
     out << "  \"lens_sdf_total_ms\": " << std::setprecision(12) << lensSdfProbe.total_ms << ",\n";
     out << "  \"lens_sdf_postprocess_pixel_step\": " << lensSdfProbe.postprocess_pixel_step << ",\n";

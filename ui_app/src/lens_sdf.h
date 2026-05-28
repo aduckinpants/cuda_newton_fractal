@@ -46,6 +46,16 @@ struct LensSdfBackendReport {
     bool fallback_used{false};
 };
 
+struct LensSdfFieldGenerationReport {
+    float mask_downsample_ms{0.0f};
+    float backend_ms{0.0f};
+    int input_width{0};
+    int input_height{0};
+    int downsample{1};
+    int field_width{0};
+    int field_height{0};
+};
+
 enum class LensSdfFieldCacheStatus {
     disabled,
     miss,
@@ -149,7 +159,8 @@ bool ComputeLensSdfFieldForMaskWithBackend(
     int downsample,
     LensSdfBackend backend,
     SdfFieldResult& outField,
-    LensSdfBackendReport* outReport = nullptr);
+    LensSdfBackendReport* outReport = nullptr,
+    LensSdfFieldGenerationReport* outFieldReport = nullptr);
 
 bool TryReuseLensSdfFieldCache(
     const LensSdfFieldFrameCache& cache,

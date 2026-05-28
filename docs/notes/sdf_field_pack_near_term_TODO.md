@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, live-only adaptive SDF field resolution, and Lens Field v2 sign contrast. The next selected SDF performance path is field-generation algorithm/caching measurement and optimization; per-row/multi-field downsample design, broader composition UX, authored-pack UI, and SDF-native lanes remain separate later product slices.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, live-only adaptive SDF field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, and CUDA JFA buffer reuse. The current stage-split witness points back to postprocess review for the representative matrix; per-row/multi-field downsample design, broader composition UX, authored-pack UI, and SDF-native lanes remain separate later product slices.
 
 Shipped since this roadmap was first written:
 
@@ -30,11 +30,12 @@ Shipped since this roadmap was first written:
 - CUDA field-signal SDF postprocess: supported SDF-only `sdf_normal_angle` and `sdf_curvature` stacks with row sample step `1` can run through a CUDA backend with exact CPU parity and runtime backend reporting; row sample-step greater than `1` and unsupported stacks fall back to CPU.
 - Live-only adaptive SDF field resolution: the viewer reports requested versus effective SDF field downsample, can temporarily increase effective field downsample during interaction when previous requested-equivalent field timing exceeds budget, and returns settled/capture/replay output to the requested `LensSettings::downsample` authority.
 - Lens Field v2 sign contrast: the source remains one Lens Field v2 distance function, keeps the normalized legacy Lens response, and adds source-local sign contrast without creating a second source ID.
+- Field-generation stage telemetry and CUDA JFA buffer reuse: published reports now split field cache lookup, mask downsample, backend generation, and cache store timing; the CUDA JFA path reuses device buffers across calls and the auto-backend fallback no longer repeats host mask downsampling.
 
 Next performance/design choices:
 
 - Per-row or per-function SDF downsample still needs a deliberate authority model: multiple fields, high-resolution field with row-local coarse sampling, or a source-stack-level quality policy. Current SDF Source rows all share `LensSettings::downsample`, so a layered stack cannot set a different field resolution per SDF Source row yet.
-- Field generation is now the selected next measured performance seam; the focused witness no longer classifies CPU SDF postprocess as the dominant cost for direct scalar or normal-angle/curvature stacks, and live interaction now has source-stack-level adaptive effective downsample before any per-row/multi-field model exists.
+- Field generation is now stage-split. The current representative witness no longer just says "field"; it reports cache/downsample/backend/store timings and currently recommends postprocess review for the matrix in `artifacts/sdf_field_generation_optimization/sdf_performance_witness.md`.
 - Color Pipeline composition/preset UX, boundary-masked normal-angle, SDF-backed masks/gates, authored-pack UI, and SDF-native lanes remain planned product work after the next performance/design choice is selected.
 
 Still deferred:
@@ -496,7 +497,7 @@ Current state:
 - Live Color Pipeline SDF source rows are shipped on `codex/color-pipeline-sdf-source-rows` and proved by `tests/test_fractal_runtime_color_pipeline_sdf_rows.py`.
 - Normal viewport SDF overlays are shipped and proved by `tests/test_fractal_runtime_sdf_viewport_overlay.py`.
 - SDF Source customization, capture/replay authority, phase-signal metadata, fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, and CUDA field-signal SDF postprocess are shipped on this branch.
-- Field-generation/downsample authority is the selected next performance follow-up; per-row/multi-field downsample remains deferred behind that base-field producer work.
+- Field-generation/downsample authority now has stage telemetry and CUDA JFA buffer reuse; per-row/multi-field downsample remains deferred behind the next measured performance/design choice.
 - See `docs/notes/sdf_field_signal_consumption_PHASED_PLAN.md`, `docs/notes/sdf_runtime_walk_signals_PHASED_PLAN.md`, `docs/notes/color_pipeline_sdf_source_rows_PHASED_PLAN.md`, `docs/notes/sdf_viewport_overlay_productization_PHASED_PLAN.md`, and `docs/notes/sdf_postprocess_signal_specialization_PHASED_PLAN.md`.
 
 ### Slice 7 - Viewport Overlay Productization - Shipped
@@ -619,7 +620,7 @@ Recommended immediate ordering:
 17. SDF preview postprocess quality policy. Shipped.
 18. Per-row/multi-field SDF downsample design. Deferred until the authored authority model is explicit.
 19. GPU Color Pipeline SDF postprocess. Direct-scalar and field-signal normal-angle/curvature SDF source stacks shipped; row sample-step greater than `1` remains CPU fallback.
-20. Field-generation/downsample optimization. Selected as the next performance path: add finer field-generation telemetry, then optimize algorithm/caching based on measured evidence.
+20. Field-generation/downsample optimization. Stage telemetry and CUDA JFA buffer reuse shipped; the latest representative witness points back to postprocess review rather than another blind field-generation change.
 21. Per-row/multi-field SDF downsample design. Deferred until the base field-generation path is measured and hardened.
 22. First SDF-native fractal lane. Deferred.
 

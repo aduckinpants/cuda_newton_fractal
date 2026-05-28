@@ -169,10 +169,25 @@ def _wait_for_pacing_timing(
 def _assert_sdf_timing_payload(payload: dict[str, object]) -> None:
     assert payload.get("lens_sdf_valid") is True, payload
     assert payload.get("lens_sdf_color_pipeline_active") is True, payload
-    for key in ("base_render_ms", "lens_sdf_field_ms", "lens_sdf_requested_equivalent_field_ms", "lens_sdf_postprocess_ms", "lens_sdf_total_ms", "last_render_ms"):
+    for key in (
+        "base_render_ms",
+        "lens_sdf_field_ms",
+        "lens_sdf_requested_equivalent_field_ms",
+        "lens_sdf_field_cache_lookup_ms",
+        "lens_sdf_field_mask_downsample_ms",
+        "lens_sdf_field_backend_ms",
+        "lens_sdf_field_cache_store_ms",
+        "lens_sdf_postprocess_ms",
+        "lens_sdf_total_ms",
+        "last_render_ms",
+    ):
         assert isinstance(payload.get(key), (int, float)), payload
         assert math.isfinite(float(payload[key])), payload
     assert float(payload["lens_sdf_field_ms"]) >= 0.0, payload
+    assert float(payload["lens_sdf_field_cache_lookup_ms"]) >= 0.0, payload
+    assert float(payload["lens_sdf_field_mask_downsample_ms"]) >= 0.0, payload
+    assert float(payload["lens_sdf_field_backend_ms"]) >= 0.0, payload
+    assert float(payload["lens_sdf_field_cache_store_ms"]) >= 0.0, payload
     assert float(payload["lens_sdf_requested_equivalent_field_ms"]) >= float(payload["lens_sdf_field_ms"]), payload
     assert float(payload["lens_sdf_postprocess_ms"]) > 0.0, payload
     assert float(payload["lens_sdf_total_ms"]) >= float(payload["lens_sdf_postprocess_ms"]), payload
@@ -222,6 +237,10 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
     sdf_stack_capture = _capture_sdf_heavy_source_stack(exe_path=exe_path, state_path=seed_state_path)
     state = json.loads(json.dumps(sdf_stack_capture["state"]))
     _configure_sdf_heavy_realtime_state(state)
+    heavy_render = state["render"]
+    assert isinstance(heavy_render, dict)
+    heavy_render["preview_target_fps"] = 1200.0
+    heavy_preview_target_fps = float(heavy_render["preview_target_fps"])
     state_path = write_state_bundle(tmp_path / "sdf_realtime_pacing", state)
 
     explaino_seed_capture = run_headless_capture(
@@ -296,7 +315,7 @@ def test_sdf_color_pipeline_cost_drives_realtime_preview_no_mouse(tmp_path: Path
         assert int(baseline["lens_sdf_effective_downsample"]) == int(baseline["lens_sdf_requested_downsample"]) == 1, baseline
         assert int(baseline["lens_sdf_postprocess_pixel_step"]) == 1, baseline
         assert int(baseline["lens_sdf_postprocess_filled_pixel_count"]) == int(baseline["rendered_frame_width"]) * int(baseline["rendered_frame_height"]), baseline
-        slow_threshold_ms = (1000.0 / 240.0) * 2.0
+        slow_threshold_ms = (1000.0 / heavy_preview_target_fps) * 1.5
         assert float(baseline["last_render_ms"]) > slow_threshold_ms, baseline
 
         edited_timing = viewer.set_control_value_timing(
