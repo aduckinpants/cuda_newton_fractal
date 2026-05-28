@@ -449,7 +449,7 @@ Stop conditions:
 
 ## Step 6 Boundary - Exhaust Work And Replan
 
-Step 6 is not pre-planned as implementation here.
+Step 6 evidence/replan is now active on `codex/sdf-step6-evidence-replan`.
 
 At Step 6, stop and replan from current evidence. The likely candidate is the first SDF-native selectable fractal lane, but it must be chosen only after Steps 1-5 prove:
 
@@ -465,6 +465,13 @@ Step 6 replan questions:
 - What controls and examples prove it is meaningfully different from a Color Pipeline field overlay?
 - What FPS/performance floor is acceptable for the first lane?
 - Does it belong in the normal fractal dropdown immediately, or behind an experimental category gate?
+
+Current Step 6 recommendation:
+
+- Next implementation branch: `codex/sdf-pack-scene-lane-shell`.
+- Preferred first lane shape: a normal dropdown `sdf_pack_scene` lane shell backed by the authored SDF pack field producer, with `sdf_smooth_lattice_2d` as the first curated built-in/default pack.
+- Rationale: this reuses shipped pack parser/CPU/CUDA field producer, Color Pipeline SDF consumption, overlay reporting, row-local downsample, and capture/replay authority instead of adding a bespoke renderer/kernel for one SDF idea.
+- Deferred behind that shell: `sdf_recursive_fold_2d` and `sdf_apollonian_field_2d`, because they need fold/inversion/domain ops that are not in the current pack op set.
 
 ## Proof Ledger
 

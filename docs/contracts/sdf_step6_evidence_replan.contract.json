@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "sdf_step6_evidence_replan",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_step6_evidence_replan_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/sdf_step6_evidence_replan.contract.json",
+    "docs/notes/sdf_step6_evidence_replan_PHASED_PLAN.md",
+    "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "merge Step 5C to master after user testing approved it",
+    "honor the Step 6 boundary from the SDF next-five campaign",
+    "review current SDF field/pack evidence before choosing the next implementation slice",
+    "repair stale roadmap text that still describes authored SDF pack live integration as deferred",
+    "recommend the next bounded implementation slice without adding product code here"
+  ],
+  "forbidden_operator_prompts": [
+    "implement a new SDF-native fractal lane in this docs-only slice",
+    "add a new FractalType in this docs-only slice",
+    "change renderer, Color Pipeline, schema, runtime, or tests in this docs-only slice",
+    "claim broad SDF-native support without a dedicated implementation branch",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "docs_only_step6_replan",
+    "source_head": "a528521",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "product_code_changes_forbidden": true
+  },
+  "forbidden_defaults": {
+    "new_fractal_type": "forbidden",
+    "renderer_change": "forbidden",
+    "runtime_harness_change": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_step6_evidence_replan.contract.json --out-json artifacts/validation/sdf_step6_evidence_replan_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_step6_evidence_replan_plan_sync --log artifacts/logs/sdf_step6_evidence_replan_plan_sync.log --out-json artifacts/validation/sdf_step6_evidence_replan_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_step6_evidence_replan_PHASED_PLAN.md docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_step6_evidence_replan_PHASED_PLAN.md --out-json artifacts/validation/sdf_step6_evidence_replan_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_step6_evidence_replan_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_step6_evidence_replan_diff_check --log artifacts/logs/sdf_step6_evidence_replan_diff_check.log --out-json artifacts/validation/sdf_step6_evidence_replan_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Step 6 evidence/replan contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_step6_evidence_replan_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Step 6 evidence/replan hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_step6_evidence_replan_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

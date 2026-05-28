@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, live-only adaptive SDF field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, and boundary-masked SDF Normal Angle Beauty. Broader composition UX, authored-pack UI, and SDF-native lanes remain separate later product slices.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, live-only adaptive SDF field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked SDF Normal Angle Beauty, authored SDF pack viewer UI, and authored-pack Color Pipeline/overlay field consumption. Broader composition UX, full authored-pack catalog/authoring UX, and SDF-native lanes remain separate later product slices.
 
 Shipped since this roadmap was first written:
 
@@ -33,16 +33,18 @@ Shipped since this roadmap was first written:
 - Field-generation stage telemetry and CUDA JFA buffer reuse: published reports now split field cache lookup, mask downsample, backend generation, and cache store timing; the CUDA JFA path reuses device buffers across calls and the auto-backend fallback no longer repeats host mask downsampling.
 - Repeated median SDF witness reporting and measured CUDA SDF postprocess scratch-buffer reuse: the closed witness measured postprocess median improvements of `27%` to `62%` across identical SDF rows.
 - Row-local SDF field downsample UI/runtime authority: SDF Source rows expose `Field Downsample` with `Inherit`, `1x`, `2x`, `4x`, `8x`, and `16x`; inherited rows keep the shared `LensSettings::downsample` authority while explicit rows can form distinct SDF field groups.
+- Authored SDF pack viewer UI: the viewer can load a bounded SDF pack, expose numeric controls through no-mouse automation, preview the pack field, and persist pack state through capture/replay.
+- Authored SDF pack Color Pipeline and overlay consumption: selected authored packs can feed existing SDF Source rows and viewport overlay reports without becoming a new fractal lane.
 
 Next performance/design choices:
 
 - Phase-safe normal-angle UX is shipped: keep the full-field diagnostic view, and use SDF Normal Angle Beauty for the boundary-masked product-facing path without deleting the diagnostic behavior.
-- Color Pipeline composition/preset UX, SDF-backed masks/gates, authored-pack UI, and SDF-native lanes remain planned product work after the phase-safe normal-angle seam is bounded.
+- Color Pipeline composition/preset UX, SDF-backed masks/gates, full authored-pack catalog/authoring UX, and SDF-native lanes remain planned product work after the shipped authored-pack field-source seam.
 
 Still deferred:
 
 - SDF-native selectable fractal lanes.
-- Authored SDF pack UI/live viewport integration.
+- Full authored SDF pack catalog/authoring UX.
 
 This document slots the SDF composition / field-pack idea into the current
 viewer-host roadmap. It is meant to let a future session start from repo truth
@@ -65,8 +67,9 @@ Authored SDF Packs
 
 Consumers
   -> shipped headless/report probes, live Color Pipeline, Lens overlay,
-     and capture integration now; authored-pack UI and later SDF-native
-     fractal lanes remain deferred
+     capture integration, and authored-pack field-source integration now;
+     full catalog/authoring UX and later SDF-native fractal lanes remain
+     deferred
 ```
 
 Do not put authored SDF packs directly inside the current Lens SDF aux-window
@@ -544,7 +547,7 @@ Goal:
 
 Recommended first lane:
 
-- `sdf_recursive_fold_2d` or `sdf_smooth_lattice_2d`
+- `sdf_pack_scene` lane shell with `sdf_smooth_lattice_2d` as the first curated built-in/default pack.
 
 Why these first:
 
@@ -552,6 +555,7 @@ Why these first:
 - meaningful sliders
 - visually distinct output
 - avoids 3D raymarch complexity
+- reuses the shipped authored-pack field producer instead of adding one bespoke evaluator per SDF idea
 
 Required proof:
 
@@ -568,7 +572,7 @@ Exit criteria:
 
 Current state:
 
-- Deferred. No SDF-native selectable fractal lane is shipped yet.
+- Deferred. No SDF-native selectable fractal lane is shipped yet. Step 6 evidence review recommends the `sdf_pack_scene` lane shell plus `sdf_smooth_lattice_2d` built-in pack as the next implementation slice.
 
 ## Open Design Questions
 

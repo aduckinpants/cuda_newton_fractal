@@ -158,15 +158,17 @@ Shipped since the original deferred note:
 - SDF postprocess signal specialization is shipped: scalar-only rows no longer pay for derivative neighborhoods, while derivative sources preserve their sampling behavior.
 - SDF preview postprocess quality policy is shipped: shared field downsample remains the authority, interactive preview reports a stepped postprocess path, and full-quality render/capture stays step 1.
 - Full-quality downsampled-field cell reuse is shipped: when the shared SDF field is lower resolution than the render target, the Color Pipeline postprocess computes once per field cell and fills the same render pixels that already mapped to that cell.
+- Authored SDF pack viewer UI is shipped: the normal viewer can load a bounded pack, expose its numeric controls, and persist pack state.
+- Authored SDF pack live field consumption is shipped: selected packs can feed existing SDF Color Pipeline source rows and viewport overlay reporting, with capture/replay authority.
 
 Active follow-up:
 - Broader composition/preset UX now has preset workflow truth and visible implementation-wording cleanup covered by bounded slices. Keep later composition work split by topic instead of turning it into a broad redesign.
 - The immediate composition repair for disabled-row compatibility/error authority and `sdf_curvature` plus `sdf_normal_angle` SDF-only Source-stack blending is shipped on `08e62b6`.
-- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, and boundary-masked normal-angle UX are shipped. The closed postprocess witness measured median improvements of `27%` to `62%`; the next unresolved SDF product seams are SDF masks/gates and authored-pack UI before SDF-native lanes.
+- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked normal-angle UX, and authored-pack live field consumption are shipped. The closed postprocess witness measured median improvements of `27%` to `62%`; the next unresolved SDF product seams are SDF masks/gates, full authored-pack catalog/authoring UX, and the first SDF-native lane.
 
 Still deferred follow-ups:
 - Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.
-- Add authored SDF pack UI/live viewport integration after the normal field consumers are stable.
+- Add full authored SDF pack catalog/authoring UX after the field-source path stays stable.
 - Keep treating Lens SDF as the first mask-derived SDF field producer, not as the place to embed authored SDF packs.
 - Use `docs/notes/sdf_field_pack_near_term_TODO.md` as the detailed implementation sequencing surface.
 
@@ -174,7 +176,7 @@ Resume constraints:
 - Do not mix this with organized selector/common-fractal implementation unless the selector slice directly surfaces stale Lens controls.
 - Do not merge Salticid's analytic SDF operator pack wholesale into this repo. Port only bounded, reviewed pieces when a slice explicitly needs them.
 - Keep mask-derived Lens SDF and authored analytic SDF pack authority separate; they meet at the field interface.
-- Do not claim authored-pack live viewport integration or SDF-native lanes are shipped until the normal viewer path proves them.
+- Do not claim SDF-native lanes or full authored-pack catalog/authoring UX are shipped until their normal viewer paths prove them.
 
 ## 6. CUDA-Resident sample_fn + Optimization Staging + Reflexive Sidecar
 

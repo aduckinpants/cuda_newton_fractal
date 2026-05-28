@@ -143,3 +143,5 @@
 - `ck:718714ee` 2026-05-28 22:01 UTC — session-start | branch=codex/authored-sdf-pack-color-pipeline-overlay | head=dcd0ac6 | status=dirty | profile=runtime | intent=Authored SDF pack Color Pipeline and overlay consumption
 - `ck:718714ee` 2026-05-28 23:16 UTC | score 93 — Authored SDF pack Color Pipeline and overlay consumption now routes selected packs into existing SDF source rows and overlay reporting; replay mirror authority and code-quality ratchet findings repaired; focused native/runtime rails green.
 - `ck:718714ee` 2026-05-28 23:19 UTC | score 93 — Synced SDF next-five campaign status after authored SDF pack Color Pipeline overlay closeout; Step 5C now points at b6d2926 proof.
+- `ck:e9d98681` 2026-05-28 23:51 UTC — session-start | branch=codex/sdf-step6-evidence-replan | head=a528521 | status=dirty | profile=native | intent=SDF Step 6 evidence replan
+- `ck:e9d98681` 2026-05-28 23:55 UTC | score 94 — Closed SDF Step 6 evidence replan: master carries Step 5C, stale authored-pack roadmap text repaired, and next implementation target is sdf_pack_scene lane shell with sdf_smooth_lattice_2d built-in pack.
