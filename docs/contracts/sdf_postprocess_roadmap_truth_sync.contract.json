@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "contract_id": "sdf_postprocess_roadmap_truth_sync",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_postprocess_roadmap_truth_sync_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_postprocess_roadmap_truth_sync_PHASED_PLAN.md",
+    "docs/contracts/sdf_postprocess_roadmap_truth_sync.contract.json",
+    "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "repair stale SDF roadmap/status text after the postprocess merge",
+    "mark repeated median SDF witness reporting and CUDA postprocess scratch-buffer reuse as shipped",
+    "set per-row or multi-field SDF downsample authority as the next unresolved design/product step"
+  ],
+  "forbidden_operator_prompts": [
+    "implement per-row or multi-field SDF downsample authority in this slice",
+    "implement boundary-masked phase UX in this slice",
+    "implement authored SDF pack viewport integration in this slice",
+    "implement SDF-native fractal lanes in this slice",
+    "edit product code in this docs-only truth-sync slice"
+  ],
+  "required_defaults": {
+    "slice_kind": "roadmap_truth_sync",
+    "source_head": "a73dd6d",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "product_code_authoring": false
+  },
+  "forbidden_defaults": {
+    "product_code_mutation": "forbidden",
+    "runtime_claim": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "step_3_implementation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_postprocess_roadmap_truth_sync.contract.json --out-json artifacts/validation/sdf_postprocess_roadmap_truth_sync_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_roadmap_truth_sync_plan_sync --log artifacts/logs/sdf_postprocess_roadmap_truth_sync_plan_sync.log --out-json artifacts/validation/sdf_postprocess_roadmap_truth_sync_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_postprocess_roadmap_truth_sync_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_postprocess_roadmap_truth_sync_PHASED_PLAN.md --out-json artifacts/validation/sdf_postprocess_roadmap_truth_sync_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_postprocess_roadmap_truth_sync_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_roadmap_truth_sync_diff_check --log artifacts/logs/sdf_postprocess_roadmap_truth_sync_diff_check.log --out-json artifacts/validation/sdf_postprocess_roadmap_truth_sync_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_roadmap_truth_sync_stale_grep --log artifacts/logs/sdf_postprocess_roadmap_truth_sync_stale_grep.log --out-json artifacts/validation/sdf_postprocess_roadmap_truth_sync_stale_grep.json --heartbeat-seconds 30 --timeout-seconds 120 -- powershell -NoProfile -Command \"git grep -n -E 'points back to postprocess|postprocess review|current witness|current stage-split witness|current representative witness|deferred until the next measured design choice' -- spec_intake/_STATUS.md DEFERRED_THREADS.md KNOWN_ISSUES.md docs/notes; exit 0\""
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF postprocess roadmap truth-sync contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_postprocess_roadmap_truth_sync_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF postprocess roadmap truth-sync hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_postprocess_roadmap_truth_sync_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

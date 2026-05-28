@@ -3,7 +3,7 @@
 Catalogued issues for the CUDA fractal viewer clone repo.
 Priority tiers: **P0** (blocks demo quality), **P1** (materially degrades experience), **P2** (nice to fix).
 
-Last reconciled: 2026-05-26 on `codex/color-pipeline-sdf-postprocess-performance` during the SDF postprocess performance slice.
+Last reconciled: 2026-05-28 on `codex/sdf-postprocess-roadmap-truth-sync` after the measured SDF postprocess optimization merged to `master`.
 
 ---
 
@@ -104,7 +104,7 @@ Next correct step:
 - Full-quality downsampled-field postprocess cell reuse is shipped: shared `SDF Field Downsample` now reduces CPU postprocess samples by computing once per SDF field cell and expanding the same pixels the old nearest field-cell mapping produced.
 - CUDA direct-scalar and field-signal SDF postprocess backends are shipped.
 - Live-only adaptive SDF field resolution is shipped: interaction preview can temporarily use a higher effective SDF field downsample while settled, capture, and replay stay on the requested `LensSettings::downsample`.
-- Field-generation stage telemetry and CUDA JFA buffer reuse are shipped. The current representative witness reports field-stage timings and points back to postprocess review more than field generation; per-row/multi-field downsample authority remains useful but deferred until the next measured design choice.
+- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, and measured CUDA SDF postprocess scratch-buffer reuse are shipped. The closed postprocess witness measured median improvements of `27%` to `62%` across identical SDF rows. Per-row/multi-field SDF downsample authority is now the next unresolved SDF field-resolution/composition seam, not a shipped feature.
 - Do not treat SDF postprocess cost as a fractal kernel problem; the current telemetry distinguishes base render, field generation, and postprocess cost.
 
 **Files:** `ui_app/src/viewer_render_pacing.*`, `ui_app/src/main.cpp`, `tests/test_fractal_runtime_resolution_pacing.py`
