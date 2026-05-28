@@ -87,6 +87,8 @@ void TestLensSdfProbeDefaults() {
         "lens SDF automation probe reports stable field-generation stage defaults");
     Check(probe.postprocess_backend_used == "cpu" && !probe.postprocess_backend_fallback_used,
         "lens SDF automation probe reports stable postprocess backend defaults");
+    Check(!probe.postprocess_backend_buffer_reused && !probe.postprocess_backend_buffer_grew,
+        "lens SDF automation probe reports stable postprocess buffer defaults");
     Check(probe.requested_downsample == 1 &&
             probe.effective_downsample == 1 &&
             probe.quality_mode == "requested",
@@ -115,6 +117,8 @@ void TestLensSdfProbeTimingFields() {
     probe.postprocess_worker_count = 3;
     probe.postprocess_backend_used = "cuda_direct_scalar";
     probe.postprocess_backend_fallback_used = true;
+    probe.postprocess_backend_buffer_reused = true;
+    probe.postprocess_backend_buffer_grew = false;
     probe.postprocess_source_direct_sample_count = 11;
     probe.postprocess_source_neighborhood_sample_count = 22;
     probe.field_cache_status = "hit";
@@ -133,6 +137,8 @@ void TestLensSdfProbeTimingFields() {
         "lens SDF automation probe carries postprocess worker count");
     Check(probe.postprocess_backend_used == "cuda_direct_scalar" && probe.postprocess_backend_fallback_used,
         "lens SDF automation probe carries actual postprocess backend");
+    Check(probe.postprocess_backend_buffer_reused && !probe.postprocess_backend_buffer_grew,
+        "lens SDF automation probe carries postprocess buffer reuse status");
     Check(probe.postprocess_source_direct_sample_count == 11 &&
             probe.postprocess_source_neighborhood_sample_count == 22,
         "lens SDF automation probe carries per-row source sample counts");

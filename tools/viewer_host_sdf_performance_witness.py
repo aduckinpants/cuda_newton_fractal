@@ -10,6 +10,7 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from statistics import median
 from typing import Any, Callable
 
 
@@ -183,12 +184,156 @@ def measurement_from_payload(
         "lens_sdf_postprocess_worker_count": _as_int(payload, "lens_sdf_postprocess_worker_count", 1),
         "lens_sdf_postprocess_backend_used": postprocess_backend,
         "lens_sdf_postprocess_backend_fallback_used": payload.get("lens_sdf_postprocess_backend_fallback_used") is True,
+        "lens_sdf_postprocess_backend_buffer_reused": payload.get("lens_sdf_postprocess_backend_buffer_reused") is True,
+        "lens_sdf_postprocess_backend_buffer_grew": payload.get("lens_sdf_postprocess_backend_buffer_grew") is True,
         "lens_sdf_postprocess_direct_sample_count": _as_int(payload, "lens_sdf_postprocess_direct_sample_count"),
         "lens_sdf_postprocess_neighborhood_sample_count": _as_int(payload, "lens_sdf_postprocess_neighborhood_sample_count"),
         "lens_sdf_postprocess_filled_pixel_count": _as_int(payload, "lens_sdf_postprocess_filled_pixel_count"),
         "render_pacing_preview_active": payload.get("render_pacing_preview_active") is True,
         "render_pacing_preview_scale": _as_float(payload, "render_pacing_preview_scale", 1.0),
     }
+
+
+MEDIAN_FLOAT_KEYS = (
+    "base_render_ms",
+    "lens_sdf_field_ms",
+    "lens_sdf_requested_equivalent_field_ms",
+    "lens_sdf_field_cache_lookup_ms",
+    "lens_sdf_field_mask_downsample_ms",
+    "lens_sdf_field_backend_ms",
+    "lens_sdf_field_cache_store_ms",
+    "lens_sdf_postprocess_ms",
+    "lens_sdf_total_ms",
+    "last_render_ms",
+    "field_fraction_of_sdf_total",
+    "postprocess_fraction_of_sdf_total",
+    "lens_sdf_pixel_scale",
+    "render_pacing_preview_scale",
+)
+
+MEDIAN_INT_KEYS = (
+    "target_render_width",
+    "target_render_height",
+    "rendered_frame_width",
+    "rendered_frame_height",
+    "lens_sdf_width",
+    "lens_sdf_height",
+    "lens_sdf_requested_downsample",
+    "lens_sdf_effective_downsample",
+    "lens_sdf_field_cache_mask_bytes",
+    "lens_sdf_postprocess_pixel_step",
+    "lens_sdf_postprocess_worker_count",
+    "lens_sdf_postprocess_direct_sample_count",
+    "lens_sdf_postprocess_neighborhood_sample_count",
+    "lens_sdf_postprocess_filled_pixel_count",
+)
+
+TIMING_SAMPLE_KEYS = (
+    "base_render_ms",
+    "lens_sdf_field_ms",
+    "lens_sdf_field_mask_downsample_ms",
+    "lens_sdf_field_backend_ms",
+    "lens_sdf_field_cache_store_ms",
+    "lens_sdf_postprocess_ms",
+    "lens_sdf_total_ms",
+    "last_render_ms",
+)
+
+
+def _measurement_group_key(item: dict[str, object]) -> tuple[object, ...]:
+    return (
+        item.get("name", ""),
+        item.get("phase", ""),
+        tuple(item.get("source_stack", [])) if isinstance(item.get("source_stack"), list) else (),
+        item.get("lens_downsample", 0),
+    )
+
+
+def _median_float(items: list[dict[str, object]], key: str) -> float:
+    values = [float(item.get(key, 0.0)) for item in items]
+    return float(median(values)) if values else 0.0
+
+
+def _median_int(items: list[dict[str, object]], key: str) -> int:
+    values = [int(item.get(key, 0)) for item in items]
+    return int(median(values)) if values else 0
+
+
+def _timing_sample(item: dict[str, object]) -> dict[str, object]:
+    return {key: item.get(key, 0.0) for key in TIMING_SAMPLE_KEYS}
+
+
+def _mode_string(items: list[dict[str, object]], key: str, default: str = "") -> str:
+    values = [str(item.get(key, default)) for item in items]
+    if not values:
+        return default
+    counts = Counter(values)
+    return counts.most_common(1)[0][0]
+
+
+def aggregate_measurement_samples(measurements: list[dict[str, object]]) -> list[dict[str, object]]:
+    groups: dict[tuple[object, ...], list[dict[str, object]]] = {}
+    order: list[tuple[object, ...]] = []
+    for item in measurements:
+        key = _measurement_group_key(item)
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(item)
+
+    aggregated: list[dict[str, object]] = []
+    for key in order:
+        samples = groups[key]
+        row = dict(samples[0])
+        row["sample_count"] = len(samples)
+        row["timing_samples"] = [_timing_sample(sample) for sample in samples]
+        row["rendered_frame_hash_samples"] = [
+            sample.get("rendered_frame_hash", "") for sample in samples
+        ]
+        row["lens_sdf_field_cache_status_samples"] = [
+            str(sample.get("lens_sdf_field_cache_status", "")) for sample in samples
+        ]
+        row["lens_sdf_postprocess_backend_buffer_reused_samples"] = [
+            sample.get("lens_sdf_postprocess_backend_buffer_reused") is True for sample in samples
+        ]
+        row["lens_sdf_postprocess_backend_buffer_grew_samples"] = [
+            sample.get("lens_sdf_postprocess_backend_buffer_grew") is True for sample in samples
+        ]
+        row["lens_sdf_field_cache_status"] = _mode_string(samples, "lens_sdf_field_cache_status", "disabled")
+        row["lens_sdf_field_cache_hit"] = sum(1 for sample in samples if sample.get("lens_sdf_field_cache_hit") is True) >= (
+            (len(samples) // 2) + 1
+        )
+        row["lens_sdf_postprocess_backend_buffer_reused"] = sum(
+            1 for sample in samples if sample.get("lens_sdf_postprocess_backend_buffer_reused") is True
+        ) >= ((len(samples) // 2) + 1)
+        row["lens_sdf_postprocess_backend_buffer_grew"] = any(
+            sample.get("lens_sdf_postprocess_backend_buffer_grew") is True for sample in samples
+        )
+        for metric in MEDIAN_FLOAT_KEYS:
+            row[metric] = _median_float(samples, metric)
+        for metric in MEDIAN_INT_KEYS:
+            row[metric] = _median_int(samples, metric)
+
+        total_ms = float(row.get("lens_sdf_total_ms", 0.0))
+        field_ms = float(row.get("lens_sdf_field_ms", 0.0))
+        postprocess_ms = float(row.get("lens_sdf_postprocess_ms", 0.0))
+        if total_ms <= 0.0 and field_ms + postprocess_ms > 0.0:
+            total_ms = field_ms + postprocess_ms
+            row["lens_sdf_total_ms"] = total_ms
+        row["field_fraction_of_sdf_total"] = field_ms / total_ms if total_ms > 0.0 else 0.0
+        row["postprocess_fraction_of_sdf_total"] = postprocess_ms / total_ms if total_ms > 0.0 else 0.0
+        source_stack = row.get("source_stack", [])
+        is_sdf = isinstance(source_stack, list) and any(str(signal).startswith("sdf_") for signal in source_stack)
+        row["lens_sdf_color_pipeline_active"] = is_sdf
+        row["classification"] = _classification(
+            row,
+            is_sdf=is_sdf,
+            field_ms=field_ms,
+            postprocess_ms=postprocess_ms,
+            total_ms=total_ms,
+        )
+        aggregated.append(row)
+    return aggregated
 
 
 def _recommendation(votes: Counter[str]) -> str:
@@ -207,10 +352,11 @@ def build_measurement_report(
     runtime_exe: str,
     persistent_viewer_launch_count: int = 0,
 ) -> dict[str, object]:
-    votes: Counter[str] = Counter(str(item.get("classification", "mixed_or_inconclusive")) for item in measurements)
-    sdf_measurements = [item for item in measurements if item.get("classification") != "non_sdf_baseline"]
-    full_quality = [item for item in measurements if item.get("phase") == "full_quality"]
-    preview = [item for item in measurements if item.get("phase") == "preview"]
+    aggregated_measurements = aggregate_measurement_samples(measurements)
+    votes: Counter[str] = Counter(str(item.get("classification", "mixed_or_inconclusive")) for item in aggregated_measurements)
+    sdf_measurements = [item for item in aggregated_measurements if item.get("classification") != "non_sdf_baseline"]
+    full_quality = [item for item in aggregated_measurements if item.get("phase") == "full_quality"]
+    preview = [item for item in aggregated_measurements if item.get("phase") == "preview"]
     max_postprocess_fraction = max(
         (float(item.get("postprocess_fraction_of_sdf_total", 0.0)) for item in sdf_measurements),
         default=0.0,
@@ -228,7 +374,8 @@ def build_measurement_report(
         "no_mouse_automation": True,
         "persistent_viewer_launch_count": int(persistent_viewer_launch_count),
         "summary": {
-            "scenario_count": len(measurements),
+            "raw_sample_count": len(measurements),
+            "scenario_count": len(aggregated_measurements),
             "sdf_scenario_count": len(sdf_measurements),
             "full_quality_sample_count": len(full_quality),
             "preview_sample_count": len(preview),
@@ -245,7 +392,7 @@ def build_measurement_report(
             "field_cache_hit_count": field_cache_hit_count,
             "recommendation": _recommendation(votes),
         },
-        "scenarios": measurements,
+        "scenarios": aggregated_measurements,
     }
 
 
@@ -257,19 +404,22 @@ def write_markdown_report(report: dict[str, object], out_path: Path) -> None:
         f"- Recommendation: `{report.get('summary', {}).get('recommendation', '')}`",
         f"- Persistent viewer launches: `{report.get('persistent_viewer_launch_count', '')}`",
         "",
-        "| Scenario | Phase | Class | Backend | Fallback | Field Cache | Req DS | Eff DS | Quality | Base ms | Field ms | Down ms | Backend ms | Store ms | Post ms | SDF total ms | Last ms | Step | Workers |",
-        "|---|---|---|---|---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Scenario | Samples | Phase | Class | Backend | Fallback | Buffer Reuse | Buffer Grow | Field Cache | Req DS | Eff DS | Quality | Base ms | Field ms | Down ms | Backend ms | Store ms | Post ms | SDF total ms | Last ms | Step | Workers |",
+        "|---|---:|---|---|---|---|---|---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for item in report.get("scenarios", []):
         if not isinstance(item, dict):
             continue
         lines.append(
-            "| {name} | {phase} | {classification} | {backend} | {fallback} | {cache} | {requested} | {effective} | {quality} | {base:.3f} | {field:.3f} | {down:.3f} | {backend_ms:.3f} | {store:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} | {workers} |".format(
+            "| {name} | {samples} | {phase} | {classification} | {backend} | {fallback} | {buffer_reuse} | {buffer_grow} | {cache} | {requested} | {effective} | {quality} | {base:.3f} | {field:.3f} | {down:.3f} | {backend_ms:.3f} | {store:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} | {workers} |".format(
                 name=item.get("name", ""),
+                samples=int(item.get("sample_count", 1)),
                 phase=item.get("phase", ""),
                 classification=item.get("classification", ""),
                 backend=item.get("lens_sdf_postprocess_backend_used", "unknown"),
                 fallback="yes" if item.get("lens_sdf_postprocess_backend_fallback_used") else "no",
+                buffer_reuse="yes" if item.get("lens_sdf_postprocess_backend_buffer_reused") else "no",
+                buffer_grow="yes" if item.get("lens_sdf_postprocess_backend_buffer_grew") else "no",
                 cache=item.get("lens_sdf_field_cache_status", "disabled"),
                 requested=int(item.get("lens_sdf_requested_downsample", item.get("lens_downsample", 0))),
                 effective=int(item.get("lens_sdf_effective_downsample", item.get("lens_downsample", 0))),
@@ -400,6 +550,7 @@ def collect_runtime_measurements(
     width: int,
     height: int,
     include_preview_sample: bool,
+    repeat_count: int,
     timeout_seconds: float,
 ) -> tuple[list[dict[str, object]], int]:
     if str(TESTS_DIR) not in sys.path:
@@ -436,20 +587,32 @@ def collect_runtime_measurements(
                     lens_downsample=first_scenario.lens_downsample,
                 )
             )
+            for _repeat_index in range(1, max(1, repeat_count)):
+                payload = viewer.load_state_json(first_path, expected_fractal_type="multibrot", timeout_seconds=timeout_seconds)
+                measurements.append(
+                    measurement_from_payload(
+                        first_scenario.name,
+                        "full_quality",
+                        payload,
+                        source_stack=[str(entry.get("signal", "")) for entry in first_scenario.source_stack],
+                        lens_downsample=first_scenario.lens_downsample,
+                    )
+                )
 
             preview_path: Path | None = None
             preview_scenario: SdfWitnessScenario | None = None
             for scenario, state_path in scenario_paths[1:]:
-                payload = viewer.load_state_json(state_path, expected_fractal_type="multibrot", timeout_seconds=timeout_seconds)
-                measurements.append(
-                    measurement_from_payload(
-                        scenario.name,
-                        "full_quality",
-                        payload,
-                        source_stack=[str(entry.get("signal", "")) for entry in scenario.source_stack],
-                        lens_downsample=scenario.lens_downsample,
+                for _repeat_index in range(max(1, repeat_count)):
+                    payload = viewer.load_state_json(state_path, expected_fractal_type="multibrot", timeout_seconds=timeout_seconds)
+                    measurements.append(
+                        measurement_from_payload(
+                            scenario.name,
+                            "full_quality",
+                            payload,
+                            source_stack=[str(entry.get("signal", "")) for entry in scenario.source_stack],
+                            lens_downsample=scenario.lens_downsample,
+                        )
                     )
-                )
                 if scenario.name == "sdf_normal_angle_curvature_stack":
                     preview_path = state_path
                     preview_scenario = scenario
@@ -500,6 +663,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--work-dir", type=Path, default=REPO_ROOT / "artifacts" / "sdf_performance_witness")
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=480)
+    parser.add_argument("--repeat-count", type=int, default=1)
     parser.add_argument("--timeout-seconds", type=float, default=90.0)
     parser.add_argument("--include-preview-sample", action="store_true")
     return parser.parse_args(argv)
@@ -509,6 +673,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     if args.width <= 0 or args.height <= 0:
         raise SystemExit("--width and --height must be positive")
+    if args.repeat_count <= 0:
+        raise SystemExit("--repeat-count must be positive")
     runtime_exe = repo_absolute_path(args.runtime_exe)
     out_json = repo_absolute_path(args.out_json)
     out_md = repo_absolute_path(args.out_md) if args.out_md is not None else None
@@ -522,6 +688,7 @@ def main(argv: list[str] | None = None) -> int:
         width=args.width,
         height=args.height,
         include_preview_sample=bool(args.include_preview_sample),
+        repeat_count=int(args.repeat_count),
         timeout_seconds=float(args.timeout_seconds),
     )
     report = build_measurement_report(

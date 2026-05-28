@@ -22,6 +22,10 @@ def _payload(
     pixel_step: int = 1,
     direct_samples: int = 1000,
     neighborhood_samples: int = 0,
+    cache_status: str = "hit",
+    cache_hit: bool = True,
+    buffer_reused: bool = False,
+    buffer_grew: bool = False,
 ) -> dict[str, object]:
     sdf_total = field_ms + postprocess_ms if total_ms is None else total_ms
     return {
@@ -50,11 +54,13 @@ def _payload(
         "lens_sdf_requested_downsample": 1,
         "lens_sdf_effective_downsample": 1,
         "lens_sdf_quality_mode": "requested",
-        "lens_sdf_field_cache_status": "hit",
-        "lens_sdf_field_cache_hit": True,
+        "lens_sdf_field_cache_status": cache_status,
+        "lens_sdf_field_cache_hit": cache_hit,
         "lens_sdf_field_cache_mask_bytes": 320 * 240,
         "lens_sdf_postprocess_pixel_step": pixel_step,
         "lens_sdf_postprocess_worker_count": 3,
+        "lens_sdf_postprocess_backend_buffer_reused": buffer_reused,
+        "lens_sdf_postprocess_backend_buffer_grew": buffer_grew,
         "lens_sdf_postprocess_direct_sample_count": direct_samples,
         "lens_sdf_postprocess_neighborhood_sample_count": neighborhood_samples,
         "lens_sdf_postprocess_filled_pixel_count": 320 * 240,
@@ -140,3 +146,46 @@ def test_sdf_measurement_report_recommends_postprocess_when_votes_dominate() -> 
 
     assert report["summary"]["bottleneck_votes"]["postprocess_pressure"] == 2
     assert report["summary"]["recommendation"] == "postprocess_optimization_candidate"
+
+
+def test_sdf_measurement_report_aggregates_repeated_rows_by_median() -> None:
+    measurements = [
+        witness.measurement_from_payload(
+            "sdf_signed_distance_fullres",
+            "full_quality",
+            _payload(name="signed-a", field_ms=2.0, postprocess_ms=9.0, cache_status="miss", cache_hit=False, buffer_grew=True),
+            source_stack=["sdf_signed_distance"],
+            lens_downsample=1,
+        ),
+        witness.measurement_from_payload(
+            "sdf_signed_distance_fullres",
+            "full_quality",
+            _payload(name="signed-b", field_ms=4.0, postprocess_ms=1.0, buffer_reused=True),
+            source_stack=["sdf_signed_distance"],
+            lens_downsample=1,
+        ),
+        witness.measurement_from_payload(
+            "sdf_signed_distance_fullres",
+            "full_quality",
+            _payload(name="signed-c", field_ms=3.0, postprocess_ms=3.0, buffer_reused=True),
+            source_stack=["sdf_signed_distance"],
+            lens_downsample=1,
+        ),
+    ]
+
+    report = witness.build_measurement_report(measurements, runtime_exe="runtime/fractal_ui.exe")
+
+    assert report["summary"]["raw_sample_count"] == 3
+    assert report["summary"]["scenario_count"] == 1
+    row = report["scenarios"][0]
+    assert row["sample_count"] == 3
+    assert row["lens_sdf_field_ms"] == 3.0
+    assert row["lens_sdf_postprocess_ms"] == 3.0
+    assert row["lens_sdf_total_ms"] == 6.0
+    assert row["lens_sdf_field_cache_status"] == "hit"
+    assert row["lens_sdf_field_cache_hit"] is True
+    assert row["lens_sdf_field_cache_status_samples"] == ["miss", "hit", "hit"]
+    assert row["lens_sdf_postprocess_backend_buffer_reused"] is True
+    assert row["lens_sdf_postprocess_backend_buffer_grew"] is True
+    assert row["lens_sdf_postprocess_backend_buffer_reused_samples"] == [False, True, True]
+    assert [sample["lens_sdf_postprocess_ms"] for sample in row["timing_samples"]] == [9.0, 1.0, 3.0]

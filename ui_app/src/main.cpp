@@ -1090,6 +1090,8 @@ static void DispatchRenderFrame(
                     lensSdfProbe.postprocess_backend_used =
                         SdfColorPipelinePostprocessBackendId(postprocessStats.backend_used);
                     lensSdfProbe.postprocess_backend_fallback_used = postprocessStats.backend_fallback_used;
+                    lensSdfProbe.postprocess_backend_buffer_reused = postprocessStats.backend_buffer_reused;
+                    lensSdfProbe.postprocess_backend_buffer_grew = postprocessStats.backend_buffer_grew;
                     lensSdfProbe.postprocess_direct_sample_count =
                         static_cast<std::uint64_t>(postprocessStats.direct_sample_count);
                     lensSdfProbe.postprocess_neighborhood_sample_count =

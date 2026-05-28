@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <mutex>
 
 namespace {
 
@@ -495,10 +496,34 @@ __global__ void SdfFieldSignalRenderBlockKernel(
 struct CudaPostprocessBuffers {
     float* field{nullptr};
     std::uint32_t* rgba{nullptr};
+    std::size_t field_capacity_bytes{0};
+    std::size_t rgba_capacity_bytes{0};
 
     bool Allocate(std::size_t fieldBytes, std::size_t rgbaBytes) {
-        return cudaMalloc(&field, fieldBytes) == cudaSuccess &&
-            cudaMalloc(&rgba, rgbaBytes) == cudaSuccess;
+        if (cudaMalloc(&field, fieldBytes) != cudaSuccess ||
+            cudaMalloc(&rgba, rgbaBytes) != cudaSuccess) {
+            Free();
+            return false;
+        }
+        field_capacity_bytes = fieldBytes;
+        rgba_capacity_bytes = rgbaBytes;
+        return true;
+    }
+
+    bool EnsureCapacity(std::size_t fieldBytes, std::size_t rgbaBytes, bool* outReused, bool* outGrew) {
+        const bool hasCapacity = field && rgba &&
+            field_capacity_bytes >= fieldBytes &&
+            rgba_capacity_bytes >= rgbaBytes;
+        if (hasCapacity) {
+            if (outReused) *outReused = true;
+            if (outGrew) *outGrew = false;
+            return true;
+        }
+        Free();
+        const bool ok = Allocate(fieldBytes, rgbaBytes);
+        if (outReused) *outReused = false;
+        if (outGrew) *outGrew = ok;
+        return ok;
     }
 
     void Free() {
@@ -506,6 +531,8 @@ struct CudaPostprocessBuffers {
         cudaFree(rgba);
         field = nullptr;
         rgba = nullptr;
+        field_capacity_bytes = 0;
+        rgba_capacity_bytes = 0;
     }
 
     ~CudaPostprocessBuffers() {
@@ -513,12 +540,24 @@ struct CudaPostprocessBuffers {
     }
 };
 
+CudaPostprocessBuffers& SharedCudaPostprocessBuffers() {
+    static CudaPostprocessBuffers buffers;
+    return buffers;
+}
+
+std::mutex& SharedCudaPostprocessBuffersMutex() {
+    static std::mutex mutex;
+    return mutex;
+}
+
 void FillCudaStats(
     SdfColorPipelinePostprocessStats* outStats,
     const KernelParams& params,
     int outputPixelStep,
     std::size_t sampleCount,
-    std::size_t filledPixelCount) {
+    std::size_t filledPixelCount,
+    bool bufferReused,
+    bool bufferGrew) {
     if (!outStats) {
         return;
     }
@@ -532,6 +571,8 @@ void FillCudaStats(
     outStats->worker_count = 1;
     outStats->backend_used = SdfColorPipelinePostprocessBackend::cuda_direct_scalar;
     outStats->backend_fallback_used = false;
+    outStats->backend_buffer_reused = bufferReused;
+    outStats->backend_buffer_grew = bufferGrew;
 }
 
 bool SignalNeedsNeighborhoodHost(ColorSignal signal) {
@@ -566,7 +607,9 @@ void FillCudaFieldSignalStats(
     const KernelParams& params,
     int outputPixelStep,
     std::size_t sampleCount,
-    std::size_t filledPixelCount) {
+    std::size_t filledPixelCount,
+    bool bufferReused,
+    bool bufferGrew) {
     if (!outStats) {
         return;
     }
@@ -582,6 +625,8 @@ void FillCudaFieldSignalStats(
     outStats->worker_count = 1;
     outStats->backend_used = SdfColorPipelinePostprocessBackend::cuda_field_signal;
     outStats->backend_fallback_used = false;
+    outStats->backend_buffer_reused = bufferReused;
+    outStats->backend_buffer_grew = bufferGrew;
 }
 
 struct CudaDirectScalarRegistrar {
@@ -628,8 +673,11 @@ bool ApplyLensSdfColorPipelinePostprocessCudaDirectScalar(
 
     const std::size_t fieldBytes = fieldCount * sizeof(float);
     const std::size_t rgbaBytes = renderCount * sizeof(std::uint32_t);
-    CudaPostprocessBuffers buffers;
-    if (!buffers.Allocate(fieldBytes, rgbaBytes) ||
+    std::lock_guard<std::mutex> lock(SharedCudaPostprocessBuffersMutex());
+    CudaPostprocessBuffers& buffers = SharedCudaPostprocessBuffers();
+    bool bufferReused = false;
+    bool bufferGrew = false;
+    if (!buffers.EnsureCapacity(fieldBytes, rgbaBytes, &bufferReused, &bufferGrew) ||
         cudaMemcpy(buffers.field, field.signed_distance_px, fieldBytes, cudaMemcpyHostToDevice) != cudaSuccess) {
         if (outError) *outError = "CUDA direct scalar SDF postprocess could not allocate or upload buffers";
         return false;
@@ -680,7 +728,7 @@ bool ApplyLensSdfColorPipelinePostprocessCudaDirectScalar(
         return false;
     }
 
-    FillCudaStats(outStats, params, outputPixelStep, sampleCount, renderCount);
+    FillCudaStats(outStats, params, outputPixelStep, sampleCount, renderCount, bufferReused, bufferGrew);
     return true;
 }
 
@@ -717,8 +765,11 @@ bool ApplyLensSdfColorPipelinePostprocessCudaFieldSignal(
 
     const std::size_t fieldBytes = fieldCount * sizeof(float);
     const std::size_t rgbaBytes = renderCount * sizeof(std::uint32_t);
-    CudaPostprocessBuffers buffers;
-    if (!buffers.Allocate(fieldBytes, rgbaBytes) ||
+    std::lock_guard<std::mutex> lock(SharedCudaPostprocessBuffersMutex());
+    CudaPostprocessBuffers& buffers = SharedCudaPostprocessBuffers();
+    bool bufferReused = false;
+    bool bufferGrew = false;
+    if (!buffers.EnsureCapacity(fieldBytes, rgbaBytes, &bufferReused, &bufferGrew) ||
         cudaMemcpy(buffers.field, field.signed_distance_px, fieldBytes, cudaMemcpyHostToDevice) != cudaSuccess) {
         if (outError) *outError = "CUDA field-signal SDF postprocess could not allocate or upload buffers";
         return false;
@@ -769,6 +820,6 @@ bool ApplyLensSdfColorPipelinePostprocessCudaFieldSignal(
         return false;
     }
 
-    FillCudaFieldSignalStats(outStats, params, outputPixelStep, sampleCount, renderCount);
+    FillCudaFieldSignalStats(outStats, params, outputPixelStep, sampleCount, renderCount, bufferReused, bufferGrew);
     return true;
 }

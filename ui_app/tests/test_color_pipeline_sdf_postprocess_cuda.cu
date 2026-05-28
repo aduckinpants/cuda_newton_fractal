@@ -332,6 +332,39 @@ void TestNeighborhoodMixedSdfStackUsesCudaWithExactPixels() {
         SdfColorPipelinePostprocessBackend::cuda_field_signal);
 }
 
+void TestCudaPostprocessBuffersReuseCapacityAcrossCalls() {
+    const SdfFieldResult field = MakeGradientField(96, 64);
+    const RenderSettings render = Render(96, 64);
+    const KernelParams params = SdfParams(ColorSignal::sdf_signed_distance);
+
+    std::vector<std::uint32_t> firstPixels;
+    std::vector<std::uint32_t> secondPixels;
+    SdfColorPipelinePostprocessStats firstStats{};
+    SdfColorPipelinePostprocessStats secondStats{};
+    Check(RunPostprocess(
+            field,
+            render,
+            params,
+            SdfColorPipelinePostprocessBackend::cuda_direct_scalar,
+            firstPixels,
+            firstStats),
+        "TestCudaPostprocessBuffersReuseCapacityAcrossCalls_FirstSucceeds");
+    Check(RunPostprocess(
+            field,
+            render,
+            params,
+            SdfColorPipelinePostprocessBackend::cuda_direct_scalar,
+            secondPixels,
+            secondStats),
+        "TestCudaPostprocessBuffersReuseCapacityAcrossCalls_SecondSucceeds");
+    Check(firstPixels == secondPixels,
+        "TestCudaPostprocessBuffersReuseCapacityAcrossCalls_PixelsStable");
+    Check(firstStats.backend_buffer_grew,
+        "TestCudaPostprocessBuffersReuseCapacityAcrossCalls_FirstReportsGrowth");
+    Check(secondStats.backend_buffer_reused && !secondStats.backend_buffer_grew,
+        "TestCudaPostprocessBuffersReuseCapacityAcrossCalls_SecondReportsReuse");
+}
+
 } // namespace
 
 int main()
@@ -343,6 +376,7 @@ int main()
     TestExplicitUnsupportedGpuBackendsFailClosed();
     TestNeighborhoodFieldSignalsUseCudaWithExactPixels();
     TestNeighborhoodMixedSdfStackUsesCudaWithExactPixels();
+    TestCudaPostprocessBuffersReuseCapacityAcrossCalls();
 
     std::cout << "test_color_pipeline_sdf_postprocess_cuda: passed=" << g_passed
               << " failed=" << g_failed << "\n";

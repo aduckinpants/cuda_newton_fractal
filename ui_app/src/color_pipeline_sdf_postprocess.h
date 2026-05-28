@@ -40,6 +40,8 @@ struct SdfColorPipelinePostprocessStats {
     int worker_count{1};
     SdfColorPipelinePostprocessBackend backend_used{SdfColorPipelinePostprocessBackend::cpu};
     bool backend_fallback_used{false};
+    bool backend_buffer_reused{false};
+    bool backend_buffer_grew{false};
 };
 
 using SdfColorPipelinePostprocessBackendFn = bool (*)(

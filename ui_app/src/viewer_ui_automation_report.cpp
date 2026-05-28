@@ -96,6 +96,10 @@ void WriteLensSdfReportFields(
     out << ",\n";
     out << "  \"lens_sdf_postprocess_backend_fallback_used\": " <<
         (lensSdfProbe.postprocess_backend_fallback_used ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_postprocess_backend_buffer_reused\": " <<
+        (lensSdfProbe.postprocess_backend_buffer_reused ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_postprocess_backend_buffer_grew\": " <<
+        (lensSdfProbe.postprocess_backend_buffer_grew ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_postprocess_direct_sample_count\": " << lensSdfProbe.postprocess_direct_sample_count << ",\n";
     out << "  \"lens_sdf_postprocess_neighborhood_sample_count\": " << lensSdfProbe.postprocess_neighborhood_sample_count << ",\n";
     out << "  \"lens_sdf_postprocess_source_direct_sample_count\": " << lensSdfProbe.postprocess_source_direct_sample_count << ",\n";
