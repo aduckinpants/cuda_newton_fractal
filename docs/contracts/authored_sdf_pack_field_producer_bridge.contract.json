@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "contract_id": "authored_sdf_pack_field_producer_bridge",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/authored_sdf_pack_field_producer_bridge_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/authored_sdf_pack_field_producer_bridge.contract.json",
+    "docs/notes/authored_sdf_pack_field_producer_bridge_PHASED_PLAN.md",
+    "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "open Step 5A from the SDF next-five campaign after the normal-angle preset repair merged to master",
+    "add an authored SDF pack field producer beside the current mask-derived Lens SDF producer",
+    "emit the same SDF field interface consumed by existing overlay and Color Pipeline code",
+    "keep CPU reference available and prefer CUDA only through an explicit backend option",
+    "keep viewer UI, Color Pipeline consumption, SDF-native lanes, and renderer behavior unchanged in this slice"
+  ],
+  "forbidden_operator_prompts": [
+    "add authored SDF pack viewer UI",
+    "make authored packs selectable in the normal fractal dropdown",
+    "add SDF-native fractal lanes",
+    "redesign Color Pipeline composition",
+    "change existing Lens SDF capture or overlay behavior",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "native_field_producer_bridge",
+    "source_head": "ab7ced5",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "cpu_reference_required": true,
+    "cuda_backend_explicit": true
+  },
+  "forbidden_defaults": {
+    "viewer_ui_mutation": "forbidden",
+    "color_pipeline_ui_mutation": "forbidden",
+    "renderer_rewrite": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/authored_sdf_pack_field_producer_bridge.contract.json --out-json artifacts/validation/authored_sdf_pack_field_producer_bridge_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_field_producer_bridge_plan_sync --log artifacts/logs/authored_sdf_pack_field_producer_bridge_plan_sync.log --out-json artifacts/validation/authored_sdf_pack_field_producer_bridge_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/authored_sdf_pack_field_producer_bridge_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_field_producer_bridge_native_cpu --log artifacts/logs/authored_sdf_pack_field_producer_bridge_native_cpu.log --out-json artifacts/validation/authored_sdf_pack_field_producer_bridge_native_cpu.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack_field_producer",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_field_producer_bridge_native_cuda --log artifacts/logs/authored_sdf_pack_field_producer_bridge_native_cuda.log --out-json artifacts/validation/authored_sdf_pack_field_producer_bridge_native_cuda.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack_field_producer_cuda",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_field_producer_bridge_pack_preservation --log artifacts/logs/authored_sdf_pack_field_producer_bridge_pack_preservation.log --out-json artifacts/validation/authored_sdf_pack_field_producer_bridge_pack_preservation.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack_cuda",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_field_producer_bridge_lens_preservation --log artifacts/logs/authored_sdf_pack_field_producer_bridge_lens_preservation.log --out-json artifacts/validation/authored_sdf_pack_field_producer_bridge_lens_preservation.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_lens_sdf_cuda",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/authored_sdf_pack_field_producer_bridge_PHASED_PLAN.md --out-json artifacts/validation/authored_sdf_pack_field_producer_bridge_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/authored_sdf_pack_field_producer_bridge_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_field_producer_bridge_diff_check --log artifacts/logs/authored_sdf_pack_field_producer_bridge_diff_check.log --out-json artifacts/validation/authored_sdf_pack_field_producer_bridge_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The authored SDF pack field producer contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/authored_sdf_pack_field_producer_bridge_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The authored SDF pack field producer hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/authored_sdf_pack_field_producer_bridge_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

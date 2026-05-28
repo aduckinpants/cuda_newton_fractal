@@ -76,6 +76,7 @@ Future sessions should create these checked-in artifacts before mutating each st
   - Plan: `docs/notes/authored_sdf_pack_field_producer_bridge_PHASED_PLAN.md`
   - Contract: `docs/contracts/authored_sdf_pack_field_producer_bridge.contract.json`
   - Branch: `codex/authored-sdf-pack-field-producer-bridge`
+  - Status: implemented on this branch; adds CPU/CUDA authored-pack field production into the shared SDF field surface without viewer UI, Color Pipeline consumption, or SDF-native lane changes.
 - Step 5B authored SDF pack viewer UI integration:
   - Plan: `docs/notes/authored_sdf_pack_viewer_ui_integration_PHASED_PLAN.md`
   - Contract: `docs/contracts/authored_sdf_pack_viewer_ui_integration.contract.json`
