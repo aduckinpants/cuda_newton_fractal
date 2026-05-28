@@ -109,6 +109,10 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
             2.0,
             timeout_seconds=60.0,
         )
+        diagnostic_again = viewer.click_control(
+            "color_pipeline.recipe.sdf_normal_angle_diagnostic.apply",
+            timeout_seconds=60.0,
+        )
 
     assert applied.get("click_consumed") is True, applied
     assert "source:sdf_normal_angle" in applied.get("lane_rows", []), applied
@@ -117,10 +121,14 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
     assert applied.get("rendered_frame_hash") != base_hash, applied
     assert beauty.get("click_consumed") is True, beauty
     assert "source:sdf_normal_angle" in beauty.get("lane_rows", []), beauty
+    assert "source:lens_field_v2_distance" in beauty.get("lane_rows", []), beauty
     assert "palette:phase_wheel_palette" in beauty.get("lane_rows", []), beauty
     assert beauty.get("rendered_frame_hash") != applied.get("rendered_frame_hash"), beauty
     assert beauty_width.get("set_value_consumed") is True, beauty_width
     assert beauty_width.get("rendered_frame_hash") != beauty.get("rendered_frame_hash"), beauty_width
+    assert diagnostic_again.get("click_consumed") is True, diagnostic_again
+    assert "source:lens_field_v2_distance" not in diagnostic_again.get("lane_rows", []), diagnostic_again
+    assert diagnostic_again.get("rendered_frame_hash") == applied.get("rendered_frame_hash"), diagnostic_again
 
 
 def test_non_sdf_source_rows_do_not_alias_smooth_escape_no_mouse(tmp_path: Path) -> None:

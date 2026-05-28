@@ -132,3 +132,5 @@
 - `ck:27679a86` 2026-05-28 07:32 UTC | score 5 — Closed Step 3C row-local SDF field downsample UI/runtime: visible SDF Source rows expose Inherit/1x/2x/4x/8x/16x, no-mouse runtime proof shows distinct field groups, and SDF rows/capture/pacing/performance preservation rails stayed green.
 - `ck:ee02c86c` 2026-05-28 12:48 UTC — session-start | branch=codex/sdf-normal-angle-beauty-phase-ux | head=9af4ff0 | status=dirty | profile=runtime | intent=SDF normal-angle beauty phase UX
 - `ck:ee02c86c` 2026-05-28 13:37 UTC | score 92 — Closed SDF normal-angle beauty phase UX: diagnostic preserved, boundary-masked beauty preset added, metadata/capture proof hardened, runtime rails green.
+- `ck:2db968cc` 2026-05-28 18:40 UTC — session-start | branch=codex/sdf-normal-angle-beauty-phase-ux | head=8b0535a | status=dirty | profile=runtime | intent=SDF normal-angle preset toggle and beauty truth repair
+- `ck:2db968cc` 2026-05-28 18:59 UTC | score 90 — Closed SDF normal-angle preset toggle repair: Diagnostic now clears Beauty params, Beauty now builds boundary-gated normal-angle plus Lens Field v2 contrast, native/runtime preset rails green.

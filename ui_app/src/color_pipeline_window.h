@@ -1052,6 +1052,28 @@ inline bool AddColorPipelineLaneRow(
     std::size_t laneIndex,
     const char* functionId);
 
+inline bool SetColorPipelineRecipeLaneFunction(
+    ColorPipelineWindowState* ioState,
+    ColorPipelineLaneState& lane,
+    const char* functionId) {
+    if (!ioState || !functionId || functionId[0] == '\0') {
+        return false;
+    }
+    const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(lane.lane_id);
+    if (!catalog) {
+        PushColorPipelineValidationMessage(ioState,
+            std::string("Unknown advanced color pipeline lane id: ") + lane.lane_id);
+        return false;
+    }
+    const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(*catalog, functionId);
+    if (!descriptor || lane.rows.empty()) {
+        PushColorPipelineValidationMessage(ioState,
+            std::string("Unknown advanced color function '") + functionId + "' for lane " + lane.label);
+        return false;
+    }
+    return SetColorPipelineRowFunction(&lane.rows[0], *descriptor, false);
+}
+
 inline bool ApplyColorPipelineRecipeToDraft(
     ColorPipelineWindowState* ioState,
     const char* recipeId) {
@@ -1095,7 +1117,7 @@ inline bool ApplyColorPipelineRecipeToDraft(
             if (lane.rows.empty() && !AddColorPipelineLaneRow(&probe, laneIndex, laneSpec.function_id->c_str())) {
                 return false;
             }
-            if (!SelectColorPipelineLaneFunction(&probe, laneIndex, laneSpec.function_id->c_str())) {
+            if (!SetColorPipelineRecipeLaneFunction(&probe, lane, laneSpec.function_id->c_str())) {
                 return false;
             }
             break;
@@ -1108,7 +1130,8 @@ inline bool ApplyColorPipelineRecipeToDraft(
 
     if (std::string(recipeId) == "sdf_normal_angle_beauty") {
         bool appliedBeautyDefaults = false;
-        for (ColorPipelineLaneState& lane : probe.lanes) {
+        for (std::size_t laneIndex = 0; laneIndex < probe.lanes.size(); ++laneIndex) {
+            ColorPipelineLaneState& lane = probe.lanes[laneIndex];
             if (lane.lane_id != "source" || lane.rows.empty()) {
                 continue;
             }
@@ -1123,6 +1146,28 @@ inline bool ApplyColorPipelineRecipeToDraft(
                     &sourceRow,
                     "signal.sdf_gate_width_px",
                     6.0,
+                    &error) ||
+                !color_pipeline_core::SetColorPipelineParamNumber(
+                    &sourceRow,
+                    "signal.blend_weight",
+                    1.0,
+                    &error)) {
+                PushColorPipelineValidationMessage(ioState, error);
+                return false;
+            }
+            if (!AddColorPipelineLaneRow(&probe, laneIndex, "lens_field_v2_distance")) {
+                return false;
+            }
+            ColorPipelineRowState& lensRow = lane.rows.back();
+            if (!color_pipeline_core::SetColorPipelineParamNumber(
+                    &lensRow,
+                    "signal.sign_contrast",
+                    0.35,
+                    &error) ||
+                !color_pipeline_core::SetColorPipelineParamNumber(
+                    &lensRow,
+                    "signal.blend_weight",
+                    0.48,
                     &error)) {
                 PushColorPipelineValidationMessage(ioState, error);
                 return false;

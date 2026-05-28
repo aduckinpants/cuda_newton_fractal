@@ -734,22 +734,47 @@ void TestRecipeExpansionUsesExistingWindowDraftRows() {
     Check(ApplyColorPipelineRecipeToDraft(&state, "sdf_normal_angle_beauty"),
         "TestRecipeExpansionUsesExistingWindowDraftRows_AppliesBeautyRecipe");
     source = FindLane(state, "source");
-    Check(source && source->rows.size() == 1 && source->rows[0].function_id == "sdf_normal_angle",
-        "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyKeepsNormalAngleSource");
+    Check(source && source->rows.size() == 2 && source->rows[0].function_id == "sdf_normal_angle" &&
+            source->rows[1].function_id == "lens_field_v2_distance",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyBuildsBoundaryAngleAndLensV2Stack");
     Check(source &&
             RowEnum(source->rows[0], "signal.sdf_gate", "boundary_band") &&
             RowNumber(source->rows[0], "signal.sdf_gate_width_px", 6.0),
         "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyUsesBoundaryGate");
+    Check(source &&
+            RowNumber(source->rows[1], "signal.sign_contrast", 0.35) &&
+            RowNumber(source->rows[1], "signal.blend_weight", 0.48),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyUsesLensV2ContrastBase");
 
     KernelParams beautyParams = SmoothEscapeParams();
     changed = false;
     Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &beautyParams, &changed) && changed,
         "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyAppliesThroughDraftBridge");
-    Check(beautyParams.color_source_stack_count == 1 &&
+    Check(beautyParams.color_source_stack_count == 2 &&
             beautyParams.color_source_stack[0].signal == ColorSignal::sdf_normal_angle &&
             beautyParams.color_source_stack[0].params.sdf_gate == ColorPipelineSdfGateMode::boundary_band &&
-            Near(beautyParams.color_source_stack[0].params.sdf_gate_width_px, 6.0),
-        "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyRuntimeOwnsBoundaryGate");
+            Near(beautyParams.color_source_stack[0].params.sdf_gate_width_px, 6.0) &&
+            beautyParams.color_source_stack[1].signal == ColorSignal::lens_field_v2_distance &&
+            Near(beautyParams.color_source_stack[1].params.lens_field_v2_sign_contrast, 0.35) &&
+            Near(beautyParams.color_source_stack[1].params.blend_weight, 0.48),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyRuntimeOwnsBoundaryGateAndLensV2Contrast");
+
+    Check(ApplyColorPipelineRecipeToDraft(&state, "sdf_normal_angle_diagnostic"),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_DiagnosticReappliesAfterBeauty");
+    source = FindLane(state, "source");
+    Check(source && source->rows.size() == 1 && source->rows[0].function_id == "sdf_normal_angle" &&
+            RowEnum(source->rows[0], "signal.sdf_gate", "none") &&
+            RowNumber(source->rows[0], "signal.sdf_gate_width_px", 2.0),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_DiagnosticClearsBeautyGate");
+
+    KernelParams diagnosticParams = SmoothEscapeParams();
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &diagnosticParams, &changed) && changed,
+        "TestRecipeExpansionUsesExistingWindowDraftRows_DiagnosticAfterBeautyAppliesThroughDraftBridge");
+    Check(diagnosticParams.color_source_stack_count == 1 &&
+            diagnosticParams.color_source_stack[0].signal == ColorSignal::sdf_normal_angle &&
+            diagnosticParams.color_source_stack[0].params.sdf_gate == ColorPipelineSdfGateMode::none,
+        "TestRecipeExpansionUsesExistingWindowDraftRows_DiagnosticRuntimeClearsBeautyGate");
 }
 
 void TestCandidateDraftOnlyTruthAndCopySurfaces() {
