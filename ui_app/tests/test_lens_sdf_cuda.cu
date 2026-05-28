@@ -20,11 +20,12 @@ bool CheckSemanticParity(const char* label, const std::vector<uint8_t>& mask, in
     SdfFieldResult cpu;
     SdfFieldResult gpu;
     LensSdfBackendReport report;
+    LensSdfFieldGenerationReport fieldReport;
     if (!ComputeLensSdfFieldForMask(mask.data(), width, height, downsample, cpu)) {
         std::cerr << label << ": CPU reference failed\n";
         return false;
     }
-    if (!ComputeLensSdfFieldForMaskWithBackend(mask.data(), width, height, downsample, LensSdfBackend::cuda_jfa, gpu, &report)) {
+    if (!ComputeLensSdfFieldForMaskWithBackend(mask.data(), width, height, downsample, LensSdfBackend::cuda_jfa, gpu, &report, &fieldReport)) {
         std::cerr << label << ": CUDA backend failed\n";
         return false;
     }
@@ -39,6 +40,16 @@ bool CheckSemanticParity(const char* label, const std::vector<uint8_t>& mask, in
         gpu.signed_distance_px.size() != cpu.signed_distance_px.size() ||
         !IsFiniteField(gpu)) {
         std::cerr << label << ": CUDA field metadata is wrong\n";
+        return false;
+    }
+    if (fieldReport.input_width != width ||
+        fieldReport.input_height != height ||
+        fieldReport.downsample != NormalizeLensDownsamplePow2(downsample) ||
+        fieldReport.field_width != gpu.width ||
+        fieldReport.field_height != gpu.height ||
+        fieldReport.mask_downsample_ms < 0.0f ||
+        fieldReport.backend_ms < 0.0f) {
+        std::cerr << label << ": CUDA field-generation report is wrong\n";
         return false;
     }
 
@@ -121,8 +132,9 @@ int main() {
         SdfFieldResult cpuDirect;
         SdfFieldResult cpuBackend;
         LensSdfBackendReport report;
+        LensSdfFieldGenerationReport fieldReport;
         if (!ComputeLensSdfFieldForMask(mask.data(), 12, 8, 2, cpuDirect) ||
-            !ComputeLensSdfFieldForMaskWithBackend(mask.data(), 12, 8, 2, LensSdfBackend::cpu_chamfer, cpuBackend, &report)) {
+            !ComputeLensSdfFieldForMaskWithBackend(mask.data(), 12, 8, 2, LensSdfBackend::cpu_chamfer, cpuBackend, &report, &fieldReport)) {
             std::cerr << "CPU backend path should succeed\n";
             return 1;
         }
@@ -131,6 +143,14 @@ int main() {
             cpuDirect.height != cpuBackend.height ||
             cpuDirect.signed_distance_px != cpuBackend.signed_distance_px) {
             std::cerr << "CPU backend should preserve existing ComputeLensSdfFieldForMask behavior\n";
+            return 1;
+        }
+        if (fieldReport.downsample != 2 ||
+            fieldReport.field_width != cpuBackend.width ||
+            fieldReport.field_height != cpuBackend.height ||
+            fieldReport.mask_downsample_ms < 0.0f ||
+            fieldReport.backend_ms < 0.0f) {
+            std::cerr << "CPU backend field-generation report should describe the measured stages\n";
             return 1;
         }
     }

@@ -975,6 +975,7 @@ static void DispatchRenderFrame(
             SdfFieldResult computedLensSdfField;
             const SdfFieldResult* lensSdfField = nullptr;
             LensSdfBackendReport backendReport{};
+            LensSdfFieldGenerationReport fieldGenerationReport{};
             LensSdfFieldCacheReport fieldCacheReport{};
             const LensSdfEffectiveDownsample fieldQuality = ResolveEffectiveLensSdfDownsample(
                 lens.downsample,
@@ -986,6 +987,7 @@ static void DispatchRenderFrame(
             lensSdfProbe.effective_downsample = fieldQuality.effective_downsample;
             lensSdfProbe.quality_mode = LensSdfQualityModeId(fieldQuality.quality_mode);
             const auto fieldStart = std::chrono::steady_clock::now();
+            const auto cacheLookupStart = std::chrono::steady_clock::now();
             bool fieldOk = TryReuseLensSdfFieldCache(
                 lensSdfFieldCache,
                 maskPtr,
@@ -995,6 +997,9 @@ static void DispatchRenderFrame(
                 &lensSdfField,
                 &backendReport,
                 &fieldCacheReport);
+            lensSdfProbe.field_cache_lookup_ms = static_cast<float>(
+                std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - cacheLookupStart).count());
             if (!fieldOk) {
                 fieldOk = ComputeLensSdfFieldForMaskWithBackend(
                     maskPtr,
@@ -1003,8 +1008,10 @@ static void DispatchRenderFrame(
                     fieldQuality.effective_downsample,
                     LensSdfBackend::auto_backend,
                     computedLensSdfField,
-                    &backendReport);
+                    &backendReport,
+                    &fieldGenerationReport);
                 if (fieldOk) {
+                    const auto cacheStoreStart = std::chrono::steady_clock::now();
                     StoreLensSdfFieldCache(
                         lensSdfFieldCache,
                         maskPtr,
@@ -1014,6 +1021,9 @@ static void DispatchRenderFrame(
                         std::move(computedLensSdfField),
                         backendReport,
                         &fieldCacheReport);
+                    lensSdfProbe.field_cache_store_ms = static_cast<float>(
+                        std::chrono::duration<double, std::milli>(
+                            std::chrono::steady_clock::now() - cacheStoreStart).count());
                     lensSdfField = &lensSdfFieldCache.field;
                 }
             }
@@ -1021,6 +1031,8 @@ static void DispatchRenderFrame(
                 const auto fieldEnd = std::chrono::steady_clock::now();
                 lensSdfProbe.field_ms = static_cast<float>(
                     std::chrono::duration<double, std::milli>(fieldEnd - fieldStart).count());
+                lensSdfProbe.field_mask_downsample_ms = fieldGenerationReport.mask_downsample_ms;
+                lensSdfProbe.field_backend_ms = fieldGenerationReport.backend_ms;
                 lensSdfProbe.field_cache_status = LensSdfFieldCacheStatusId(fieldCacheReport.status);
                 lensSdfProbe.field_cache_hit = fieldCacheReport.hit;
                 lensSdfProbe.field_cache_mask_bytes =

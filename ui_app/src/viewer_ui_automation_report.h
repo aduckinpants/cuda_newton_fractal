@@ -59,6 +59,10 @@ struct ViewerUiAutomationLensSdfProbe {
     float base_render_ms = 0.0f;
     float field_ms = 0.0f;
     float requested_equivalent_field_ms = 0.0f;
+    float field_cache_lookup_ms = 0.0f;
+    float field_mask_downsample_ms = 0.0f;
+    float field_backend_ms = 0.0f;
+    float field_cache_store_ms = 0.0f;
     float postprocess_ms = 0.0f;
     float total_ms = 0.0f;
     int postprocess_pixel_step = 1;

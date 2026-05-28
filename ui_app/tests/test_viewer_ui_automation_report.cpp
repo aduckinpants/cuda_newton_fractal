@@ -80,6 +80,11 @@ void TestLensSdfProbeDefaults() {
             probe.field_ms == 0.0f && probe.requested_equivalent_field_ms == 0.0f &&
             probe.postprocess_ms == 0.0f && probe.total_ms == 0.0f,
         "lens SDF automation probe reports stable timing defaults");
+    Check(probe.field_cache_lookup_ms == 0.0f &&
+            probe.field_mask_downsample_ms == 0.0f &&
+            probe.field_backend_ms == 0.0f &&
+            probe.field_cache_store_ms == 0.0f,
+        "lens SDF automation probe reports stable field-generation stage defaults");
     Check(probe.postprocess_backend_used == "cpu" && !probe.postprocess_backend_fallback_used,
         "lens SDF automation probe reports stable postprocess backend defaults");
     Check(probe.requested_downsample == 1 &&
@@ -101,6 +106,10 @@ void TestLensSdfProbeTimingFields() {
     probe.base_render_ms = 3.0f;
     probe.field_ms = 2.0f;
     probe.requested_equivalent_field_ms = 8.0f;
+    probe.field_cache_lookup_ms = 0.25f;
+    probe.field_mask_downsample_ms = 0.5f;
+    probe.field_backend_ms = 1.0f;
+    probe.field_cache_store_ms = 0.25f;
     probe.postprocess_ms = 7.5f;
     probe.total_ms = probe.field_ms + probe.postprocess_ms;
     probe.postprocess_worker_count = 3;
@@ -115,6 +124,11 @@ void TestLensSdfProbeTimingFields() {
             probe.field_ms == 2.0f && probe.requested_equivalent_field_ms == 8.0f &&
             probe.postprocess_ms == 7.5f && probe.total_ms == 9.5f,
         "lens SDF automation probe carries separate field/postprocess timing");
+    Check(probe.field_cache_lookup_ms == 0.25f &&
+            probe.field_mask_downsample_ms == 0.5f &&
+            probe.field_backend_ms == 1.0f &&
+            probe.field_cache_store_ms == 0.25f,
+        "lens SDF automation probe carries field-generation stage timings");
     Check(probe.postprocess_worker_count == 3,
         "lens SDF automation probe carries postprocess worker count");
     Check(probe.postprocess_backend_used == "cuda_direct_scalar" && probe.postprocess_backend_fallback_used,

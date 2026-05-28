@@ -37,6 +37,10 @@ def _payload(
         "lens_sdf_color_pipeline_active": True,
         "lens_sdf_field_ms": field_ms,
         "lens_sdf_requested_equivalent_field_ms": field_ms,
+        "lens_sdf_field_cache_lookup_ms": 0.1,
+        "lens_sdf_field_mask_downsample_ms": 0.2,
+        "lens_sdf_field_backend_ms": max(0.0, field_ms - 0.3),
+        "lens_sdf_field_cache_store_ms": 0.1,
         "lens_sdf_postprocess_ms": postprocess_ms,
         "lens_sdf_total_ms": sdf_total,
         "last_render_ms": 4.0 + sdf_total,
@@ -109,6 +113,8 @@ def test_sdf_measurement_report_classifies_field_and_postprocess_pressure() -> N
     assert report["scenarios"][0]["lens_sdf_field_cache_status"] == "hit"
     assert report["scenarios"][0]["lens_sdf_field_cache_hit"] is True
     assert report["scenarios"][0]["lens_sdf_field_cache_mask_bytes"] == 320 * 240
+    assert report["scenarios"][0]["lens_sdf_field_mask_downsample_ms"] == 0.2
+    assert report["scenarios"][0]["lens_sdf_field_cache_store_ms"] == 0.1
     assert report["summary"]["recommendation"] == "mixed_or_inconclusive_measurement_review_required"
 
 
