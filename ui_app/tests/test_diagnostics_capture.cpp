@@ -144,6 +144,8 @@ void TestBundleSummarizesEffectiveColorSourceAuthority() {
     params.color_source_stack[0].signal = ColorSignal::sdf_normal_angle;
     params.color_source_stack[0].params.scale = 1.0f;
     params.color_source_stack[0].params.bias = 0.0f;
+    params.color_source_stack[0].params.sdf_gate = ColorPipelineSdfGateMode::boundary_band;
+    params.color_source_stack[0].params.sdf_gate_width_px = 6.0f;
     params.color_source_stack[0].params.sdf_field_downsample = 1;
     params.color_source_stack[0].params.blend_weight = 1.0f;
     params.color_source_stack[1].signal = ColorSignal::lens_field_v2_distance;
@@ -168,6 +170,9 @@ void TestBundleSummarizesEffectiveColorSourceAuthority() {
         Check(json.find("\"signal\": \"sdf_normal_angle\"") != std::string::npos &&
                 json.find("\"kind\": \"phase\"") != std::string::npos,
             "stack state summary records phase source row");
+        Check(json.find("\"sdf_gate\": \"boundary_band\"") != std::string::npos &&
+                json.find("\"sdf_gate_width_px\": 6") != std::string::npos,
+            "stack state summary records SDF boundary-gate authority");
         Check(json.find("\"signal\": \"lens_field_v2_distance\"") != std::string::npos &&
                 json.find("\"kind\": \"scalar\"") != std::string::npos,
             "stack state summary records scalar Lens Field v2 source row");

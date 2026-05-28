@@ -104,7 +104,7 @@ Next correct step:
 - Full-quality downsampled-field postprocess cell reuse is shipped: shared `SDF Field Downsample` now reduces CPU postprocess samples by computing once per SDF field cell and expanding the same pixels the old nearest field-cell mapping produced.
 - CUDA direct-scalar and field-signal SDF postprocess backends are shipped.
 - Live-only adaptive SDF field resolution is shipped: interaction preview can temporarily use a higher effective SDF field downsample while settled, capture, and replay stay on the requested `LensSettings::downsample`.
-- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, and row-local SDF field downsample UI/runtime authority are shipped. The closed postprocess witness measured median improvements of `27%` to `62%` across identical SDF rows. The next unresolved SDF product seam is phase-safe normal-angle UX, not another debounce-policy guess.
+- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, and boundary-masked SDF Normal Angle Beauty are shipped. The closed postprocess witness measured median improvements of `27%` to `62%` across identical SDF rows. The next unresolved SDF product seams are composition operands and authored/SDF-native productization, not another debounce-policy guess.
 - Do not treat SDF postprocess cost as a fractal kernel problem; the current telemetry distinguishes base render, field generation, and postprocess cost.
 
 **Files:** `ui_app/src/viewer_render_pacing.*`, `ui_app/src/main.cpp`, `tests/test_fractal_runtime_resolution_pacing.py`
@@ -119,8 +119,7 @@ Next correct step:
 The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows. Effective Source-stack summary/report clarity is shipped, UI-Salt materialized metadata now owns catalog descriptors, compatibility lookup, companion suggestions, and recipe expansion backend seams, product-facing preset workflow truth is shipped, and the current composition cleanup removes remaining visible draft/live-bridge wording without changing the internal row-stack implementation.
 
 Remaining review direction:
-- Preserve full-field `sdf_normal_angle` as a diagnostic phase view.
-- Add a later boundary-masked normal-angle beauty mode rather than deleting the diagnostic behavior.
+- Preserve full-field `sdf_normal_angle` as a diagnostic phase view; SDF Normal Angle Beauty now provides the boundary-masked product-facing preset without deleting that diagnostic behavior.
 - Treat SDF fields as typed Source signals now, with SDF masks/gates as the next plausible composition operand.
 - Keep the repaired row-enabled/effective-selection and SDF-only Source-stack regressions green: disabled rows must stay inactive for compatibility/runtime, and `sdf_curvature` must keep blending with `sdf_normal_angle` through the runtime-backed SDF postprocess path.
 - Keep row-local SDF Field Downsample authority explicit: SDF Source rows now default to shared `LensSettings::downsample` through `Inherit`, but individual rows can request `1x`, `2x`, `4x`, `8x`, or `16x` field resolution.

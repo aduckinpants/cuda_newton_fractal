@@ -74,6 +74,7 @@ compat(source="lens_field_v2_distance", palette="explaino_cmap", signal="lens_fi
 recipe(id="default_smooth_escape", label="Default Smooth Escape", source="smooth_escape_ramp", shape="identity", palette="heatmap", grading="contrast_lift")
 recipe(id="phase_orbit_wheel", label="Phase Orbit Wheel", source="phase_orbit", shape="identity", palette="phase_wheel_palette", grading="phase_finish")
 recipe(id="sdf_normal_angle_diagnostic", label="SDF Normal Angle Diagnostic", source="sdf_normal_angle", shape="identity", palette="phase_wheel_palette", grading="phase_finish")
+recipe(id="sdf_normal_angle_beauty", label="SDF Normal Angle Beauty", source="sdf_normal_angle", shape="identity", palette="phase_wheel_palette", grading="phase_finish")
 
 explaino_contract(id="color_pipeline.explaino_cmap", hypothesis_space="color_pipeline_source_signal", authority="palette_row", lens="source_signal_to_explaino_cmap", invariant="runtime_backed_fail_closed_palette_mapping", proof="color_pipeline_metadata_parity", fallback="fail_closed", product_facing=False, diagnostic=True)
 explaino_contract(id="color_pipeline.balance_void_grade", hypothesis_space="color_pipeline_grading_manifold", authority="grading_row", lens="source_signal_to_balance_void_manifold", invariant="dedicated_runtime_owner_fields", proof="color_pipeline_metadata_parity", fallback="fail_closed", product_facing=False, diagnostic=True)

@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "contract_id": "sdf_normal_angle_beauty_phase_ux",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_normal_angle_beauty_phase_ux_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/sdf_normal_angle_beauty_phase_ux.contract.json",
+    "docs/notes/sdf_normal_angle_beauty_phase_ux_PHASED_PLAN.md",
+    "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "docs/ui_salt/color_pipeline_function_library.ui.salt",
+    "docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/color_pipeline_sdf_postprocess.cpp",
+    "ui_app/src/color_pipeline_sdf_postprocess.h",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_diagnostics_capture.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "tests/test_ui_salt_materializer.py",
+    "tests/test_fractal_runtime_ui_salt_contract.py",
+    "tests/test_fractal_runtime_color_pipeline_presets.py",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "tests/test_fractal_runtime_capture_replay_authority.py",
+    "tests/test_fractal_runtime_sdf_row_field_resolution.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "merge the closed row-local SDF field downsample branch before starting Step 4",
+    "preserve full-field SDF Normal Angle Diagnostic behavior",
+    "add a narrow boundary-masked normal-angle beauty path using existing SDF gate semantics",
+    "route visible controls through the existing Color Pipeline draft/live apply path",
+    "prove diagnostic and beauty modes through no-mouse runtime automation",
+    "preserve capture/replay, SDF rows, row-local field downsample, and existing performance rails"
+  ],
+  "forbidden_operator_prompts": [
+    "remove or hide the full-field normal-angle diagnostic path",
+    "reinterpret all phase sources as scalar",
+    "redesign the Color Pipeline layout",
+    "implement authored SDF pack viewport integration",
+    "implement SDF-native fractal lanes",
+    "claim global FPS improvement from Step 4 without a measured witness",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_sdf_phase_ux",
+    "source_head": "9af4ff0",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "full_field_diagnostic": "preserve",
+    "beauty_mode": "boundary_masked_normal_angle",
+    "row_field_downsample": "preserve"
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "color_pipeline_layout_redesign": "forbidden",
+    "sdf_native_lane": "forbidden",
+    "authored_sdf_pack_ui": "forbidden",
+    "global_fps_claim": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_normal_angle_beauty_phase_ux.contract.json --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_plan_sync --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_plan_sync.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_normal_angle_beauty_phase_ux_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_materialize --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_materialize.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_ui_salt_tests --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_ui_salt_tests.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_ui_salt_tests.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py tests/test_fractal_runtime_ui_salt_contract.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_native_core --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_native_core.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_native_core.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_native_window --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_native_window.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_native_window.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_native_capture --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_native_capture.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_native_capture.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_capture",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_native_postprocess --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_native_postprocess.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_native_postprocess.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_publish --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_publish.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_runtime_presets --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_runtime_presets.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_runtime_presets.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_presets.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_runtime_sdf_rows --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_runtime_sdf_rows.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_runtime_sdf_rows.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_runtime_capture_replay --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_runtime_capture_replay.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_runtime_capture_replay.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_capture_replay_authority.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_normal_angle_beauty_phase_ux_PHASED_PLAN.md --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_normal_angle_beauty_phase_ux_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_normal_angle_beauty_phase_ux_diff_check --log artifacts/logs/sdf_normal_angle_beauty_phase_ux_diff_check.log --out-json artifacts/validation/sdf_normal_angle_beauty_phase_ux_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Step 4 phase UX contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_normal_angle_beauty_phase_ux_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Step 4 hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_normal_angle_beauty_phase_ux_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

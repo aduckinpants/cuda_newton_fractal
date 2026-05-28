@@ -71,6 +71,7 @@ Future sessions should create these checked-in artifacts before mutating each st
   - Plan: `docs/notes/sdf_normal_angle_beauty_phase_ux_PHASED_PLAN.md`
   - Contract: `docs/contracts/sdf_normal_angle_beauty_phase_ux.contract.json`
   - Branch: `codex/sdf-normal-angle-beauty-phase-ux`
+  - Status: shipped on this branch; full-field SDF Normal Angle Diagnostic stays available and SDF Normal Angle Beauty applies boundary-band gating by default.
 - Step 5A authored SDF pack field producer bridge:
   - Plan: `docs/notes/authored_sdf_pack_field_producer_bridge_PHASED_PLAN.md`
   - Contract: `docs/contracts/authored_sdf_pack_field_producer_bridge.contract.json`
@@ -151,7 +152,7 @@ Bounded phases:
    - mark CUDA postprocess scratch-buffer reuse shipped;
    - record final median improvement range from Step 1's committed proof;
    - keep the witness recommendation wording honest if it remains conservative;
-   - set per-row/multi-field SDF downsample authority as the then-next unresolved design/product step; after Step 3C, phase-safe normal-angle UX is the next SDF product seam.
+   - set per-row/multi-field SDF downsample authority as the then-next unresolved design/product step; after Step 3C, phase-safe normal-angle UX became Step 4 and is now shipped on the dedicated branch.
 4. Hostile review for stale text:
    - grep for `points back to postprocess`, `postprocess review`, `current witness`, `current stage-split witness`, `deferred until the next measured design choice`, and `current representative witness`;
    - repair only text that is stale because of `7ed70d6`.
@@ -292,6 +293,8 @@ Stop conditions:
 - If capture/replay cannot faithfully reproduce row-local fields, do not close Step 3.
 
 ## Step 4 - Boundary-Masked / Phase-Safe Normal Angle UX
+
+Status: shipped on `codex/sdf-normal-angle-beauty-phase-ux`.
 
 Purpose:
 

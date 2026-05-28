@@ -97,13 +97,30 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
         viewer.wait_for_control("color_pipeline.recipe.default_smooth_escape.apply", timeout_seconds=20.0)
         viewer.wait_for_control("color_pipeline.recipe.phase_orbit_wheel.apply", timeout_seconds=20.0)
         viewer.wait_for_control("color_pipeline.recipe.sdf_normal_angle_diagnostic.apply", timeout_seconds=20.0)
+        viewer.wait_for_control("color_pipeline.recipe.sdf_normal_angle_beauty.apply", timeout_seconds=20.0)
         applied = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_diagnostic.apply", timeout_seconds=60.0)
+        beauty = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_beauty.apply", timeout_seconds=60.0)
+        viewer.wait_for_control(
+            "color_pipeline.source.sdf_normal_angle.signal.sdf_gate_width_px.primary",
+            timeout_seconds=20.0,
+        )
+        beauty_width = viewer.set_control_value(
+            "color_pipeline.source.sdf_normal_angle.signal.sdf_gate_width_px.primary",
+            2.0,
+            timeout_seconds=60.0,
+        )
 
     assert applied.get("click_consumed") is True, applied
     assert "source:sdf_normal_angle" in applied.get("lane_rows", []), applied
     assert "palette:phase_wheel_palette" in applied.get("lane_rows", []), applied
     assert "grading:phase_finish" in applied.get("lane_rows", []), applied
     assert applied.get("rendered_frame_hash") != base_hash, applied
+    assert beauty.get("click_consumed") is True, beauty
+    assert "source:sdf_normal_angle" in beauty.get("lane_rows", []), beauty
+    assert "palette:phase_wheel_palette" in beauty.get("lane_rows", []), beauty
+    assert beauty.get("rendered_frame_hash") != applied.get("rendered_frame_hash"), beauty
+    assert beauty_width.get("set_value_consumed") is True, beauty_width
+    assert beauty_width.get("rendered_frame_hash") != beauty.get("rendered_frame_hash"), beauty_width
 
 
 def test_non_sdf_source_rows_do_not_alias_smooth_escape_no_mouse(tmp_path: Path) -> None:

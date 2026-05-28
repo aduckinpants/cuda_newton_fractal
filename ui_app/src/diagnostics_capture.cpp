@@ -358,6 +358,8 @@ void WriteEffectiveColorSourceJson(std::ostringstream& js, const KernelParams& p
             js << "          \"signal\": \"" << CaptureColorSignalId(sourceEntry.signal) << "\",\n";
             js << "          \"kind\": \"" << CaptureColorSignalKindId(sourceEntry.signal) << "\",\n";
             js << "          \"blend_weight\": " << static_cast<double>(sourceEntry.params.blend_weight) << ",\n";
+            js << "          \"sdf_gate\": \"" << color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) << "\",\n";
+            js << "          \"sdf_gate_width_px\": " << static_cast<double>(sourceEntry.params.sdf_gate_width_px) << ",\n";
             js << "          \"sdf_field_downsample\": " << sourceEntry.params.sdf_field_downsample << "\n";
             js << "        }" << (index + 1 < sourceStackCount ? "," : "") << "\n";
         }

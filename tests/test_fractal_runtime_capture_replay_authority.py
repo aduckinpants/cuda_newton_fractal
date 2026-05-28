@@ -39,6 +39,23 @@ MATRIX_ROWS = [
         lens_downsample=4,
     ),
     CaptureReplayMatrixRow(
+        name="sdf_normal_angle_beauty_gate",
+        source_stack=[
+            {
+                "signal": "sdf_normal_angle",
+                "scale": 1.0,
+                "bias": 0.0,
+                "blend_weight": 1.0,
+                "sdf_gate": "boundary_band",
+                "sdf_gate_width_px": 6.0,
+            }
+        ],
+        color_signal="sdf_normal_angle",
+        color_palette="phase_wheel",
+        color_grading="phase_default",
+        lens_downsample=4,
+    ),
+    CaptureReplayMatrixRow(
         name="sdf_boundary_band",
         source_stack=[
             {
@@ -146,6 +163,10 @@ def _assert_effective_source_summary(captured_state: dict[str, object], row: Cap
     for index, source_entry in enumerate(row.source_stack):
         if "sdf_field_downsample" in source_entry:
             assert summary_stack[index]["sdf_field_downsample"] == source_entry["sdf_field_downsample"]
+        if "sdf_gate" in source_entry:
+            assert summary_stack[index]["sdf_gate"] == source_entry["sdf_gate"]
+        if "sdf_gate_width_px" in source_entry:
+            assert summary_stack[index]["sdf_gate_width_px"] == source_entry["sdf_gate_width_px"]
     for entry in summary_stack:
         if entry["signal"] == "sdf_normal_angle":
             assert entry["kind"] == "phase"

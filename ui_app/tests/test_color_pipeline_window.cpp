@@ -671,6 +671,9 @@ void TestPresetWorkflowTruthSurface() {
     const std::string recipeControlId = BuildColorPipelineRecipeApplyControlId("sdf_normal_angle_diagnostic");
     Check(recipeControlId == "color_pipeline.recipe.sdf_normal_angle_diagnostic.apply",
         "TestPresetWorkflowTruthSurface_RecipeApplyControlIdIsStable");
+    const std::string beautyRecipeControlId = BuildColorPipelineRecipeApplyControlId("sdf_normal_angle_beauty");
+    Check(beautyRecipeControlId == "color_pipeline.recipe.sdf_normal_angle_beauty.apply",
+        "TestPresetWorkflowTruthSurface_BeautyRecipeApplyControlIdIsStable");
     Check(std::string(ColorPipelineWindowDraftRecipesIntroText()).find("Draft") == std::string::npos,
         "TestPresetWorkflowTruthSurface_IntroDoesNotLeakDraftAsProductWorkflow");
     Check(std::string(ColorPipelineWindowBridgeBoundarySummaryText()).find("Live bridge") == std::string::npos,
@@ -727,6 +730,26 @@ void TestRecipeExpansionUsesExistingWindowDraftRows() {
             ColorPipelineLaneStatesEqual(state.lanes[2], before[2]) &&
             ColorPipelineLaneStatesEqual(state.lanes[3], before[3]),
         "TestRecipeExpansionUsesExistingWindowDraftRows_UnknownRecipeDoesNotMutate");
+
+    Check(ApplyColorPipelineRecipeToDraft(&state, "sdf_normal_angle_beauty"),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_AppliesBeautyRecipe");
+    source = FindLane(state, "source");
+    Check(source && source->rows.size() == 1 && source->rows[0].function_id == "sdf_normal_angle",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyKeepsNormalAngleSource");
+    Check(source &&
+            RowEnum(source->rows[0], "signal.sdf_gate", "boundary_band") &&
+            RowNumber(source->rows[0], "signal.sdf_gate_width_px", 6.0),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyUsesBoundaryGate");
+
+    KernelParams beautyParams = SmoothEscapeParams();
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &beautyParams, &changed) && changed,
+        "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyAppliesThroughDraftBridge");
+    Check(beautyParams.color_source_stack_count == 1 &&
+            beautyParams.color_source_stack[0].signal == ColorSignal::sdf_normal_angle &&
+            beautyParams.color_source_stack[0].params.sdf_gate == ColorPipelineSdfGateMode::boundary_band &&
+            Near(beautyParams.color_source_stack[0].params.sdf_gate_width_px, 6.0),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_BeautyRuntimeOwnsBoundaryGate");
 }
 
 void TestCandidateDraftOnlyTruthAndCopySurfaces() {

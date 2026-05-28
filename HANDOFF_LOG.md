@@ -130,3 +130,5 @@
 - `097b3382-stale-plan` 2026-05-28 06:26 UTC | score 9 — Closed Step 3B stale-plan repair: removed stale ready-for-checkpoint/receipt wording from the active multi-field plan after receipts and push, reran plan sync, stale grep, and hostile-audit validation.
 - `ck:27679a86` 2026-05-28 06:48 UTC — session-start | branch=codex/sdf-row-field-resolution-ui-runtime | head=153e85e | status=dirty | profile=runtime | intent=SDF row field resolution UI/runtime productization
 - `ck:27679a86` 2026-05-28 07:32 UTC | score 5 — Closed Step 3C row-local SDF field downsample UI/runtime: visible SDF Source rows expose Inherit/1x/2x/4x/8x/16x, no-mouse runtime proof shows distinct field groups, and SDF rows/capture/pacing/performance preservation rails stayed green.
+- `ck:ee02c86c` 2026-05-28 12:48 UTC — session-start | branch=codex/sdf-normal-angle-beauty-phase-ux | head=9af4ff0 | status=dirty | profile=runtime | intent=SDF normal-angle beauty phase UX
+- `ck:ee02c86c` 2026-05-28 13:37 UTC | score 92 — Closed SDF normal-angle beauty phase UX: diagnostic preserved, boundary-masked beauty preset added, metadata/capture proof hardened, runtime rails green.

@@ -1695,6 +1695,15 @@
         "palette": "phase_wheel_palette",
         "grading": "phase_finish",
         "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_normal_angle_beauty",
+        "label": "SDF Normal Angle Beauty",
+        "source": "sdf_normal_angle",
+        "shape": "identity",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "fail_closed_reason": ""
       }
     ]
   },

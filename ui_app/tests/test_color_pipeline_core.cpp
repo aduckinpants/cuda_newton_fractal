@@ -880,14 +880,14 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
     Check(contract.compatibility.size() == 22,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
-    Check(contract.recipes.size() == 3, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
+    Check(contract.recipes.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(!contract.explaino_entries.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoEntriesPresent");
 
     const ColorPipelineMetadataParityReport parity = ValidateColorPipelineMetadataParity(contract);
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
     Check(parity.lane_count == 4 && parity.function_count == 34 &&
-            parity.compatibility_count == 22 && parity.recipe_count == 3 &&
+            parity.compatibility_count == 22 && parity.recipe_count == 4 &&
             parity.taxonomy_group_count == 24 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
@@ -1265,15 +1265,17 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcoded");
     Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("hardcoded"),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcodedAuthority");
-    Check(color_pipeline_core::CountHardcodedColorPipelineRecipes() == 3,
+    Check(color_pipeline_core::CountHardcodedColorPipelineRecipes() == 4,
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeCount");
     Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedFallbackCountIsTruthful");
 
     const std::vector<MaterializedColorPipelineRecipe>& hardcodedRecipes =
         color_pipeline_core::GetHardcodedColorPipelineRecipes();
-    Check(hardcodedRecipes.size() == 3,
+    Check(hardcodedRecipes.size() == 4,
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeVectorCount");
+    Check(color_pipeline_core::FindHardcodedColorPipelineRecipe("sdf_normal_angle_beauty") != nullptr,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedBeautyRecipeExists");
     for (const MaterializedColorPipelineRecipe& expectedRecipe : hardcodedRecipes) {
         const MaterializedColorPipelineRecipe* activeRecipe =
             color_pipeline_core::FindActiveColorPipelineRecipe(expectedRecipe.id);

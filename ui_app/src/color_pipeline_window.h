@@ -133,7 +133,7 @@ inline const char* ColorPipelineWindowBridgeBoundarySummaryText() {
 }
 
 inline const char* ColorPipelineWindowSupportedPresetSummaryText() {
-    return "Available presets: Smooth Escape, Phase Orbit Wheel, and SDF Normal Angle Diagnostic.";
+    return "Available presets: Smooth Escape, Phase Orbit Wheel, SDF Normal Angle Diagnostic, and SDF Normal Angle Beauty.";
 }
 
 inline const char* ColorPipelineWindowFixedPresetHelpText() {
@@ -1102,6 +1102,36 @@ inline bool ApplyColorPipelineRecipeToDraft(
         }
         if (!foundLane) {
             PushColorPipelineValidationMessage(ioState, std::string("Missing Color Pipeline recipe lane: ") + laneSpec.lane_id);
+            return false;
+        }
+    }
+
+    if (std::string(recipeId) == "sdf_normal_angle_beauty") {
+        bool appliedBeautyDefaults = false;
+        for (ColorPipelineLaneState& lane : probe.lanes) {
+            if (lane.lane_id != "source" || lane.rows.empty()) {
+                continue;
+            }
+            ColorPipelineRowState& sourceRow = lane.rows[0];
+            std::string error;
+            if (!color_pipeline_core::SetColorPipelineParamEnum(
+                    &sourceRow,
+                    "signal.sdf_gate",
+                    "boundary_band",
+                    &error) ||
+                !color_pipeline_core::SetColorPipelineParamNumber(
+                    &sourceRow,
+                    "signal.sdf_gate_width_px",
+                    6.0,
+                    &error)) {
+                PushColorPipelineValidationMessage(ioState, error);
+                return false;
+            }
+            appliedBeautyDefaults = true;
+            break;
+        }
+        if (!appliedBeautyDefaults) {
+            PushColorPipelineValidationMessage(ioState, "SDF Normal Angle Beauty recipe could not find a Source row");
             return false;
         }
     }
