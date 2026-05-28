@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - checkpoint the planning slice.
+Closed - planning slice checkpointed, receipt-backed, pushed, and ready for Step 1 execution.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - checkpoint the planning slice.
 - [x] Phase 2 - draft bounded slice plans through Step 5.
 - [x] Phase 3 - hostile-review the slice order, proof gates, and Step 6 replan boundary.
 - [x] Phase 4 - validate contract, plan sync, hostile audit, code quality, and diff hygiene.
-- [ ] Phase 5 - checkpoint the planning slice.
+- [x] Phase 5 - checkpoint the planning slice.
 
 ## Explicit User Asks
 
@@ -470,6 +470,8 @@ Step 6 replan questions:
 - Hostile-audit validation: passed with `artifacts/validation/sdf_next_five_work_campaign_hostile_audit.json`.
 - Code-quality baseline: passed with score `93/100` and no critical/error findings in `artifacts/validation/sdf_next_five_work_campaign_code_quality.json`.
 - Diff hygiene: passed with `artifacts/validation/sdf_next_five_work_campaign_diff_check.json`.
+- Checkpoint: committed as `48bb7e1` with receipt-shape follow-up `90d6cd6`.
+- Push/clean-tree proof: `codex/sdf-postprocess-measured-optimization` pushed to origin at `90d6cd6`; rearward review reported `ok`.
 
 ## Hostile Audit
 

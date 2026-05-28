@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "contract_id": "sdf_postprocess_merge_to_master",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_postprocess_merge_to_master_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_postprocess_merge_to_master_PHASED_PLAN.md",
+    "docs/contracts/sdf_postprocess_merge_to_master.contract.json",
+    "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "merge codex/sdf-postprocess-measured-optimization into master",
+    "preserve the measured SDF postprocess optimization history and receipts",
+    "prove master contains the measured optimization head and is clean after push"
+  ],
+  "forbidden_operator_prompts": [
+    "squash the measured optimization history",
+    "implement per-row or multi-field SDF downsample authority in this slice",
+    "implement boundary-masked phase UX in this slice",
+    "implement authored SDF pack viewport integration in this slice",
+    "implement SDF-native fractal lanes in this slice"
+  ],
+  "required_defaults": {
+    "slice_kind": "merge_to_master",
+    "source_branch": "codex/sdf-postprocess-measured-optimization",
+    "target_branch": "master",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "product_code_authoring": false
+  },
+  "forbidden_defaults": {
+    "history_squash": "forbidden",
+    "product_code_mutation": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "next_feature_implementation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_postprocess_merge_to_master.contract.json --out-json artifacts/validation/sdf_postprocess_merge_to_master_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_merge_to_master_plan_sync --log artifacts/logs/sdf_postprocess_merge_to_master_plan_sync.log --out-json artifacts/validation/sdf_postprocess_merge_to_master_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_postprocess_merge_to_master_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_postprocess_merge_to_master_PHASED_PLAN.md --out-json artifacts/validation/sdf_postprocess_merge_to_master_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_postprocess_merge_to_master_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_merge_to_master_diff_check --log artifacts/logs/sdf_postprocess_merge_to_master_diff_check.log --out-json artifacts/validation/sdf_postprocess_merge_to_master_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_merge_to_master_reachability --log artifacts/logs/sdf_postprocess_merge_to_master_reachability.log --out-json artifacts/validation/sdf_postprocess_merge_to_master_reachability.json --heartbeat-seconds 30 --timeout-seconds 120 -- git merge-base --is-ancestor 7ed70d6 master",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_postprocess_merge_to_master_status --log artifacts/logs/sdf_postprocess_merge_to_master_status.log --out-json artifacts/validation/sdf_postprocess_merge_to_master_status.json --heartbeat-seconds 30 --timeout-seconds 120 -- git status --short --branch"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF postprocess merge-to-master contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_postprocess_merge_to_master_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF postprocess merge-to-master hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_postprocess_merge_to_master_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
