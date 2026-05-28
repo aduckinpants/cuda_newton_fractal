@@ -67,6 +67,7 @@
 #include "safe_mode_schema.h"
 #include "schema_binding.h"
 #include "schema_startup_policy.h"
+#include "sdf_pack_viewer_ui.h"
 #include "sweep_player.h"
 #include "ui_schema.h"
 #include "viewer_render_pacing.h"
@@ -119,6 +120,11 @@ static std::string GetExeDir() {
     path.resize(pos);
     return path;
 }
+
+static void PersistSdfPackViewerStateToCaptureStateFile(
+    const DiagnosticsCaptureResult& capture,
+    const SdfPackViewerState& sdfPackViewer,
+    std::string* ioStatus);
 static std::string JoinPath(const std::string& a, const char* b) {
     if (a.empty()) return std::string(b);
     if (!b || !*b) return a;
@@ -658,6 +664,7 @@ static void RunInLoopDiagnosticCapture(
     const RenderSettings& render, const LensSettings& lens, const RenderStats& stats,
     const std::vector<uint32_t>& rgba, const RenderedFrameState& renderedFrame,
     const ColorPipelineWindowState* colorPipelineWindow,
+    const SdfPackViewerState& sdfPackViewer,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
@@ -674,6 +681,7 @@ static void RunInLoopDiagnosticCapture(
             findingStatus = "Capture diagnostic failed: " + captureError;
         } else {
             findingStatus = "Diagnostic captured.";
+            PersistSdfPackViewerStateToCaptureStateFile(captureResult, sdfPackViewer, &findingStatus);
         }
     }
 }
@@ -684,6 +692,7 @@ static bool RunInLoopFindingCapture(
     const LensSettings& lens,
     const RenderedFrameState& renderedFrame,
     const ColorPipelineWindowState* colorPipelineWindow,
+    const SdfPackViewerState& sdfPackViewer,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
@@ -718,6 +727,9 @@ static bool RunInLoopFindingCapture(
     } else {
         findingStatus = "Captured finding: " + findingDir;
         lastFindingPath = findingDir;
+        DiagnosticsCaptureResult captureResult{};
+        captureResult.state_json_path = (std::filesystem::path(findingDir) / "state.json").string();
+        PersistSdfPackViewerStateToCaptureStateFile(captureResult, sdfPackViewer, &findingStatus);
     }
     return invalidateCaches;
 }
@@ -1465,6 +1477,9 @@ static void RenderSweepControls(const SweepPlayerConfig& config, SweepPlayerStat
 static bool EnsureEquationPackWorkbenchDefaultLoaded(
     const std::string& exeDir,
     GenericEquationPackWorkbenchState& equationPackWorkbench);
+static bool LoadSdfPackViewerStateFileIfPresent(
+    const std::string& path,
+    SdfPackViewerState& sdfPackViewer);
 
 static UiActionFlags RenderControlsWindow(
         const UISchema& schema, const std::string& schemaWarning, const std::string& schemaPath,
@@ -1478,6 +1493,7 @@ static UiActionFlags RenderControlsWindow(
         std::vector<ViewerUiAutomationRect>* viewerUiAutomationRects,
         ColorPipelineWindowState& colorPipelineWindow,
         GenericEquationPackWorkbenchState& equationPackWorkbench,
+        SdfPackViewerState& sdfPackViewer,
         FractalType& lastFractalType, PolyKind& lastPolyKind, bool& dirty) {
     ImGui::Begin("Controls");
     if (!schemaWarning.empty()) {
@@ -1545,6 +1561,32 @@ static UiActionFlags RenderControlsWindow(
             &equationPackClick,
             &equationPackInteracted);
         if (equationPackInteracted) {
+            actions.interactionChanged = true;
+            dirty = true;
+        }
+    }
+    if (sdfPackViewer.open || sdfPackViewer.force_open_for_automation || sdfPackViewer.have_pack) {
+        SdfPackViewerSetValueAutomation sdfPackSetValue;
+        if (colorPipelineWindow.ui_automation_set_pending) {
+            sdfPackSetValue.control_id = &colorPipelineWindow.ui_automation_set_control_id;
+            sdfPackSetValue.value = colorPipelineWindow.ui_automation_set_control_value;
+            sdfPackSetValue.consumed = &colorPipelineWindow.ui_automation_set_consumed;
+            sdfPackSetValue.error = &colorPipelineWindow.ui_automation_set_error;
+        }
+        SdfPackViewerClickAutomation sdfPackClick;
+        if (colorPipelineWindow.ui_automation_click_pending &&
+            SdfPackViewerWantsClickControl(colorPipelineWindow.ui_automation_click_control_id)) {
+            sdfPackClick.control_id = &colorPipelineWindow.ui_automation_click_control_id;
+            sdfPackClick.consumed = &colorPipelineWindow.ui_automation_click_consumed;
+        }
+        bool sdfPackInteracted = false;
+        RenderSdfPackViewerInlinePanel(
+            &sdfPackViewer,
+            viewerUiAutomationRects,
+            &sdfPackSetValue,
+            &sdfPackClick,
+            &sdfPackInteracted);
+        if (sdfPackInteracted) {
             actions.interactionChanged = true;
             dirty = true;
         }
@@ -2346,6 +2388,113 @@ static void OpenEquationPackWorkbenchForPendingAutomation(
     equationPackWorkbench.force_open_for_automation = true;
 }
 
+static bool LoadSdfPackViewerStateFileIfPresent(
+    const std::string& path,
+    SdfPackViewerState& sdfPackViewer) {
+    if (path.empty()) {
+        return false;
+    }
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        return false;
+    }
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    SdfPackViewerState loaded;
+    std::string error;
+    if (!LoadSdfPackViewerStateJson(buffer.str(), &loaded, &error)) {
+        return false;
+    }
+    if (loaded.initialized || loaded.have_pack || loaded.open) {
+        sdfPackViewer = std::move(loaded);
+        return true;
+    }
+    return false;
+}
+
+static void PersistSdfPackViewerStateToCaptureStateFile(
+    const DiagnosticsCaptureResult& capture,
+    const SdfPackViewerState& sdfPackViewer,
+    std::string* ioStatus) {
+    if (!sdfPackViewer.initialized && !sdfPackViewer.have_pack && !sdfPackViewer.open) {
+        return;
+    }
+    std::ifstream in(capture.state_json_path, std::ios::binary);
+    if (!in) {
+        if (ioStatus) *ioStatus += " SDF pack state append failed: state.json not readable.";
+        return;
+    }
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    std::string merged;
+    std::string error;
+    if (!MergeSdfPackViewerStateIntoDiagnosticsStateJson(buffer.str(), sdfPackViewer, &merged, &error)) {
+        if (ioStatus) *ioStatus += " SDF pack state append failed: " + error + ".";
+        return;
+    }
+    std::ofstream out(capture.state_json_path, std::ios::binary | std::ios::trunc);
+    if (!out) {
+        if (ioStatus) *ioStatus += " SDF pack state append failed: state.json not writable.";
+        return;
+    }
+    out.write(merged.data(), static_cast<std::streamsize>(merged.size()));
+    if (!out.good() && ioStatus) {
+        *ioStatus += " SDF pack state append failed: state.json write error.";
+    }
+}
+
+static void InitializeSdfPackViewerFromCli(
+    const ViewerCliArgs& cli,
+    const std::string& currentLoadedStatePath,
+    SdfPackViewerState& sdfPackViewer) {
+    if (!currentLoadedStatePath.empty()) {
+        LoadSdfPackViewerStateFileIfPresent(currentLoadedStatePath, sdfPackViewer);
+    }
+
+    const bool wantsSetValue =
+        cli.have_ui_automation_set_control_value &&
+        SdfPackViewerWantsSetValueControl(cli.ui_automation_set_control_id);
+    const bool wantsClick =
+        cli.have_ui_automation_click_control_id &&
+        SdfPackViewerWantsClickControl(cli.ui_automation_click_control_id);
+    const bool shouldOpen = cli.open_sdf_pack_panel_on_startup ||
+        cli.have_sdf_pack_json ||
+        wantsSetValue ||
+        wantsClick ||
+        sdfPackViewer.have_pack ||
+        sdfPackViewer.open;
+    if (!shouldOpen) {
+        return;
+    }
+
+    sdfPackViewer.open = true;
+    sdfPackViewer.force_open_for_automation = wantsSetValue || wantsClick || cli.have_ui_automation_report_json;
+    if (cli.have_sdf_pack_json) {
+        std::string error;
+        LoadSdfPackViewerPack(&sdfPackViewer, cli.sdf_pack_json_path, &error);
+        sdfPackViewer.open = true;
+        sdfPackViewer.force_open_for_automation = wantsSetValue || wantsClick || cli.have_ui_automation_report_json;
+    } else if (!sdfPackViewer.initialized) {
+        sdfPackViewer.initialized = true;
+    }
+}
+
+static void OpenSdfPackViewerForPendingAutomation(
+    const ColorPipelineWindowState& colorPipelineWindow,
+    SdfPackViewerState& sdfPackViewer) {
+    const bool wantsSetValue = colorPipelineWindow.ui_automation_set_pending &&
+        !colorPipelineWindow.ui_automation_set_control_id.empty() &&
+        SdfPackViewerWantsSetValueControl(colorPipelineWindow.ui_automation_set_control_id);
+    const bool wantsClick = colorPipelineWindow.ui_automation_click_pending &&
+        !colorPipelineWindow.ui_automation_click_control_id.empty() &&
+        SdfPackViewerWantsClickControl(colorPipelineWindow.ui_automation_click_control_id);
+    if (!wantsSetValue && !wantsClick) {
+        return;
+    }
+    sdfPackViewer.open = true;
+    sdfPackViewer.force_open_for_automation = true;
+}
+
 static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
                                                 ViewerUiAutomationCommandState& commandState,
                                                 ColorPipelineWindowState& colorPipelineWindow,
@@ -2355,6 +2504,7 @@ static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
                                                 LensSettings& lens,
                                                 std::string& currentLoadedStatePath,
                                                 FractalType& currentLoadedStateFractalType,
+                                                SdfPackViewerState& sdfPackViewer,
                                                 PolyKind& lastPolyKind,
                                                 FractalType& lastFractalType,
                                                 bool& dirty) {
@@ -2386,6 +2536,7 @@ static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
                     &loadedStatePath,
                     &loadError)) {
                 currentLoadedStatePath = loadedStatePath;
+                LoadSdfPackViewerStateFileIfPresent(currentLoadedStatePath, sdfPackViewer);
                 currentLoadedStateFractalType = view.fractal_type;
                 lastPolyKind = params.poly_kind;
                 lastFractalType = view.fractal_type;
@@ -2557,6 +2708,7 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
                                      const std::vector<uint32_t>& rgba,
                                      const RenderedFrameState& renderedFrame,
                                      const ColorPipelineWindowState& colorPipelineWindow,
+                                     const SdfPackViewerState& sdfPackViewer,
                                      const ExplainoSidecarWindowState& sidecarState,
                                      bool haveSidecarState,
                                      const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
@@ -2571,11 +2723,11 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
     const SidecarAutoDemoMutationHistory* mutationHistory =
         sidecarMutationHistoryValid ? &sidecarMutationHistory : nullptr;
     if (actions.captureDiagnostic) {
-        RunInLoopDiagnosticCapture(exeDir, view, params, render, lens, stats, rgba, renderedFrame, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus);
+        RunInLoopDiagnosticCapture(exeDir, view, params, render, lens, stats, rgba, renderedFrame, &colorPipelineWindow, sdfPackViewer, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus);
     }
 
     if (actions.captureFinding) {
-        if (RunInLoopFindingCapture(exeDir, view, params, render, lens, renderedFrame, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus, lastFindingPath)) {
+        if (RunInLoopFindingCapture(exeDir, view, params, render, lens, renderedFrame, &colorPipelineWindow, sdfPackViewer, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus, lastFindingPath)) {
             ioSidecarStateValid = false;
             ioSidecarBudgetStateValid = false;
         }
@@ -3375,6 +3527,7 @@ static void RunViewerFrame(
     RuntimeWalkFieldSlimeState& runtimeWalkFieldSlime,
     bool& runtimeWalkFieldSlimeValid,
     GenericEquationPackWorkbenchState& equationPackWorkbench,
+    SdfPackViewerState& sdfPackViewer,
     std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     ViewerUiAutomationCommandState& uiAutomationCommandState,
     bool& dirty) {
@@ -3388,10 +3541,12 @@ static void RunViewerFrame(
         lens,
         currentLoadedStatePath,
         currentLoadedStateFractalType,
+        sdfPackViewer,
         lastPolyKind,
         lastFractalType,
         dirty);
     OpenEquationPackWorkbenchForPendingAutomation(colorPipelineWindow, view.fractal_type, equationPackWorkbench);
+    OpenSdfPackViewerForPendingAutomation(colorPipelineWindow, sdfPackViewer);
 
     if (!runtimeWalkViewerSession.loaded) {
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
@@ -3408,8 +3563,10 @@ static void RunViewerFrame(
         &viewerUiAutomationRects,
         colorPipelineWindow,
         equationPackWorkbench,
+        sdfPackViewer,
         lastFractalType, lastPolyKind, dirty);
 
+    const std::string loadedStatePathBeforeActions = currentLoadedStatePath;
     DispatchUiActions(hwnd, actions.resetView, actions.resetAll, actions.loadState,
         actions.nextSeed, actions.prevSeed, view, params, render, lens,
         sidecarControllerPolicy,
@@ -3422,6 +3579,9 @@ static void RunViewerFrame(
         runtimeWalkViewerSession, runtimeWalkPlayback, currentLoadedStatePath, currentLoadedStateFractalType,
         lastPolyKind, lastFractalType,
         findingStatus, lastFindingPath);
+    if (currentLoadedStatePath != loadedStatePathBeforeActions) {
+        LoadSdfPackViewerStateFileIfPresent(currentLoadedStatePath, sdfPackViewer);
+    }
 
     if (actions.openColorPipelineWindow) {
         OpenColorPipelineWindow(&colorPipelineWindow);
@@ -3546,7 +3706,7 @@ static void RunViewerFrame(
         lensSdfFieldCaches, dirty);
 
     RunPendingInLoopCaptures(exeDir, actions, view, params, render, lens, stats, rgba,
-        renderedFrame, colorPipelineWindow, sidecarState, sidecarStateValid,
+        renderedFrame, colorPipelineWindow, sdfPackViewer, sidecarState, sidecarStateValid,
         sidecarControllerPolicy,
         sidecarMutationHistory, sidecarMutationHistoryValid,
         findingStatus, lastFindingPath,
@@ -3592,12 +3752,15 @@ static void RunViewerFrame(
         const ViewerUiAutomationFrameProbe frameProbe = BuildViewerUiAutomationFrameProbe(rgba, renderedFrame);
         const GenericEquationPackWorkbenchAutomationReport equationPackReport =
             BuildGenericEquationPackWorkbenchAutomationReport(equationPackWorkbench);
+        const SdfPackViewerAutomationReport sdfPackReport =
+            BuildSdfPackViewerAutomationReport(sdfPackViewer);
         WriteColorPipelineUiAutomationReport(
             cli.ui_automation_report_json_path,
             hwnd,
             viewerUiAutomationRects,
             colorPipelineWindow,
             &equationPackReport,
+            &sdfPackReport,
             view,
             render,
             stats,
@@ -3684,6 +3847,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::string currentLoadedStatePath; FractalType currentLoadedStateFractalType = FractalType::newton;
     ColorPipelineWindowState colorPipelineWindow{};
     GenericEquationPackWorkbenchState equationPackWorkbench{};
+    SdfPackViewerState sdfPackViewer{};
 
         { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens, colorPipelineWindow,
             sidecarControllerPolicy,
@@ -3693,6 +3857,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
           dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
       if (initRc != 0) return initRc; }
     InitializeEquationPackWorkbenchFromCli(cli, exeDir, equationPackWorkbench);
+    InitializeSdfPackViewerFromCli(cli, currentLoadedStatePath, sdfPackViewer);
     CaptureLoadedStateFractalTypeIfAny(currentLoadedStatePath, view, currentLoadedStateFractalType);
 
     BindingContext bind = BuildViewerBindingContext(view, params, render, lens);
@@ -3825,6 +3990,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             runtimeWalkGradientOverlay,
             runtimeWalkFieldSlime, runtimeWalkFieldSlimeValid,
             equationPackWorkbench,
+            sdfPackViewer,
             viewerUiAutomationRects,
             uiAutomationCommandState,
             dirty);

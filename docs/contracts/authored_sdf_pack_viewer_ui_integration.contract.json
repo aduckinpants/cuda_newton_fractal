@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "contract_id": "authored_sdf_pack_viewer_ui_integration",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/authored_sdf_pack_viewer_ui_integration_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/authored_sdf_pack_viewer_ui_integration.contract.json",
+    "docs/notes/authored_sdf_pack_viewer_ui_integration_PHASED_PLAN.md",
+    "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "open Step 5B from the SDF next-five campaign after Step 5A merged to master",
+    "expose authored SDF pack loading and numeric controls through the normal viewer flow",
+    "keep default viewer behavior unchanged when no SDF pack is loaded or requested",
+    "persist authored SDF pack UI state through saved state and capture replay surfaces",
+    "prove no-mouse automation can load a pack, see controls, set a control, and observe changed pack field preview proof"
+  ],
+  "forbidden_operator_prompts": [
+    "make authored SDF packs a new FractalType",
+    "make authored SDF packs feed Color Pipeline rows in this slice",
+    "make authored SDF packs feed viewport overlay modes in this slice",
+    "redesign the Color Pipeline layout",
+    "implement SDF-native fractal lanes",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_authored_sdf_pack_ui",
+    "source_head": "a41056f",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "default_viewer_unchanged_without_pack": true,
+    "color_pipeline_consumption_deferred": true
+  },
+  "forbidden_defaults": {
+    "new_fractal_type": "forbidden",
+    "color_pipeline_consumption": "forbidden",
+    "viewport_overlay_consumption": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/authored_sdf_pack_viewer_ui_integration.contract.json --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_viewer_ui_integration_plan_sync --log artifacts/logs/authored_sdf_pack_viewer_ui_integration_plan_sync.log --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/authored_sdf_pack_viewer_ui_integration_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_viewer_ui_integration_native_ui --log artifacts/logs/authored_sdf_pack_viewer_ui_integration_native_ui.log --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_native_ui.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack_viewer_ui",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_viewer_ui_integration_native_cli --log artifacts/logs/authored_sdf_pack_viewer_ui_integration_native_cli.log --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_native_cli.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_viewer_cli",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_viewer_ui_integration_native_state --log artifacts/logs/authored_sdf_pack_viewer_ui_integration_native_state.log --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_native_state.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_state_io",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_viewer_ui_integration_publish --log artifacts/logs/authored_sdf_pack_viewer_ui_integration_publish.log --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_viewer_ui_integration_runtime --log artifacts/logs/authored_sdf_pack_viewer_ui_integration_runtime.log --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_runtime.json --heartbeat-seconds 30 --timeout-seconds 360 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_pack_viewer_ui.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/authored_sdf_pack_viewer_ui_integration_PHASED_PLAN.md --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/authored_sdf_pack_viewer_ui_integration_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_viewer_ui_integration_diff_check --log artifacts/logs/authored_sdf_pack_viewer_ui_integration_diff_check.log --out-json artifacts/validation/authored_sdf_pack_viewer_ui_integration_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The authored SDF pack viewer UI integration contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/authored_sdf_pack_viewer_ui_integration_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The authored SDF pack viewer UI hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/authored_sdf_pack_viewer_ui_integration_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

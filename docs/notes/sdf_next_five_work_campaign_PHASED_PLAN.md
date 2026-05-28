@@ -81,6 +81,7 @@ Future sessions should create these checked-in artifacts before mutating each st
   - Plan: `docs/notes/authored_sdf_pack_viewer_ui_integration_PHASED_PLAN.md`
   - Contract: `docs/contracts/authored_sdf_pack_viewer_ui_integration.contract.json`
   - Branch: `codex/authored-sdf-pack-viewer-ui-integration`
+  - Status: implementation and focused proof complete on this branch; pending closure validators, receipts, push, and clean-tree proof.
 - Step 5C authored SDF pack Color Pipeline and overlay consumption:
   - Plan: `docs/notes/authored_sdf_pack_color_pipeline_overlay_PHASED_PLAN.md`
   - Contract: `docs/contracts/authored_sdf_pack_color_pipeline_overlay.contract.json`

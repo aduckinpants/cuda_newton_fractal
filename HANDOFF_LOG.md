@@ -137,3 +137,5 @@
 - `ck:7c4a4255` 2026-05-28 19:49 UTC — session-start | branch=codex/authored-sdf-pack-field-producer-bridge | head=ab7ced5 | status=dirty | profile=native | intent=authored SDF pack field producer bridge
 - `ck:7c4a4255` 2026-05-28 20:15 UTC | score 5 — Implemented Step 5A authored SDF pack field producer bridge: CPU reference and registered CUDA backend emit shared SDF fields with field-pixel distance units; focused CPU/CUDA producer rails and existing SDF pack/Lens SDF preservation rails passed; hostile audit fixed dispatcher linkage and explicit CUDA fail-closed coverage.
 - `ck:7c4a4255` 2026-05-28 20:16 UTC | score 5 — Checkpoint Step 5A authored SDF pack field producer bridge after focused CPU/CUDA and preservation rails.
+- `ck:4cf2e5e1` 2026-05-28 20:28 UTC — session-start | branch=codex/authored-sdf-pack-viewer-ui-integration | head=a41056f | status=dirty | profile=runtime | intent=authored SDF pack viewer UI integration
+- `ck:4cf2e5e1` 2026-05-28 21:24 UTC | score 93 — Authored SDF pack viewer UI integration exposes pack controls, no-mouse automation, preview hash proof, and capture state merge; focused native/runtime rails green.

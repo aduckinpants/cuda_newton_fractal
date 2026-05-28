@@ -268,6 +268,7 @@ void WriteColorPipelineUiAutomationReport(
     const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     const ColorPipelineWindowState& colorPipelineWindow,
     const GenericEquationPackWorkbenchAutomationReport* equationPackWorkbench,
+    const SdfPackViewerAutomationReport* sdfPackViewer,
     const ViewState& view,
     const RenderSettings& render,
     const RenderStats& stats,
@@ -429,6 +430,91 @@ void WriteColorPipelineUiAutomationReport(
         out << "null";
     } else {
         WriteAutomationReportString(out, equationPack.preview_image_hash);
+    }
+    out << "\n";
+    out << "  },\n";
+    out << "  \"sdf_pack_viewer\": {\n";
+    const SdfPackViewerAutomationReport emptySdfPackReport;
+    const SdfPackViewerAutomationReport& sdfPack =
+        sdfPackViewer ? *sdfPackViewer : emptySdfPackReport;
+    out << "    \"panel_open\": " << (sdfPack.panel_open ? "true" : "false") << ",\n";
+    out << "    \"initialized\": " << (sdfPack.initialized ? "true" : "false") << ",\n";
+    out << "    \"force_open_for_automation\": " << (sdfPack.force_open_for_automation ? "true" : "false") << ",\n";
+    out << "    \"have_pack\": " << (sdfPack.have_pack ? "true" : "false") << ",\n";
+    out << "    \"pack_path\": ";
+    WriteAutomationReportString(out, sdfPack.pack_path);
+    out << ",\n";
+    out << "    \"pack_id\": ";
+    WriteAutomationReportString(out, sdfPack.pack_id);
+    out << ",\n";
+    out << "    \"pack_name\": ";
+    WriteAutomationReportString(out, sdfPack.pack_name);
+    out << ",\n";
+    out << "    \"pack_load_error\": ";
+    if (sdfPack.pack_load_error.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, sdfPack.pack_load_error);
+    }
+    out << ",\n";
+    out << "    \"backend_preference\": ";
+    WriteAutomationReportString(out, sdfPack.backend_preference);
+    out << ",\n";
+    out << "    \"controls\": [";
+    for (std::size_t index = 0; index < sdfPack.controls.size(); ++index) {
+        const SdfPackViewerControlReport& control = sdfPack.controls[index];
+        if (index > 0) {
+            out << ',';
+        }
+        out << "\n      {\n";
+        out << "        \"control_id\": ";
+        WriteAutomationReportString(out, control.control_id);
+        out << ",\n";
+        out << "        \"param\": ";
+        WriteAutomationReportString(out, control.param);
+        out << ",\n";
+        out << "        \"label\": ";
+        WriteAutomationReportString(out, control.label);
+        out << ",\n";
+        out << "        \"value\": " << std::setprecision(12) << control.value << ",\n";
+        out << "        \"min\": ";
+        WriteAutomationReportOptionalDouble(out, control.has_min, control.min_value);
+        out << ",\n";
+        out << "        \"max\": ";
+        WriteAutomationReportOptionalDouble(out, control.has_max, control.max_value);
+        out << ",\n";
+        out << "        \"default\": ";
+        WriteAutomationReportOptionalDouble(out, control.has_default_value, control.default_value);
+        out << "\n      }";
+    }
+    if (!sdfPack.controls.empty()) {
+        out << "\n    ";
+    }
+    out << "],\n";
+    out << "    \"preview_ok\": " << (sdfPack.preview_ok ? "true" : "false") << ",\n";
+    out << "    \"preview_error\": ";
+    if (sdfPack.preview_error.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, sdfPack.preview_error);
+    }
+    out << ",\n";
+    out << "    \"preview_backend_used\": ";
+    WriteAutomationReportString(out, sdfPack.preview_backend_used);
+    out << ",\n";
+    out << "    \"preview_backend_fallback_used\": " << (sdfPack.preview_backend_fallback_used ? "true" : "false") << ",\n";
+    out << "    \"preview_width\": " << sdfPack.preview_width << ",\n";
+    out << "    \"preview_height\": " << sdfPack.preview_height << ",\n";
+    out << "    \"preview_pixel_scale\": " << std::setprecision(12) << sdfPack.preview_pixel_scale << ",\n";
+    out << "    \"preview_sample_count\": " << sdfPack.preview_sample_count << ",\n";
+    out << "    \"preview_min_signed_distance_px\": " << std::setprecision(12) << sdfPack.preview_min_signed_distance_px << ",\n";
+    out << "    \"preview_max_signed_distance_px\": " << std::setprecision(12) << sdfPack.preview_max_signed_distance_px << ",\n";
+    out << "    \"preview_mean_signed_distance_px\": " << std::setprecision(12) << sdfPack.preview_mean_signed_distance_px << ",\n";
+    out << "    \"preview_field_hash\": ";
+    if (sdfPack.preview_field_hash.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, sdfPack.preview_field_hash);
     }
     out << "\n";
     out << "  },\n";

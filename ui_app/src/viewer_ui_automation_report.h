@@ -4,6 +4,7 @@
 #include "fractal_types.h"
 #include "generic_equation_pack_workbench.h"
 #include "render_capture_guard.h"
+#include "sdf_pack_viewer_ui.h"
 #include "viewer_render_pacing.h"
 
 #include <Windows.h>
@@ -131,6 +132,7 @@ void WriteColorPipelineUiAutomationReport(
     const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     const ColorPipelineWindowState& colorPipelineWindow,
     const GenericEquationPackWorkbenchAutomationReport* equationPackWorkbench,
+    const SdfPackViewerAutomationReport* sdfPackViewer,
     const ViewState& view,
     const RenderSettings& render,
     const RenderStats& stats,

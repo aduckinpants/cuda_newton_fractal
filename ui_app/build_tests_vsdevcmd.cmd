@@ -91,6 +91,7 @@ if /I "%FOCUSED_TEST%"=="test_sdf_pack" goto focused_test_sdf_pack
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_cuda" goto focused_test_sdf_pack_cuda
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer" goto focused_test_sdf_pack_field_producer
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer_cuda" goto focused_test_sdf_pack_field_producer_cuda
+if /I "%FOCUSED_TEST%"=="test_sdf_pack_viewer_ui" goto focused_test_sdf_pack_viewer_ui
 if /I "%FOCUSED_TEST%"=="test_generic_probe" goto focused_test_generic_probe
 if not "%FOCUSED_TEST%"=="" (
   echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
@@ -611,6 +612,14 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_sdf_pack_field_producer_cuda.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_field_producer_cuda.exe" || exit /b 1
+exit /b 0
+
+:focused_test_sdf_pack_viewer_ui
+cl /nologo /EHsc /MD /std:c++17 /O2 /D SDF_PACK_VIEWER_UI_NO_IMGUI /I. /I.\src ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\sdf_pack_viewer_ui.cpp .\tests\test_sdf_pack_viewer_ui.cpp ^
+  /Fe:"%TESTROOT%\test_sdf_pack_viewer_ui.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_sdf_pack_viewer_ui.exe" || exit /b 1
 exit /b 0
 
 :focused_test_generic_probe

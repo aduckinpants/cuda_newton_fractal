@@ -400,6 +400,8 @@ static void TestUiAutomationReportFlags() {
         "--open-color-pipeline-window",
         "--open-equation-pack-workbench",
         "--equation-pack-workbench-pack-json", "pack.json",
+        "--open-sdf-pack-panel",
+        "--sdf-pack-json", "sdf_pack.json",
         "--ui-automation-report-json", "ui_automation.json"
     }), &cli);
     Check(rc == 0, "TestUiAutomationReportFlags_ReturnCode");
@@ -407,6 +409,9 @@ static void TestUiAutomationReportFlags() {
     Check(cli.open_equation_pack_workbench_on_startup, "TestUiAutomationReportFlags_OpenEquationPackWorkbench");
     Check(cli.have_equation_pack_workbench_pack_json, "TestUiAutomationReportFlags_HaveEquationPackPath");
     Check(cli.equation_pack_workbench_pack_json_path == "pack.json", "TestUiAutomationReportFlags_EquationPackPath");
+    Check(cli.open_sdf_pack_panel_on_startup, "TestUiAutomationReportFlags_OpenSdfPackPanel");
+    Check(cli.have_sdf_pack_json, "TestUiAutomationReportFlags_HaveSdfPackPath");
+    Check(cli.sdf_pack_json_path == "sdf_pack.json", "TestUiAutomationReportFlags_SdfPackPath");
     Check(cli.have_ui_automation_report_json, "TestUiAutomationReportFlags_HaveUiAutomationReport");
     Check(cli.ui_automation_report_json_path == "ui_automation.json", "TestUiAutomationReportFlags_Path");
 }
@@ -415,6 +420,12 @@ static void TestEquationPackWorkbenchPackJsonMissingValue() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({"--equation-pack-workbench-pack-json"}), &cli);
     Check(rc != 0, "TestEquationPackWorkbenchPackJsonMissingValue_Fails");
+}
+
+static void TestSdfPackJsonMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--sdf-pack-json"}), &cli);
+    Check(rc != 0, "TestSdfPackJsonMissingValue_Fails");
 }
 
 static void TestUiAutomationReportJsonMissingValue() {
@@ -752,6 +763,7 @@ int main() {
     TestLoadStateJson();
     TestUiAutomationReportFlags();
     TestEquationPackWorkbenchPackJsonMissingValue();
+    TestSdfPackJsonMissingValue();
     TestUiAutomationReportJsonMissingValue();
     TestUiAutomationCommandJsonFlag();
     TestUiAutomationCommandJsonMissingValue();
