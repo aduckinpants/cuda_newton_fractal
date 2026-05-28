@@ -834,9 +834,16 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
             "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowsExposeCommonLiveParams");
         Check(HasParam(*descriptor, "signal.sdf_gate") &&
                 HasParam(*descriptor, "signal.sdf_gate_width_px") &&
+                HasParam(*descriptor, "signal.sdf_field_downsample") &&
                 HasEnumOption(*descriptor, "signal.sdf_gate", "none") &&
-                HasEnumOption(*descriptor, "signal.sdf_gate", "boundary_band"),
-            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowsExposeBoundaryGateParams");
+                HasEnumOption(*descriptor, "signal.sdf_gate", "boundary_band") &&
+                HasEnumOption(*descriptor, "signal.sdf_field_downsample", "0") &&
+                HasEnumOption(*descriptor, "signal.sdf_field_downsample", "1") &&
+                HasEnumOption(*descriptor, "signal.sdf_field_downsample", "2") &&
+                HasEnumOption(*descriptor, "signal.sdf_field_downsample", "4") &&
+                HasEnumOption(*descriptor, "signal.sdf_field_downsample", "8") &&
+                HasEnumOption(*descriptor, "signal.sdf_field_downsample", "16"),
+            "TestSdfSourceRowsAreRuntimeBackedCatalogRows_SdfRowsExposeBoundaryGateAndFieldParams");
         Check((std::string(expected.id) == "sdf_boundary_band") == HasParam(*descriptor, "signal.boundary_width_px"),
             "TestSdfSourceRowsAreRuntimeBackedCatalogRows_BoundaryWidthIsBoundaryBandOnly");
         Check((std::string(expected.id) == "lens_field_v2_distance") == HasParam(*descriptor, "signal.sign_contrast"),
@@ -850,6 +857,7 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
                 RowNumber(row, "signal.bias", expected.bias) &&
                 RowNumber(row, "signal.blend_weight", 1.0) &&
                 RowEnum(row, "signal.sdf_gate", "none") &&
+                RowEnum(row, "signal.sdf_field_downsample", "0") &&
                 RowNumber(row, "signal.sdf_gate_width_px", 2.0) &&
                 (std::string(expected.id) != "sdf_boundary_band" || RowNumber(row, "signal.boundary_width_px", 2.0)) &&
                 (std::string(expected.id) != "lens_field_v2_distance" || RowNumber(row, "signal.sign_contrast", 0.35)),

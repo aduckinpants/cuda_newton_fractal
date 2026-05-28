@@ -260,6 +260,26 @@ inline FunctionParamDescriptor MakeColorPipelineSdfSampleStepParam() {
         1);
 }
 
+inline std::vector<UISchemaOption> ColorPipelineSdfFieldDownsampleOptions() {
+    return {
+        {"0", "Inherit", "Use the shared SDF Field Downsample value."},
+        {"1", "1x", "Use full SDF field resolution for this Source row."},
+        {"2", "2x", "Use half-resolution SDF field sampling for this Source row."},
+        {"4", "4x", "Use quarter-resolution SDF field sampling for this Source row."},
+        {"8", "8x", "Use eighth-resolution SDF field sampling for this Source row."},
+        {"16", "16x", "Use sixteenth-resolution SDF field sampling for this Source row."},
+    };
+}
+
+inline FunctionParamDescriptor MakeColorPipelineSdfFieldDownsampleParam() {
+    return MakeColorPipelineEnumParam(
+        "signal.sdf_field_downsample",
+        "Field Downsample",
+        "Choose this SDF Source row's field resolution; Inherit uses the shared SDF Field Downsample.",
+        ColorPipelineSdfFieldDownsampleOptions(),
+        "0");
+}
+
 inline FunctionParamDescriptor MakeColorPipelineSourceScaleParam(
     const char* label,
     const char* help,
@@ -642,6 +662,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
                 MakeColorPipelineSdfSampleStepParam(),
+                MakeColorPipelineSdfFieldDownsampleParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -655,6 +676,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
                 MakeColorPipelineSdfSampleStepParam(),
+                MakeColorPipelineSdfFieldDownsampleParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -669,6 +691,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
                 MakeColorPipelineSdfSampleStepParam(),
+                MakeColorPipelineSdfFieldDownsampleParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -682,6 +705,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
                 MakeColorPipelineSdfSampleStepParam(),
+                MakeColorPipelineSdfFieldDownsampleParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -695,6 +719,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
                 MakeColorPipelineSdfSampleStepParam(),
+                MakeColorPipelineSdfFieldDownsampleParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -709,6 +734,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineSdfGateParam(),
                 MakeColorPipelineSdfGateWidthParam(),
                 MakeColorPipelineSdfSampleStepParam(),
+                MakeColorPipelineSdfFieldDownsampleParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
     };

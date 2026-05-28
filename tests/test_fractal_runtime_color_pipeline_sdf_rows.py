@@ -767,7 +767,7 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
     ) as viewer:
         ready_report = viewer.wait_for_report(timeout_seconds=30.0)
         for function_id, *_ in SDF_SOURCE_ROWS:
-            for path in ("signal.scale", "signal.bias", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.sdf_sample_step", "signal.blend_weight"):
+            for path in ("signal.scale", "signal.bias", "signal.sdf_gate", "signal.sdf_gate_width_px", "signal.sdf_sample_step", "signal.sdf_field_downsample", "signal.blend_weight"):
                 viewer.wait_for_control(
                     f"color_pipeline.source.{function_id}.{path}.primary",
                     timeout_seconds=20.0,
@@ -820,7 +820,7 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
         ready_report = viewer.wait_for_report(timeout_seconds=30.0)
         base_hash = ready_report.get("rendered_frame_hash")
         assert isinstance(base_hash, str), ready_report
-        for path in ("signal.scale", "signal.bias", "signal.blend_weight", "signal.boundary_width_px", "signal.sdf_sample_step"):
+        for path in ("signal.scale", "signal.bias", "signal.blend_weight", "signal.boundary_width_px", "signal.sdf_sample_step", "signal.sdf_field_downsample"):
             viewer.wait_for_control(
                 f"color_pipeline.source.sdf_boundary_band.{path}.primary",
                 timeout_seconds=20.0,
@@ -855,6 +855,11 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
             4.0,
             timeout_seconds=40.0,
         )
+        row_field_report = viewer.set_control_value(
+            "color_pipeline.source.sdf_boundary_band.signal.sdf_field_downsample.primary",
+            1.0,
+            timeout_seconds=40.0,
+        )
 
     assert downsample_report.get("lens_sdf_enabled") is False, downsample_report
     assert downsample_report.get("lens_sdf_valid") is True, downsample_report
@@ -880,6 +885,13 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
     assert sample_step_report.get("rendered_frame_hash") != downsample_report.get("rendered_frame_hash"), sample_step_report
     assert int(sample_step_report["lens_sdf_postprocess_source_direct_sample_count"]) < source_direct_samples, sample_step_report
     assert int(sample_step_report["lens_sdf_postprocess_source_neighborhood_sample_count"]) == 0, sample_step_report
+    assert row_field_report.get("set_value_consumed") is True, row_field_report
+    assert row_field_report.get("rendered_frame_hash") != sample_step_report.get("rendered_frame_hash"), row_field_report
+    row_field_groups = row_field_report.get("lens_sdf_field_groups")
+    assert isinstance(row_field_groups, list) and len(row_field_groups) == 1, row_field_report
+    assert row_field_groups[0]["requested_downsample"] == 1, row_field_report
+    assert row_field_groups[0]["effective_downsample"] == 1, row_field_report
+    assert row_field_groups[0]["has_explicit_row"] is True, row_field_report
 
 
 def test_lens_downsample_visible_and_authoritative_for_sdf_source_without_lens_visualization_no_mouse(tmp_path: Path) -> None:

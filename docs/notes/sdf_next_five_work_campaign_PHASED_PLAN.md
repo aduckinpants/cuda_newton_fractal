@@ -66,6 +66,7 @@ Future sessions should create these checked-in artifacts before mutating each st
   - Plan: `docs/notes/sdf_row_field_resolution_ui_runtime_PHASED_PLAN.md`
   - Contract: `docs/contracts/sdf_row_field_resolution_ui_runtime.contract.json`
   - Branch: `codex/sdf-row-field-resolution-ui-runtime`
+  - Status: shipped; SDF Source rows expose row-local `Field Downsample` while `Inherit` preserves the shared `LensSettings::downsample` authority.
 - Step 4 phase-safe normal-angle UX:
   - Plan: `docs/notes/sdf_normal_angle_beauty_phase_ux_PHASED_PLAN.md`
   - Contract: `docs/contracts/sdf_normal_angle_beauty_phase_ux.contract.json`
@@ -130,7 +131,7 @@ Stop conditions:
 Purpose:
 
 - Repair stale roadmap/status text after Step 1 so the repo no longer says the current representative witness still "points back to postprocess review" as future work.
-- Declare the next active design choice as per-row/multi-field SDF downsample authority.
+- Historically, Step 2 declared per-row/multi-field SDF downsample authority as the next active design choice; that Step 3 work is now shipped through `docs/notes/sdf_row_field_resolution_ui_runtime_PHASED_PLAN.md`.
 
 Suggested branch:
 
@@ -150,7 +151,7 @@ Bounded phases:
    - mark CUDA postprocess scratch-buffer reuse shipped;
    - record final median improvement range from Step 1's committed proof;
    - keep the witness recommendation wording honest if it remains conservative;
-   - set per-row/multi-field SDF downsample authority as the next unresolved design/product step.
+   - set per-row/multi-field SDF downsample authority as the then-next unresolved design/product step; after Step 3C, phase-safe normal-angle UX is the next SDF product seam.
 4. Hostile review for stale text:
    - grep for `points back to postprocess`, `postprocess review`, `current witness`, `current stage-split witness`, `deferred until the next measured design choice`, and `current representative witness`;
    - repair only text that is stale because of `7ed70d6`.

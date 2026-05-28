@@ -104,7 +104,7 @@ Next correct step:
 - Full-quality downsampled-field postprocess cell reuse is shipped: shared `SDF Field Downsample` now reduces CPU postprocess samples by computing once per SDF field cell and expanding the same pixels the old nearest field-cell mapping produced.
 - CUDA direct-scalar and field-signal SDF postprocess backends are shipped.
 - Live-only adaptive SDF field resolution is shipped: interaction preview can temporarily use a higher effective SDF field downsample while settled, capture, and replay stay on the requested `LensSettings::downsample`.
-- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, and measured CUDA SDF postprocess scratch-buffer reuse are shipped. The closed postprocess witness measured median improvements of `27%` to `62%` across identical SDF rows. Per-row/multi-field SDF downsample authority is now the next unresolved SDF field-resolution/composition seam, not a shipped feature.
+- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, and row-local SDF field downsample UI/runtime authority are shipped. The closed postprocess witness measured median improvements of `27%` to `62%` across identical SDF rows. The next unresolved SDF product seam is phase-safe normal-angle UX, not another debounce-policy guess.
 - Do not treat SDF postprocess cost as a fractal kernel problem; the current telemetry distinguishes base render, field generation, and postprocess cost.
 
 **Files:** `ui_app/src/viewer_render_pacing.*`, `ui_app/src/main.cpp`, `tests/test_fractal_runtime_resolution_pacing.py`
@@ -123,7 +123,7 @@ Remaining review direction:
 - Add a later boundary-masked normal-angle beauty mode rather than deleting the diagnostic behavior.
 - Treat SDF fields as typed Source signals now, with SDF masks/gates as the next plausible composition operand.
 - Keep the repaired row-enabled/effective-selection and SDF-only Source-stack regressions green: disabled rows must stay inactive for compatibility/runtime, and `sdf_curvature` must keep blending with `sdf_normal_angle` through the runtime-backed SDF postprocess path.
-- Keep the shared SDF Field Downsample limitation explicit: today it is one shared `LensSettings::downsample` value, not per SDF Source row/layer.
+- Keep row-local SDF Field Downsample authority explicit: SDF Source rows now default to shared `LensSettings::downsample` through `Inherit`, but individual rows can request `1x`, `2x`, `4x`, `8x`, or `16x` field resolution.
 - Keep preset/workflow truth green so compatible fractal switches preserve authored work and unsupported rows project safely.
 - Keep full preset manager UI, authored SDF pack viewport integration, and SDF-native lanes as separate slices.
 

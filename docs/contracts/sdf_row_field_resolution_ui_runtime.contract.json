@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "contract_id": "sdf_row_field_resolution_ui_runtime",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_row_field_resolution_ui_runtime_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/sdf_row_field_resolution_ui_runtime.contract.json",
+    "docs/notes/sdf_row_field_resolution_ui_runtime_PHASED_PLAN.md",
+    "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "docs/ui_salt/color_pipeline_function_library.ui.salt",
+    "docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tests/test_ui_salt_materializer.py",
+    "tests/test_fractal_runtime_ui_salt_contract.py",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "tests/test_fractal_runtime_sdf_row_field_resolution.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "open Step 3C from the SDF next-five campaign on the Step 3B merged head",
+    "expose row-local SDF field downsample controls for SDF Source rows only",
+    "keep Inherit as the default that uses shared LensSettings::downsample",
+    "route visible controls through the existing Color Pipeline draft/live apply path",
+    "add no-mouse runtime proof that visible row-local field downsample controls alter runtime field groups and frame hashes when visible",
+    "preserve SDF rows, Lens Field v2, pacing, capture/replay, UI-Salt metadata parity, and existing field-group reporting"
+  ],
+  "forbidden_operator_prompts": [
+    "redesign the Color Pipeline layout",
+    "implement Step 4 phase-safe normal-angle beauty UX",
+    "implement authored SDF pack viewport integration",
+    "implement SDF-native fractal lanes",
+    "claim global FPS improvement from Step 3C without a measured witness",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_row_field_ui_runtime",
+    "source_head": "153e85e",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "shared_lens_downsample_default": "preserve",
+    "row_field_default_policy": "inherit_shared",
+    "explicit_row_field_values": [1, 2, 4, 8, 16]
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "color_pipeline_layout_redesign": "forbidden",
+    "sdf_native_lane": "forbidden",
+    "global_fps_claim": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_row_field_resolution_ui_runtime.contract.json --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_plan_sync --log artifacts/logs/sdf_row_field_resolution_ui_runtime_plan_sync.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_row_field_resolution_ui_runtime_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_materialize --log artifacts/logs/sdf_row_field_resolution_ui_runtime_materialize.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_ui_salt_tests --log artifacts/logs/sdf_row_field_resolution_ui_runtime_ui_salt_tests.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_ui_salt_tests.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py tests/test_fractal_runtime_ui_salt_contract.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_native_core --log artifacts/logs/sdf_row_field_resolution_ui_runtime_native_core.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_native_core.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_native_window --log artifacts/logs/sdf_row_field_resolution_ui_runtime_native_window.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_native_window.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_native_report --log artifacts/logs/sdf_row_field_resolution_ui_runtime_native_report.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_native_report.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_publish --log artifacts/logs/sdf_row_field_resolution_ui_runtime_publish.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_row_field --log artifacts/logs/sdf_row_field_resolution_ui_runtime_row_field.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_row_field.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_row_field_resolution.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_sdf_rows --log artifacts/logs/sdf_row_field_resolution_ui_runtime_sdf_rows.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_sdf_rows.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_row_field_resolution_ui_runtime_PHASED_PLAN.md --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_row_field_resolution_ui_runtime_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_ui_runtime_diff_check --log artifacts/logs/sdf_row_field_resolution_ui_runtime_diff_check.log --out-json artifacts/validation/sdf_row_field_resolution_ui_runtime_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Step 3C row field UI/runtime contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_row_field_resolution_ui_runtime_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Step 3C hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_row_field_resolution_ui_runtime_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -481,6 +481,10 @@ inline bool ColorPipelineSourceStackEntriesEqual(
     const ColorPipelineSourceStackEntry& left,
     const ColorPipelineSourceStackEntry& right);
 
+inline bool TryParseColorPipelineSdfFieldDownsamplePolicyId(
+    const std::string& id,
+    int* outValue);
+
 inline bool ColorPipelineShapeStackEntriesEqual(
     const ColorPipelineShapeStackEntry& left,
     const ColorPipelineShapeStackEntry& right);
@@ -1189,17 +1193,17 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
             return path == "signal.scale" || path == "signal.bias" ||
                 path == "signal.blend_weight" || path == "signal.sign_contrast" ||
                 path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px" ||
-                path == "signal.sdf_sample_step";
+                path == "signal.sdf_sample_step" || path == "signal.sdf_field_downsample";
         }
         if (functionId == "sdf_boundary_band") {
             return path == "signal.scale" || path == "signal.bias" ||
                 path == "signal.blend_weight" || path == "signal.boundary_width_px" ||
                 path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px" ||
-                path == "signal.sdf_sample_step";
+                path == "signal.sdf_sample_step" || path == "signal.sdf_field_downsample";
         }
         return path == "signal.scale" || path == "signal.bias" || path == "signal.blend_weight" ||
             path == "signal.sdf_gate" || path == "signal.sdf_gate_width_px" ||
-            path == "signal.sdf_sample_step";
+            path == "signal.sdf_sample_step" || path == "signal.sdf_field_downsample";
     }
     if (functionId == "heatmap") {
         return path == "palette.cycle_scale" || path == "palette.saturation" ||
@@ -1445,9 +1449,11 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
             }
         }
         const char* gateId = color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate);
+        const std::string fieldDownsampleId = std::to_string(sourceEntry.params.sdf_field_downsample);
         return SetColorPipelineParamEnum(ioRow, "signal.sdf_gate", gateId ? gateId : "none", outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.sdf_gate_width_px", sourceEntry.params.sdf_gate_width_px, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.sdf_sample_step", static_cast<double>(sourceEntry.params.sdf_sample_step), outError);
+            SetColorPipelineParamNumber(ioRow, "signal.sdf_sample_step", static_cast<double>(sourceEntry.params.sdf_sample_step), outError) &&
+            SetColorPipelineParamEnum(ioRow, "signal.sdf_field_downsample", fieldDownsampleId.c_str(), outError);
     }
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", sourceEntry.params.phase_offset, outError) &&
@@ -1725,6 +1731,7 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
             entry.params.lens_field_v2_sign_contrast = static_cast<float>(signContrast);
         }
         std::string gateId = "none";
+        std::string fieldDownsampleId = "0";
         double gateWidthPx = entry.params.sdf_gate_width_px;
         int sampleStep = entry.params.sdf_sample_step;
         if (!TryGetColorPipelineParamEnum(row, "signal.sdf_gate", &gateId, outError) ||
@@ -1732,9 +1739,11 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
             !TryGetColorPipelineParamNumber(row, "signal.sdf_gate_width_px", &gateWidthPx, outError) ||
             !ValidateColorPipelineParamRange("signal.sdf_gate_width_px", gateWidthPx, 0.25, 16.0, outError) ||
             !TryReadColorPipelineIntegerParam(row, "signal.sdf_sample_step", &sampleStep, outError) ||
-            !ValidateColorPipelineParamRange("signal.sdf_sample_step", static_cast<double>(sampleStep), 1.0, 8.0, outError)) {
+            !ValidateColorPipelineParamRange("signal.sdf_sample_step", static_cast<double>(sampleStep), 1.0, 8.0, outError) ||
+            !TryGetColorPipelineParamEnum(row, "signal.sdf_field_downsample", &fieldDownsampleId, outError) ||
+            !TryParseColorPipelineSdfFieldDownsamplePolicyId(fieldDownsampleId, &entry.params.sdf_field_downsample)) {
             if (outError && outError->empty()) {
-                *outError = "Invalid SDF Source boundary-gate parameters";
+                *outError = "Invalid SDF Source field-resolution or boundary-gate parameters";
             }
             return false;
         }
@@ -1832,6 +1841,36 @@ inline int NormalizeColorPipelineSdfFieldDownsampleValue(int value) {
     if (value <= 4) return 4;
     if (value <= 8) return 8;
     return 16;
+}
+
+inline bool TryParseColorPipelineSdfFieldDownsamplePolicyId(
+    const std::string& id,
+    int* outValue) {
+    if (id == "0") {
+        if (outValue) *outValue = 0;
+        return true;
+    }
+    if (id == "1") {
+        if (outValue) *outValue = 1;
+        return true;
+    }
+    if (id == "2") {
+        if (outValue) *outValue = 2;
+        return true;
+    }
+    if (id == "4") {
+        if (outValue) *outValue = 4;
+        return true;
+    }
+    if (id == "8") {
+        if (outValue) *outValue = 8;
+        return true;
+    }
+    if (id == "16") {
+        if (outValue) *outValue = 16;
+        return true;
+    }
+    return false;
 }
 
 inline bool TryBuildColorPipelinePaletteStackEntryFromRow(
@@ -2970,11 +3009,6 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         ColorPipelineSourceStackEntry nextEntry;
         if (materializeSourceStack && index < nextSourceStackCount) {
             nextEntry = nextSourceStack[static_cast<std::size_t>(index)];
-            if (index < ioParams->color_source_stack_count &&
-                ioParams->color_source_stack[index].signal == nextEntry.signal) {
-                nextEntry.params.sdf_field_downsample =
-                    ioParams->color_source_stack[index].params.sdf_field_downsample;
-            }
         }
         if (!ColorPipelineSourceStackEntriesEqual(ioParams->color_source_stack[index], nextEntry)) {
             ioParams->color_source_stack[index] = nextEntry;
@@ -3891,6 +3925,59 @@ inline bool TryApplyColorPipelineUiAutomationSetValue(
     return true;
 }
 
+inline const char* FindColorPipelineEnumLabel(
+    const FunctionParamDescriptor& param,
+    const std::string& optionId) {
+    for (const UISchemaOption& option : param.options) {
+        if (option.id == optionId) {
+            return option.label.c_str();
+        }
+    }
+    return nullptr;
+}
+
+inline bool TryApplyColorPipelineUiAutomationSetEnumValue(
+    ColorPipelineWindowState* ioState,
+    const char* primaryControlId,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    const FunctionParamDescriptor& param,
+    ColorPipelineParamState* ioValue,
+    bool* ioDirty = nullptr,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    if (!ioState || !ioValue || !primaryControlId || !ioState->ui_automation_set_pending ||
+        ioState->ui_automation_set_consumed || ioState->ui_automation_set_control_id != primaryControlId) {
+        return false;
+    }
+
+    const std::string requestedId = std::to_string(static_cast<int>(std::lround(ioState->ui_automation_set_control_value)));
+    bool validOption = false;
+    for (const UISchemaOption& option : param.options) {
+        if (option.id == requestedId) {
+            validOption = true;
+            break;
+        }
+    }
+    if (!validOption) {
+        ioState->ui_automation_set_error =
+            std::string("color pipeline row editor rejected enum value for visible control: ") + primaryControlId;
+        return false;
+    }
+
+    const bool changed = ioValue->enum_value != requestedId;
+    if (changed) {
+        ioValue->enum_value = requestedId;
+        if (!TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction)) {
+            ioState->ui_automation_set_error =
+                std::string("color pipeline row editor rejected visible control: ") + primaryControlId;
+            return false;
+        }
+    }
+    ioState->ui_automation_set_consumed = true;
+    ioState->ui_automation_set_error.clear();
+    return changed;
+}
+
 inline bool ApplyColorPipelineSdfFieldDownsampleValue(
     ColorPipelineWindowState* ioState,
     LensSettings* liveLens,
@@ -4151,6 +4238,9 @@ inline bool RenderColorPipelineParamControl(
         }
     } else if (param.type == "enum") {
         const char* preview = ioValue->enum_value.empty() ? "(select)" : ioValue->enum_value.c_str();
+        if (const char* label = FindColorPipelineEnumLabel(param, ioValue->enum_value)) {
+            preview = label;
+        }
         const bool comboOpen = ImGui::BeginCombo(param.label.c_str(), preview);
         NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
         if (comboOpen) {
@@ -4167,6 +4257,16 @@ inline bool RenderColorPipelineParamControl(
             }
             ImGui::EndCombo();
         }
+        const bool automationChanged = TryApplyColorPipelineUiAutomationSetEnumValue(
+            ioState,
+            primaryControlId,
+            liveFractalType,
+            liveParams,
+            param,
+            ioValue,
+            ioDirty,
+            ioInteraction);
+        changed = changed || automationChanged;
         NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
     } else {
         ImGui::TextUnformatted(param.label.c_str());

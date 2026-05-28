@@ -326,6 +326,20 @@
                 "default": 1
               },
               {
+                "path": "signal.sdf_field_downsample",
+                "type": "enum",
+                "label": "Field Downsample",
+                "default": "0",
+                "options": [
+                  "0",
+                  "1",
+                  "2",
+                  "4",
+                  "8",
+                  "16"
+                ]
+              },
+              {
                 "path": "signal.blend_weight",
                 "type": "float",
                 "label": "Blend Weight",
@@ -391,6 +405,20 @@
                 "max": 8,
                 "step": 1,
                 "default": 1
+              },
+              {
+                "path": "signal.sdf_field_downsample",
+                "type": "enum",
+                "label": "Field Downsample",
+                "default": "0",
+                "options": [
+                  "0",
+                  "1",
+                  "2",
+                  "4",
+                  "8",
+                  "16"
+                ]
               },
               {
                 "path": "signal.blend_weight",
@@ -469,6 +497,20 @@
                 "default": 1
               },
               {
+                "path": "signal.sdf_field_downsample",
+                "type": "enum",
+                "label": "Field Downsample",
+                "default": "0",
+                "options": [
+                  "0",
+                  "1",
+                  "2",
+                  "4",
+                  "8",
+                  "16"
+                ]
+              },
+              {
                 "path": "signal.blend_weight",
                 "type": "float",
                 "label": "Blend Weight",
@@ -536,6 +578,20 @@
                 "default": 1
               },
               {
+                "path": "signal.sdf_field_downsample",
+                "type": "enum",
+                "label": "Field Downsample",
+                "default": "0",
+                "options": [
+                  "0",
+                  "1",
+                  "2",
+                  "4",
+                  "8",
+                  "16"
+                ]
+              },
+              {
                 "path": "signal.blend_weight",
                 "type": "float",
                 "label": "Blend Weight",
@@ -601,6 +657,20 @@
                 "max": 8,
                 "step": 1,
                 "default": 1
+              },
+              {
+                "path": "signal.sdf_field_downsample",
+                "type": "enum",
+                "label": "Field Downsample",
+                "default": "0",
+                "options": [
+                  "0",
+                  "1",
+                  "2",
+                  "4",
+                  "8",
+                  "16"
+                ]
               },
               {
                 "path": "signal.blend_weight",
@@ -677,6 +747,20 @@
                 "max": 8,
                 "step": 1,
                 "default": 1
+              },
+              {
+                "path": "signal.sdf_field_downsample",
+                "type": "enum",
+                "label": "Field Downsample",
+                "default": "0",
+                "options": [
+                  "0",
+                  "1",
+                  "2",
+                  "4",
+                  "8",
+                  "16"
+                ]
               },
               {
                 "path": "signal.blend_weight",
