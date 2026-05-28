@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "contract_id": "sdf_row_field_resolution_authority_reds",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/sdf_row_field_resolution_authority_reds_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/sdf_row_field_resolution_authority_reds.contract.json",
+    "docs/notes/sdf_row_field_resolution_authority_reds_PHASED_PLAN.md",
+    "docs/notes/sdf_row_field_resolution_authority_model.md",
+    "tools/sdf_row_field_resolution_red_matrix.py",
+    "tests/test_sdf_row_field_resolution_authority_reds.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "open Step 3A from the SDF next-five campaign on current master",
+    "document the source-row-local field-resolution authority model before implementation",
+    "add a durable RED matrix proving current shipped surfaces cannot express row-local SDF field downsample or multi-field grouping",
+    "preserve current shared LensSettings::downsample behavior and avoid product behavior changes in this slice"
+  ],
+  "forbidden_operator_prompts": [
+    "implement the multi-field producer/cache in Step 3A",
+    "add visible row-local downsample UI in Step 3A",
+    "change SDF postprocess, renderer, Lens SDF, capture, replay, or pacing behavior in Step 3A",
+    "claim per-row field resolution is shipped from a design or RED-only proof",
+    "treat signal.sdf_sample_step as equivalent to row-local SDF field downsample"
+  ],
+  "required_defaults": {
+    "slice_kind": "authority_model_red_matrix",
+    "source_head": "c0bea06",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "product_code_authoring": false,
+    "shared_lens_downsample_default": "preserve",
+    "distinct_live_field_cap_candidate": 4
+  },
+  "forbidden_defaults": {
+    "product_code_mutation": "forbidden",
+    "runtime_claim": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "step_3b_multi_field_cache": "forbidden",
+    "step_3c_ui_productization": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_row_field_resolution_authority_reds.contract.json --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_authority_reds_plan_sync --log artifacts/logs/sdf_row_field_resolution_authority_reds_plan_sync.log --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_row_field_resolution_authority_reds_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_authority_reds_pytest --log artifacts/logs/sdf_row_field_resolution_authority_reds_pytest.log --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_pytest.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_sdf_row_field_resolution_authority_reds.py -q",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_row_field_resolution_authority_reds_PHASED_PLAN.md --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_row_field_resolution_authority_reds_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_authority_reds_diff_check --log artifacts/logs/sdf_row_field_resolution_authority_reds_diff_check.log --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Step 3A authority/RED contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_row_field_resolution_authority_reds_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "red_matrix_pytest_passes",
+      "description": "The Step 3A RED matrix pytest passes and records current missing row-local field authority",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_row_field_resolution_authority_reds_pytest.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Step 3A hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_row_field_resolution_authority_reds_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
