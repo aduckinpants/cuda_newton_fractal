@@ -46,7 +46,7 @@
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_row_field_resolution_authority_reds.contract.json --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_contract.json",
     "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_authority_reds_plan_sync --log artifacts/logs/sdf_row_field_resolution_authority_reds_plan_sync.log --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_row_field_resolution_authority_reds_PHASED_PLAN.md",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_authority_reds_pytest --log artifacts/logs/sdf_row_field_resolution_authority_reds_pytest.log --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_pytest.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_sdf_row_field_resolution_authority_reds.py -q",
+    "py -3.14 -m pytest tests/test_sdf_row_field_resolution_authority_reds.py -q --junitxml artifacts/pytest/sdf_row_field_resolution_authority_reds.junit.xml",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_row_field_resolution_authority_reds_PHASED_PLAN.md --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_hostile_audit.json",
     "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_row_field_resolution_authority_reds_code_quality.json",
     "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_row_field_resolution_authority_reds_diff_check --log artifacts/logs/sdf_row_field_resolution_authority_reds_diff_check.log --out-json artifacts/validation/sdf_row_field_resolution_authority_reds_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
@@ -61,12 +61,18 @@
       "equals": true
     },
     {
-      "assertion_id": "red_matrix_pytest_passes",
-      "description": "The Step 3A RED matrix pytest passes and records current missing row-local field authority",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/sdf_row_field_resolution_authority_reds_pytest.json",
-      "json_path": "exit_code",
-      "equals": 0
+      "assertion_id": "red_matrix_current_gaps_test_passes",
+      "description": "The Step 3A RED matrix pytest records current missing row-local field authority",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/sdf_row_field_resolution_authority_reds.junit.xml",
+      "test_nodeid": "tests/test_sdf_row_field_resolution_authority_reds.py::test_sdf_row_field_resolution_red_matrix_records_current_gaps"
+    },
+    {
+      "assertion_id": "red_matrix_preservation_test_passes",
+      "description": "The Step 3A RED matrix pytest records shared-downsample and mixed-stack preservation boundaries",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/sdf_row_field_resolution_authority_reds.junit.xml",
+      "test_nodeid": "tests/test_sdf_row_field_resolution_authority_reds.py::test_sdf_row_field_resolution_red_matrix_preserves_existing_boundaries"
     },
     {
       "assertion_id": "hostile_audit_ok",
