@@ -466,7 +466,7 @@ Step 6 replan questions:
 - Planning slice lock: `py -3.14 tools/viewer_host_begin_work_slice.py --intent "SDF next five work campaign planning" --profile native --plan docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md --contract docs/contracts/sdf_next_five_work_campaign.contract.json` appended `ck:b744029d` and locked the active contract.
 - Current planning deliverable: drafted bounded plans for Step 1 merge, Step 2 roadmap truth sync, Step 3 per-row/multi-field SDF downsample authority, Step 4 boundary-masked/phase-safe normal-angle UX, Step 5 authored SDF pack viewport integration, and Step 6 replan boundary.
 - Contract validation: passed with `artifacts/validation/sdf_next_five_work_campaign_contract.json`.
-- Plan sync: passed with `py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md`.
+- Plan sync: passed with the direct plan-sync rail and then converted to receipt-parseable logged-command evidence at `artifacts/logs/sdf_next_five_work_campaign_plan_sync.log`.
 - Hostile-audit validation: passed with `artifacts/validation/sdf_next_five_work_campaign_hostile_audit.json`.
 - Code-quality baseline: passed with score `93/100` and no critical/error findings in `artifacts/validation/sdf_next_five_work_campaign_code_quality.json`.
 - Diff hygiene: passed with `artifacts/validation/sdf_next_five_work_campaign_diff_check.json`.
