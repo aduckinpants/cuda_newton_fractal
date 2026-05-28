@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - checkpoint receipts, rearward review, push, and clean tree.
+Closed - `master` carries the measured SDF postprocess optimization and is ready for Step 2 roadmap truth sync.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - checkpoint receipts, rearward review, push, and clean tree.
 - [x] Phase 2 - preflight source branch, target branch, and rearward-review state.
 - [x] Phase 3 - merge `codex/sdf-postprocess-measured-optimization` into `master`.
 - [x] Phase 4 - validate reachability, plan sync, hostile audit, code quality, and diff hygiene.
-- [ ] Phase 5 - checkpoint receipts, rearward review, push, and clean tree.
+- [x] Phase 5 - checkpoint receipts, rearward review, push, and clean tree.
 
 ## Explicit User Asks
 
@@ -102,7 +102,8 @@ Out of scope:
 - Code-quality baseline: passed with score `93/100` and no critical/error findings at `artifacts/validation/sdf_postprocess_merge_to_master_code_quality.json`.
 - Diff hygiene: passed with `artifacts/validation/sdf_postprocess_merge_to_master_diff_check.json`.
 - Reachability proof: passed; `git merge-base --is-ancestor 7ed70d6 master` succeeded with logged evidence at `artifacts/validation/sdf_postprocess_merge_to_master_reachability.json`.
-- Final status proof: pending.
+- Checkpoint: `viewer_host_checkpoint_slice.py commit` recorded `ck:1e25c15f` and committed the merge control/stale-plan repair.
+- Final status proof: produced after push by the required logged `git status --short --branch` rail.
 
 ## Hostile Audit
 
