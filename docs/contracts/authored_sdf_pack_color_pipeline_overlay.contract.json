@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "contract_id": "authored_sdf_pack_color_pipeline_overlay",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/authored_sdf_pack_color_pipeline_overlay_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/authored_sdf_pack_color_pipeline_overlay.contract.json",
+    "docs/notes/authored_sdf_pack_color_pipeline_overlay_PHASED_PLAN.md",
+    "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "open Step 5C from the SDF next-five campaign after Step 5B merged to master",
+    "let authored SDF pack fields feed existing SDF Color Pipeline source rows",
+    "let authored SDF pack fields feed viewport overlay modes where compatible",
+    "report whether the active SDF field source is mask-derived Lens SDF or authored SDF pack",
+    "preserve capture/replay authority for authored pack field sources",
+    "preserve default viewer behavior when no authored SDF pack is loaded or selected"
+  ],
+  "forbidden_operator_prompts": [
+    "add a new SDF-native fractal lane",
+    "add a new FractalType",
+    "redesign the Color Pipeline workflow",
+    "replace existing Lens SDF source semantics",
+    "make incompatible SDF field sources silently fall back to a different field",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_authored_sdf_pack_color_pipeline_overlay",
+    "source_head": "dcd0ac6",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "default_viewer_unchanged_without_pack": true,
+    "sdf_native_fractal_lane_deferred": true
+  },
+  "forbidden_defaults": {
+    "new_fractal_type": "forbidden",
+    "sdf_native_lane": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "silent_field_fallback": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/authored_sdf_pack_color_pipeline_overlay.contract.json --out-json artifacts/validation/authored_sdf_pack_color_pipeline_overlay_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_color_pipeline_overlay_plan_sync --log artifacts/logs/authored_sdf_pack_color_pipeline_overlay_plan_sync.log --out-json artifacts/validation/authored_sdf_pack_color_pipeline_overlay_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/authored_sdf_pack_color_pipeline_overlay_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_color_pipeline_overlay_native_pack_ui --log artifacts/logs/authored_sdf_pack_color_pipeline_overlay_native_pack_ui.log --out-json artifacts/validation/authored_sdf_pack_color_pipeline_overlay_native_pack_ui.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack_viewer_ui",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_color_pipeline_overlay_native_postprocess --log artifacts/logs/authored_sdf_pack_color_pipeline_overlay_native_postprocess.log --out-json artifacts/validation/authored_sdf_pack_color_pipeline_overlay_native_postprocess.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_color_pipeline_overlay_native_state --log artifacts/logs/authored_sdf_pack_color_pipeline_overlay_native_state.log --out-json artifacts/validation/authored_sdf_pack_color_pipeline_overlay_native_state.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_state_io",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_color_pipeline_overlay_publish --log artifacts/logs/authored_sdf_pack_color_pipeline_overlay_publish.log --out-json artifacts/validation/authored_sdf_pack_color_pipeline_overlay_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_color_pipeline_overlay_runtime --log artifacts/logs/authored_sdf_pack_color_pipeline_overlay_runtime.log --out-json artifacts/validation/authored_sdf_pack_color_pipeline_overlay_runtime.json --heartbeat-seconds 30 --timeout-seconds 420 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_pack_color_pipeline_overlay.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/authored_sdf_pack_color_pipeline_overlay_PHASED_PLAN.md --out-json artifacts/validation/authored_sdf_pack_color_pipeline_overlay_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/authored_sdf_pack_color_pipeline_overlay_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label authored_sdf_pack_color_pipeline_overlay_diff_check --log artifacts/logs/authored_sdf_pack_color_pipeline_overlay_diff_check.log --out-json artifacts/validation/authored_sdf_pack_color_pipeline_overlay_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The authored SDF pack Color Pipeline/overlay contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/authored_sdf_pack_color_pipeline_overlay_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The authored SDF pack Color Pipeline/overlay hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/authored_sdf_pack_color_pipeline_overlay_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

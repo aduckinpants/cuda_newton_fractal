@@ -125,6 +125,19 @@ static void PersistSdfPackViewerStateToCaptureStateFile(
     const DiagnosticsCaptureResult& capture,
     const SdfPackViewerState& sdfPackViewer,
     std::string* ioStatus);
+static void PersistSdfPackViewerStateToDiagnosticLastMirror(
+    const std::string& exeDir,
+    const SdfPackViewerState& sdfPackViewer,
+    std::string* ioStatus);
+static bool SdfPackViewerSelectedAsFieldSource(const SdfPackViewerState& state);
+static bool ComputeSdfPackViewerFieldForViewport(
+    const SdfPackViewerState& state,
+    const ViewState& view,
+    const RenderSettings& render,
+    int effectiveDownsample,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outReport,
+    std::string* outError);
 static std::string JoinPath(const std::string& a, const char* b) {
     if (a.empty()) return std::string(b);
     if (!b || !*b) return a;
@@ -508,7 +521,8 @@ static bool RenderHeadlessFractalFrame(
     std::vector<uint32_t>& outRgba,
     RenderStats* outStats,
     std::string* outError,
-    const LensSettings* lensForSdf = nullptr) {
+    const LensSettings* lensForSdf = nullptr,
+    const SdfPackViewerState* sdfPackForSdf = nullptr) {
     const LensSettings defaultLens{};
     const LensSettings& lensSettings = lensForSdf ? *lensForSdf : defaultLens;
     Int2 sdfSourceResolution = render.resolution;
@@ -523,9 +537,14 @@ static bool RenderHeadlessFractalFrame(
          sdfSourceResolution.y != render.resolution.y);
 
     outRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+    const bool authoredSdfFieldSelected =
+        colorPipelineNeedsSdf &&
+        sdfPackForSdf &&
+        SdfPackViewerSelectedAsFieldSource(*sdfPackForSdf);
+
     std::vector<uint8_t> mask;
     uint8_t* maskPtr = nullptr;
-    if (colorPipelineNeedsSdf && !sdfSourceDiffersFromRender) {
+    if (colorPipelineNeedsSdf && !authoredSdfFieldSelected && !sdfSourceDiffersFromRender) {
         mask.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
         maskPtr = mask.data();
     }
@@ -537,6 +556,39 @@ static bool RenderHeadlessFractalFrame(
     }
 
     if (!colorPipelineNeedsSdf) {
+        return true;
+    }
+
+    if (authoredSdfFieldSelected) {
+        RenderSettings sourceRender = render;
+        sourceRender.resolution = sdfSourceResolution;
+        SdfFieldResult packField;
+        SdfPackFieldReport packReport{};
+        std::string packError;
+        if (!ComputeSdfPackViewerFieldForViewport(
+                *sdfPackForSdf,
+                view,
+                sourceRender,
+                lensSettings.downsample,
+                packField,
+                &packReport,
+                &packError)) {
+            if (outError) *outError = packError.empty()
+                ? "failed to compute authored SDF pack field for headless Color Pipeline SDF source"
+                : packError;
+            return false;
+        }
+        if (!ApplyLensSdfColorPipelinePostprocess(
+                packField.View(),
+                render,
+                params,
+                outRgba.data(),
+                outError)) {
+            if (outError && outError->empty()) {
+                *outError = "SDF Color Pipeline postprocess failed during headless authored SDF pack capture";
+            }
+            return false;
+        }
         return true;
     }
 
@@ -595,6 +647,7 @@ static int RunHeadlessDiagnosticCapture(
     const std::string& exeDir, const ViewerCliArgs& cli, const ViewState& view,
     const KernelParams& params, const RenderSettings& render,
     const LensSettings& lens,
+    const SdfPackViewerState& sdfPackViewer,
     const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
@@ -604,7 +657,7 @@ static int RunHeadlessDiagnosticCapture(
     std::vector<uint32_t> headlessRgba;
     RenderStats headlessStats{};
     std::string renderError;
-    if (!RenderHeadlessFractalFrame(view, params, diagnosticRender, headlessRgba, &headlessStats, &renderError, &lens)) {
+    if (!RenderHeadlessFractalFrame(view, params, diagnosticRender, headlessRgba, &headlessStats, &renderError, &lens, &sdfPackViewer)) {
         WriteHeadlessErrorFile(exeDir, "capture_diagnostic_error.txt",
             renderError.empty() ? "RenderFractalCUDA failed during headless diagnostic capture." : renderError);
         return 1;
@@ -621,6 +674,11 @@ static int RunHeadlessDiagnosticCapture(
             captureError.empty() ? "CaptureDiagnosticsBundle failed during headless diagnostic capture." : captureError);
         return 1;
     }
+    std::string status;
+    PersistSdfPackViewerStateToCaptureStateFile(captureResult, sdfPackViewer, &status);
+    if (!cli.have_diagnostics_out_dir) {
+        PersistSdfPackViewerStateToDiagnosticLastMirror(exeDir, sdfPackViewer, &status);
+    }
     return 0;
 }
 
@@ -628,6 +686,7 @@ static int RunHeadlessFindingCapture(
     const std::string& exeDir, const ViewerCliArgs& cli,
     const ViewState& view, const KernelParams& params, const RenderSettings& render,
     const LensSettings& lens,
+    const SdfPackViewerState& sdfPackViewer,
     const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
@@ -637,7 +696,7 @@ static int RunHeadlessFindingCapture(
     std::vector<uint32_t> headlessRgba;
     RenderStats headlessStats{};
     std::string renderError;
-    if (!RenderHeadlessFractalFrame(view, params, findingRender, headlessRgba, &headlessStats, &renderError, &lens)) {
+    if (!RenderHeadlessFractalFrame(view, params, findingRender, headlessRgba, &headlessStats, &renderError, &lens, &sdfPackViewer)) {
         WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt",
             renderError.empty() ? "RenderFractalCUDA failed during headless finding capture." : renderError);
         return 1;
@@ -654,6 +713,10 @@ static int RunHeadlessFindingCapture(
             findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
         return 1;
     }
+    DiagnosticsCaptureResult captureResult{};
+    captureResult.state_json_path = (std::filesystem::path(findingDir) / "state.json").string();
+    std::string status;
+    PersistSdfPackViewerStateToCaptureStateFile(captureResult, sdfPackViewer, &status);
     return 0;
 }
 
@@ -682,6 +745,7 @@ static void RunInLoopDiagnosticCapture(
         } else {
             findingStatus = "Diagnostic captured.";
             PersistSdfPackViewerStateToCaptureStateFile(captureResult, sdfPackViewer, &findingStatus);
+            PersistSdfPackViewerStateToDiagnosticLastMirror(exeDir, sdfPackViewer, &findingStatus);
         }
     }
 }
@@ -715,7 +779,7 @@ static bool RunInLoopFindingCapture(
     findingRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
     RenderStats findingStats{};
     std::string renderError;
-    if (!RenderHeadlessFractalFrame(view, params, findingRender, findingRgba, &findingStats, &renderError, &findingLens)) {
+    if (!RenderHeadlessFractalFrame(view, params, findingRender, findingRgba, &findingStats, &renderError, &findingLens, &sdfPackViewer)) {
         findingStatus = std::string("Capture finding failed: ") + (renderError.empty() ? "unknown error" : renderError);
         return invalidateCaches;
     } else if (!CaptureAndArchiveFindingBundleWithLens(exeDir, view, params, findingRender, findingStats,
@@ -890,6 +954,48 @@ static void BuildLensSdfViewportOverlayRgba(
     }
 }
 
+static bool SdfPackViewerSelectedAsFieldSource(const SdfPackViewerState& state) {
+    return state.use_as_sdf_field_source;
+}
+
+static SdfPackFieldRegion BuildViewportSdfPackFieldRegion(const ViewState& view) {
+    const double zoom = (std::max)(1.0e-300, std::exp2(view.log2_zoom));
+    SdfPackFieldRegion region{};
+    region.has_region = true;
+    region.center_x = view.center_hp_x;
+    region.center_y = view.center_hp_y;
+    region.half_height = 2.0 / zoom;
+    return region;
+}
+
+static bool ComputeSdfPackViewerFieldForViewport(
+    const SdfPackViewerState& state,
+    const ViewState& view,
+    const RenderSettings& render,
+    int effectiveDownsample,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outReport,
+    std::string* outError) {
+    outField.Clear();
+    if (!state.have_pack) {
+        if (outError) *outError = "authored SDF pack field source selected without a loaded pack";
+        return false;
+    }
+    const int safeDownsample = NormalizeLensDownsamplePow2(effectiveDownsample);
+    SdfPackFieldRequest request{};
+    request.pack = &state.pack;
+    request.overrides = state.params;
+    request.width = (std::max)(1, (render.resolution.x + safeDownsample - 1) / safeDownsample);
+    request.height = (std::max)(1, (render.resolution.y + safeDownsample - 1) / safeDownsample);
+    request.region = BuildViewportSdfPackFieldRegion(view);
+    if (!ComputeSdfPackFieldWithBackend(request, state.backend_preference, outField, outReport, outError)) {
+        return false;
+    }
+    outField.source_kind = SdfFieldSourceKind::authored_sdf_pack;
+    outField.pixel_scale = static_cast<float>(safeDownsample);
+    return true;
+}
+
 // --- Render dispatch helper ---
 
 
@@ -901,6 +1007,7 @@ static void DispatchRenderFrame(
     std::vector<uint32_t>& rgba, std::vector<uint8_t>& maskBuffer,
     std::vector<uint32_t>& lensSdfRgba,
     const GenericEquationPackWorkbenchState* equationPackWorkbench,
+    const SdfPackViewerState& sdfPackViewer,
     RenderedFrameState& renderedFrame, RenderStats& stats,
     ViewerUiAutomationLensSdfProbe& lensSdfProbe,
     std::vector<LensSdfFieldFrameCache>& lensSdfFieldCaches,
@@ -940,7 +1047,15 @@ static void DispatchRenderFrame(
     const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
     const bool lensSdfOverlayEnabled = LensSdfOverlayEnabled(lens);
     const bool needsLensSdfField = lens.enabled || colorPipelineNeedsSdf || lensSdfOverlayEnabled;
-    if (needsLensSdfField) {
+    const bool authoredSdfFieldSelected = needsLensSdfField && SdfPackViewerSelectedAsFieldSource(sdfPackViewer);
+    const bool needsMaskDerivedLensSdfField = needsLensSdfField && !authoredSdfFieldSelected;
+    lensSdfProbe.field_source = authoredSdfFieldSelected
+        ? "authored_sdf_pack"
+        : (needsLensSdfField ? "mask_derived_lens_sdf" : "none");
+    if (authoredSdfFieldSelected && sdfPackViewer.have_pack) {
+        lensSdfProbe.field_source_pack_id = sdfPackViewer.pack.pack_id;
+    }
+    if (needsMaskDerivedLensSdfField) {
         maskBuffer.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
         maskPtr = maskBuffer.data();
     }
@@ -979,8 +1094,8 @@ static void DispatchRenderFrame(
         MarkRenderedFrameReady(dispatchRender, &renderedFrame);
         bool postprocessOk = true;
         std::string postprocessError;
-        if (needsLensSdfField && maskPtr) {
-            if (lens.enabled) {
+        if (needsLensSdfField) {
+            if (needsMaskDerivedLensSdfField && maskPtr && lens.enabled) {
                 EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
                 UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
             }
@@ -1022,15 +1137,50 @@ static void DispatchRenderFrame(
 
             struct RuntimeLensSdfField {
                 const SdfFieldResult* field{nullptr};
+                SdfFieldResult owned_field;
                 LensSdfBackendReport backend_report{};
+                SdfPackFieldReport pack_report{};
                 LensSdfFieldGenerationReport generation_report{};
                 LensSdfFieldCacheReport cache_report{};
                 float field_ms{0.0f};
                 float lookup_ms{0.0f};
                 float store_ms{0.0f};
+                bool from_authored_pack{false};
             };
 
             auto computeOrReuseField = [&](int cacheIndex, int effectiveDownsample, RuntimeLensSdfField& outField) -> bool {
+                if (authoredSdfFieldSelected) {
+                    const auto fieldStart = std::chrono::steady_clock::now();
+                    std::string packError;
+                    SdfPackFieldReport packReport{};
+                    const bool ok = ComputeSdfPackViewerFieldForViewport(
+                        sdfPackViewer,
+                        view,
+                        dispatchRender,
+                        effectiveDownsample,
+                        outField.owned_field,
+                        &packReport,
+                        &packError);
+                    outField.field_ms = static_cast<float>(
+                        std::chrono::duration<double, std::milli>(
+                            std::chrono::steady_clock::now() - fieldStart).count());
+                    outField.from_authored_pack = true;
+                    outField.pack_report = packReport;
+                    outField.field = ok ? &outField.owned_field : nullptr;
+                    outField.generation_report.field_width = outField.owned_field.width;
+                    outField.generation_report.field_height = outField.owned_field.height;
+                    outField.generation_report.downsample = NormalizeLensDownsamplePow2(effectiveDownsample);
+                    outField.generation_report.backend_ms = outField.field_ms;
+                    outField.cache_report.status = LensSdfFieldCacheStatus::disabled;
+                    outField.cache_report.hit = false;
+                    if (!ok) {
+                        postprocessError = packError.empty()
+                            ? "failed to compute authored SDF pack field"
+                            : packError;
+                        lensSdfProbe.field_source_error = postprocessError;
+                    }
+                    return ok && outField.field;
+                }
                 if (cacheIndex < 0) {
                     return false;
                 }
@@ -1094,6 +1244,8 @@ static void DispatchRenderFrame(
             bool anyFieldComputed = false;
             bool anyCudaField = false;
             bool anyCpuField = false;
+            bool anyPackCudaField = false;
+            bool anyPackCpuField = false;
             bool anyFieldFallback = false;
             std::uint64_t reportedMaskBytes = 0;
 
@@ -1112,7 +1264,9 @@ static void DispatchRenderFrame(
                     reportedMaskBytes = static_cast<std::uint64_t>(runtimeField.cache_report.mask_bytes);
                     anyCudaField = anyCudaField || runtimeField.backend_report.used == LensSdfBackend::cuda_jfa;
                     anyCpuField = anyCpuField || runtimeField.backend_report.used == LensSdfBackend::cpu_chamfer;
-                    anyFieldFallback = anyFieldFallback || runtimeField.backend_report.fallback_used;
+                    anyPackCudaField = anyPackCudaField || runtimeField.pack_report.used == SdfPackFieldBackend::cuda_sample;
+                    anyPackCpuField = anyPackCpuField || runtimeField.pack_report.used == SdfPackFieldBackend::cpu_reference;
+                    anyFieldFallback = anyFieldFallback || runtimeField.backend_report.fallback_used || runtimeField.pack_report.fallback_used;
                     lensSdfProbe.field_ms += runtimeField.field_ms;
                     lensSdfProbe.field_cache_lookup_ms += runtimeField.lookup_ms;
                     lensSdfProbe.field_mask_downsample_ms += runtimeField.generation_report.mask_downsample_ms;
@@ -1153,7 +1307,9 @@ static void DispatchRenderFrame(
                     reportedMaskBytes = static_cast<std::uint64_t>(sharedDisplayField.cache_report.mask_bytes);
                     anyCudaField = anyCudaField || sharedDisplayField.backend_report.used == LensSdfBackend::cuda_jfa;
                     anyCpuField = anyCpuField || sharedDisplayField.backend_report.used == LensSdfBackend::cpu_chamfer;
-                    anyFieldFallback = anyFieldFallback || sharedDisplayField.backend_report.fallback_used;
+                    anyPackCudaField = anyPackCudaField || sharedDisplayField.pack_report.used == SdfPackFieldBackend::cuda_sample;
+                    anyPackCpuField = anyPackCpuField || sharedDisplayField.pack_report.used == SdfPackFieldBackend::cpu_reference;
+                    anyFieldFallback = anyFieldFallback || sharedDisplayField.backend_report.fallback_used || sharedDisplayField.pack_report.fallback_used;
                     lensSdfProbe.field_ms += sharedDisplayField.field_ms;
                     lensSdfProbe.field_cache_lookup_ms += sharedDisplayField.lookup_ms;
                     lensSdfProbe.field_mask_downsample_ms += sharedDisplayField.generation_report.mask_downsample_ms;
@@ -1167,8 +1323,10 @@ static void DispatchRenderFrame(
             }
 
             if (fieldOk && displayLensSdfField) {
-                lensSdfProbe.field_cache_status = anyFieldComputed && allFieldCacheHits ? "hit" : "miss";
-                lensSdfProbe.field_cache_hit = anyFieldComputed && allFieldCacheHits;
+                lensSdfProbe.field_cache_status = authoredSdfFieldSelected
+                    ? "disabled"
+                    : (anyFieldComputed && allFieldCacheHits ? "hit" : "miss");
+                lensSdfProbe.field_cache_hit = !authoredSdfFieldSelected && anyFieldComputed && allFieldCacheHits;
                 lensSdfProbe.field_cache_mask_bytes = reportedMaskBytes;
                 lensSdfProbe.requested_equivalent_field_ms =
                     lensSdfProbe.field_cache_hit && previousLensSdfFieldMs > 0.0f
@@ -1277,14 +1435,26 @@ static void DispatchRenderFrame(
                     }
                 }
                 lensSdfProbe.fallback_used = anyFieldFallback;
-                if (anyCudaField) {
+                if (authoredSdfFieldSelected) {
+                    if (anyPackCudaField) {
+                        lensSdfProbe.backend_used = "cuda_sample";
+                        lensSdfProbe.pack_backend_used = "cuda_sample";
+                    } else if (anyPackCpuField) {
+                        lensSdfProbe.backend_used = "cpu_reference";
+                        lensSdfProbe.pack_backend_used = "cpu_reference";
+                    }
+                    lensSdfProbe.pack_backend_fallback_used = anyFieldFallback;
+                } else if (anyCudaField) {
                     lensSdfProbe.backend_used = "cuda_jfa";
                 } else if (anyCpuField) {
                     lensSdfProbe.backend_used = "cpu_chamfer";
                 }
             } else if (colorPipelineNeedsSdf) {
                 postprocessOk = false;
-                postprocessError = "failed to compute Lens SDF field for Color Pipeline SDF source";
+                postprocessError = authoredSdfFieldSelected
+                    ? "failed to compute authored SDF pack field for Color Pipeline SDF source"
+                    : "failed to compute Lens SDF field for Color Pipeline SDF source";
+                lensSdfProbe.field_source_error = postprocessError;
             }
         }
         if (!postprocessOk) {
@@ -1817,6 +1987,7 @@ static void ApplySweepPlaybackPerFrame(const SweepPlayerConfig& config, float de
 
 static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& exeDir,
                                     ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens, bool& dirty,
+                                    SdfPackViewerState& sdfPackViewer,
                                     ColorPipelineWindowState& colorPipelineWindow,
                                     const EngineFunctionCatalog& engineCatalog,
                                     BindingContext& bind,
@@ -1959,8 +2130,8 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     const SidecarAutoDemoMutationHistory* mutationHistory =
         sidecarMutationHistoryValid ? &sidecarMutationHistory : nullptr;
     if (cli.validate_ui_only) return 0;
-    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, cli, view, params, render, lens, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
-    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, lens, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
+    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, cli, view, params, render, lens, sdfPackViewer, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
+    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, lens, sdfPackViewer, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
     return -1;
 }
 
@@ -2441,6 +2612,20 @@ static void PersistSdfPackViewerStateToCaptureStateFile(
     if (!out.good() && ioStatus) {
         *ioStatus += " SDF pack state append failed: state.json write error.";
     }
+}
+
+static void PersistSdfPackViewerStateToDiagnosticLastMirror(
+    const std::string& exeDir,
+    const SdfPackViewerState& sdfPackViewer,
+    std::string* ioStatus) {
+    if (exeDir.empty()) {
+        return;
+    }
+    DiagnosticsCaptureResult mirror{};
+    const std::filesystem::path lastDir = std::filesystem::path(exeDir) / "diagnostics" / "last";
+    mirror.output_dir = lastDir.string();
+    mirror.state_json_path = (lastDir / "state.json").string();
+    PersistSdfPackViewerStateToCaptureStateFile(mirror, sdfPackViewer, ioStatus);
 }
 
 static void InitializeSdfPackViewerFromCli(
@@ -3702,7 +3887,7 @@ static void RunViewerFrame(
     DispatchRenderFrame(view, params, render, lens, renderPacing,
         forceFullQualityRender, view.auto_refresh, dirty,
         actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
-        rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, renderedFrame, stats, lensSdfProbe,
+        rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, sdfPackViewer, renderedFrame, stats, lensSdfProbe,
         lensSdfFieldCaches, dirty);
 
     RunPendingInLoopCaptures(exeDir, actions, view, params, render, lens, stats, rgba,
@@ -3863,6 +4048,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     BindingContext bind = BuildViewerBindingContext(view, params, render, lens);
 
     { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, lens, dirty,
+        sdfPackViewer,
         colorPipelineWindow,
           engineCatalog, bind, sidecarControllerPolicy, sidecarMeasurementHost,
             loadedOrientationBaseline, loadedOrientationBaselineValid,
@@ -3918,8 +4104,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         lastFractalType = view.fractal_type;
     }
 
-    MSG msg;
-    ZeroMemory(&msg, sizeof(msg));
+    MSG msg{};
 
     while (msg.message != WM_QUIT) {
         bool quitRequested = false;

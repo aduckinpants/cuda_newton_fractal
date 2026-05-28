@@ -140,3 +140,5 @@
 - `ck:4cf2e5e1` 2026-05-28 20:28 UTC — session-start | branch=codex/authored-sdf-pack-viewer-ui-integration | head=a41056f | status=dirty | profile=runtime | intent=authored SDF pack viewer UI integration
 - `ck:4cf2e5e1` 2026-05-28 21:24 UTC | score 93 — Authored SDF pack viewer UI integration exposes pack controls, no-mouse automation, preview hash proof, and capture state merge; focused native/runtime rails green.
 - `ck:4cf2e5e1` 2026-05-28 21:46 UTC | score 93 — Closed stale authored SDF pack viewer UI plan text after validation/receipt/push; Step 5B now records fa3499a proof and Step 5C readiness truthfully.
+- `ck:718714ee` 2026-05-28 22:01 UTC — session-start | branch=codex/authored-sdf-pack-color-pipeline-overlay | head=dcd0ac6 | status=dirty | profile=runtime | intent=Authored SDF pack Color Pipeline and overlay consumption
+- `ck:718714ee` 2026-05-28 23:16 UTC | score 93 — Authored SDF pack Color Pipeline and overlay consumption now routes selected packs into existing SDF source rows and overlay reporting; replay mirror authority and code-quality ratchet findings repaired; focused native/runtime rails green.

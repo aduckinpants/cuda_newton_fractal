@@ -28,6 +28,7 @@ struct SdfPackViewerState {
     bool initialized{false};
     bool force_open_for_automation{false};
     bool have_pack{false};
+    bool use_as_sdf_field_source{false};
     bool preview_dirty{false};
     std::string pack_path;
     std::string pack_json;
@@ -56,6 +57,7 @@ struct SdfPackViewerAutomationReport {
     bool initialized{false};
     bool force_open_for_automation{false};
     bool have_pack{false};
+    bool use_as_sdf_field_source{false};
     std::string pack_path;
     std::string pack_id;
     std::string pack_name;
@@ -90,6 +92,7 @@ struct SdfPackViewerSetValueAutomation {
 
 std::string SdfPackViewerControlAutomationId(const SdfPackControl& control);
 std::string SdfPackViewerResetDefaultsAutomationId();
+std::string SdfPackViewerUseAsSdfFieldSourceAutomationId();
 bool SdfPackViewerWantsSetValueControl(const std::string& controlId);
 bool SdfPackViewerWantsClickControl(const std::string& controlId);
 

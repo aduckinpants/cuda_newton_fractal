@@ -60,10 +60,16 @@ static void TestPackControlsAreVisibleAndEditable() {
         "pack JSON loads into viewer SDF pack state");
     Check(state.have_pack, "viewer state records loaded pack");
     Check(state.pack.pack_id == "viewer_circle", "pack id preserved");
+    Check(!state.use_as_sdf_field_source, "loaded pack does not replace Lens SDF field source by default");
     Check(state.params["radius"] == 0.35, "initial params copied");
     Check(SdfPackViewerControlAutomationId(state.pack.controls[0]) == "sdf_pack.radius.primary",
         "control automation id is derived from SDF pack param");
+    Check(SdfPackViewerUseAsSdfFieldSourceAutomationId() == "sdf_pack.use_as_sdf_field_source.primary",
+        "field source automation id is stable");
 
+    Check(SetSdfPackViewerControlValue(&state, "sdf_pack.use_as_sdf_field_source.primary", 1.0, &error),
+        "set-value automation accepts authored field source toggle");
+    Check(state.use_as_sdf_field_source, "authored field source toggle updates state");
     Check(SetSdfPackViewerControlValue(&state, "sdf_pack.radius.primary", 0.55, &error),
         "set-value automation accepts visible SDF pack control");
     Check(std::fabs(state.params["radius"] - 0.55) < 1e-12, "set-value updates the bound SDF pack param");
@@ -82,6 +88,7 @@ static void TestAutomationReportAndPreviewHashChanges() {
     Check(RunSdfPackViewerPreview(&state, &error), "preview runs through field producer");
     SdfPackViewerAutomationReport report = BuildSdfPackViewerAutomationReport(state);
     Check(report.have_pack, "automation report records loaded pack");
+    Check(!report.use_as_sdf_field_source, "automation report records default field source toggle");
     Check(report.pack_id == "viewer_circle", "automation report publishes pack id");
     Check(report.controls.size() == 2, "automation report publishes SDF pack controls");
     Check(report.preview_ok, "automation report publishes successful preview");
@@ -121,13 +128,17 @@ static void TestResetDefaultsAndStateJsonRoundTrip() {
 
     state.open = true;
     state.backend_preference = SdfPackFieldBackend::cpu_reference;
+    state.use_as_sdf_field_source = true;
     std::string stateJson = SerializeSdfPackViewerStateJson(state);
     Check(stateJson.find("\"sdf_pack\"") != std::string::npos, "serialized state includes sdf_pack object");
+    Check(stateJson.find("\"use_as_sdf_field_source\": true") != std::string::npos,
+        "serialized state includes authored field-source authority");
     Check(stateJson.find("\"radius\"") != std::string::npos, "serialized state includes control params");
 
     SdfPackViewerState restored{};
     Check(LoadSdfPackViewerStateJson(stateJson, &restored, &error), "serialized SDF pack state reloads");
     Check(restored.open, "restored state keeps panel open flag");
+    Check(restored.use_as_sdf_field_source, "restored state keeps authored field-source authority");
     Check(restored.have_pack, "restored state reloads pack content");
     Check(restored.pack.pack_id == "viewer_circle", "restored state keeps pack id");
     Check(std::fabs(restored.params["radius"] - 0.35) < 1e-12, "restored state keeps param value");
@@ -143,6 +154,7 @@ static void TestDiagnosticsStateMergeRoundTrip() {
     Check(LoadSdfPackViewerJson(&state, kCirclePack, "memory://viewer_circle", &error),
         "pack JSON loads before diagnostics merge");
     state.open = true;
+    state.use_as_sdf_field_source = true;
     Check(SetSdfPackViewerControlValue(&state, "sdf_pack.radius.primary", 0.61, &error),
         "control edit succeeds before diagnostics merge");
 
@@ -163,6 +175,7 @@ static void TestDiagnosticsStateMergeRoundTrip() {
     Check(LoadSdfPackViewerStateJson(merged, &restored, &error), "merged diagnostics state reloads SDF pack viewer state");
     Check(restored.have_pack, "merged diagnostics state restores loaded pack");
     Check(restored.open, "merged diagnostics state restores panel open flag");
+    Check(restored.use_as_sdf_field_source, "merged diagnostics state restores field-source authority");
     Check(std::fabs(restored.params["radius"] - 0.61) < 1e-12,
         "merged diagnostics state restores edited SDF pack param");
 

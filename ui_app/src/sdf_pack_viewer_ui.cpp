@@ -21,6 +21,7 @@ namespace {
 constexpr int kPreviewWidth = 32;
 constexpr int kPreviewHeight = 32;
 constexpr const char* kResetDefaultsControlId = "sdf_pack.reset_defaults";
+constexpr const char* kUseAsSdfFieldSourceControlId = "sdf_pack.use_as_sdf_field_source.primary";
 
 std::uint64_t Fnv1aAppend(std::uint64_t hash, std::uint64_t value) {
     for (int byteIndex = 0; byteIndex < 8; ++byteIndex) {
@@ -206,6 +207,24 @@ bool TryGetBool(const json_min::Value& object, const char* key, bool* out, std::
     return true;
 }
 
+bool ApplyStateJsonParams(
+    const json_min::Value* paramsObject,
+    SdfPackViewerState* outState,
+    std::string* outError) {
+    if (!paramsObject || !outState->have_pack) {
+        return true;
+    }
+    std::map<std::string, double> next = outState->params;
+    for (const auto& entry : paramsObject->as_object()) {
+        if (!entry.second.is_number()) {
+            if (outError) *outError = "sdf_pack.params values must be numbers";
+            return false;
+        }
+        next[entry.first] = entry.second.as_number();
+    }
+    return ApplyParamValues(outState, next, outError);
+}
+
 #ifndef SDF_PACK_VIEWER_UI_NO_IMGUI
 void NoteSdfPackUiAutomationRect(
     std::vector<ViewerUiAutomationRect>* automationRects,
@@ -279,6 +298,10 @@ std::string SdfPackViewerControlAutomationId(const SdfPackControl& control) {
 
 std::string SdfPackViewerResetDefaultsAutomationId() {
     return kResetDefaultsControlId;
+}
+
+std::string SdfPackViewerUseAsSdfFieldSourceAutomationId() {
+    return kUseAsSdfFieldSourceControlId;
 }
 
 bool SdfPackViewerWantsSetValueControl(const std::string& controlId) {
@@ -368,6 +391,11 @@ bool SetSdfPackViewerControlValue(
         if (outError) *outError = "SDF pack control value must be finite";
         return false;
     }
+    if (controlId == kUseAsSdfFieldSourceControlId) {
+        ioState->use_as_sdf_field_source = value >= 0.5;
+        if (outError) outError->clear();
+        return true;
+    }
     const SdfPackControl* control = FindControlByAutomationId(ioState->pack, controlId);
     if (!control) {
         if (outError) *outError = "unknown SDF pack control: " + controlId;
@@ -434,6 +462,7 @@ SdfPackViewerAutomationReport BuildSdfPackViewerAutomationReport(const SdfPackVi
     report.initialized = state.initialized;
     report.force_open_for_automation = state.force_open_for_automation;
     report.have_pack = state.have_pack;
+    report.use_as_sdf_field_source = state.use_as_sdf_field_source;
     report.pack_path = state.pack_path;
     report.pack_load_error = state.pack_load_error;
     report.backend_preference = SdfPackViewerBackendPreferenceId(state.backend_preference);
@@ -477,6 +506,7 @@ std::string SerializeSdfPackViewerStateJson(const SdfPackViewerState& state) {
     js << "{\n";
     js << "  \"sdf_pack\": {\n";
     js << "    \"open\": " << (state.open ? "true" : "false") << ",\n";
+    js << "    \"use_as_sdf_field_source\": " << (state.use_as_sdf_field_source ? "true" : "false") << ",\n";
     js << "    \"pack_path\": ";
     WriteJsonEscapedString(js, state.pack_path);
     js << ",\n";
@@ -577,10 +607,12 @@ bool LoadSdfPackViewerStateJson(const std::string& stateJson, SdfPackViewerState
     }
 
     bool open = false;
+    bool useAsSdfFieldSource = false;
     std::string packPath;
     std::string packJson;
     std::string backendId = "auto";
     if (!TryGetBool(*sdfPackObject, "open", &open, outError) ||
+        !TryGetBool(*sdfPackObject, "use_as_sdf_field_source", &useAsSdfFieldSource, outError) ||
         !TryGetString(*sdfPackObject, "pack_path", &packPath, outError) ||
         !TryGetString(*sdfPackObject, "pack_json", &packJson, outError) ||
         !TryGetString(*sdfPackObject, "backend_preference", &backendId, outError)) {
@@ -607,24 +639,15 @@ bool LoadSdfPackViewerStateJson(const std::string& stateJson, SdfPackViewerState
     }
 
     outState->open = open;
+    outState->use_as_sdf_field_source = useAsSdfFieldSource;
     outState->backend_preference = backend;
 
     const json_min::Value* paramsObject = nullptr;
     if (!TryGetObject(*sdfPackObject, "params", &paramsObject, outError)) {
         return false;
     }
-    if (paramsObject && outState->have_pack) {
-        std::map<std::string, double> next = outState->params;
-        for (const auto& entry : paramsObject->as_object()) {
-            if (!entry.second.is_number()) {
-                if (outError) *outError = "sdf_pack.params values must be numbers";
-                return false;
-            }
-            next[entry.first] = entry.second.as_number();
-        }
-        if (!ApplyParamValues(outState, next, outError)) {
-            return false;
-        }
+    if (!ApplyStateJsonParams(paramsObject, outState, outError)) {
+        return false;
     }
 
     if (outError) outError->clear();
@@ -655,6 +678,17 @@ void RenderSdfPackViewerInlinePanel(
     ImGui::TextUnformatted(ioState->pack.name.c_str());
     ImGui::Text("Pack: %s", ioState->pack.pack_id.c_str());
     bool edited = false;
+
+    bool useAsSource = ioState->use_as_sdf_field_source;
+    if (ImGui::Checkbox("Use as SDF Field Source", &useAsSource)) {
+        ioState->use_as_sdf_field_source = useAsSource;
+        edited = true;
+    }
+    NoteSdfPackUiAutomationRect(automationRects, kUseAsSdfFieldSourceControlId);
+    if (ConsumeSetValueIfRequested(ioState, kUseAsSdfFieldSourceControlId, setValueAutomation)) {
+        edited = true;
+    }
+
     for (const SdfPackControl& control : ioState->pack.controls) {
         const double value = CurrentControlValue(control, *ioState);
         const SdfPackParam* param = FindParam(ioState->pack, control.param);

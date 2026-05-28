@@ -63,9 +63,31 @@ void WriteLensSdfReportFields(
     out << "  \"lens_sdf_enabled\": " << (lensSdfProbe.enabled ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_valid\": " << (lensSdfProbe.valid ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_color_pipeline_active\": " << (lensSdfProbe.color_pipeline_active ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_field_source\": ";
+    WriteAutomationReportString(out, lensSdfProbe.field_source);
+    out << ",\n";
+    out << "  \"lens_sdf_field_source_pack_id\": ";
+    if (lensSdfProbe.field_source_pack_id.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, lensSdfProbe.field_source_pack_id);
+    }
+    out << ",\n";
+    out << "  \"lens_sdf_field_source_error\": ";
+    if (lensSdfProbe.field_source_error.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, lensSdfProbe.field_source_error);
+    }
+    out << ",\n";
     out << "  \"lens_sdf_backend_used\": ";
     WriteAutomationReportString(out, lensSdfProbe.backend_used);
     out << ",\n";
+    out << "  \"lens_sdf_pack_backend_used\": ";
+    WriteAutomationReportString(out, lensSdfProbe.pack_backend_used);
+    out << ",\n";
+    out << "  \"lens_sdf_pack_backend_fallback_used\": " <<
+        (lensSdfProbe.pack_backend_fallback_used ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_fallback_used\": " << (lensSdfProbe.fallback_used ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_width\": " << lensSdfProbe.width << ",\n";
     out << "  \"lens_sdf_height\": " << lensSdfProbe.height << ",\n";
@@ -441,6 +463,7 @@ void WriteColorPipelineUiAutomationReport(
     out << "    \"initialized\": " << (sdfPack.initialized ? "true" : "false") << ",\n";
     out << "    \"force_open_for_automation\": " << (sdfPack.force_open_for_automation ? "true" : "false") << ",\n";
     out << "    \"have_pack\": " << (sdfPack.have_pack ? "true" : "false") << ",\n";
+    out << "    \"use_as_sdf_field_source\": " << (sdfPack.use_as_sdf_field_source ? "true" : "false") << ",\n";
     out << "    \"pack_path\": ";
     WriteAutomationReportString(out, sdfPack.pack_path);
     out << ",\n";

@@ -65,7 +65,12 @@ struct ViewerUiAutomationLensSdfProbe {
     bool enabled = false;
     bool valid = false;
     bool color_pipeline_active = false;
+    std::string field_source = "none";
+    std::string field_source_pack_id;
+    std::string field_source_error;
     std::string backend_used = "none";
+    std::string pack_backend_used = "none";
+    bool pack_backend_fallback_used = false;
     bool fallback_used = false;
     int width = 0;
     int height = 0;
