@@ -13,6 +13,7 @@
     "DEFERRED_THREADS.md",
     "KNOWN_ISSUES.md",
     "HANDOFF_LOG.md",
+    "docs/handoffs/archive",
     "artifacts"
   ],
   "required_operator_inputs": [

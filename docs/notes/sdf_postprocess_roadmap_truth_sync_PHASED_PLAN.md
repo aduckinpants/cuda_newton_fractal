@@ -107,6 +107,7 @@ Post-repair expected remaining grep contexts:
 - Roadmap repair: those active surfaces now mark repeated median SDF witness reporting and CUDA SDF postprocess scratch-buffer reuse as shipped, record the `27%` to `62%` measured postprocess median improvement range, and name per-row/multi-field SDF downsample authority as the next unresolved seam.
 - Remaining stale-phrase grep contexts after repair are self-referential planning instructions or historical closed-plan evidence, not active roadmap status.
 - Contract revision: stale-grep receipt command was repaired from a `cmd /c` quoting form that treated regex pipes as shell commands to a PowerShell single-quoted regex form, then re-locked with `viewer_host_revise_contract.py`.
+- Contract revision: the checkpoint wrapper auto-rotated `HANDOFF_LOG.md`; `docs/handoffs/archive` was added to the allowed scope so the generated archive can be committed instead of left as untracked closeout debt.
 - Contract validation: passed with `artifacts/validation/sdf_postprocess_roadmap_truth_sync_contract.json`.
 - Plan sync: passed with receipt-compatible logged evidence at `artifacts/validation/sdf_postprocess_roadmap_truth_sync_plan_sync.json`.
 - Stale-phrase audit: passed with receipt-compatible logged evidence at `artifacts/validation/sdf_postprocess_roadmap_truth_sync_stale_grep.json`; remaining hits are the closed next-five campaign's instructions for this Step 2, not active stale roadmap status.
@@ -136,4 +137,5 @@ Post-repair expected remaining grep contexts:
 - [done] Finding 1 - real stale-roadmap defect: active SDF status surfaces still said the current witness pointed back to postprocess review after the measured postprocess optimization had merged. Repaired by marking repeated median reporting and CUDA scratch-buffer reuse shipped and pointing the next seam to per-row/multi-field downsample authority.
 - [done] Finding 2 - real freshness defect: `KNOWN_ISSUES.md` and `DEFERRED_THREADS.md` still had 2026-05-26 reconciliation text from an older branch. Repaired with 2026-05-28 truth-sync wording tied to this slice.
 - [done] Finding 3 - real validation-command defect: the first stale-grep receipt command used `cmd /c` quoting that let regex pipe characters split into shell commands. Repaired the contract to run the grep through PowerShell with the regex in single quotes and re-locked the active contract.
-- [done] Finding 4 - clean re-read confirmed no product-code files changed and no Step 3+ implementation was started.
+- [done] Finding 4 - real closeout-scope defect: checkpointing auto-rotated `HANDOFF_LOG.md` and produced `docs/handoffs/archive/HANDOFF_LOG_20260528_035605.md` outside the initial contract scope. Repaired by adding the archive directory to allowed scope and re-locking the contract.
+- [done] Finding 5 - clean re-read confirmed no product-code files changed and no Step 3+ implementation was started.
