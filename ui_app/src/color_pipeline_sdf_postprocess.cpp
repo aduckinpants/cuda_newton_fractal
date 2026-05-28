@@ -46,6 +46,7 @@ struct PlannedSdfSourceRow {
     float bias{0.0f};
     float blend_weight{1.0f};
     int sample_step{1};
+    int field_group_index{0};
     bool needs_neighborhood{false};
 };
 
@@ -145,7 +146,7 @@ SdfFieldSignalConfig SignalConfigForSourceEntry(const ColorPipelineSourceStackEn
     return config;
 }
 
-PlannedSdfSourceRow PlannedRowForSourceEntry(const ColorPipelineSourceStackEntry& entry) {
+PlannedSdfSourceRow PlannedRowForSourceEntry(const ColorPipelineSourceStackEntry& entry, int fieldGroupIndex = 0) {
     PlannedSdfSourceRow row{};
     row.signal = entry.signal;
     row.kind = SignalKindForColorSignal(entry.signal);
@@ -157,15 +158,19 @@ PlannedSdfSourceRow PlannedRowForSourceEntry(const ColorPipelineSourceStackEntry
     row.bias = entry.params.bias;
     row.blend_weight = EscapeTimeColorClamp(entry.params.blend_weight, 0.0f, 1.0f);
     row.sample_step = NormalizeSdfSourceSampleStep(entry.params.sdf_sample_step);
+    row.field_group_index = fieldGroupIndex;
     row.needs_neighborhood = SdfSignalNeedsNeighborhood(entry.signal);
     return row;
 }
 
-bool AppendPlannedSourceRow(SdfPostprocessExecutionPlan& plan, const ColorPipelineSourceStackEntry& entry) {
+bool AppendPlannedSourceRow(
+    SdfPostprocessExecutionPlan& plan,
+    const ColorPipelineSourceStackEntry& entry,
+    int fieldGroupIndex = 0) {
     if (plan.row_count < 0 || plan.row_count >= kColorPipelineMaxSourceStackCount) {
         return false;
     }
-    const PlannedSdfSourceRow row = PlannedRowForSourceEntry(entry);
+    const PlannedSdfSourceRow row = PlannedRowForSourceEntry(entry, fieldGroupIndex);
     plan.rows[plan.row_count] = row;
     plan.use_direct_samples = plan.use_direct_samples && !row.needs_neighborhood;
     plan.uses_row_sample_steps = plan.uses_row_sample_steps || row.sample_step > 1;
@@ -212,6 +217,64 @@ bool BuildSdfPostprocessExecutionPlan(
 
     for (int index = 0; index < sourceStackCount; ++index) {
         if (!AppendPlannedSourceRow(outPlan, params.color_source_stack[index])) {
+            if (outError) *outError = "SDF Color Pipeline source stack exceeds supported row count";
+            return false;
+        }
+    }
+    return outPlan.row_count > 0;
+}
+
+bool BuildSdfPostprocessExecutionPlanForFieldGroups(
+    const KernelParams& params,
+    const SdfFieldGroupPlan& fieldGroupPlan,
+    int outputPixelStep,
+    SdfPostprocessExecutionPlan& outPlan,
+    std::string* outError) {
+    outPlan = {};
+    outPlan.output_pixel_step = outputPixelStep;
+    outPlan.use_direct_samples = true;
+    outPlan.worker_count = 1;
+
+    if (!fieldGroupPlan.valid || fieldGroupPlan.group_count <= 0) {
+        if (outError) *outError = "SDF Color Pipeline multi-field postprocess requires a valid field-group plan";
+        return false;
+    }
+
+    const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
+    if (sourceStackCount <= 0) {
+        if (!IsColorPipelineSdfSourceSignal(params.color_pipeline.signal)) {
+            if (outError) *outError = "SDF Color Pipeline postprocess was requested without an SDF source signal";
+            return false;
+        }
+        ColorPipelineSourceStackEntry entry;
+        entry.signal = params.color_pipeline.signal;
+        const int groupIndex = fieldGroupPlan.row_groups[0].group_index;
+        return AppendPlannedSourceRow(outPlan, entry, groupIndex);
+    }
+
+    bool hasSdf = false;
+    bool hasNonSdf = false;
+    for (int index = 0; index < sourceStackCount; ++index) {
+        const bool isSdf = IsColorPipelineSdfSourceSignal(params.color_source_stack[index].signal);
+        hasSdf = hasSdf || isSdf;
+        hasNonSdf = hasNonSdf || !isSdf;
+    }
+    if (hasSdf && hasNonSdf) {
+        if (outError) *outError = "SDF Color Pipeline source stacks cannot mix SDF and non-SDF Source rows";
+        return false;
+    }
+    if (!hasSdf) {
+        if (outError) *outError = "SDF Color Pipeline postprocess was requested without an SDF source signal";
+        return false;
+    }
+    if (fieldGroupPlan.source_row_count != sourceStackCount) {
+        if (outError) *outError = "SDF Color Pipeline field-group plan does not match the Source stack";
+        return false;
+    }
+
+    for (int index = 0; index < sourceStackCount; ++index) {
+        const int groupIndex = fieldGroupPlan.row_groups[static_cast<std::size_t>(index)].group_index;
+        if (!AppendPlannedSourceRow(outPlan, params.color_source_stack[index], groupIndex)) {
             if (outError) *outError = "SDF Color Pipeline source stack exceeds supported row count";
             return false;
         }
@@ -723,6 +786,85 @@ bool ResolveCachedPlannedSdfPipelineSignal(
     return true;
 }
 
+const SdfFieldView* FindSdfFieldGroupView(
+    const SdfColorPipelineFieldGroupView* fieldGroups,
+    int fieldGroupCount,
+    int groupIndex) {
+    if (!fieldGroups || fieldGroupCount <= 0) {
+        return nullptr;
+    }
+    for (int index = 0; index < fieldGroupCount; ++index) {
+        if (fieldGroups[index].group_index == groupIndex) {
+            return &fieldGroups[index].field;
+        }
+    }
+    return nullptr;
+}
+
+bool ResolveCachedMultiFieldPlannedSdfPipelineSignal(
+    const SdfColorPipelineFieldGroupView* fieldGroups,
+    int fieldGroupCount,
+    int renderWidth,
+    int renderHeight,
+    int sampleX,
+    int sampleY,
+    const SdfPostprocessExecutionPlan& plan,
+    SdfPostprocessResolveScratch* scratch,
+    float* outSignal,
+    std::string* outError,
+    SdfColorPipelinePostprocessStats* outStats) {
+    if (!outSignal) {
+        if (outError) *outError = "SDF Color Pipeline postprocess requires output storage";
+        return false;
+    }
+    if (plan.row_count <= 0) {
+        if (outError) *outError = "SDF Color Pipeline postprocess was requested without an SDF source signal";
+        return false;
+    }
+    if (renderWidth <= 0 || renderHeight <= 0) {
+        if (outError) *outError = "SDF Color Pipeline postprocess received an invalid render target";
+        return false;
+    }
+
+    float signal = 0.0f;
+    for (int rowIndex = 0; rowIndex < plan.row_count; ++rowIndex) {
+        const PlannedSdfSourceRow& row = plan.rows[static_cast<std::size_t>(rowIndex)];
+        const SdfFieldView* field = FindSdfFieldGroupView(fieldGroups, fieldGroupCount, row.field_group_index);
+        if (!field || field->width <= 0 || field->height <= 0 || !field->signed_distance_px) {
+            if (outError) *outError = "SDF Color Pipeline multi-field postprocess is missing a field group";
+            return false;
+        }
+        const int fx = ClampIntLocal(
+            (static_cast<long long>(sampleX) * field->width) / renderWidth,
+            0,
+            field->width - 1);
+        const int fy = ClampIntLocal(
+            (static_cast<long long>(sampleY) * field->height) / renderHeight,
+            0,
+            field->height - 1);
+        float nextSignal = 0.0f;
+        if (!ResolveCachedPlannedSdfSourceRowValue(
+                *field,
+                fx,
+                fy,
+                plan,
+                rowIndex,
+                scratch,
+                &nextSignal,
+                outError,
+                outStats)) {
+            return false;
+        }
+        if (rowIndex == 0) {
+            signal = nextSignal;
+        } else {
+            signal = EscapeTimeColorLerp(signal, nextSignal, row.blend_weight);
+        }
+    }
+    *outSignal = signal;
+    return true;
+}
+
 int ResolveSdfPostprocessWorkerCount(
     std::size_t sampleCount,
     int workUnitCount,
@@ -916,6 +1058,110 @@ bool RunRenderBlockPostprocessRows(
                     &scratch,
                     ioRgba,
                     width,
+                    x,
+                    x + blockWidth,
+                    y,
+                    y + blockHeight,
+                    outError,
+                    outStats)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool ResolveAndFillMultiFieldSdfPostprocessBlock(
+    const SdfColorPipelineFieldGroupView* fieldGroups,
+    int fieldGroupCount,
+    int sampleX,
+    int sampleY,
+    const KernelParams& params,
+    const SdfPostprocessExecutionPlan& plan,
+    SdfPostprocessResolveScratch* scratch,
+    std::uint32_t* ioRgba,
+    int renderWidth,
+    int renderHeight,
+    int xBegin,
+    int xEnd,
+    int yBegin,
+    int yEnd,
+    std::string* outError,
+    SdfColorPipelinePostprocessStats* outStats) {
+    if (xBegin >= xEnd || yBegin >= yEnd) {
+        return true;
+    }
+    float signal = 0.0f;
+    if (!ResolveCachedMultiFieldPlannedSdfPipelineSignal(
+            fieldGroups,
+            fieldGroupCount,
+            renderWidth,
+            renderHeight,
+            sampleX,
+            sampleY,
+            plan,
+            scratch,
+            &signal,
+            outError,
+            outStats)) {
+        return false;
+    }
+    if (outStats) {
+        if (plan.use_direct_samples) {
+            ++outStats->direct_sample_count;
+        } else {
+            ++outStats->neighborhood_sample_count;
+        }
+    }
+    const float shapedSignal = ApplyColorPipelineShapeValue(signal, params);
+    Rgba8 color = SampleProgrammableEscapeTimePalette<Rgba8>(shapedSignal, true, params);
+    color = ApplyFractalColorGrading(color, params);
+    const std::uint32_t packed = PackRgba(color);
+    for (int yy = yBegin; yy < yEnd; ++yy) {
+        const std::size_t rowOffset = static_cast<std::size_t>(yy) * static_cast<std::size_t>(renderWidth);
+        for (int xx = xBegin; xx < xEnd; ++xx) {
+            ioRgba[rowOffset + static_cast<std::size_t>(xx)] = packed;
+            if (outStats) {
+                ++outStats->filled_pixel_count;
+            }
+        }
+    }
+    return true;
+}
+
+bool RunMultiFieldRenderBlockPostprocessRows(
+    const SdfColorPipelineFieldGroupView* fieldGroups,
+    int fieldGroupCount,
+    const RenderSettings& render,
+    const KernelParams& params,
+    const SdfPostprocessExecutionPlan& plan,
+    int blockYBegin,
+    int blockYEnd,
+    std::uint32_t* ioRgba,
+    std::string* outError,
+    SdfColorPipelinePostprocessStats* outStats) {
+    const int width = render.resolution.x;
+    const int height = render.resolution.y;
+    const int outputPixelStep = plan.output_pixel_step;
+    SdfPostprocessResolveScratch scratch{};
+    for (int blockY = blockYBegin; blockY < blockYEnd; ++blockY) {
+        const int y = blockY * outputPixelStep;
+        const int blockHeight = ClampIntLocal(height - y, 1, outputPixelStep);
+        const int sampleY = ClampIntLocal(y + blockHeight / 2, 0, height - 1);
+        for (int x = 0; x < width; x += outputPixelStep) {
+            const int blockWidth = ClampIntLocal(width - x, 1, outputPixelStep);
+            const int sampleX = ClampIntLocal(x + blockWidth / 2, 0, width - 1);
+            if (!ResolveAndFillMultiFieldSdfPostprocessBlock(
+                    fieldGroups,
+                    fieldGroupCount,
+                    sampleX,
+                    sampleY,
+                    params,
+                    plan,
+                    &scratch,
+                    ioRgba,
+                    width,
+                    height,
                     x,
                     x + blockWidth,
                     y,
@@ -1258,5 +1504,70 @@ bool ApplyLensSdfColorPipelinePostprocess(
         outError,
         outStats);
     StampBackendStats(outStats, SdfColorPipelinePostprocessBackend::cpu, cpuFallbackUsed);
+    return ok;
+}
+
+bool ApplyLensSdfColorPipelinePostprocessWithFieldGroups(
+    const SdfFieldGroupPlan& fieldGroupPlan,
+    const SdfColorPipelineFieldGroupView* fieldGroups,
+    int fieldGroupCount,
+    const RenderSettings& render,
+    const KernelParams& params,
+    std::uint32_t* ioRgba,
+    std::string* outError,
+    SdfColorPipelinePostprocessStats* outStats,
+    const SdfColorPipelinePostprocessOptions* options) {
+    if (!ioRgba || render.resolution.x <= 0 || render.resolution.y <= 0) {
+        if (outError) *outError = "SDF Color Pipeline multi-field postprocess received an invalid render target";
+        return false;
+    }
+    if (!fieldGroupPlan.valid || fieldGroupPlan.group_count <= 0) {
+        if (outError) *outError = "SDF Color Pipeline multi-field postprocess requires a valid field-group plan";
+        return false;
+    }
+    if (!fieldGroups || fieldGroupCount <= 0) {
+        if (outError) *outError = "SDF Color Pipeline multi-field postprocess requires field groups";
+        return false;
+    }
+    for (int index = 0; index < fieldGroupPlan.group_count; ++index) {
+        const int groupIndex = fieldGroupPlan.groups[static_cast<std::size_t>(index)].group_index;
+        const SdfFieldView* field = FindSdfFieldGroupView(fieldGroups, fieldGroupCount, groupIndex);
+        if (!field || field->width <= 0 || field->height <= 0 || !field->signed_distance_px) {
+            if (outError) *outError = "SDF Color Pipeline multi-field postprocess is missing a planned field group";
+            return false;
+        }
+    }
+
+    SdfPostprocessExecutionPlan plan;
+    const int outputPixelStep = NormalizePostprocessPixelStep(options ? options->output_pixel_step : 1);
+    if (!BuildSdfPostprocessExecutionPlanForFieldGroups(params, fieldGroupPlan, outputPixelStep, plan, outError)) {
+        return false;
+    }
+
+    const int height = render.resolution.y;
+    const int blockRows = CeilDivNonNegativeLocal(height, outputPixelStep);
+    const int width = render.resolution.x;
+    const int blockCols = CeilDivNonNegativeLocal(width, outputPixelStep);
+    const std::size_t sampleCount = static_cast<std::size_t>(blockRows) * static_cast<std::size_t>(blockCols);
+    plan.worker_count = ResolveSdfPostprocessWorkerCount(sampleCount, blockRows, options);
+    const bool ok = RunPostprocessWorkers(
+        blockRows,
+        plan,
+        [&](int begin, int end, SdfColorPipelinePostprocessStats& localStats, std::string* localError) {
+            return RunMultiFieldRenderBlockPostprocessRows(
+                fieldGroups,
+                fieldGroupCount,
+                render,
+                params,
+                plan,
+                begin,
+                end,
+                ioRgba,
+                localError,
+                &localStats);
+        },
+        outError,
+        outStats);
+    StampBackendStats(outStats, SdfColorPipelinePostprocessBackend::cpu, false);
     return ok;
 }

@@ -80,6 +80,35 @@ void WriteLensSdfReportFields(
     out << ",\n";
     out << "  \"lens_sdf_field_cache_hit\": " << (lensSdfProbe.field_cache_hit ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_field_cache_mask_bytes\": " << lensSdfProbe.field_cache_mask_bytes << ",\n";
+    out << "  \"lens_sdf_field_group_count\": " << lensSdfProbe.field_group_count << ",\n";
+    out << "  \"lens_sdf_field_groups\": [";
+    for (std::size_t index = 0; index < lensSdfProbe.field_groups.size(); ++index) {
+        const ViewerUiAutomationLensSdfFieldGroupProbe& group = lensSdfProbe.field_groups[index];
+        if (index > 0) {
+            out << ", ";
+        }
+        out << "{";
+        out << "\"group_index\": " << group.group_index << ", ";
+        out << "\"requested_downsample\": " << group.requested_downsample << ", ";
+        out << "\"effective_downsample\": " << group.effective_downsample << ", ";
+        out << "\"row_count\": " << group.row_count << ", ";
+        out << "\"has_inherited_row\": " << (group.has_inherited_row ? "true" : "false") << ", ";
+        out << "\"has_explicit_row\": " << (group.has_explicit_row ? "true" : "false") << ", ";
+        out << "\"cache_status\": ";
+        WriteAutomationReportString(out, group.cache_status);
+        out << ", ";
+        out << "\"cache_hit\": " << (group.cache_hit ? "true" : "false") << ", ";
+        out << "\"width\": " << group.width << ", ";
+        out << "\"height\": " << group.height << ", ";
+        out << "\"pixel_scale\": " << std::setprecision(12) << group.pixel_scale << ", ";
+        out << "\"field_ms\": " << std::setprecision(12) << group.field_ms << ", ";
+        out << "\"mask_downsample_ms\": " << std::setprecision(12) << group.mask_downsample_ms << ", ";
+        out << "\"backend_ms\": " << std::setprecision(12) << group.backend_ms << ", ";
+        out << "\"cache_lookup_ms\": " << std::setprecision(12) << group.cache_lookup_ms << ", ";
+        out << "\"cache_store_ms\": " << std::setprecision(12) << group.cache_store_ms;
+        out << "}";
+    }
+    out << "],\n";
     out << "  \"base_render_ms\": " << std::setprecision(12) << lensSdfProbe.base_render_ms << ",\n";
     out << "  \"lens_sdf_field_ms\": " << std::setprecision(12) << lensSdfProbe.field_ms << ",\n";
     out << "  \"lens_sdf_requested_equivalent_field_ms\": " << std::setprecision(12) << lensSdfProbe.requested_equivalent_field_ms << ",\n";

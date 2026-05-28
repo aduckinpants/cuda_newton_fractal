@@ -1,5 +1,6 @@
 #pragma once
 
+#include "color_pipeline_sdf_field_groups.h"
 #include "fractal_types.h"
 #include "lens_sdf.h"
 
@@ -44,6 +45,11 @@ struct SdfColorPipelinePostprocessStats {
     bool backend_buffer_grew{false};
 };
 
+struct SdfColorPipelineFieldGroupView {
+    int group_index{0};
+    SdfFieldView field{};
+};
+
 using SdfColorPipelinePostprocessBackendFn = bool (*)(
     const SdfFieldView& field,
     const RenderSettings& render,
@@ -58,6 +64,17 @@ void RegisterSdfColorPipelineCudaFieldSignalBackend(SdfColorPipelinePostprocessB
 
 bool ApplyLensSdfColorPipelinePostprocess(
     const SdfFieldView& field,
+    const RenderSettings& render,
+    const KernelParams& params,
+    std::uint32_t* ioRgba,
+    std::string* outError = nullptr,
+    SdfColorPipelinePostprocessStats* outStats = nullptr,
+    const SdfColorPipelinePostprocessOptions* options = nullptr);
+
+bool ApplyLensSdfColorPipelinePostprocessWithFieldGroups(
+    const SdfFieldGroupPlan& fieldGroupPlan,
+    const SdfColorPipelineFieldGroupView* fieldGroups,
+    int fieldGroupCount,
     const RenderSettings& render,
     const KernelParams& params,
     std::uint32_t* ioRgba,

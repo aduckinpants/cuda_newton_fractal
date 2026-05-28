@@ -97,6 +97,8 @@ void TestLensSdfProbeDefaults() {
             probe.field_cache_status == "disabled" &&
             probe.field_cache_mask_bytes == 0,
         "lens SDF automation probe reports stable field cache defaults");
+    Check(probe.field_group_count == 0 && probe.field_groups.empty(),
+        "lens SDF automation probe reports stable empty field-group defaults");
 }
 
 void TestLensSdfProbeTimingFields() {
@@ -124,6 +126,25 @@ void TestLensSdfProbeTimingFields() {
     probe.field_cache_status = "hit";
     probe.field_cache_hit = true;
     probe.field_cache_mask_bytes = 76800;
+    ViewerUiAutomationLensSdfFieldGroupProbe group{};
+    group.group_index = 0;
+    group.requested_downsample = 1;
+    group.effective_downsample = 4;
+    group.row_count = 2;
+    group.has_inherited_row = true;
+    group.has_explicit_row = true;
+    group.cache_status = "hit";
+    group.cache_hit = true;
+    group.width = 80;
+    group.height = 60;
+    group.pixel_scale = 4.0f;
+    group.field_ms = 1.5f;
+    group.mask_downsample_ms = 0.25f;
+    group.backend_ms = 1.0f;
+    group.cache_lookup_ms = 0.1f;
+    group.cache_store_ms = 0.0f;
+    probe.field_groups.push_back(group);
+    probe.field_group_count = static_cast<int>(probe.field_groups.size());
     Check(probe.color_pipeline_active && probe.base_render_ms == 3.0f &&
             probe.field_ms == 2.0f && probe.requested_equivalent_field_ms == 8.0f &&
             probe.postprocess_ms == 7.5f && probe.total_ms == 9.5f,
@@ -150,6 +171,14 @@ void TestLensSdfProbeTimingFields() {
             probe.field_cache_hit &&
             probe.field_cache_mask_bytes == 76800,
         "lens SDF automation probe carries field cache status");
+    Check(probe.field_group_count == 1 &&
+            probe.field_groups[0].requested_downsample == 1 &&
+            probe.field_groups[0].effective_downsample == 4 &&
+            probe.field_groups[0].has_inherited_row &&
+            probe.field_groups[0].has_explicit_row &&
+            probe.field_groups[0].cache_status == "hit" &&
+            probe.field_groups[0].width == 80,
+        "lens SDF automation probe carries field-group detail");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {

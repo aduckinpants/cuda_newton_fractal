@@ -61,6 +61,22 @@ MATRIX_ROWS = [
         color_signal="sdf_signed_distance",
         lens_downsample=8,
     ),
+    CaptureReplayMatrixRow(
+        name="sdf_two_row_distinct_field_downsample",
+        source_stack=[
+            {"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0, "sdf_field_downsample": 1},
+            {
+                "signal": "sdf_boundary_band",
+                "scale": 1.0,
+                "bias": 0.0,
+                "blend_weight": 1.0,
+                "sdf_boundary_width_px": 2.0,
+                "sdf_field_downsample": 4,
+            },
+        ],
+        color_signal="sdf_boundary_band",
+        lens_downsample=2,
+    ),
 ]
 
 
@@ -127,6 +143,9 @@ def _assert_effective_source_summary(captured_state: dict[str, object], row: Cap
     summary_stack = summary.get("source_stack")
     assert isinstance(summary_stack, list)
     assert [entry["signal"] for entry in summary_stack] == [entry["signal"] for entry in row.source_stack]
+    for index, source_entry in enumerate(row.source_stack):
+        if "sdf_field_downsample" in source_entry:
+            assert summary_stack[index]["sdf_field_downsample"] == source_entry["sdf_field_downsample"]
     for entry in summary_stack:
         if entry["signal"] == "sdf_normal_angle":
             assert entry["kind"] == "phase"

@@ -4309,8 +4309,8 @@ int main() {
     "color_palette": "phase_wheel",
     "color_grading": "phase_default",
     "color_source_stack": [
-      { "signal": "sdf_boundary_band", "scale": 0.75, "bias": 0.25, "blend_weight": 1.0, "sdf_boundary_width_px": 5.5, "sdf_sample_step": 3 },
-      { "signal": "sdf_normal_angle", "scale": 1.0, "bias": 0.0, "blend_weight": 0.5, "sdf_gate": "boundary_band", "sdf_gate_width_px": 3.25, "sdf_sample_step": 4 }
+      { "signal": "sdf_boundary_band", "scale": 0.75, "bias": 0.25, "blend_weight": 1.0, "sdf_boundary_width_px": 5.5, "sdf_sample_step": 3, "sdf_field_downsample": 4 },
+      { "signal": "sdf_normal_angle", "scale": 1.0, "bias": 0.0, "blend_weight": 0.5, "sdf_gate": "boundary_band", "sdf_gate_width_px": 3.25, "sdf_sample_step": 4, "sdf_field_downsample": 1 }
     ],
     "nova_alpha": 0.5,
     "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
@@ -4337,10 +4337,12 @@ int main() {
             !NearlyEqual(p.color_source_stack[0].params.bias, 0.25, 0.001) ||
             !NearlyEqual(p.color_source_stack[0].params.sdf_boundary_width_px, 5.5, 0.001) ||
             p.color_source_stack[0].params.sdf_sample_step != 3 ||
+            p.color_source_stack[0].params.sdf_field_downsample != 4 ||
             p.color_source_stack[1].signal != ColorSignal::sdf_normal_angle ||
             p.color_source_stack[1].params.sdf_gate != ColorPipelineSdfGateMode::boundary_band ||
             !NearlyEqual(p.color_source_stack[1].params.sdf_gate_width_px, 3.25, 0.001) ||
             p.color_source_stack[1].params.sdf_sample_step != 4 ||
+            p.color_source_stack[1].params.sdf_field_downsample != 1 ||
             p.color_pipeline.signal != ColorSignal::sdf_normal_angle ||
             p.color_pipeline.palette != ColorPalette::phase_wheel ||
             p.color_pipeline.grading != ColorGradingPreset::phase_default ||
@@ -4403,6 +4405,50 @@ int main() {
         if (LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error) ||
             error.find("sdf_sample_step") == std::string::npos) {
             std::cerr << "Expected diagnostics state load to reject out-of-range SDF Source sample step\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "v3_sdf_source_stack_bad_field_downsample.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "mandelbrot",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "sdf_signed_distance",
+    "color_shape": "identity",
+    "color_palette": "cyclic_escape",
+    "color_grading": "escape_default",
+    "color_source_stack": [
+      { "signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0, "sdf_field_downsample": 3 }
+    ],
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error) ||
+            error.find("sdf_field_downsample") == std::string::npos) {
+            std::cerr << "Expected diagnostics state load to reject unsupported SDF Source field downsample\n";
             return 1;
         }
     }

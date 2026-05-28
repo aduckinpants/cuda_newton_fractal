@@ -891,7 +891,7 @@ static void DispatchRenderFrame(
     const GenericEquationPackWorkbenchState* equationPackWorkbench,
     RenderedFrameState& renderedFrame, RenderStats& stats,
     ViewerUiAutomationLensSdfProbe& lensSdfProbe,
-    LensSdfFieldFrameCache& lensSdfFieldCache,
+    std::vector<LensSdfFieldFrameCache>& lensSdfFieldCaches,
     bool& dirtyOut) {
 
     if (!ShouldDispatchRender(autoRefresh, dirty, renderOnce, captureDiag, captureFinding, renderPacing.full_quality_due))
@@ -972,11 +972,9 @@ static void DispatchRenderFrame(
                 EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
                 UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
             }
-            SdfFieldResult computedLensSdfField;
-            const SdfFieldResult* lensSdfField = nullptr;
-            LensSdfBackendReport backendReport{};
-            LensSdfFieldGenerationReport fieldGenerationReport{};
-            LensSdfFieldCacheReport fieldCacheReport{};
+            if (lensSdfFieldCaches.size() < static_cast<std::size_t>(kColorPipelineSdfMaxFieldGroupCount + 1)) {
+                lensSdfFieldCaches.resize(static_cast<std::size_t>(kColorPipelineSdfMaxFieldGroupCount + 1));
+            }
             const LensSdfEffectiveDownsample fieldQuality = ResolveEffectiveLensSdfDownsample(
                 lens.downsample,
                 renderPacing.preview_active,
@@ -986,62 +984,185 @@ static void DispatchRenderFrame(
             lensSdfProbe.requested_downsample = fieldQuality.requested_downsample;
             lensSdfProbe.effective_downsample = fieldQuality.effective_downsample;
             lensSdfProbe.quality_mode = LensSdfQualityModeId(fieldQuality.quality_mode);
-            const auto fieldStart = std::chrono::steady_clock::now();
-            const auto cacheLookupStart = std::chrono::steady_clock::now();
-            bool fieldOk = TryReuseLensSdfFieldCache(
-                lensSdfFieldCache,
-                maskPtr,
-                dispatchRender.resolution.x,
-                dispatchRender.resolution.y,
-                fieldQuality.effective_downsample,
-                &lensSdfField,
-                &backendReport,
-                &fieldCacheReport);
-            lensSdfProbe.field_cache_lookup_ms = static_cast<float>(
-                std::chrono::duration<double, std::milli>(
-                    std::chrono::steady_clock::now() - cacheLookupStart).count());
-            if (!fieldOk) {
-                fieldOk = ComputeLensSdfFieldForMaskWithBackend(
+
+            const int adaptiveFieldDownsample =
+                fieldQuality.quality_mode == LensSdfQualityMode::interactive_adaptive
+                    ? fieldQuality.effective_downsample
+                    : 0;
+            SdfFieldGroupPlan fieldGroupPlan{};
+            bool hasFieldGroupPlan = false;
+            if (colorPipelineNeedsSdf) {
+                std::string fieldGroupError;
+                if (!BuildColorPipelineSdfFieldGroupPlan(
+                        params,
+                        fieldQuality.requested_downsample,
+                        adaptiveFieldDownsample,
+                        fieldGroupPlan,
+                        &fieldGroupError)) {
+                    postprocessOk = false;
+                    postprocessError = fieldGroupError.empty()
+                        ? "failed to plan SDF Color Pipeline field groups"
+                        : fieldGroupError;
+                } else {
+                    hasFieldGroupPlan = true;
+                }
+            }
+
+            struct RuntimeLensSdfField {
+                const SdfFieldResult* field{nullptr};
+                LensSdfBackendReport backend_report{};
+                LensSdfFieldGenerationReport generation_report{};
+                LensSdfFieldCacheReport cache_report{};
+                float field_ms{0.0f};
+                float lookup_ms{0.0f};
+                float store_ms{0.0f};
+            };
+
+            auto computeOrReuseField = [&](int cacheIndex, int effectiveDownsample, RuntimeLensSdfField& outField) -> bool {
+                if (cacheIndex < 0) {
+                    return false;
+                }
+                if (lensSdfFieldCaches.size() <= static_cast<std::size_t>(cacheIndex)) {
+                    lensSdfFieldCaches.resize(static_cast<std::size_t>(cacheIndex + 1));
+                }
+                const auto fieldStart = std::chrono::steady_clock::now();
+                const auto cacheLookupStart = std::chrono::steady_clock::now();
+                bool ok = TryReuseLensSdfFieldCache(
+                    lensSdfFieldCaches[static_cast<std::size_t>(cacheIndex)],
                     maskPtr,
                     dispatchRender.resolution.x,
                     dispatchRender.resolution.y,
-                    fieldQuality.effective_downsample,
-                    LensSdfBackend::auto_backend,
-                    computedLensSdfField,
-                    &backendReport,
-                    &fieldGenerationReport);
-                if (fieldOk) {
-                    const auto cacheStoreStart = std::chrono::steady_clock::now();
-                    StoreLensSdfFieldCache(
-                        lensSdfFieldCache,
+                    effectiveDownsample,
+                    &outField.field,
+                    &outField.backend_report,
+                    &outField.cache_report);
+                outField.lookup_ms = static_cast<float>(
+                    std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() - cacheLookupStart).count());
+                if (!ok) {
+                    SdfFieldResult computedField;
+                    ok = ComputeLensSdfFieldForMaskWithBackend(
                         maskPtr,
                         dispatchRender.resolution.x,
                         dispatchRender.resolution.y,
-                        fieldQuality.effective_downsample,
-                        std::move(computedLensSdfField),
-                        backendReport,
-                        &fieldCacheReport);
-                    lensSdfProbe.field_cache_store_ms = static_cast<float>(
-                        std::chrono::duration<double, std::milli>(
-                            std::chrono::steady_clock::now() - cacheStoreStart).count());
-                    lensSdfField = &lensSdfFieldCache.field;
+                        effectiveDownsample,
+                        LensSdfBackend::auto_backend,
+                        computedField,
+                        &outField.backend_report,
+                        &outField.generation_report);
+                    if (ok) {
+                        const auto cacheStoreStart = std::chrono::steady_clock::now();
+                        StoreLensSdfFieldCache(
+                            lensSdfFieldCaches[static_cast<std::size_t>(cacheIndex)],
+                            maskPtr,
+                            dispatchRender.resolution.x,
+                            dispatchRender.resolution.y,
+                            effectiveDownsample,
+                            std::move(computedField),
+                            outField.backend_report,
+                            &outField.cache_report);
+                        outField.store_ms = static_cast<float>(
+                            std::chrono::duration<double, std::milli>(
+                                std::chrono::steady_clock::now() - cacheStoreStart).count());
+                        outField.field = &lensSdfFieldCaches[static_cast<std::size_t>(cacheIndex)].field;
+                    }
+                }
+                outField.field_ms = static_cast<float>(
+                    std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() - fieldStart).count());
+                return ok && outField.field;
+            };
+
+            constexpr int kSharedLensSdfCacheIndex = kColorPipelineSdfMaxFieldGroupCount;
+            std::vector<RuntimeLensSdfField> groupFields;
+            const SdfFieldResult* displayLensSdfField = nullptr;
+            RuntimeLensSdfField sharedDisplayField{};
+            bool fieldOk = postprocessOk;
+            bool allFieldCacheHits = true;
+            bool anyFieldComputed = false;
+            bool anyCudaField = false;
+            bool anyCpuField = false;
+            bool anyFieldFallback = false;
+            std::uint64_t reportedMaskBytes = 0;
+
+            if (fieldOk && hasFieldGroupPlan) {
+                groupFields.resize(static_cast<std::size_t>(fieldGroupPlan.group_count));
+                lensSdfProbe.field_group_count = fieldGroupPlan.group_count;
+                for (int groupIndex = 0; groupIndex < fieldGroupPlan.group_count; ++groupIndex) {
+                    const SdfFieldGroup& group = fieldGroupPlan.groups[static_cast<std::size_t>(groupIndex)];
+                    RuntimeLensSdfField& runtimeField = groupFields[static_cast<std::size_t>(groupIndex)];
+                    if (!computeOrReuseField(group.group_index, group.effective_downsample, runtimeField)) {
+                        fieldOk = false;
+                        break;
+                    }
+                    anyFieldComputed = true;
+                    allFieldCacheHits = allFieldCacheHits && runtimeField.cache_report.hit;
+                    reportedMaskBytes = static_cast<std::uint64_t>(runtimeField.cache_report.mask_bytes);
+                    anyCudaField = anyCudaField || runtimeField.backend_report.used == LensSdfBackend::cuda_jfa;
+                    anyCpuField = anyCpuField || runtimeField.backend_report.used == LensSdfBackend::cpu_chamfer;
+                    anyFieldFallback = anyFieldFallback || runtimeField.backend_report.fallback_used;
+                    lensSdfProbe.field_ms += runtimeField.field_ms;
+                    lensSdfProbe.field_cache_lookup_ms += runtimeField.lookup_ms;
+                    lensSdfProbe.field_mask_downsample_ms += runtimeField.generation_report.mask_downsample_ms;
+                    lensSdfProbe.field_backend_ms += runtimeField.generation_report.backend_ms;
+                    lensSdfProbe.field_cache_store_ms += runtimeField.store_ms;
+
+                    ViewerUiAutomationLensSdfFieldGroupProbe groupProbe{};
+                    groupProbe.group_index = group.group_index;
+                    groupProbe.requested_downsample = group.requested_downsample;
+                    groupProbe.effective_downsample = group.effective_downsample;
+                    groupProbe.row_count = group.row_count;
+                    groupProbe.has_inherited_row = group.has_inherited_row;
+                    groupProbe.has_explicit_row = group.has_explicit_row;
+                    groupProbe.cache_status = LensSdfFieldCacheStatusId(runtimeField.cache_report.status);
+                    groupProbe.cache_hit = runtimeField.cache_report.hit;
+                    groupProbe.width = runtimeField.field ? runtimeField.field->width : 0;
+                    groupProbe.height = runtimeField.field ? runtimeField.field->height : 0;
+                    groupProbe.pixel_scale = runtimeField.field ? runtimeField.field->pixel_scale : 1.0f;
+                    groupProbe.field_ms = runtimeField.field_ms;
+                    groupProbe.mask_downsample_ms = runtimeField.generation_report.mask_downsample_ms;
+                    groupProbe.backend_ms = runtimeField.generation_report.backend_ms;
+                    groupProbe.cache_lookup_ms = runtimeField.lookup_ms;
+                    groupProbe.cache_store_ms = runtimeField.store_ms;
+                    lensSdfProbe.field_groups.push_back(groupProbe);
+                    if (!displayLensSdfField && group.effective_downsample == fieldQuality.effective_downsample) {
+                        displayLensSdfField = runtimeField.field;
+                    }
                 }
             }
-            if (fieldOk && lensSdfField) {
-                const auto fieldEnd = std::chrono::steady_clock::now();
-                lensSdfProbe.field_ms = static_cast<float>(
-                    std::chrono::duration<double, std::milli>(fieldEnd - fieldStart).count());
-                lensSdfProbe.field_mask_downsample_ms = fieldGenerationReport.mask_downsample_ms;
-                lensSdfProbe.field_backend_ms = fieldGenerationReport.backend_ms;
-                lensSdfProbe.field_cache_status = LensSdfFieldCacheStatusId(fieldCacheReport.status);
-                lensSdfProbe.field_cache_hit = fieldCacheReport.hit;
-                lensSdfProbe.field_cache_mask_bytes =
-                    static_cast<std::uint64_t>(fieldCacheReport.mask_bytes);
+
+            const bool sharedDisplayNeeded = lens.enabled || lensSdfOverlayEnabled || !colorPipelineNeedsSdf;
+            if (fieldOk && sharedDisplayNeeded && !displayLensSdfField) {
+                if (!computeOrReuseField(kSharedLensSdfCacheIndex, fieldQuality.effective_downsample, sharedDisplayField)) {
+                    fieldOk = false;
+                } else {
+                    anyFieldComputed = true;
+                    allFieldCacheHits = allFieldCacheHits && sharedDisplayField.cache_report.hit;
+                    reportedMaskBytes = static_cast<std::uint64_t>(sharedDisplayField.cache_report.mask_bytes);
+                    anyCudaField = anyCudaField || sharedDisplayField.backend_report.used == LensSdfBackend::cuda_jfa;
+                    anyCpuField = anyCpuField || sharedDisplayField.backend_report.used == LensSdfBackend::cpu_chamfer;
+                    anyFieldFallback = anyFieldFallback || sharedDisplayField.backend_report.fallback_used;
+                    lensSdfProbe.field_ms += sharedDisplayField.field_ms;
+                    lensSdfProbe.field_cache_lookup_ms += sharedDisplayField.lookup_ms;
+                    lensSdfProbe.field_mask_downsample_ms += sharedDisplayField.generation_report.mask_downsample_ms;
+                    lensSdfProbe.field_backend_ms += sharedDisplayField.generation_report.backend_ms;
+                    lensSdfProbe.field_cache_store_ms += sharedDisplayField.store_ms;
+                    displayLensSdfField = sharedDisplayField.field;
+                }
+            }
+            if (fieldOk && !displayLensSdfField && !groupFields.empty()) {
+                displayLensSdfField = groupFields.front().field;
+            }
+
+            if (fieldOk && displayLensSdfField) {
+                lensSdfProbe.field_cache_status = anyFieldComputed && allFieldCacheHits ? "hit" : "miss";
+                lensSdfProbe.field_cache_hit = anyFieldComputed && allFieldCacheHits;
+                lensSdfProbe.field_cache_mask_bytes = reportedMaskBytes;
                 lensSdfProbe.requested_equivalent_field_ms =
-                    fieldCacheReport.hit && previousLensSdfFieldMs > 0.0f
+                    lensSdfProbe.field_cache_hit && previousLensSdfFieldMs > 0.0f
                         ? previousLensSdfFieldMs
                         : lensSdfProbe.field_ms;
-                if (!fieldCacheReport.hit &&
+                if (!lensSdfProbe.field_cache_hit &&
                     fieldQuality.effective_downsample > fieldQuality.requested_downsample) {
                     const double fieldScaleRatio =
                         static_cast<double>(fieldQuality.effective_downsample) /
@@ -1053,18 +1174,18 @@ static void DispatchRenderFrame(
                 const float lowMaxAbsPx = 48.0f / static_cast<float>(fieldQuality.effective_downsample);
                 lensSdfProbe.valid = true;
                 lensSdfProbe.overlay_active = lensSdfOverlayEnabled;
-                lensSdfProbe.width = lensSdfField->width;
-                lensSdfProbe.height = lensSdfField->height;
-                lensSdfProbe.pixel_scale = lensSdfField->pixel_scale;
+                lensSdfProbe.width = displayLensSdfField->width;
+                lensSdfProbe.height = displayLensSdfField->height;
+                lensSdfProbe.pixel_scale = displayLensSdfField->pixel_scale;
                 if (lens.enabled || lensSdfOverlayEnabled) {
                     if (lensSdfOverlayEnabled) {
-                        BuildLensSdfViewportOverlayRgba(lensSdfField->View(), lens, lowMaxAbsPx, lensSdfRgba);
+                        BuildLensSdfViewportOverlayRgba(displayLensSdfField->View(), lens, lowMaxAbsPx, lensSdfRgba);
                     } else {
-                        BuildSignedDistanceSdfRgba(lensSdfField->View(), lowMaxAbsPx, lensSdfRgba);
+                        BuildSignedDistanceSdfRgba(displayLensSdfField->View(), lowMaxAbsPx, lensSdfRgba);
                     }
-                    if (lensSdfRgba.size() == static_cast<size_t>(lensSdfField->width) * static_cast<size_t>(lensSdfField->height)) {
-                        EnsureLensSdfTexture(lensSdfField->width, lensSdfField->height);
-                        UploadLensSdfRGBA(lensSdfRgba.data(), lensSdfField->width, lensSdfField->height);
+                    if (lensSdfRgba.size() == static_cast<size_t>(displayLensSdfField->width) * static_cast<size_t>(displayLensSdfField->height)) {
+                        EnsureLensSdfTexture(displayLensSdfField->width, displayLensSdfField->height);
+                        UploadLensSdfRGBA(lensSdfRgba.data(), displayLensSdfField->width, displayLensSdfField->height);
                     } else {
                         lensSdfProbe.valid = false;
                     }
@@ -1075,15 +1196,44 @@ static void DispatchRenderFrame(
                     postprocessOptions.output_pixel_step =
                         ResolveSdfColorPipelinePostprocessOutputPixelStep(params, renderPacing.preview_active, renderPacing.preview_scale, forceFullQuality);
                     SdfColorPipelinePostprocessStats postprocessStats{};
-                    if (!ApplyLensSdfColorPipelinePostprocess(
-                            lensSdfField->View(),
-                            dispatchRender,
-                            params,
-                            rgba.data(),
-                            &postprocessError,
-                            &postprocessStats,
-                            &postprocessOptions)) {
-                        postprocessOk = false;
+                    if (hasFieldGroupPlan && fieldGroupPlan.uses_distinct_fields) {
+                        std::vector<SdfColorPipelineFieldGroupView> fieldViews;
+                        fieldViews.reserve(groupFields.size());
+                        for (int groupIndex = 0; groupIndex < fieldGroupPlan.group_count; ++groupIndex) {
+                            const RuntimeLensSdfField& runtimeField = groupFields[static_cast<std::size_t>(groupIndex)];
+                            SdfColorPipelineFieldGroupView view{};
+                            view.group_index = fieldGroupPlan.groups[static_cast<std::size_t>(groupIndex)].group_index;
+                            view.field = runtimeField.field ? runtimeField.field->View() : SdfFieldView{};
+                            fieldViews.push_back(view);
+                        }
+                        if (!ApplyLensSdfColorPipelinePostprocessWithFieldGroups(
+                                fieldGroupPlan,
+                                fieldViews.data(),
+                                static_cast<int>(fieldViews.size()),
+                                dispatchRender,
+                                params,
+                                rgba.data(),
+                                &postprocessError,
+                                &postprocessStats,
+                                &postprocessOptions)) {
+                            postprocessOk = false;
+                        }
+                    } else {
+                        const SdfFieldResult* postprocessField = displayLensSdfField;
+                        if (hasFieldGroupPlan && !groupFields.empty()) {
+                            postprocessField = groupFields.front().field;
+                        }
+                        if (!postprocessField ||
+                            !ApplyLensSdfColorPipelinePostprocess(
+                                postprocessField->View(),
+                                dispatchRender,
+                                params,
+                                rgba.data(),
+                                &postprocessError,
+                                &postprocessStats,
+                                &postprocessOptions)) {
+                            postprocessOk = false;
+                        }
                     }
                     lensSdfProbe.postprocess_pixel_step = postprocessStats.output_pixel_step;
                     lensSdfProbe.postprocess_worker_count = postprocessStats.worker_count;
@@ -1114,10 +1264,10 @@ static void DispatchRenderFrame(
                         stats.last_render_ms = lensSdfProbe.total_ms;
                     }
                 }
-                lensSdfProbe.fallback_used = backendReport.fallback_used;
-                if (backendReport.used == LensSdfBackend::cuda_jfa) {
+                lensSdfProbe.fallback_used = anyFieldFallback;
+                if (anyCudaField) {
                     lensSdfProbe.backend_used = "cuda_jfa";
-                } else if (backendReport.used == LensSdfBackend::cpu_chamfer) {
+                } else if (anyCpuField) {
                     lensSdfProbe.backend_used = "cpu_chamfer";
                 }
             } else if (colorPipelineNeedsSdf) {
@@ -3204,7 +3354,7 @@ static void RunViewerFrame(
     std::vector<uint8_t>& maskBuffer,
     std::vector<uint32_t>& lensSdfRgba,
     ViewerUiAutomationLensSdfProbe& lensSdfProbe,
-    LensSdfFieldFrameCache& lensSdfFieldCache,
+    std::vector<LensSdfFieldFrameCache>& lensSdfFieldCaches,
     PolyKind& lastPolyKind,
     FractalType& lastFractalType,
     std::string& findingStatus,
@@ -3393,7 +3543,7 @@ static void RunViewerFrame(
         forceFullQualityRender, view.auto_refresh, dirty,
         actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
         rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, renderedFrame, stats, lensSdfProbe,
-        lensSdfFieldCache, dirty);
+        lensSdfFieldCaches, dirty);
 
     RunPendingInLoopCaptures(exeDir, actions, view, params, render, lens, stats, rgba,
         renderedFrame, colorPipelineWindow, sidecarState, sidecarStateValid,
@@ -3566,7 +3716,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<uint8_t> maskBuffer;
     std::vector<uint32_t> lensSdfRgba;
     ViewerUiAutomationLensSdfProbe lensSdfProbe;
-    LensSdfFieldFrameCache lensSdfFieldCache;
+    std::vector<LensSdfFieldFrameCache> lensSdfFieldCaches(static_cast<std::size_t>(kColorPipelineSdfMaxFieldGroupCount + 1));
     RenderedFrameState renderedFrame{};
     ViewerRenderPacingState renderPacingState{};
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
@@ -3655,7 +3805,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             maskBuffer,
             lensSdfRgba,
             lensSdfProbe,
-            lensSdfFieldCache,
+            lensSdfFieldCaches,
             lastPolyKind,
             lastFractalType,
             findingStatus,

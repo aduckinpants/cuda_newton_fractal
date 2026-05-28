@@ -753,6 +753,8 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
     double sdfGateWidthPx = entry.params.sdf_gate_width_px;
     double sdfSampleStepRaw = static_cast<double>(entry.params.sdf_sample_step);
     bool hasSdfSampleStep = false;
+    double sdfFieldDownsampleRaw = static_cast<double>(entry.params.sdf_field_downsample);
+    bool hasSdfFieldDownsample = false;
     double blendWeight = entry.params.blend_weight;
     if (!GetOptionalNumber(entryValue, "scale", &scale, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "bias", &bias, nullptr, outError) ||
@@ -770,6 +772,7 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
         !GetOptionalNumber(entryValue, "lens_field_v2_sign_contrast", &lensFieldV2SignContrast, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "sdf_gate_width_px", &sdfGateWidthPx, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "sdf_sample_step", &sdfSampleStepRaw, &hasSdfSampleStep, outError) ||
+        !GetOptionalNumber(entryValue, "sdf_field_downsample", &sdfFieldDownsampleRaw, &hasSdfFieldDownsample, outError) ||
         !GetOptionalNumber(entryValue, "blend_weight", &blendWeight, nullptr, outError)) {
         return false;
     }
@@ -794,6 +797,24 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
             return false;
         }
         entry.params.sdf_sample_step = static_cast<int>(sdfSampleStepRaw);
+    }
+    if (hasSdfFieldDownsample) {
+        if (!std::isfinite(sdfFieldDownsampleRaw) ||
+            std::floor(sdfFieldDownsampleRaw) != sdfFieldDownsampleRaw) {
+            if (outError) *outError = "Invalid integer field: color_source_stack.sdf_field_downsample";
+            return false;
+        }
+        const int fieldDownsample = static_cast<int>(sdfFieldDownsampleRaw);
+        if (fieldDownsample != 0 &&
+            fieldDownsample != 1 &&
+            fieldDownsample != 2 &&
+            fieldDownsample != 4 &&
+            fieldDownsample != 8 &&
+            fieldDownsample != 16) {
+            if (outError) *outError = "Invalid integer field: color_source_stack.sdf_field_downsample";
+            return false;
+        }
+        entry.params.sdf_field_downsample = fieldDownsample;
     }
     entry.params.scale = static_cast<float>(scale);
     entry.params.bias = static_cast<float>(bias);

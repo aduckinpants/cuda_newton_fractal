@@ -73,6 +73,7 @@ if /I "%FOCUSED_TEST%"=="test_ui_schema" goto focused_test_ui_schema
 if /I "%FOCUSED_TEST%"=="test_safe_mode_schema" goto focused_test_safe_mode_schema
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_core" goto focused_test_color_pipeline_core
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_window" goto focused_test_color_pipeline_window
+if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_field_groups" goto focused_test_color_pipeline_sdf_field_groups
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess" goto focused_test_color_pipeline_sdf_postprocess
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess_cuda" goto focused_test_color_pipeline_sdf_postprocess_cuda
 if /I "%FOCUSED_TEST%"=="test_escape_time_coloring" goto focused_test_escape_time_coloring
@@ -825,6 +826,14 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_color_pipeline_window.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_color_pipeline_window.exe" || exit /b 1
+exit /b 0
+
+:focused_test_color_pipeline_sdf_field_groups
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_color_pipeline_sdf_field_groups.cpp ^
+  /Fe:"%TESTROOT%\test_color_pipeline_sdf_field_groups.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_color_pipeline_sdf_field_groups.exe" || exit /b 1
 exit /b 0
 
 :focused_test_color_pipeline_sdf_postprocess

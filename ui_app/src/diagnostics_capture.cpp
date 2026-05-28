@@ -324,6 +324,7 @@ void WriteColorSourceStackJson(std::ostringstream& js, const KernelParams& param
         js << "        \"sdf_gate\": \"" << (color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) ? color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) : "none") << "\",\n";
         js << "        \"sdf_gate_width_px\": " << static_cast<double>(sourceEntry.params.sdf_gate_width_px) << ",\n";
         js << "        \"sdf_sample_step\": " << sourceEntry.params.sdf_sample_step << ",\n";
+        js << "        \"sdf_field_downsample\": " << sourceEntry.params.sdf_field_downsample << ",\n";
         js << "        \"blend_weight\": " << static_cast<double>(sourceEntry.params.blend_weight) << "\n";
         js << "      }" << (index + 1 < sourceStackCount ? "," : "") << "\n";
     }
@@ -356,7 +357,8 @@ void WriteEffectiveColorSourceJson(std::ostringstream& js, const KernelParams& p
             js << "        {\n";
             js << "          \"signal\": \"" << CaptureColorSignalId(sourceEntry.signal) << "\",\n";
             js << "          \"kind\": \"" << CaptureColorSignalKindId(sourceEntry.signal) << "\",\n";
-            js << "          \"blend_weight\": " << static_cast<double>(sourceEntry.params.blend_weight) << "\n";
+            js << "          \"blend_weight\": " << static_cast<double>(sourceEntry.params.blend_weight) << ",\n";
+            js << "          \"sdf_field_downsample\": " << sourceEntry.params.sdf_field_downsample << "\n";
             js << "        }" << (index + 1 < sourceStackCount ? "," : "") << "\n";
         }
         js << "      ]\n";

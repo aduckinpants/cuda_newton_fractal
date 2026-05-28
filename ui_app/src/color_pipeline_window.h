@@ -1561,6 +1561,7 @@ inline bool ColorPipelineSourceRuntimeParamsEqual(
         left.sdf_gate == right.sdf_gate &&
         std::fabs(left.sdf_gate_width_px - right.sdf_gate_width_px) <= 1.0e-6f &&
         left.sdf_sample_step == right.sdf_sample_step &&
+        left.sdf_field_downsample == right.sdf_field_downsample &&
         std::fabs(left.blend_weight - right.blend_weight) <= 1.0e-6f;
 }
 
@@ -2969,6 +2970,11 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         ColorPipelineSourceStackEntry nextEntry;
         if (materializeSourceStack && index < nextSourceStackCount) {
             nextEntry = nextSourceStack[static_cast<std::size_t>(index)];
+            if (index < ioParams->color_source_stack_count &&
+                ioParams->color_source_stack[index].signal == nextEntry.signal) {
+                nextEntry.params.sdf_field_downsample =
+                    ioParams->color_source_stack[index].params.sdf_field_downsample;
+            }
         }
         if (!ColorPipelineSourceStackEntriesEqual(ioParams->color_source_stack[index], nextEntry)) {
             ioParams->color_source_stack[index] = nextEntry;

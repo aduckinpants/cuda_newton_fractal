@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "contract_id": "sdf_multi_field_producer_cache",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_multi_field_producer_cache_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/sdf_multi_field_producer_cache.contract.json",
+    "docs/notes/sdf_multi_field_producer_cache_PHASED_PLAN.md",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/main.cpp",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/src/color_pipeline_sdf_field_groups.h",
+    "ui_app/src/color_pipeline_sdf_postprocess.h",
+    "ui_app/src/color_pipeline_sdf_postprocess.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_field_groups.cpp",
+    "ui_app/tests/test_color_pipeline_sdf_postprocess.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_diagnostics_capture.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tests/test_fractal_runtime_sdf_row_field_resolution.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "open Step 3B from the SDF next-five campaign on current master after Step 3A merge",
+    "add row-local SDF field downsample persistence and grouping authority while preserving inherit-shared defaults",
+    "generate and cache one SDF field per distinct effective downsample group for enabled SDF source rows",
+    "keep the one-field inherited path as the fast path",
+    "report shared requested/effective downsample plus row-local field groups, field count, and group timings",
+    "prove capture/replay and runtime no-mouse behavior for two distinct SDF field resolutions"
+  ],
+  "forbidden_operator_prompts": [
+    "add visible row-local downsample UI controls in Step 3B",
+    "redesign the Color Pipeline layout",
+    "implement Step 4 phase-safe normal-angle UX",
+    "implement authored SDF pack viewport integration",
+    "implement SDF-native fractal lanes",
+    "claim multi-field always improves performance"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_multi_field_runtime",
+    "source_head": "375436b",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "shared_lens_downsample_default": "preserve",
+    "row_field_default_policy": "inherit_shared",
+    "distinct_live_field_cap": 4
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "ui_productization": "forbidden",
+    "sdf_native_lane": "forbidden",
+    "global_fps_claim": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_multi_field_producer_cache.contract.json --out-json artifacts/validation/sdf_multi_field_producer_cache_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_multi_field_producer_cache_plan_sync --log artifacts/logs/sdf_multi_field_producer_cache_plan_sync.log --out-json artifacts/validation/sdf_multi_field_producer_cache_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_multi_field_producer_cache_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_multi_field_producer_cache_native_groups --log artifacts/logs/sdf_multi_field_producer_cache_native_groups.log --out-json artifacts/validation/sdf_multi_field_producer_cache_native_groups.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_sdf_field_groups",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_multi_field_producer_cache_native_state --log artifacts/logs/sdf_multi_field_producer_cache_native_state.log --out-json artifacts/validation/sdf_multi_field_producer_cache_native_state.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_state_io",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_multi_field_producer_cache_native_capture --log artifacts/logs/sdf_multi_field_producer_cache_native_capture.log --out-json artifacts/validation/sdf_multi_field_producer_cache_native_capture.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_capture",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_multi_field_producer_cache_native_report --log artifacts/logs/sdf_multi_field_producer_cache_native_report.log --out-json artifacts/validation/sdf_multi_field_producer_cache_native_report.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_multi_field_producer_cache_native_window --log artifacts/logs/sdf_multi_field_producer_cache_native_window.log --out-json artifacts/validation/sdf_multi_field_producer_cache_native_window.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_multi_field_producer_cache_runtime_publish --log artifacts/logs/sdf_multi_field_producer_cache_runtime_publish.log --out-json artifacts/validation/sdf_multi_field_producer_cache_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_row_field_resolution.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_multi_field_producer_cache_PHASED_PLAN.md --out-json artifacts/validation/sdf_multi_field_producer_cache_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_multi_field_producer_cache_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_multi_field_producer_cache_diff_check --log artifacts/logs/sdf_multi_field_producer_cache_diff_check.log --out-json artifacts/validation/sdf_multi_field_producer_cache_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Step 3B multi-field producer/cache contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_multi_field_producer_cache_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Step 3B hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_multi_field_producer_cache_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

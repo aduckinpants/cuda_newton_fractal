@@ -829,6 +829,15 @@ void TestSdfSourceRowsApplyThroughDraftLiveBridge() {
             RowNumber(state.lanes[0].rows[0], "signal.boundary_width_px", 5.0) &&
             RowNumber(state.lanes[0].rows[0], "signal.sdf_sample_step", 3.0),
         "TestSdfSourceRowsApplyThroughDraftLiveBridge_BoundaryBandResyncImportsSourceParams");
+    params.color_source_stack[0].params.sdf_field_downsample = 4;
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params) &&
+            SetRowNumber(state.lanes[0].rows[0], "signal.bias", 0.35),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_ConfiguresHiddenRowFieldPolicyPreservation");
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed &&
+            params.color_source_stack[0].params.sdf_field_downsample == 4 &&
+            Near(params.color_source_stack[0].params.bias, 0.35),
+        "TestSdfSourceRowsApplyThroughDraftLiveBridge_PreservesHiddenRowFieldDownsampleOnEdit");
 
     LensSettings lens{};
     lens.enabled = false;

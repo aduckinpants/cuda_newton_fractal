@@ -41,6 +41,25 @@ struct ViewerUiAutomationRenderPacingProbe {
     int pacing_render_height = 0;
 };
 
+struct ViewerUiAutomationLensSdfFieldGroupProbe {
+    int group_index = 0;
+    int requested_downsample = 1;
+    int effective_downsample = 1;
+    int row_count = 0;
+    bool has_inherited_row = false;
+    bool has_explicit_row = false;
+    std::string cache_status = "disabled";
+    bool cache_hit = false;
+    int width = 0;
+    int height = 0;
+    float pixel_scale = 1.0f;
+    float field_ms = 0.0f;
+    float mask_downsample_ms = 0.0f;
+    float backend_ms = 0.0f;
+    float cache_lookup_ms = 0.0f;
+    float cache_store_ms = 0.0f;
+};
+
 struct ViewerUiAutomationLensSdfProbe {
     bool enabled = false;
     bool valid = false;
@@ -56,6 +75,8 @@ struct ViewerUiAutomationLensSdfProbe {
     std::string field_cache_status = "disabled";
     bool field_cache_hit = false;
     std::uint64_t field_cache_mask_bytes = 0;
+    int field_group_count = 0;
+    std::vector<ViewerUiAutomationLensSdfFieldGroupProbe> field_groups;
     float base_render_ms = 0.0f;
     float field_ms = 0.0f;
     float requested_equivalent_field_ms = 0.0f;

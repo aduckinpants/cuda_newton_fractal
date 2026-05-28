@@ -65,6 +65,15 @@ SdfFieldResult MakeLargeTestField(int width, int height) {
     return field;
 }
 
+SdfFieldResult MakeConstantField(int width, int height, float pixelScale, float value) {
+    SdfFieldResult field;
+    field.width = width;
+    field.height = height;
+    field.pixel_scale = pixelScale;
+    field.signed_distance_px.assign(static_cast<std::size_t>(width) * static_cast<std::size_t>(height), value);
+    return field;
+}
+
 KernelParams SdfParams(ColorSignal signal, ColorPalette palette = ColorPalette::cyclic_escape) {
     KernelParams params{};
     params.coloring_mode = palette == ColorPalette::phase_wheel ? ColoringMode::phase : ColoringMode::smooth_escape;
@@ -665,6 +674,71 @@ void TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution() {
         "TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution_NoPreviewStepOne");
 }
 
+void TestMultiFieldPostprocessSamplesEachRowFromItsFieldGroup() {
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams params = SdfParams(ColorSignal::sdf_signed_distance);
+    params.color_source_stack_count = 2;
+    params.color_source_stack[0].signal = ColorSignal::sdf_signed_distance;
+    params.color_source_stack[0].params.scale = 0.05f;
+    params.color_source_stack[0].params.bias = 0.5f;
+    params.color_source_stack[0].params.sdf_field_downsample = 1;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    params.color_source_stack[1].signal = ColorSignal::sdf_boundary_band;
+    params.color_source_stack[1].params.sdf_boundary_width_px = 2.0f;
+    params.color_source_stack[1].params.sdf_field_downsample = 4;
+    params.color_source_stack[1].params.blend_weight = 1.0f;
+
+    SdfFieldGroupPlan plan{};
+    std::string error;
+    Check(BuildColorPipelineSdfFieldGroupPlan(params, 1, 0, plan, &error),
+        "TestMultiFieldPostprocessSamplesEachRowFromItsFieldGroup_PlanSucceeds");
+    Check(plan.group_count == 2 && plan.uses_distinct_fields,
+        "TestMultiFieldPostprocessSamplesEachRowFromItsFieldGroup_PlanUsesTwoGroups");
+
+    const SdfFieldResult detailField = MakeLargeTestField(4, 4);
+    const SdfFieldResult wideBoundary = MakeConstantField(1, 1, 4.0f, 0.0f);
+    const SdfFieldResult noBoundary = MakeConstantField(1, 1, 4.0f, 1.0f);
+
+    SdfColorPipelineFieldGroupView wideViews[2]{};
+    wideViews[0].group_index = plan.groups[0].group_index;
+    wideViews[0].field = detailField.View();
+    wideViews[1].group_index = plan.groups[1].group_index;
+    wideViews[1].field = wideBoundary.View();
+
+    SdfColorPipelineFieldGroupView noneViews[2] = {wideViews[0], wideViews[1]};
+    noneViews[1].field = noBoundary.View();
+
+    std::vector<std::uint32_t> widePixels(16, 0x12345678u);
+    std::vector<std::uint32_t> nonePixels(16, 0x12345678u);
+    SdfColorPipelinePostprocessStats stats{};
+    Check(ApplyLensSdfColorPipelinePostprocessWithFieldGroups(
+            plan,
+            wideViews,
+            2,
+            render,
+            params,
+            widePixels.data(),
+            &error,
+            &stats),
+        "TestMultiFieldPostprocessSamplesEachRowFromItsFieldGroup_WideBoundarySucceeds");
+    Check(stats.backend_used == SdfColorPipelinePostprocessBackend::cpu,
+        "TestMultiFieldPostprocessSamplesEachRowFromItsFieldGroup_MultiFieldUsesCpuPath");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocessWithFieldGroups(
+            plan,
+            noneViews,
+            2,
+            render,
+            params,
+            nonePixels.data(),
+            &error),
+        "TestMultiFieldPostprocessSamplesEachRowFromItsFieldGroup_NoBoundarySucceeds");
+    Check(HashFrame(widePixels) != HashFrame(nonePixels),
+        "TestMultiFieldPostprocessSamplesEachRowFromItsFieldGroup_SecondFieldChangesFrame");
+}
+
 } // namespace
 
 int main() {
@@ -687,6 +761,7 @@ int main() {
     TestSdfRowSampleStepReducesHeavyRowSourceSamples();
     TestParallelPostprocessMatchesForcedSerialPixelsAndStats();
     TestPreviewPixelStepPolicyKeepsScalarDirectStacksFullResolution();
+    TestMultiFieldPostprocessSamplesEachRowFromItsFieldGroup();
 
     std::printf("test_color_pipeline_sdf_postprocess: passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;

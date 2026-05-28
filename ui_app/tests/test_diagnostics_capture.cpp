@@ -144,11 +144,13 @@ void TestBundleSummarizesEffectiveColorSourceAuthority() {
     params.color_source_stack[0].signal = ColorSignal::sdf_normal_angle;
     params.color_source_stack[0].params.scale = 1.0f;
     params.color_source_stack[0].params.bias = 0.0f;
+    params.color_source_stack[0].params.sdf_field_downsample = 1;
     params.color_source_stack[0].params.blend_weight = 1.0f;
     params.color_source_stack[1].signal = ColorSignal::lens_field_v2_distance;
     params.color_source_stack[1].params.scale = 1.0f;
     params.color_source_stack[1].params.bias = 0.0f;
     params.color_source_stack[1].params.lens_field_v2_sign_contrast = 0.8f;
+    params.color_source_stack[1].params.sdf_field_downsample = 4;
     params.color_source_stack[1].params.blend_weight = 0.25f;
 
     const fs::path stackOutputDir = FreshTempRoot("stack_effective_source") / "diagnostics_bundle";
@@ -171,6 +173,9 @@ void TestBundleSummarizesEffectiveColorSourceAuthority() {
             "stack state summary records scalar Lens Field v2 source row");
         Check(json.find("\"lens_field_v2_sign_contrast\": 0.8") != std::string::npos,
             "state export preserves Lens Field v2 sign contrast");
+        Check(json.find("\"sdf_field_downsample\": 1") != std::string::npos &&
+                json.find("\"sdf_field_downsample\": 4") != std::string::npos,
+            "state export preserves row-local SDF field downsample authority");
     }
 }
 
