@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed - Step 3B multi-field producer/cache is implemented, validated, and ready for checkpoint receipts/rearward review.
+Closed - Step 3B multi-field producer/cache is implemented, validated, checkpointed, receipted, rearward-reviewed, and pushed.
 
 ## Phase Checklist
 
