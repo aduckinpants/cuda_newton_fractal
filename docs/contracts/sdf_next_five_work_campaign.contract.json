@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "contract_id": "sdf_next_five_work_campaign",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "docs/contracts/sdf_next_five_work_campaign.contract.json",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "plan the next bounded SDF work slices through the end of Step 5",
+    "treat Step 6 as the exhaust-work-and-replan boundary",
+    "preserve the shipped SDF postprocess optimization and avoid feature implementation in this planning slice"
+  ],
+  "forbidden_operator_prompts": [
+    "implement per-row or multi-field SDF downsample authority in this slice",
+    "implement boundary-masked phase UX in this slice",
+    "implement authored SDF pack viewport integration in this slice",
+    "implement SDF-native fractal lanes in this slice",
+    "merge or push master under this docs-only planning contract"
+  ],
+  "required_defaults": {
+    "slice_kind": "docs_only_sdf_next_five_planning",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "step_6_is_replan_boundary": true
+  },
+  "forbidden_defaults": {
+    "product_code_mutation": "forbidden",
+    "master_merge": "forbidden",
+    "runtime_claim": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_next_five_work_campaign.contract.json --out-json artifacts/validation/sdf_next_five_work_campaign_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md --out-json artifacts/validation/sdf_next_five_work_campaign_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_next_five_work_campaign_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_next_five_work_campaign_diff_check --log artifacts/logs/sdf_next_five_work_campaign_diff_check.log --out-json artifacts/validation/sdf_next_five_work_campaign_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF next-five planning contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_next_five_work_campaign_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF next-five planning hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_next_five_work_campaign_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
