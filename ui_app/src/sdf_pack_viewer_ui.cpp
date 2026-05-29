@@ -507,6 +507,9 @@ std::string SerializeSdfPackViewerStateJson(const SdfPackViewerState& state) {
     js << "  \"sdf_pack\": {\n";
     js << "    \"open\": " << (state.open ? "true" : "false") << ",\n";
     js << "    \"use_as_sdf_field_source\": " << (state.use_as_sdf_field_source ? "true" : "false") << ",\n";
+    js << "    \"pack_id\": ";
+    WriteJsonEscapedString(js, state.have_pack ? state.pack.pack_id : std::string());
+    js << ",\n";
     js << "    \"pack_path\": ";
     WriteJsonEscapedString(js, state.pack_path);
     js << ",\n";

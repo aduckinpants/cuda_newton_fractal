@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "pack_id": "sdf_smooth_lattice_2d",
+  "name": "SDF Smooth Lattice 2D",
+  "kind": "sdf_scene_2d",
+  "params": [
+    { "id": "period", "type": "float", "default": 0.85, "range": [0.35, 3.0] },
+    { "id": "radius", "type": "float", "default": 0.16, "range": [0.02, 0.45] },
+    { "id": "smooth_blend", "type": "float", "default": 0.12, "range": [0.0, 0.6] },
+    { "id": "rotation", "type": "float", "default": 0.35, "range": [-3.141592653589793, 3.141592653589793] },
+    { "id": "offset_x", "type": "float", "default": 0.0, "range": [-1.0, 1.0] },
+    { "id": "offset_y", "type": "float", "default": 0.0, "range": [-1.0, 1.0] }
+  ],
+  "controls": [
+    { "param": "period", "label": "Period", "ui_min": 0.4, "ui_max": 2.0 },
+    { "param": "radius", "label": "Radius", "ui_min": 0.04, "ui_max": 0.35 },
+    { "param": "smooth_blend", "label": "Smooth Blend", "ui_min": 0.0, "ui_max": 0.35 },
+    { "param": "rotation", "label": "Rotation", "ui_min": -3.141592653589793, "ui_max": 3.141592653589793 },
+    { "param": "offset_x", "label": "Offset X", "ui_min": -0.75, "ui_max": 0.75 },
+    { "param": "offset_y", "label": "Offset Y", "ui_min": -0.75, "ui_max": 0.75 }
+  ],
+  "region": {
+    "center": [0.0, 0.0],
+    "half_height": 2.0
+  },
+  "ast": {
+    "op": "smooth_union",
+    "k": { "param": "smooth_blend" },
+    "a": {
+      "op": "repeat",
+      "period": [{ "param": "period" }, { "param": "period" }],
+      "child": {
+        "op": "rotate",
+        "angle": { "param": "rotation" },
+        "child": {
+          "op": "translate",
+          "offset": [{ "param": "offset_x" }, { "param": "offset_y" }],
+          "child": {
+            "op": "smooth_union",
+            "k": { "param": "smooth_blend" },
+            "a": { "op": "circle", "center": [0.0, 0.0], "radius": { "param": "radius" } },
+            "b": { "op": "box", "center": [0.22, 0.0], "half_size": [0.08, 0.28] }
+          }
+        }
+      }
+    },
+    "b": {
+      "op": "subtract",
+      "a": { "op": "capsule", "a": [-2.5, 0.0], "b": [2.5, 0.0], "radius": 0.08 },
+      "b": { "op": "circle", "center": [0.0, 0.0], "radius": 0.16 }
+    }
+  }
+}

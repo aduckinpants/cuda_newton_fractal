@@ -4,9 +4,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <map>
+#include <sstream>
 #include <string>
 
 static int g_pass = 0;
@@ -22,6 +24,15 @@ static void Check(bool cond, const char* msg, int line) {
 }
 
 #define CHECK(cond, msg) Check((cond), (msg), __LINE__)
+
+static bool ReadTextFile(const char* path, std::string* outText) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) return false;
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    *outText = buffer.str();
+    return true;
+}
 
 static bool Nearly(double a, double b, double tol = 1.0e-5) {
     const double scale = (std::max)(1.0, (std::max)(std::fabs(a), std::fabs(b)));
@@ -54,6 +65,20 @@ static SdfPack ParseCirclePack() {
         std::cerr << parsed.error << "\n";
     }
     return parsed.pack;
+}
+
+static bool FieldDiffers(const SdfFieldResult& left, const SdfFieldResult& right) {
+    if (left.width != right.width || left.height != right.height ||
+        left.signed_distance_px.size() != right.signed_distance_px.size()) {
+        return true;
+    }
+    for (std::size_t index = 0; index < left.signed_distance_px.size(); ++index) {
+        if (std::fabs(static_cast<double>(left.signed_distance_px[index]) -
+                static_cast<double>(right.signed_distance_px[index])) > 1.0e-5) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static float At(const SdfFieldResult& field, int x, int y) {
@@ -124,6 +149,41 @@ static void TestParamOverrideChangesProducedField() {
     CHECK(Nearly(At(overrideField, 2, 2), -2.0), "override center distance changes in field pixels");
 }
 
+static void TestBuiltInSmoothLatticeControlSensitivity() {
+    std::string json;
+    CHECK(ReadTextFile("../docs/examples/sdf_packs/sdf_smooth_lattice_2d.sdf_pack.json", &json),
+        "built-in smooth lattice pack file is readable for field producer");
+    if (json.empty()) return;
+    SdfPackParseResult parsed = ParseSdfPackJson(json);
+    CHECK(parsed.ok, "built-in smooth lattice pack parses for field producer");
+    if (!parsed.ok) return;
+
+    SdfPackFieldRequest request{};
+    request.pack = &parsed.pack;
+    request.width = 32;
+    request.height = 24;
+    SdfFieldResult defaultField;
+    CHECK(ComputeSdfPackFieldCpu(request, defaultField, nullptr, nullptr),
+        "built-in smooth lattice default field computes");
+
+    const std::map<std::string, double> edits[] = {
+        {{"period", 1.25}},
+        {{"radius", 0.24}},
+        {{"smooth_blend", 0.28}},
+        {{"rotation", 0.9}},
+        {{"offset_x", 0.25}},
+        {{"offset_y", -0.25}},
+    };
+    for (const auto& edit : edits) {
+        request.overrides = edit;
+        SdfFieldResult editedField;
+        CHECK(ComputeSdfPackFieldCpu(request, editedField, nullptr, nullptr),
+            "built-in smooth lattice edited field computes");
+        CHECK(FieldDiffers(defaultField, editedField),
+            "built-in smooth lattice control edit changes the produced field");
+    }
+}
+
 static void TestDispatcherWorksWithoutCudaRegistration() {
     SdfPack pack = ParseCirclePack();
     SdfPackFieldRequest request{};
@@ -190,6 +250,7 @@ int main() {
     TestCpuFieldUsesPackRegionAndFieldPixelUnits();
     TestExplicitRegionOverridesPackRegion();
     TestParamOverrideChangesProducedField();
+    TestBuiltInSmoothLatticeControlSensitivity();
     TestDispatcherWorksWithoutCudaRegistration();
     TestInvalidRequestsFailClosed();
     std::cout << "test_sdf_pack_field_producer: pass=" << g_pass << " fail=" << g_fail << "\n";

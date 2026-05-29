@@ -269,6 +269,7 @@ enum class FractalType : int {
     magnet = 43,
     generic_equation_pack = 44,
     explaino_collatz_direct = 45,
+    sdf_pack_scene = 46,
 };
 
 enum class CounterfactualPairRootFamily : int {

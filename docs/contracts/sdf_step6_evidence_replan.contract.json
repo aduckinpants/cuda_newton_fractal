@@ -5,8 +5,8 @@
   "workflow_type": "workflow_only",
   "plan_path": "docs/notes/sdf_step6_evidence_replan_PHASED_PLAN.md",
   "allowed_mutation_scope": [
-    "docs/contracts/sdf_step6_evidence_replan.contract.json",
-    "docs/notes/sdf_step6_evidence_replan_PHASED_PLAN.md",
+    "docs/contracts",
+    "docs/notes",
     "docs/notes/sdf_next_five_work_campaign_PHASED_PLAN.md",
     "docs/notes/sdf_field_pack_near_term_TODO.md",
     "spec_intake/_STATUS.md",

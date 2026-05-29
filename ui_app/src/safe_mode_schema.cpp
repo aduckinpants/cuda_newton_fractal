@@ -31,6 +31,7 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"lambda", "Lambda", "Escape-Time"},
     {"magnet", "Magnet Type I", "Escape-Time"},
     {"generic_equation_pack", "Equation Pack", "Generic"},
+    {"sdf_pack_scene", "SDF Pack Scene", "SDF"},
     {"explaino_all", "Explaino-all", "Explaino"},
     {"explaino_y", "Explaino Y", "Explaino"},
     {"explaino_fp", "Explaino FP", "Explaino"},

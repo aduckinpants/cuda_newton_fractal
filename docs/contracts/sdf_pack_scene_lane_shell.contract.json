@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "contract_id": "sdf_pack_scene_lane_shell",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_pack_scene_lane_shell_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/examples/sdf_packs",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "start from clean master cf9754e and branch codex/sdf-pack-scene-lane-shell",
+    "add normal dropdown lane sdf_pack_scene backed by the authored SDF pack field producer",
+    "ship sdf_smooth_lattice_2d as the first built-in/default pack using only shipped SDF pack ops",
+    "expose period, radius, smooth_blend, rotation, offset_x, and offset_y through normal left-panel/no-mouse seams",
+    "preserve Color Pipeline coloring, capture/replay authority, reporting, and bounded performance proof for the lane",
+    "record mini-sprint planning workflow formalization as deferred workflow debt only"
+  ],
+  "forbidden_operator_prompts": [
+    "add recursive folds, apollonian fields, inversion, polar repeat, skew, anisotropy, or new pack ops in this slice",
+    "add arbitrary user pack catalog or authoring UX",
+    "redesign the Color Pipeline workflow",
+    "replace the authored SDF pack parser or field producer with a bespoke renderer monolith",
+    "change AGENTS.md, hook policy, or workflow tools for mini-sprint planning",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_sdf_pack_scene_lane_shell",
+    "source_head": "cf9754e",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "default_pack_id": "sdf_smooth_lattice_2d",
+    "normal_dropdown_lane_required": true,
+    "field_primary_scene_required": true
+  },
+  "forbidden_defaults": {
+    "new_sdf_pack_ops": "forbidden",
+    "recursive_or_apollonian_fields": "forbidden",
+    "workflow_tooling_change": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_pack_scene_lane_shell.contract.json --out-json artifacts/validation/sdf_pack_scene_lane_shell_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_lane_shell_plan_sync --log artifacts/logs/sdf_pack_scene_lane_shell_plan_sync.log --out-json artifacts/validation/sdf_pack_scene_lane_shell_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_pack_scene_lane_shell_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_lane_shell_native_schema --log artifacts/logs/sdf_pack_scene_lane_shell_native_schema.log --out-json artifacts/validation/sdf_pack_scene_lane_shell_native_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_ui_schema",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_lane_shell_native_binding --log artifacts/logs/sdf_pack_scene_lane_shell_native_binding.log --out-json artifacts/validation/sdf_pack_scene_lane_shell_native_binding.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_schema_binding",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_lane_shell_native_pack --log artifacts/logs/sdf_pack_scene_lane_shell_native_pack.log --out-json artifacts/validation/sdf_pack_scene_lane_shell_native_pack.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack test_sdf_pack_field_producer test_sdf_pack_field_producer_cuda",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_lane_shell_native_state_report --log artifacts/logs/sdf_pack_scene_lane_shell_native_state_report.log --out-json artifacts/validation/sdf_pack_scene_lane_shell_native_state_report.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_state_io test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_lane_shell_publish --log artifacts/logs/sdf_pack_scene_lane_shell_publish.log --out-json artifacts/validation/sdf_pack_scene_lane_shell_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_lane_shell_runtime --log artifacts/logs/sdf_pack_scene_lane_shell_runtime.log --out-json artifacts/validation/sdf_pack_scene_lane_shell_runtime.json --heartbeat-seconds 30 --timeout-seconds 600 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_pack_scene_lane.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_pack_scene_lane_shell_PHASED_PLAN.md --out-json artifacts/validation/sdf_pack_scene_lane_shell_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pack_scene_lane_shell_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_lane_shell_diff_check --log artifacts/logs/sdf_pack_scene_lane_shell_diff_check.log --out-json artifacts/validation/sdf_pack_scene_lane_shell_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF pack scene lane shell contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_pack_scene_lane_shell_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF pack scene lane shell hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_pack_scene_lane_shell_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

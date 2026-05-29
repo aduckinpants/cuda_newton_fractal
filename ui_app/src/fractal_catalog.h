@@ -14,6 +14,7 @@ enum class FractalCatalogCategory : uint8_t {
     explaino,
     analysis,
     custom,
+    sdf,
 };
 
 enum class FractalCatalogFamily : uint8_t {
@@ -37,6 +38,7 @@ enum class FractalCatalogFamily : uint8_t {
     projection_and_flow,
     magnet,
     generic_equation_pack,
+    sdf_pack_scene,
 };
 
 enum class FractalCatalogViewPolicy : uint8_t {
@@ -66,6 +68,7 @@ enum class FractalCatalogFormulaGrowthSurface : uint8_t {
     native_2d_formula,
     native_composite_formula,
     generic_equation_pack,
+    sdf_pack_scene,
 };
 
 enum class FractalCatalogRuntimeFlag : uint32_t {
@@ -83,6 +86,7 @@ enum class FractalCatalogCapabilityFlag : uint32_t {
     color_pipeline_frame_coloring = 1u << 4,
     generic_equation_pack = 1u << 5,
     root_basin_coloring = 1u << 6,
+    sdf_pack_scene = 1u << 7,
 };
 
 struct FractalCatalogEntry {
@@ -170,6 +174,9 @@ inline constexpr uint32_t FractalCatalogCapabilityFlagsFor(FractalType fractalTy
         (SupportsBasinColoring(fractalType) ? FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::root_basin_coloring) : 0u) |
         (fractalType == FractalType::generic_equation_pack
                 ? FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::generic_equation_pack)
+                : 0u) |
+        (fractalType == FractalType::sdf_pack_scene
+                ? FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::sdf_pack_scene)
                 : 0u);
 }
 
@@ -267,6 +274,7 @@ inline constexpr FractalCatalogEntry kFractalCatalog[] = {
     FRACTAL_CATALOG_ENTRY(explaino_projection_and_flow, "explaino_projection_and_flow", "Explaino Projection and Flow", explaino, explaino, explaino_family_region, explaino_family, native_composite_formula),
     FRACTAL_CATALOG_ENTRY(magnet, "magnet", "Magnet Type I", escape_time, magnet, escape_tuned_region, escape_direct, native_2d_formula),
     FRACTAL_CATALOG_ENTRY(generic_equation_pack, "generic_equation_pack", "Generic Equation Pack", custom, generic_equation_pack, custom_workbench_region, custom_workbench, generic_equation_pack),
+    FRACTAL_CATALOG_ENTRY(sdf_pack_scene, "sdf_pack_scene", "SDF Pack Scene", sdf, sdf_pack_scene, custom_workbench_region, custom_workbench, sdf_pack_scene),
 };
 
 #undef FRACTAL_CATALOG_ENTRY

@@ -299,6 +299,26 @@ static ColorPipelineRuntimeSnapshot CaptureColorPipelineRuntimeSnapshot(const Ke
     return snapshot;
 }
 
+static bool ColorPipelineSnapshotUsesSdfSource(const ColorPipelineRuntimeSnapshot& snapshot) {
+    auto isSdfSignal = [](ColorSignal signal) {
+        return signal == ColorSignal::sdf_signed_distance ||
+            signal == ColorSignal::sdf_normal_angle ||
+            signal == ColorSignal::sdf_inside_outside ||
+            signal == ColorSignal::sdf_boundary_band ||
+            signal == ColorSignal::sdf_curvature ||
+            signal == ColorSignal::lens_field_v2_distance;
+    };
+    if (isSdfSignal(snapshot.color_pipeline.signal)) {
+        return true;
+    }
+    for (int index = 0; index < snapshot.color_source_stack_count; ++index) {
+        if (isSdfSignal(snapshot.color_source_stack[index].signal)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool CanRestoreColorPipelineRuntimeSnapshot(FractalType fractalType, const ColorPipelineRuntimeSnapshot& snapshot) {
     if (!IsColorPipelineAllowedForFractal(fractalType, snapshot.color_pipeline)) {
         return false;
@@ -700,7 +720,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
 
 void ApplyFractalPresetDefaultsForFractalSwitch(const ViewState& view, KernelParams& params, bool* ioDirty) {
     const ColorPipelineRuntimeSnapshot previousColor = CaptureColorPipelineRuntimeSnapshot(params);
-    const bool canPreserveColor = CanRestoreColorPipelineRuntimeSnapshot(view.fractal_type, previousColor);
+    const bool canPreserveColor =
+        (view.fractal_type != FractalType::sdf_pack_scene || ColorPipelineSnapshotUsesSdfSource(previousColor)) &&
+        CanRestoreColorPipelineRuntimeSnapshot(view.fractal_type, previousColor);
     ApplyFractalPresetDefaults(view, params, ioDirty);
     if (canPreserveColor) {
         RestoreColorPipelineRuntimeSnapshot(previousColor, params);

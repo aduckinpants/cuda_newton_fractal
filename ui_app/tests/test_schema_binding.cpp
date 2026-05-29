@@ -16,7 +16,7 @@
 
 namespace {
 
-constexpr std::size_t kExpectedFractalCount = 46;
+constexpr std::size_t kExpectedFractalCount = 47;
 
 struct ImGuiTestContext {
     ImGuiContext* context = nullptr;
@@ -502,7 +502,7 @@ bool SchemaFractalOptionsMatchEnumIds(const json_min::Value& schemaRoot) {
         schemaIds.push_back(id);
     }
     if (schemaIds.size() != kExpectedFractalCount || std::size(enum_id_utils::kFractalTypeIds) != kExpectedFractalCount) {
-        std::cerr << "All-fractal inventory expected exactly 46 schema and enum fractal ids\n";
+        std::cerr << "All-fractal inventory expected exactly 47 schema and enum fractal ids\n";
         return false;
     }
     for (const auto& enumId : enum_id_utils::kFractalTypeIds) {
@@ -586,7 +586,7 @@ bool ValidateGeneratedAllFractalControlInventory() {
         }
     }
     if (laneCount != kExpectedFractalCount) {
-        std::cerr << "All-fractal inventory did not visit all 46 fractal lanes\n";
+        std::cerr << "All-fractal inventory did not visit all 47 fractal lanes\n";
         return false;
     }
     if (visibleFamilyControlCells < 200) {
@@ -769,7 +769,7 @@ bool ValidateAndExportAllFractalControlDescriptor(const json_min::Value& schemaR
     }
 
     if (laneCount != kExpectedFractalCount) {
-        std::cerr << "Descriptor export did not visit all 46 fractal lanes\n";
+        std::cerr << "Descriptor export did not visit all 47 fractal lanes\n";
         return false;
     }
     if (visibleControlCells < 200) {
@@ -1308,6 +1308,11 @@ int main() {
         if (!ctx.SetEnumId("fractal.view.fractal_type", "generic_equation_pack") ||
             ctx.GetEnumId("fractal.view.fractal_type") != "generic_equation_pack") {
             std::cerr << "Expected fractal type enum round-trip to accept generic_equation_pack\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.view.fractal_type", "sdf_pack_scene") ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "sdf_pack_scene") {
+            std::cerr << "Expected fractal type enum round-trip to accept sdf_pack_scene\n";
             return 1;
         }
         float* juliaCReal = nullptr;

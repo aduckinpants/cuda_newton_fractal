@@ -103,6 +103,9 @@ int main() {
         Check(HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::generic_equation_pack) ==
                 (pair.value == FractalType::generic_equation_pack),
             "Only the generic equation pack row should carry the generic-equation-pack capability flag");
+        Check(HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::sdf_pack_scene) ==
+                (pair.value == FractalType::sdf_pack_scene),
+            "Only the SDF pack scene row should carry the SDF-pack-scene capability flag");
 
         if (IsExplainoFamily(pair.value)) {
             Check(entry->category == FractalCatalogCategory::explaino,
@@ -110,6 +113,17 @@ int main() {
             Check(entry->family == FractalCatalogFamily::explaino,
                 "Every Explaino-family fractal should share the Explaino catalog family for Slice A");
         }
+    }
+
+    const FractalCatalogEntry* sdfPackScene = FindFractalCatalogEntry(FractalType::sdf_pack_scene);
+    Check(sdfPackScene != nullptr, "SDF pack scene must have a catalog row");
+    if (sdfPackScene) {
+        Check(sdfPackScene->category == FractalCatalogCategory::sdf,
+            "SDF pack scene should stay in the SDF category");
+        Check(sdfPackScene->family == FractalCatalogFamily::sdf_pack_scene,
+            "SDF pack scene should have a distinct catalog family");
+        Check(sdfPackScene->formula_growth_surface == FractalCatalogFormulaGrowthSurface::sdf_pack_scene,
+            "SDF pack scene should keep its SDF-pack formula growth surface");
     }
 
     const FractalCatalogEntry* generic = FindFractalCatalogEntry(FractalType::generic_equation_pack);
@@ -128,6 +142,7 @@ int main() {
             FractalType::explaino_counterfactual_pair,
             FractalType::projection_and_flow,
             FractalType::generic_equation_pack,
+            FractalType::sdf_pack_scene,
         }) {
         const FractalCatalogEntry* entry = FindFractalCatalogEntry(unsupportedProbeType);
         Check(entry && !HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::sample_probe),

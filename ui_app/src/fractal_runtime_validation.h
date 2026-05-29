@@ -82,6 +82,9 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
     if (view.fractal_type == FractalType::generic_equation_pack) {
         return FailFractalRuntimeValidation("generic_equation_pack requires the Generic Equation Pack live render path", outError);
     }
+    if (view.fractal_type == FractalType::sdf_pack_scene) {
+        return FailFractalRuntimeValidation("sdf_pack_scene requires the SDF Pack Scene live render path", outError);
+    }
     if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
         return FailFractalRuntimeValidation("selected coloring_mode is not valid for fractal_type", outError);
     }

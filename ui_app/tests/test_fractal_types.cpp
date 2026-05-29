@@ -74,6 +74,8 @@ void TestEnumOrdinalContracts() {
         "FractalType generic_equation_pack ordinal is stable");
     Check(static_cast<int>(FractalType::explaino_collatz_direct) == 45,
         "FractalType explaino_collatz_direct ordinal is append-only stable");
+    Check(static_cast<int>(FractalType::sdf_pack_scene) == 46,
+        "FractalType sdf_pack_scene ordinal is append-only stable");
     Check(static_cast<int>(CounterfactualPairRootFamily::cubic_unit_roots) == 0, "CounterfactualPairRootFamily cubic ordinal is stable");
     Check(static_cast<int>(CounterfactualPairRootFamily::quartic_unit_roots) == 1, "CounterfactualPairRootFamily quartic ordinal is stable");
     Check(static_cast<int>(CounterfactualPairFrame::world_absolute) == 0, "CounterfactualPairFrame world-absolute ordinal is stable");

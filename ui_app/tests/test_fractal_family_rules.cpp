@@ -124,6 +124,13 @@ int main() {
             std::cerr << "Escape-time Lens semantics should preserve bounded-inside membership\n";
             return 1;
         }
+        const LensMaskSemanticsDescriptor* sdfPackSceneLens = FindLensMaskSemanticsDescriptor(FractalType::sdf_pack_scene);
+        if (!sdfPackSceneLens || sdfPackSceneLens->partition != LensMaskPartition::sdf_field_membership ||
+            std::string_view(sdfPackSceneLens->semantic_id) != "sdf_field_membership" ||
+            LensMaskInsideForFractal(FractalType::sdf_pack_scene, true, false)) {
+            std::cerr << "SDF Pack Scene Lens semantics should explicitly name field-primary SDF authority and fail closed for legacy masks\n";
+            return 1;
+        }
         if (FindLensMaskSemanticsDescriptor(static_cast<FractalType>(999)) ||
             LensMaskInsideForFractal(static_cast<FractalType>(999), true, false) ||
             LensMaskInsideForBasinRootIndex(static_cast<FractalType>(999), 0)) {

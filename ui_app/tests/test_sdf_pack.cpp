@@ -3,8 +3,11 @@
 #include "sdf_pack.h"
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <map>
+#include <set>
+#include <sstream>
 #include <string>
 
 static int g_pass = 0;
@@ -20,6 +23,15 @@ static void Check(bool cond, const char* msg, int line) {
 }
 
 #define CHECK(cond, msg) Check((cond), (msg), __LINE__)
+
+static bool ReadTextFile(const char* path, std::string* outText) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) return false;
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    *outText = buffer.str();
+    return true;
+}
 
 static bool Nearly(double a, double b, double tol = 1.0e-6) {
     const double scale = (std::max)(1.0, (std::max)(std::fabs(a), std::fabs(b)));
@@ -108,6 +120,32 @@ static void TestParamOverrideChangesDistance() {
     CHECK(smooth.distance < tight.distance, "larger smooth-union blend expands the union near the seam");
 }
 
+static void TestBuiltInSmoothLatticePackContract() {
+    std::string json;
+    CHECK(ReadTextFile("../docs/examples/sdf_packs/sdf_smooth_lattice_2d.sdf_pack.json", &json),
+        "built-in smooth lattice pack file is readable");
+    if (json.empty()) return;
+    SdfPackParseResult parsed = ParseSdfPackJson(json);
+    CHECK(parsed.ok, "built-in smooth lattice pack parses");
+    if (!parsed.ok) {
+        std::cerr << parsed.error << "\n";
+        return;
+    }
+    CHECK(parsed.pack.pack_id == "sdf_smooth_lattice_2d", "built-in pack id is stable");
+    CHECK(parsed.pack.kind == "sdf_scene_2d", "built-in pack kind is an SDF scene");
+    CHECK(parsed.pack.params.size() == 6, "built-in pack exposes six params");
+    CHECK(parsed.pack.controls.size() == 6, "built-in pack exposes six controls");
+    std::set<std::string> controlParams;
+    for (const SdfPackControl& control : parsed.pack.controls) {
+        controlParams.insert(control.param);
+    }
+    for (const char* id : {"period", "radius", "smooth_blend", "rotation", "offset_x", "offset_y"}) {
+        CHECK(controlParams.find(id) != controlParams.end(), "built-in pack exposes the required control param");
+    }
+    SdfPackLowerResult lowered = LowerSdfPackToRuntimeDesc(parsed.pack, {});
+    CHECK(lowered.ok, "built-in smooth lattice lowers to runtime desc");
+}
+
 static void TestRejections() {
     const char* unknownRoot = R"json({"schema":1,"pack_id":"bad","name":"Bad","kind":"sdf_scene_2d","ast":{"op":"circle","radius":1.0},"unexpected":true})json";
     SdfPackParseResult parsed = ParseSdfPackJson(unknownRoot);
@@ -149,6 +187,7 @@ int main() {
     TestParseAndSampleKnownPack();
     TestPrimitiveDistances();
     TestParamOverrideChangesDistance();
+    TestBuiltInSmoothLatticePackContract();
     TestRejections();
     std::cout << "test_sdf_pack: pass=" << g_pass << " fail=" << g_fail << "\n";
     return g_fail == 0 ? 0 : 1;

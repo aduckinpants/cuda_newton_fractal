@@ -707,6 +707,8 @@ int main() {
         bool foundCounterfactualPairRootFindingGroup = false;
         bool foundProjectionAndFlowRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
+        bool foundSafeModeFractalTypeSdfGroup = false;
+        bool foundFractalTypeSdfGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
         bool foundFractalTypeExplainoProjectionAndFlowGroup = false;
@@ -936,6 +938,8 @@ int main() {
                         if (option.id == "counterfactual_pair" && option.group == "Root-Finding") foundCounterfactualPairRootFindingGroup = true;
                         if (option.id == "projection_and_flow" && option.group == "Root-Finding") foundProjectionAndFlowRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
+                        if (option.id == "sdf_pack_scene" && option.group == "SDF") foundSafeModeFractalTypeSdfGroup = true;
+                        if (option.id == "sdf_pack_scene" && option.group == "SDF") foundFractalTypeSdfGroup = true;
                         if (option.group == "Explaino") {
                             ++explainoGroupOptionCount;
                             const ExplainoSelectorDescriptor* descriptor = FindExplainoSelectorDescriptor(option.id);
@@ -1447,7 +1451,7 @@ int main() {
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||
             !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
-            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
+            !foundFractalTypeSdfGroup || !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
             !foundFractalTypeExplainoProjectionAndFlowGroup || !foundFractalTypeExplainoCounterfactualPairGroup) {
             std::cerr << "Did not find grouped fractal selector categories including the canonical Explaino-all entry in schema\n";
             return 1;
@@ -1532,6 +1536,7 @@ int main() {
         bool foundCounterfactualPairRootFindingGroup = false;
         bool foundProjectionAndFlowRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
+        bool foundSafeModeFractalTypeSdfGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
         bool foundSafeModeExplainoProjectionAndFlowGroup = false;
@@ -1794,6 +1799,7 @@ int main() {
                         if (option.id == "counterfactual_pair" && option.group == "Root-Finding") foundCounterfactualPairRootFindingGroup = true;
                         if (option.id == "projection_and_flow" && option.group == "Root-Finding") foundProjectionAndFlowRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
+                        if (option.id == "sdf_pack_scene" && option.group == "SDF") foundSafeModeFractalTypeSdfGroup = true;
                         if (option.group == "Explaino") {
                             ++safeModeExplainoGroupOptionCount;
                             const ExplainoSelectorDescriptor* descriptor = FindExplainoSelectorDescriptor(option.id);
@@ -1879,7 +1885,7 @@ int main() {
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||
             !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
-            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
+            !foundSafeModeFractalTypeSdfGroup || !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
             !foundSafeModeExplainoProjectionAndFlowGroup || !foundSafeModeExplainoCounterfactualPairGroup) {
             std::cerr << "Safe-mode schema did not expose grouped fractal selector categories including the canonical Explaino-all entry\n";
             return 1;

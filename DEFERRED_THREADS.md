@@ -7,6 +7,24 @@ Agent protocol: see `AGENT_WORKING_PROTOCOL.md` for working rules.
 
 Last reconciled: 2026-05-28 on `codex/sdf-postprocess-roadmap-truth-sync` after the measured SDF postprocess optimization merged to `master`.
 
+## Urgent Deferred Interrupt - Deploy/Findings Disk Pressure
+
+Status: deferred high-priority cleanup; do not mix into the active `sdf_pack_scene` lane slice.
+
+Reported 2026-05-28: deploy/publish work is copying about 8 GB of diagnostics plus full findings copies, and `C:\code` disk pressure is now a concern. The next bounded cleanup slice should audit deploy/copy manifests, diagnostics output retention, findings duplication, and repo-local artifact retention, then tighten deploy contents to only files needed by the runtime/test proof path.
+
+Acceptance direction: prove the deploy output excludes stale diagnostics/findings bulk, keep required runtime artifacts intact, add a regression test or manifest audit so the copy bloat cannot silently return, and clean unnecessary old data from this checkout only after confirming it is generated or safely archived elsewhere.
+
+Owner note: user explicitly asked to record this for later and continue the current SDF pack scene lane task.
+
+## Deferred Workflow Debt - Mini-Sprint Planning Formalization
+
+Status: deferred workflow-design cleanup; do not change hooks, `AGENTS.md`, or workflow tools under the active `sdf_pack_scene` product slice.
+
+The recent bounded mini-campaign pattern was useful: a small sprint-like plan grouped related feature slices, recorded replan gates up front, kept deferred ideas visible, and made it easier to resume without sprawling per-turn context. A future workflow slice should evaluate whether to formalize that as a lightweight campaign planning surface, including expected branch-per-feature boundaries, progress/status reporting, explicit stop/replan points, and how it coexists with the existing phased-plan/contract/rearward-review rails.
+
+Acceptance direction: document the intended operator/agent workflow first, then add tooling only if the existing plan/contract/checkpoint surfaces cannot cover it simply. Do not loosen closure proof or checkpoint requirements.
+
 ## Current Difficulty / Reward Priority
 
 This table is the current backlog order after reconciling the older deferred notes, the parameter functionality campaign, the capture/pacing repairs, the generic equation-pack pause README, and the modular Magnet/toolkit plan. It is planning guidance, not permission to skip a new plan/contract for implementation.

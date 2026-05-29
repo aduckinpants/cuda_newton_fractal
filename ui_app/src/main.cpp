@@ -6,6 +6,7 @@
 #include <shellapi.h>
 #include <tchar.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include <chrono>
@@ -15,6 +16,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -129,7 +131,7 @@ static void PersistSdfPackViewerStateToDiagnosticLastMirror(
     const std::string& exeDir,
     const SdfPackViewerState& sdfPackViewer,
     std::string* ioStatus);
-static bool SdfPackViewerSelectedAsFieldSource(const SdfPackViewerState& state);
+static bool SdfPackViewerSelectedAsFieldSource(FractalType fractalType, const SdfPackViewerState& state);
 static bool ComputeSdfPackViewerFieldForViewport(
     const SdfPackViewerState& state,
     const ViewState& view,
@@ -514,6 +516,35 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
 
 // --- Headless capture helpers ---
 
+static bool RenderSdfPackSceneBaseFrame(
+    const RenderSettings& render,
+    std::uint32_t* outRgba,
+    std::uint8_t* outMask,
+    RenderStats* outStats) {
+    const auto start = std::chrono::steady_clock::now();
+    if (!outRgba || render.resolution.x <= 0 || render.resolution.y <= 0) {
+        return false;
+    }
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(render.resolution.x) *
+        static_cast<std::size_t>(render.resolution.y);
+    std::fill(outRgba, outRgba + pixelCount, 0xff000000u);
+    if (outMask) {
+        std::fill(outMask, outMask + pixelCount, static_cast<std::uint8_t>(0));
+    }
+    if (outStats) {
+        *outStats = {};
+        outStats->last_pixel_count = pixelCount > static_cast<std::size_t>((std::numeric_limits<int>::max)())
+            ? (std::numeric_limits<int>::max)()
+            : static_cast<int>(pixelCount);
+        outStats->resolved_eval.backend = NumericBackend::float32;
+        outStats->resolved_eval.strategy = IterationStrategy::direct;
+        outStats->last_render_ms = static_cast<float>(
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count());
+    }
+    return true;
+}
+
 static bool RenderHeadlessFractalFrame(
     const ViewState& view,
     const KernelParams& params,
@@ -540,7 +571,7 @@ static bool RenderHeadlessFractalFrame(
     const bool authoredSdfFieldSelected =
         colorPipelineNeedsSdf &&
         sdfPackForSdf &&
-        SdfPackViewerSelectedAsFieldSource(*sdfPackForSdf);
+        SdfPackViewerSelectedAsFieldSource(view.fractal_type, *sdfPackForSdf);
 
     std::vector<uint8_t> mask;
     uint8_t* maskPtr = nullptr;
@@ -550,7 +581,12 @@ static bool RenderHeadlessFractalFrame(
     }
 
     const char* renderError = nullptr;
-    if (!RenderFractalCUDA(view, params, render, outRgba.data(), maskPtr, outStats, &renderError)) {
+    if (view.fractal_type == FractalType::sdf_pack_scene) {
+        if (!RenderSdfPackSceneBaseFrame(render, outRgba.data(), maskPtr, outStats)) {
+            if (outError) *outError = "SDF Pack Scene base frame failed during headless capture.";
+            return false;
+        }
+    } else if (!RenderFractalCUDA(view, params, render, outRgba.data(), maskPtr, outStats, &renderError)) {
         if (outError) *outError = renderError ? renderError : "RenderFractalCUDA failed during headless capture.";
         return false;
     }
@@ -604,6 +640,10 @@ static bool RenderHeadlessFractalFrame(
         sourceRender.resolution = sdfSourceResolution;
         RenderStats sourceStats{};
         const char* sourceRenderError = nullptr;
+        if (view.fractal_type == FractalType::sdf_pack_scene) {
+            if (outError) *outError = "SDF Pack Scene requires authored SDF pack field source for headless capture.";
+            return false;
+        }
         if (!RenderFractalCUDA(view, params, sourceRender, sourceRgba.data(), sourceMask.data(), &sourceStats, &sourceRenderError)) {
             if (outError) {
                 *outError = sourceRenderError
@@ -954,8 +994,9 @@ static void BuildLensSdfViewportOverlayRgba(
     }
 }
 
-static bool SdfPackViewerSelectedAsFieldSource(const SdfPackViewerState& state) {
-    return state.use_as_sdf_field_source;
+static bool SdfPackViewerSelectedAsFieldSource(FractalType fractalType, const SdfPackViewerState& state) {
+    return state.have_pack &&
+        (fractalType == FractalType::sdf_pack_scene || state.use_as_sdf_field_source);
 }
 
 static SdfPackFieldRegion BuildViewportSdfPackFieldRegion(const ViewState& view) {
@@ -1047,7 +1088,8 @@ static void DispatchRenderFrame(
     const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
     const bool lensSdfOverlayEnabled = LensSdfOverlayEnabled(lens);
     const bool needsLensSdfField = lens.enabled || colorPipelineNeedsSdf || lensSdfOverlayEnabled;
-    const bool authoredSdfFieldSelected = needsLensSdfField && SdfPackViewerSelectedAsFieldSource(sdfPackViewer);
+    const bool authoredSdfFieldSelected =
+        needsLensSdfField && SdfPackViewerSelectedAsFieldSource(view.fractal_type, sdfPackViewer);
     const bool needsMaskDerivedLensSdfField = needsLensSdfField && !authoredSdfFieldSelected;
     lensSdfProbe.field_source = authoredSdfFieldSelected
         ? "authored_sdf_pack"
@@ -1079,6 +1121,11 @@ static void DispatchRenderFrame(
                 maskPtr,
                 &newStats,
                 &genericRenderError);
+        }
+    } else if (view.fractal_type == FractalType::sdf_pack_scene) {
+        renderOk = RenderSdfPackSceneBaseFrame(dispatchRender, rgba.data(), maskPtr, &newStats);
+        if (!renderOk) {
+            genericRenderError = "SDF Pack Scene base frame failed";
         }
     } else {
         renderOk = RenderFractalCUDA(view, params, dispatchRender, rgba.data(), maskPtr, &newStats, &err);
@@ -1647,6 +1694,9 @@ static void RenderSweepControls(const SweepPlayerConfig& config, SweepPlayerStat
 static bool EnsureEquationPackWorkbenchDefaultLoaded(
     const std::string& exeDir,
     GenericEquationPackWorkbenchState& equationPackWorkbench);
+static bool EnsureSdfPackSceneDefaultLoaded(
+    const std::string& exeDir,
+    SdfPackViewerState& sdfPackViewer);
 static bool LoadSdfPackViewerStateFileIfPresent(
     const std::string& path,
     SdfPackViewerState& sdfPackViewer);
@@ -1732,6 +1782,13 @@ static UiActionFlags RenderControlsWindow(
             &equationPackInteracted);
         if (equationPackInteracted) {
             actions.interactionChanged = true;
+            dirty = true;
+        }
+    }
+    if (view.fractal_type == FractalType::sdf_pack_scene) {
+        const bool hadPack = sdfPackViewer.have_pack;
+        sdfPackViewer.open = true;
+        if (EnsureSdfPackSceneDefaultLoaded(exeDir, sdfPackViewer) && !hadPack) {
             dirty = true;
         }
     }
@@ -2465,23 +2522,29 @@ static std::string ReadTrimmedTextFile(const std::string& path) {
     return text;
 }
 
-static std::string ResolveDefaultEquationPackPath(const std::string& exeDir) {
+static std::string ResolveDefaultPackPath(const std::string& exeDir, const char* relativePath) {
     const std::filesystem::path metadataPath = std::filesystem::path(exeDir) / "fractal_ui_repo_root.txt";
     const std::string repoRoot = ReadTrimmedTextFile(metadataPath.string());
     if (!repoRoot.empty()) {
-        const std::filesystem::path candidate =
-            std::filesystem::path(repoRoot) / "docs" / "examples" / "equation_packs" / "newton_z3_minus_1_pack.json";
+        const std::filesystem::path candidate = std::filesystem::path(repoRoot) / relativePath;
         if (std::filesystem::exists(candidate)) {
             return candidate.string();
         }
     }
 
-    const std::filesystem::path cwdCandidate =
-        std::filesystem::current_path() / "docs" / "examples" / "equation_packs" / "newton_z3_minus_1_pack.json";
+    const std::filesystem::path cwdCandidate = std::filesystem::current_path() / relativePath;
     if (std::filesystem::exists(cwdCandidate)) {
         return cwdCandidate.string();
     }
     return std::string();
+}
+
+static std::string ResolveDefaultEquationPackPath(const std::string& exeDir) {
+    return ResolveDefaultPackPath(exeDir, "docs/examples/equation_packs/newton_z3_minus_1_pack.json");
+}
+
+static std::string ResolveDefaultSdfPackScenePath(const std::string& exeDir) {
+    return ResolveDefaultPackPath(exeDir, "docs/examples/sdf_packs/sdf_smooth_lattice_2d.sdf_pack.json");
 }
 
 static void InitializeEquationPackWorkbenchFromCli(
@@ -2533,6 +2596,29 @@ static bool EnsureEquationPackWorkbenchDefaultLoaded(
     }
     std::string error;
     return LoadGenericEquationPackWorkbenchPack(&equationPackWorkbench, packPath, &error);
+}
+
+
+static bool EnsureSdfPackSceneDefaultLoaded(
+    const std::string& exeDir,
+    SdfPackViewerState& sdfPackViewer) {
+    if (sdfPackViewer.initialized && sdfPackViewer.have_pack &&
+        sdfPackViewer.pack.pack_id == "sdf_smooth_lattice_2d") {
+        return true;
+    }
+    if (sdfPackViewer.initialized && !sdfPackViewer.have_pack && !sdfPackViewer.pack_load_error.empty()) {
+        return false;
+    }
+    const std::string packPath = ResolveDefaultSdfPackScenePath(exeDir);
+    if (packPath.empty()) {
+        sdfPackViewer.initialized = true;
+        sdfPackViewer.pack_load_error = "unable to resolve default SDF pack scene path";
+        return false;
+    }
+    std::string error;
+    const bool ok = LoadSdfPackViewerPack(&sdfPackViewer, packPath, &error);
+    sdfPackViewer.open = true;
+    return ok;
 }
 
 static void OpenEquationPackWorkbenchWithDefault(
@@ -2630,7 +2716,9 @@ static void PersistSdfPackViewerStateToDiagnosticLastMirror(
 
 static void InitializeSdfPackViewerFromCli(
     const ViewerCliArgs& cli,
+    const std::string& exeDir,
     const std::string& currentLoadedStatePath,
+    FractalType currentFractalType,
     SdfPackViewerState& sdfPackViewer) {
     if (!currentLoadedStatePath.empty()) {
         LoadSdfPackViewerStateFileIfPresent(currentLoadedStatePath, sdfPackViewer);
@@ -2648,7 +2736,7 @@ static void InitializeSdfPackViewerFromCli(
         wantsClick ||
         sdfPackViewer.have_pack ||
         sdfPackViewer.open;
-    if (!shouldOpen) {
+    if (!shouldOpen && currentFractalType != FractalType::sdf_pack_scene) {
         return;
     }
 
@@ -2659,6 +2747,8 @@ static void InitializeSdfPackViewerFromCli(
         LoadSdfPackViewerPack(&sdfPackViewer, cli.sdf_pack_json_path, &error);
         sdfPackViewer.open = true;
         sdfPackViewer.force_open_for_automation = wantsSetValue || wantsClick || cli.have_ui_automation_report_json;
+    } else if (currentFractalType == FractalType::sdf_pack_scene) {
+        EnsureSdfPackSceneDefaultLoaded(exeDir, sdfPackViewer);
     } else if (!sdfPackViewer.initialized) {
         sdfPackViewer.initialized = true;
     }
@@ -4042,7 +4132,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
           dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
       if (initRc != 0) return initRc; }
     InitializeEquationPackWorkbenchFromCli(cli, exeDir, equationPackWorkbench);
-    InitializeSdfPackViewerFromCli(cli, currentLoadedStatePath, sdfPackViewer);
+    InitializeSdfPackViewerFromCli(cli, exeDir, currentLoadedStatePath, view.fractal_type, sdfPackViewer);
     CaptureLoadedStateFractalTypeIfAny(currentLoadedStatePath, view, currentLoadedStateFractalType);
 
     BindingContext bind = BuildViewerBindingContext(view, params, render, lens);

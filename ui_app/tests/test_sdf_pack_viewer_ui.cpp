@@ -4,6 +4,9 @@
 
 #include <cmath>
 #include <cstdio>
+#include <fstream>
+#include <set>
+#include <sstream>
 #include <string>
 
 static int g_passed = 0;
@@ -16,6 +19,15 @@ static void Check(bool condition, const char* message) {
         ++g_failed;
         std::printf("  FAIL: %s\n", message);
     }
+}
+
+static bool ReadTextFile(const char* path, std::string* outText) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) return false;
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    *outText = buffer.str();
+    return true;
 }
 
 static const SdfPackViewerControlReport* FindReportControl(
@@ -52,6 +64,38 @@ static const char* kCirclePack = R"json({
     "radius": { "param": "radius" }
   }
 })json";
+
+static void TestBuiltInSmoothLatticeViewerControls() {
+    std::string json;
+    Check(ReadTextFile("../docs/examples/sdf_packs/sdf_smooth_lattice_2d.sdf_pack.json", &json),
+        "built-in smooth lattice pack file is readable for viewer UI");
+    if (json.empty()) return;
+    SdfPackViewerState state{};
+    std::string error;
+    Check(LoadSdfPackViewerJson(&state, json, "builtin://sdf_smooth_lattice_2d", &error),
+        "built-in smooth lattice pack loads into viewer UI state");
+    if (!state.have_pack) return;
+    SdfPackViewerAutomationReport report = BuildSdfPackViewerAutomationReport(state);
+    Check(report.pack_id == "sdf_smooth_lattice_2d", "built-in viewer report publishes pack id");
+    Check(report.controls.size() == 6, "built-in viewer report exposes six controls");
+    std::set<std::string> controlIds;
+    for (const SdfPackViewerControlReport& control : report.controls) {
+        controlIds.insert(control.control_id);
+    }
+    for (const char* id : {
+            "sdf_pack.period.primary",
+            "sdf_pack.radius.primary",
+            "sdf_pack.smooth_blend.primary",
+            "sdf_pack.rotation.primary",
+            "sdf_pack.offset_x.primary",
+            "sdf_pack.offset_y.primary",
+        }) {
+        Check(controlIds.find(id) != controlIds.end(), "built-in viewer report exposes required control id");
+    }
+    Check(SetSdfPackViewerControlValue(&state, "sdf_pack.period.primary", 1.2, &error),
+        "built-in period control is editable through no-mouse set-value path");
+    Check(std::fabs(state.params["period"] - 1.2) < 1e-12, "built-in period edit updates param state");
+}
 
 static void TestPackControlsAreVisibleAndEditable() {
     SdfPackViewerState state{};
@@ -131,6 +175,8 @@ static void TestResetDefaultsAndStateJsonRoundTrip() {
     state.use_as_sdf_field_source = true;
     std::string stateJson = SerializeSdfPackViewerStateJson(state);
     Check(stateJson.find("\"sdf_pack\"") != std::string::npos, "serialized state includes sdf_pack object");
+    Check(stateJson.find("\"pack_id\": \"viewer_circle\"") != std::string::npos,
+        "serialized state includes explicit pack id marker");
     Check(stateJson.find("\"use_as_sdf_field_source\": true") != std::string::npos,
         "serialized state includes authored field-source authority");
     Check(stateJson.find("\"radius\"") != std::string::npos, "serialized state includes control params");
@@ -187,6 +233,7 @@ static void TestDiagnosticsStateMergeRoundTrip() {
 }
 
 int main() {
+    TestBuiltInSmoothLatticeViewerControls();
     TestPackControlsAreVisibleAndEditable();
     TestAutomationReportAndPreviewHashChanges();
     TestResetDefaultsAndStateJsonRoundTrip();
