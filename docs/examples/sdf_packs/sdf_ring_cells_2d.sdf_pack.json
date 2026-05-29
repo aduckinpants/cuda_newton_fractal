@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "pack_id": "sdf_ring_cells_2d",
+  "name": "SDF Ring Cells 2D",
+  "kind": "sdf_scene_2d",
+  "params": [
+    { "id": "period", "type": "float", "default": 0.95, "range": [0.4, 3.0] },
+    { "id": "outer_radius", "type": "float", "default": 0.30, "range": [0.12, 0.55] },
+    { "id": "inner_radius", "type": "float", "default": 0.18, "range": [0.02, 0.42] },
+    { "id": "bar_width", "type": "float", "default": 0.06, "range": [0.015, 0.2] },
+    { "id": "smooth_blend", "type": "float", "default": 0.04, "range": [0.0, 0.35] },
+    { "id": "rotation", "type": "float", "default": 0.2, "range": [-3.141592653589793, 3.141592653589793] }
+  ],
+  "controls": [
+    { "param": "period", "label": "Period", "ui_min": 0.45, "ui_max": 2.0 },
+    { "param": "outer_radius", "label": "Outer Radius", "ui_min": 0.14, "ui_max": 0.45 },
+    { "param": "inner_radius", "label": "Inner Radius", "ui_min": 0.04, "ui_max": 0.34 },
+    { "param": "bar_width", "label": "Bar Width", "ui_min": 0.02, "ui_max": 0.16 },
+    { "param": "smooth_blend", "label": "Smooth Blend", "ui_min": 0.0, "ui_max": 0.22 },
+    { "param": "rotation", "label": "Rotation", "ui_min": -3.141592653589793, "ui_max": 3.141592653589793 }
+  ],
+  "region": {
+    "center": [0.0, 0.0],
+    "half_height": 2.0
+  },
+  "ast": {
+    "op": "repeat",
+    "period": [{ "param": "period" }, { "param": "period" }],
+    "child": {
+      "op": "rotate",
+      "angle": { "param": "rotation" },
+      "child": {
+        "op": "smooth_union",
+        "k": { "param": "smooth_blend" },
+        "a": {
+          "op": "subtract",
+          "a": { "op": "circle", "center": [0.0, 0.0], "radius": { "param": "outer_radius" } },
+          "b": { "op": "circle", "center": [0.0, 0.0], "radius": { "param": "inner_radius" } }
+        },
+        "b": {
+          "op": "union",
+          "a": { "op": "box", "center": [0.0, 0.0], "half_size": [{ "param": "bar_width" }, { "param": "outer_radius" }] },
+          "b": { "op": "box", "center": [0.0, 0.0], "half_size": [{ "param": "outer_radius" }, { "param": "bar_width" }] }
+        }
+      }
+    }
+  }
+}

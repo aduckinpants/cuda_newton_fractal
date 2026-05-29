@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <limits>
@@ -22,6 +23,7 @@ constexpr int kPreviewWidth = 32;
 constexpr int kPreviewHeight = 32;
 constexpr const char* kResetDefaultsControlId = "sdf_pack.reset_defaults";
 constexpr const char* kUseAsSdfFieldSourceControlId = "sdf_pack.use_as_sdf_field_source.primary";
+constexpr const char* kBuiltInPackSelectorControlId = "sdf_pack.builtin_pack";
 
 std::uint64_t Fnv1aAppend(std::uint64_t hash, std::uint64_t value) {
     for (int byteIndex = 0; byteIndex < 8; ++byteIndex) {
@@ -225,6 +227,51 @@ bool ApplyStateJsonParams(
     return ApplyParamValues(outState, next, outError);
 }
 
+std::string ReadTrimmedTextFileLocal(const std::filesystem::path& path) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        return {};
+    }
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    std::string text = buffer.str();
+    while (!text.empty() && (text.back() == '\r' || text.back() == '\n' || text.back() == ' ' || text.back() == '\t')) {
+        text.pop_back();
+    }
+    return text;
+}
+
+const SdfPackViewerBuiltInPackCatalogEntry* FindBuiltInPackEntry(const std::string& packId) {
+    for (const SdfPackViewerBuiltInPackCatalogEntry& entry : SdfPackViewerBuiltInPackCatalog()) {
+        if (entry.pack_id == packId) {
+            return &entry;
+        }
+    }
+    return nullptr;
+}
+
+std::string ResolveBuiltInPackPath(const std::string& exeDir, const SdfPackViewerBuiltInPackCatalogEntry& entry) {
+    const std::filesystem::path relativePath(entry.relative_path);
+    if (!exeDir.empty()) {
+        const std::filesystem::path metadataPath = std::filesystem::path(exeDir) / "fractal_ui_repo_root.txt";
+        const std::string repoRoot = ReadTrimmedTextFileLocal(metadataPath);
+        if (!repoRoot.empty()) {
+            const std::filesystem::path candidate = std::filesystem::path(repoRoot) / relativePath;
+            if (std::filesystem::exists(candidate)) {
+                return candidate.string();
+            }
+        }
+        const std::filesystem::path exeCandidate = std::filesystem::path(exeDir) / relativePath;
+        if (std::filesystem::exists(exeCandidate)) {
+            return exeCandidate.string();
+        }
+    }
+    const std::filesystem::path cwdCandidate = std::filesystem::current_path() / relativePath;
+    if (std::filesystem::exists(cwdCandidate)) {
+        return cwdCandidate.string();
+    }
+    return {};
+}
 #ifndef SDF_PACK_VIEWER_UI_NO_IMGUI
 void NoteSdfPackUiAutomationRect(
     std::vector<ViewerUiAutomationRect>* automationRects,
@@ -292,6 +339,69 @@ bool ConsumeResetClickIfRequested(
 
 } // namespace
 
+const std::vector<SdfPackViewerBuiltInPackCatalogEntry>& SdfPackViewerBuiltInPackCatalog() {
+    static const std::vector<SdfPackViewerBuiltInPackCatalogEntry> catalog = {
+        {"sdf_smooth_lattice_2d", "Smooth Lattice", "docs/examples/sdf_packs/sdf_smooth_lattice_2d.sdf_pack.json"},
+        {"sdf_capsule_weave_2d", "Capsule Weave", "docs/examples/sdf_packs/sdf_capsule_weave_2d.sdf_pack.json"},
+        {"sdf_ring_cells_2d", "Ring Cells", "docs/examples/sdf_packs/sdf_ring_cells_2d.sdf_pack.json"},
+    };
+    return catalog;
+}
+
+const char* SdfPackViewerDefaultBuiltInPackId() {
+    return "sdf_smooth_lattice_2d";
+}
+
+std::string SdfPackViewerBuiltInPackSelectorAutomationId() {
+    return kBuiltInPackSelectorControlId;
+}
+
+bool SdfPackViewerShouldLoadDefaultBuiltInPack(const SdfPackViewerState& state) {
+    if (state.initialized && state.have_pack) {
+        return false;
+    }
+    if (state.initialized && !state.have_pack && !state.pack_load_error.empty()) {
+        return false;
+    }
+    return true;
+}
+
+bool SdfPackViewerWantsEnumControl(const std::string& controlId) {
+    return controlId == kBuiltInPackSelectorControlId;
+}
+
+bool LoadSdfPackViewerBuiltInPack(
+    SdfPackViewerState* ioState,
+    const std::string& exeDir,
+    const std::string& packId,
+    std::string* outError) {
+    const SdfPackViewerBuiltInPackCatalogEntry* entry = FindBuiltInPackEntry(packId);
+    if (!entry) {
+        if (outError) *outError = "unknown built-in SDF pack: " + packId;
+        return false;
+    }
+    const std::string packPath = ResolveBuiltInPackPath(exeDir, *entry);
+    if (packPath.empty()) {
+        if (outError) *outError = "unable to resolve built-in SDF pack path: " + entry->relative_path;
+        return false;
+    }
+    if (!LoadSdfPackViewerPack(ioState, packPath, outError)) {
+        return false;
+    }
+    if (!ioState || !ioState->have_pack || ioState->pack.pack_id != entry->pack_id) {
+        if (ioState) {
+            ioState->pack_load_error = "built-in SDF pack id mismatch: expected " + entry->pack_id;
+            ioState->have_pack = false;
+            ioState->initialized = true;
+        }
+        if (outError) *outError = ioState ? ioState->pack_load_error : "SDF pack viewer state is required";
+        return false;
+    }
+    ioState->open = true;
+    if (outError) outError->clear();
+    return true;
+}
+
 std::string SdfPackViewerControlAutomationId(const SdfPackControl& control) {
     return std::string("sdf_pack.") + control.param + ".primary";
 }
@@ -305,7 +415,7 @@ std::string SdfPackViewerUseAsSdfFieldSourceAutomationId() {
 }
 
 bool SdfPackViewerWantsSetValueControl(const std::string& controlId) {
-    return controlId.rfind("sdf_pack.", 0) == 0 && controlId != kResetDefaultsControlId;
+    return controlId.rfind("sdf_pack.", 0) == 0 && controlId != kResetDefaultsControlId && controlId != kBuiltInPackSelectorControlId;
 }
 
 bool SdfPackViewerWantsClickControl(const std::string& controlId) {
@@ -466,6 +576,17 @@ SdfPackViewerAutomationReport BuildSdfPackViewerAutomationReport(const SdfPackVi
     report.pack_path = state.pack_path;
     report.pack_load_error = state.pack_load_error;
     report.backend_preference = SdfPackViewerBackendPreferenceId(state.backend_preference);
+    report.built_in_pack_selector_control_id = kBuiltInPackSelectorControlId;
+    const SdfPackViewerBuiltInPackCatalogEntry* selectedBuiltIn =
+        state.have_pack ? FindBuiltInPackEntry(state.pack.pack_id) : nullptr;
+    report.selected_built_in_pack_id = selectedBuiltIn ? selectedBuiltIn->pack_id : std::string();
+    for (const SdfPackViewerBuiltInPackCatalogEntry& entry : SdfPackViewerBuiltInPackCatalog()) {
+        SdfPackViewerBuiltInPackReport option;
+        option.pack_id = entry.pack_id;
+        option.label = entry.label;
+        option.selected = selectedBuiltIn && entry.pack_id == selectedBuiltIn->pack_id;
+        report.built_in_packs.push_back(std::move(option));
+    }
     if (state.have_pack) {
         report.pack_id = state.pack.pack_id;
         report.pack_name = state.pack.name;
@@ -660,6 +781,7 @@ bool LoadSdfPackViewerStateJson(const std::string& stateJson, SdfPackViewerState
 #ifndef SDF_PACK_VIEWER_UI_NO_IMGUI
 void RenderSdfPackViewerInlinePanel(
     SdfPackViewerState* ioState,
+    const std::string& exeDir,
     std::vector<ViewerUiAutomationRect>* automationRects,
     SdfPackViewerSetValueAutomation* setValueAutomation,
     SdfPackViewerClickAutomation* clickAutomation,
@@ -681,6 +803,27 @@ void RenderSdfPackViewerInlinePanel(
     ImGui::TextUnformatted(ioState->pack.name.c_str());
     ImGui::Text("Pack: %s", ioState->pack.pack_id.c_str());
     bool edited = false;
+
+    const SdfPackViewerBuiltInPackCatalogEntry* selectedBuiltIn = FindBuiltInPackEntry(ioState->pack.pack_id);
+    const char* selectedLabel = selectedBuiltIn ? selectedBuiltIn->label.c_str() : "Custom / Loaded Pack";
+    const bool selectorOpen = ImGui::BeginCombo("Built-in Pack", selectedLabel);
+    NoteSdfPackUiAutomationRect(automationRects, kBuiltInPackSelectorControlId);
+    if (selectorOpen) {
+        for (const SdfPackViewerBuiltInPackCatalogEntry& entry : SdfPackViewerBuiltInPackCatalog()) {
+            const bool selected = selectedBuiltIn && entry.pack_id == selectedBuiltIn->pack_id;
+            if (ImGui::Selectable(entry.label.c_str(), selected)) {
+                std::string error;
+                if (LoadSdfPackViewerBuiltInPack(ioState, exeDir, entry.pack_id, &error)) {
+                    edited = true;
+                    selectedBuiltIn = FindBuiltInPackEntry(ioState->pack.pack_id);
+                }
+            }
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
 
     bool useAsSource = ioState->use_as_sdf_field_source;
     if (ImGui::Checkbox("Use as SDF Field Source", &useAsSource)) {

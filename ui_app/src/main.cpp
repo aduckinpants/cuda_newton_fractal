@@ -1809,6 +1809,7 @@ static UiActionFlags RenderControlsWindow(
         bool sdfPackInteracted = false;
         RenderSdfPackViewerInlinePanel(
             &sdfPackViewer,
+            exeDir,
             viewerUiAutomationRects,
             &sdfPackSetValue,
             &sdfPackClick,
@@ -2602,21 +2603,15 @@ static bool EnsureEquationPackWorkbenchDefaultLoaded(
 static bool EnsureSdfPackSceneDefaultLoaded(
     const std::string& exeDir,
     SdfPackViewerState& sdfPackViewer) {
-    if (sdfPackViewer.initialized && sdfPackViewer.have_pack &&
-        sdfPackViewer.pack.pack_id == "sdf_smooth_lattice_2d") {
-        return true;
-    }
-    if (sdfPackViewer.initialized && !sdfPackViewer.have_pack && !sdfPackViewer.pack_load_error.empty()) {
-        return false;
-    }
-    const std::string packPath = ResolveDefaultSdfPackScenePath(exeDir);
-    if (packPath.empty()) {
-        sdfPackViewer.initialized = true;
-        sdfPackViewer.pack_load_error = "unable to resolve default SDF pack scene path";
-        return false;
+    if (!SdfPackViewerShouldLoadDefaultBuiltInPack(sdfPackViewer)) {
+        return sdfPackViewer.have_pack;
     }
     std::string error;
-    const bool ok = LoadSdfPackViewerPack(&sdfPackViewer, packPath, &error);
+    const bool ok = LoadSdfPackViewerBuiltInPack(
+        &sdfPackViewer,
+        exeDir,
+        SdfPackViewerDefaultBuiltInPackId(),
+        &error);
     sdfPackViewer.open = true;
     return ok;
 }
@@ -2771,6 +2766,7 @@ static void OpenSdfPackViewerForPendingAutomation(
 }
 
 static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
+                                                const std::string& exeDir,
                                                 ViewerUiAutomationCommandState& commandState,
                                                 ColorPipelineWindowState& colorPipelineWindow,
                                                 ViewState& view,
@@ -2835,7 +2831,18 @@ static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
                 commandBind.lens = &lens;
                 commandState.enum_report.requested_enum_path = path;
                 commandState.enum_report.requested_enum_id = id;
-                if (commandBind.SetEnumId(path, id)) {
+                if (SdfPackViewerWantsEnumControl(path)) {
+                    std::string error;
+                    if (LoadSdfPackViewerBuiltInPack(&sdfPackViewer, exeDir, id, &error)) {
+                        commandState.enum_report.enum_consumed = true;
+                        sdfPackViewer.open = true;
+                        sdfPackViewer.force_open_for_automation = true;
+                        dirty = true;
+                    } else {
+                        commandState.enum_report.enum_error = std::string("SDF pack enum edit rejected: ") + path + "=" + id + ": " + error;
+                    }
+                    armedCommand = true;
+                } else if (commandBind.SetEnumId(path, id)) {
                     commandState.enum_report.enum_consumed = true;
                     ApplyFractalTypeAndPolyCoherence(view, params, dirty, lastFractalType, lastPolyKind);
                     dirty = true;
@@ -3808,6 +3815,7 @@ static void RunViewerFrame(
     bool& dirty) {
     ApplyPendingUiAutomationCommandFile(
         cli,
+        exeDir,
         uiAutomationCommandState,
         colorPipelineWindow,
         view,

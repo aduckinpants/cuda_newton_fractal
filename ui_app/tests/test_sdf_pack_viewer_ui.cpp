@@ -8,6 +8,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 static int g_passed = 0;
 static int g_failed = 0;
@@ -28,6 +29,32 @@ static bool ReadTextFile(const char* path, std::string* outText) {
     buffer << in.rdbuf();
     *outText = buffer.str();
     return true;
+}
+
+static bool ReadCatalogPackJson(const SdfPackViewerBuiltInPackCatalogEntry& entry, std::string* outText) {
+    const std::string path = std::string("../") + entry.relative_path;
+    return ReadTextFile(path.c_str(), outText);
+}
+
+static bool ReportHasBuiltInPackOption(
+    const SdfPackViewerAutomationReport& report,
+    const std::string& packId,
+    bool selected) {
+    for (const SdfPackViewerBuiltInPackReport& option : report.built_in_packs) {
+        if (option.pack_id == packId) {
+            return option.selected == selected && !option.label.empty();
+        }
+    }
+    return false;
+}
+
+static const SdfPackParam* FindPackParamLocal(const SdfPack& pack, const std::string& id) {
+    for (const SdfPackParam& param : pack.params) {
+        if (param.id == id) {
+            return &param;
+        }
+    }
+    return nullptr;
 }
 
 static const SdfPackViewerControlReport* FindReportControl(
@@ -65,6 +92,36 @@ static const char* kCirclePack = R"json({
   }
 })json";
 
+static void TestBuiltInCatalogEntriesLoadAndLower() {
+    const std::vector<SdfPackViewerBuiltInPackCatalogEntry>& catalog = SdfPackViewerBuiltInPackCatalog();
+    Check(catalog.size() >= 3, "built-in SDF pack catalog exposes at least three curated entries");
+    Check(std::string(SdfPackViewerDefaultBuiltInPackId()) == "sdf_smooth_lattice_2d",
+        "built-in SDF pack catalog keeps smooth lattice as the default");
+    Check(SdfPackViewerBuiltInPackSelectorAutomationId() == "sdf_pack.builtin_pack",
+        "built-in SDF pack selector automation path is stable");
+
+    std::set<std::string> ids;
+    for (const SdfPackViewerBuiltInPackCatalogEntry& entry : catalog) {
+        Check(!entry.pack_id.empty(), "built-in SDF pack catalog entry has an id");
+        Check(!entry.label.empty(), "built-in SDF pack catalog entry has a label");
+        Check(entry.relative_path.find("docs/examples/sdf_packs/") == 0,
+            "built-in SDF pack catalog entry points at docs/examples/sdf_packs");
+        Check(ids.insert(entry.pack_id).second, "built-in SDF pack catalog ids are unique");
+
+        std::string json;
+        Check(ReadCatalogPackJson(entry, &json), "built-in SDF pack catalog entry file is readable");
+        if (json.empty()) continue;
+        SdfPackParseResult parsed = ParseSdfPackJson(json);
+        Check(parsed.ok, "built-in SDF pack catalog entry parses");
+        if (!parsed.ok) continue;
+        Check(parsed.pack.pack_id == entry.pack_id, "built-in SDF pack catalog id matches pack JSON");
+        Check(parsed.pack.kind == "sdf_scene_2d", "built-in SDF pack catalog entry is an SDF scene");
+        Check(!parsed.pack.controls.empty(), "built-in SDF pack catalog entry exposes controls");
+        Check(LowerSdfPackToRuntimeDesc(parsed.pack, {}).ok,
+            "built-in SDF pack catalog entry lowers using the shipped op surface");
+    }
+}
+
 static void TestBuiltInSmoothLatticeViewerControls() {
     std::string json;
     Check(ReadTextFile("../docs/examples/sdf_packs/sdf_smooth_lattice_2d.sdf_pack.json", &json),
@@ -77,6 +134,16 @@ static void TestBuiltInSmoothLatticeViewerControls() {
     if (!state.have_pack) return;
     SdfPackViewerAutomationReport report = BuildSdfPackViewerAutomationReport(state);
     Check(report.pack_id == "sdf_smooth_lattice_2d", "built-in viewer report publishes pack id");
+    Check(report.built_in_pack_selector_control_id == "sdf_pack.builtin_pack",
+        "built-in viewer report publishes pack selector control id");
+    Check(report.selected_built_in_pack_id == "sdf_smooth_lattice_2d",
+        "built-in viewer report publishes selected built-in pack id");
+    Check(ReportHasBuiltInPackOption(report, "sdf_smooth_lattice_2d", true),
+        "built-in viewer report marks default pack option selected");
+    Check(ReportHasBuiltInPackOption(report, "sdf_capsule_weave_2d", false),
+        "built-in viewer report publishes capsule weave option");
+    Check(ReportHasBuiltInPackOption(report, "sdf_ring_cells_2d", false),
+        "built-in viewer report publishes ring cells option");
     Check(report.controls.size() == 6, "built-in viewer report exposes six controls");
     std::set<std::string> controlIds;
     for (const SdfPackViewerControlReport& control : report.controls) {
@@ -97,6 +164,55 @@ static void TestBuiltInSmoothLatticeViewerControls() {
     Check(std::fabs(state.params["period"] - 1.2) < 1e-12, "built-in period edit updates param state");
 }
 
+static void TestDefaultLoadPolicyDoesNotClobberCurrentPack() {
+    SdfPackViewerState empty{};
+    Check(SdfPackViewerShouldLoadDefaultBuiltInPack(empty),
+        "empty SDF pack viewer state asks for the default built-in pack");
+
+    SdfPackViewerState loaded{};
+    std::string json;
+    std::string error;
+    Check(ReadCatalogPackJson(SdfPackViewerBuiltInPackCatalog()[1], &json),
+        "non-default built-in pack file is readable for default policy test");
+    Check(LoadSdfPackViewerJson(&loaded, json, "builtin://non_default", &error),
+        "non-default built-in pack loads for default policy test");
+    Check(!SdfPackViewerShouldLoadDefaultBuiltInPack(loaded),
+        "default built-in load policy does not clobber an already loaded pack");
+
+    SdfPackViewerState failed{};
+    failed.initialized = true;
+    failed.pack_load_error = "intentional failure";
+    Check(!SdfPackViewerShouldLoadDefaultBuiltInPack(failed),
+        "default built-in load policy does not retry over a failed initialized state");
+}
+
+static void TestAllBuiltInPacksHaveSensitiveControls() {
+    for (const SdfPackViewerBuiltInPackCatalogEntry& entry : SdfPackViewerBuiltInPackCatalog()) {
+        std::string json;
+        Check(ReadCatalogPackJson(entry, &json), "built-in pack sensitivity test reads catalog JSON");
+        if (json.empty()) continue;
+        SdfPackViewerState state{};
+        std::string error;
+        Check(LoadSdfPackViewerJson(&state, json, entry.relative_path, &error),
+            "built-in pack sensitivity test loads pack into viewer state");
+        if (!state.have_pack || state.pack.controls.empty()) continue;
+        Check(RunSdfPackViewerPreview(&state, &error), "built-in pack sensitivity baseline preview runs");
+        const std::string beforeHash = state.last_preview.field_hash;
+        const SdfPackControl& control = state.pack.controls.front();
+        const SdfPackParam* param = FindPackParamLocal(state.pack, control.param);
+        double nextValue = state.params[control.param] + 0.125;
+        if (param && std::fabs(state.params[control.param] - param->max_value) > 1e-9) {
+            nextValue = param->max_value;
+        } else if (param) {
+            nextValue = param->min_value;
+        }
+        Check(SetSdfPackViewerControlValue(&state, SdfPackViewerControlAutomationId(control), nextValue, &error),
+            "built-in pack first visible control accepts no-mouse edit");
+        Check(RunSdfPackViewerPreview(&state, &error), "built-in pack sensitivity edited preview runs");
+        Check(state.last_preview.field_hash != beforeHash,
+            "built-in pack first visible control changes the preview field hash");
+    }
+}
 static void TestPackControlsAreVisibleAndEditable() {
     SdfPackViewerState state{};
     std::string error;
@@ -233,7 +349,10 @@ static void TestDiagnosticsStateMergeRoundTrip() {
 }
 
 int main() {
+    TestBuiltInCatalogEntriesLoadAndLower();
     TestBuiltInSmoothLatticeViewerControls();
+    TestDefaultLoadPolicyDoesNotClobberCurrentPack();
+    TestAllBuiltInPacksHaveSensitiveControls();
     TestPackControlsAreVisibleAndEditable();
     TestAutomationReportAndPreviewHashChanges();
     TestResetDefaultsAndStateJsonRoundTrip();

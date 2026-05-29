@@ -46,6 +46,31 @@ def _control_ids(payload: dict[str, Any]) -> set[str]:
     return ids
 
 
+def _built_in_pack_ids(payload: dict[str, Any]) -> set[str]:
+    options = _sdf_pack_report(payload).get("built_in_packs")
+    assert isinstance(options, list), payload
+    ids: set[str] = set()
+    for option in options:
+        assert isinstance(option, dict), option
+        pack_id = option.get("pack_id")
+        assert isinstance(pack_id, str) and pack_id, option
+        assert isinstance(option.get("label"), str) and option.get("label"), option
+        ids.add(pack_id)
+    return ids
+
+
+def _first_pack_control_id(payload: dict[str, Any]) -> str:
+    controls = _sdf_pack_report(payload).get("controls")
+    assert isinstance(controls, list), payload
+    for control in controls:
+        assert isinstance(control, dict), control
+        control_id = control.get("control_id")
+        if isinstance(control_id, str) and control_id.endswith(".primary"):
+            assert control_id != "sdf_pack.use_as_sdf_field_source.primary"
+            return control_id
+    raise AssertionError(f"no editable SDF pack control reported: {payload!r}")
+
+
 def test_sdf_pack_scene_lane_selects_and_edits_built_in_pack_no_mouse(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("viewer UI automation is Windows-only")
@@ -91,12 +116,38 @@ def test_sdf_pack_scene_lane_selects_and_edits_built_in_pack_no_mouse(tmp_path: 
         assert selected.get("lens_sdf_valid") is True, selected
         assert selected.get("lens_sdf_pack_backend_used") in {"cuda_sample", "cpu_reference"}, selected
 
+        viewer.wait_for_control("sdf_pack.builtin_pack", timeout_seconds=20.0)
         for control_id in expected_controls:
             viewer.wait_for_control(control_id, timeout_seconds=20.0)
         assert expected_controls.issubset(_control_ids(selected)), selected
-        assert _sdf_pack_report(selected).get("pack_id") == "sdf_smooth_lattice_2d", selected
+        report = _sdf_pack_report(selected)
+        assert report.get("pack_id") == "sdf_smooth_lattice_2d", selected
+        assert report.get("built_in_pack_selector_control_id") == "sdf_pack.builtin_pack", selected
+        assert report.get("selected_built_in_pack_id") == "sdf_smooth_lattice_2d", selected
+        assert {
+            "sdf_smooth_lattice_2d",
+            "sdf_capsule_weave_2d",
+            "sdf_ring_cells_2d",
+        }.issubset(_built_in_pack_ids(selected)), selected
 
         previous_hash = _require_frame_hash(selected)
+        for pack_id in ["sdf_capsule_weave_2d", "sdf_ring_cells_2d", "sdf_smooth_lattice_2d"]:
+            switched = viewer.set_enum_id(
+                "sdf_pack.builtin_pack",
+                pack_id,
+                expected_fractal_type="sdf_pack_scene",
+                timeout_seconds=60.0,
+            )
+            assert switched.get("lens_sdf_field_source") == "authored_sdf_pack", switched
+            assert switched.get("lens_sdf_field_source_pack_id") == pack_id, switched
+            switched_report = _sdf_pack_report(switched)
+            assert switched_report.get("pack_id") == pack_id, switched
+            assert switched_report.get("selected_built_in_pack_id") == pack_id, switched
+            assert _first_pack_control_id(switched).startswith("sdf_pack."), switched
+            switched_hash = _require_frame_hash(switched)
+            assert switched_hash != previous_hash, (pack_id, switched)
+            previous_hash = switched_hash
+
         edits = [
             ("sdf_pack.period.primary", 1.35),
             ("sdf_pack.radius.primary", 0.24),

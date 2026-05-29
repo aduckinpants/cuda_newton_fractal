@@ -8,6 +8,18 @@
 
 struct ViewerUiAutomationRect;
 
+struct SdfPackViewerBuiltInPackCatalogEntry {
+    std::string pack_id;
+    std::string label;
+    std::string relative_path;
+};
+
+struct SdfPackViewerBuiltInPackReport {
+    std::string pack_id;
+    std::string label;
+    bool selected{false};
+};
+
 struct SdfPackViewerPreviewSummary {
     bool ok{false};
     std::string error;
@@ -63,6 +75,9 @@ struct SdfPackViewerAutomationReport {
     std::string pack_name;
     std::string pack_load_error;
     std::string backend_preference;
+    std::string built_in_pack_selector_control_id;
+    std::string selected_built_in_pack_id;
+    std::vector<SdfPackViewerBuiltInPackReport> built_in_packs;
     std::vector<SdfPackViewerControlReport> controls;
     bool preview_ok{false};
     std::string preview_error;
@@ -89,6 +104,17 @@ struct SdfPackViewerSetValueAutomation {
     bool* consumed{nullptr};
     std::string* error{nullptr};
 };
+
+const std::vector<SdfPackViewerBuiltInPackCatalogEntry>& SdfPackViewerBuiltInPackCatalog();
+const char* SdfPackViewerDefaultBuiltInPackId();
+std::string SdfPackViewerBuiltInPackSelectorAutomationId();
+bool SdfPackViewerShouldLoadDefaultBuiltInPack(const SdfPackViewerState& state);
+bool SdfPackViewerWantsEnumControl(const std::string& controlId);
+bool LoadSdfPackViewerBuiltInPack(
+    SdfPackViewerState* ioState,
+    const std::string& exeDir,
+    const std::string& packId,
+    std::string* outError);
 
 std::string SdfPackViewerControlAutomationId(const SdfPackControl& control);
 std::string SdfPackViewerResetDefaultsAutomationId();
@@ -133,6 +159,7 @@ bool MergeSdfPackViewerStateIntoDiagnosticsStateJson(
 #ifndef SDF_PACK_VIEWER_UI_NO_IMGUI
 void RenderSdfPackViewerInlinePanel(
     SdfPackViewerState* ioState,
+    const std::string& exeDir,
     std::vector<ViewerUiAutomationRect>* automationRects,
     SdfPackViewerSetValueAutomation* setValueAutomation,
     SdfPackViewerClickAutomation* clickAutomation,

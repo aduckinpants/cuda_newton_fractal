@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "contract_id": "sdf_pack_builtin_catalog_seed",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_pack_builtin_catalog_seed_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/examples/sdf_packs",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "continue from clean master 4845ee6 on branch codex/sdf-pack-builtin-catalog-seed",
+    "add a curated built-in SDF pack catalog seed for the existing sdf_pack_scene lane",
+    "keep sdf_smooth_lattice_2d as the default built-in pack",
+    "add a normal left-panel pack selector with no-mouse automation/report authority",
+    "add two or three visually distinct control-sensitive built-in packs using only already shipped SDF pack ops",
+    "prove selected pack id, controls, Color Pipeline consumption, state/capture/replay, and performance witnesses"
+  ],
+  "forbidden_operator_prompts": [
+    "add new SDF pack parser/evaluator ops in this slice",
+    "add recursive folds, apollonian fields, inversion, polar repeat, mirror/fold ops, or broad SDF-native families",
+    "add full arbitrary authored-pack catalog or text authoring UX",
+    "redesign the Color Pipeline workflow or replace the field producer",
+    "change workflow hooks/protocols for mini-sprint planning",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_sdf_pack_builtin_catalog_seed",
+    "source_head": "4845ee6",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "default_pack_id": "sdf_smooth_lattice_2d",
+    "normal_dropdown_lane_required": true,
+    "built_in_pack_selector_required": true,
+    "new_sdf_pack_ops_allowed": false
+  },
+  "forbidden_defaults": {
+    "new_sdf_pack_ops": "forbidden",
+    "recursive_or_apollonian_fields": "forbidden",
+    "arbitrary_pack_authoring_ux": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_pack_builtin_catalog_seed.contract.json --out-json artifacts/validation/sdf_pack_builtin_catalog_seed_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_builtin_catalog_seed_plan_sync --log artifacts/logs/sdf_pack_builtin_catalog_seed_plan_sync.log --out-json artifacts/validation/sdf_pack_builtin_catalog_seed_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_pack_builtin_catalog_seed_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_builtin_catalog_seed_native_schema_binding --log artifacts/logs/sdf_pack_builtin_catalog_seed_native_schema_binding.log --out-json artifacts/validation/sdf_pack_builtin_catalog_seed_native_schema_binding.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_ui_schema test_schema_binding",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_builtin_catalog_seed_native_pack --log artifacts/logs/sdf_pack_builtin_catalog_seed_native_pack.log --out-json artifacts/validation/sdf_pack_builtin_catalog_seed_native_pack.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack test_sdf_pack_field_producer test_sdf_pack_field_producer_cuda test_sdf_pack_viewer_ui",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_builtin_catalog_seed_native_state_report --log artifacts/logs/sdf_pack_builtin_catalog_seed_native_state_report.log --out-json artifacts/validation/sdf_pack_builtin_catalog_seed_native_state_report.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_state_io test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_builtin_catalog_seed_publish --log artifacts/logs/sdf_pack_builtin_catalog_seed_publish.log --out-json artifacts/validation/sdf_pack_builtin_catalog_seed_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_builtin_catalog_seed_runtime --log artifacts/logs/sdf_pack_builtin_catalog_seed_runtime.log --out-json artifacts/validation/sdf_pack_builtin_catalog_seed_runtime.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_pack_scene_lane.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_pack_builtin_catalog_seed_PHASED_PLAN.md --out-json artifacts/validation/sdf_pack_builtin_catalog_seed_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pack_builtin_catalog_seed_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_builtin_catalog_seed_diff_check --log artifacts/logs/sdf_pack_builtin_catalog_seed_diff_check.log --out-json artifacts/validation/sdf_pack_builtin_catalog_seed_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF pack built-in catalog seed contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_pack_builtin_catalog_seed_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF pack built-in catalog seed hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_pack_builtin_catalog_seed_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

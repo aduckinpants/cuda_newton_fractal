@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "pack_id": "sdf_capsule_weave_2d",
+  "name": "SDF Capsule Weave 2D",
+  "kind": "sdf_scene_2d",
+  "params": [
+    { "id": "period", "type": "float", "default": 0.9, "range": [0.35, 3.0] },
+    { "id": "strand_radius", "type": "float", "default": 0.055, "range": [0.015, 0.18] },
+    { "id": "lane_offset", "type": "float", "default": 0.22, "range": [0.0, 0.7] },
+    { "id": "smooth_blend", "type": "float", "default": 0.06, "range": [0.0, 0.35] },
+    { "id": "rotation", "type": "float", "default": 0.0, "range": [-3.141592653589793, 3.141592653589793] },
+    { "id": "node_radius", "type": "float", "default": 0.12, "range": [0.03, 0.3] }
+  ],
+  "controls": [
+    { "param": "period", "label": "Period", "ui_min": 0.4, "ui_max": 2.0 },
+    { "param": "strand_radius", "label": "Strand Radius", "ui_min": 0.02, "ui_max": 0.14 },
+    { "param": "lane_offset", "label": "Lane Offset", "ui_min": 0.0, "ui_max": 0.55 },
+    { "param": "smooth_blend", "label": "Smooth Blend", "ui_min": 0.0, "ui_max": 0.22 },
+    { "param": "rotation", "label": "Rotation", "ui_min": -3.141592653589793, "ui_max": 3.141592653589793 },
+    { "param": "node_radius", "label": "Node Radius", "ui_min": 0.04, "ui_max": 0.24 }
+  ],
+  "region": {
+    "center": [0.0, 0.0],
+    "half_height": 2.0
+  },
+  "ast": {
+    "op": "smooth_union",
+    "k": { "param": "smooth_blend" },
+    "a": {
+      "op": "repeat",
+      "period": [{ "param": "period" }, { "param": "period" }],
+      "child": {
+        "op": "rotate",
+        "angle": { "param": "rotation" },
+        "child": {
+          "op": "smooth_union",
+          "k": { "param": "smooth_blend" },
+          "a": {
+            "op": "capsule",
+            "a": [-0.55, { "param": "lane_offset" }],
+            "b": [0.55, { "param": "lane_offset" }],
+            "radius": { "param": "strand_radius" }
+          },
+          "b": {
+            "op": "capsule",
+            "a": [-0.55, -0.22],
+            "b": [0.55, -0.22],
+            "radius": { "param": "strand_radius" }
+          }
+        }
+      }
+    },
+    "b": {
+      "op": "repeat",
+      "period": [{ "param": "period" }, { "param": "period" }],
+      "child": { "op": "circle", "center": [0.0, 0.0], "radius": { "param": "node_radius" } }
+    }
+  }
+}

@@ -483,6 +483,36 @@ void WriteColorPipelineUiAutomationReport(
     out << "    \"backend_preference\": ";
     WriteAutomationReportString(out, sdfPack.backend_preference);
     out << ",\n";
+    out << "    \"built_in_pack_selector_control_id\": ";
+    WriteAutomationReportString(out, sdfPack.built_in_pack_selector_control_id);
+    out << ",\n";
+    out << "    \"selected_built_in_pack_id\": ";
+    if (sdfPack.selected_built_in_pack_id.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, sdfPack.selected_built_in_pack_id);
+    }
+    out << ",\n";
+    out << "    \"built_in_packs\": [";
+    for (std::size_t index = 0; index < sdfPack.built_in_packs.size(); ++index) {
+        const SdfPackViewerBuiltInPackReport& option = sdfPack.built_in_packs[index];
+        if (index > 0) {
+            out << ',';
+        }
+        out << "\n      {\n";
+        out << "        \"pack_id\": ";
+        WriteAutomationReportString(out, option.pack_id);
+        out << ",\n";
+        out << "        \"label\": ";
+        WriteAutomationReportString(out, option.label);
+        out << ",\n";
+        out << "        \"selected\": " << (option.selected ? "true" : "false") << "\n";
+        out << "      }";
+    }
+    if (!sdfPack.built_in_packs.empty()) {
+        out << "\n    ";
+    }
+    out << "],\n";
     out << "    \"controls\": [";
     for (std::size_t index = 0; index < sdfPack.controls.size(); ++index) {
         const SdfPackViewerControlReport& control = sdfPack.controls[index];
