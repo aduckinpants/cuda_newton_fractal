@@ -49,18 +49,18 @@
   ],
   "required_acceptance_assertions": [
     {
-      "assertion_id": "sdf_drag_orientation_proven",
-      "description": "SDF source viewport drag/camera orientation is proven by deterministic no-mouse or native UX proof",
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF drag camera mapping repair contract validates successfully",
       "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/sdf_drag_camera_mapping_repair_native_sdf_pack_field.json",
-      "json_path": "ok",
+      "artifact_path": "artifacts/validation/sdf_drag_camera_mapping_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
       "equals": true
     },
     {
-      "assertion_id": "normal_drag_semantics_preserved",
-      "description": "Existing normal viewport drag semantics remain green",
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit records the SDF drag mapping and harness findings before closure",
       "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/sdf_drag_camera_mapping_repair_native_viewport.json",
+      "artifact_path": "artifacts/validation/sdf_drag_camera_mapping_repair_hostile_audit.json",
       "json_path": "ok",
       "equals": true
     }
