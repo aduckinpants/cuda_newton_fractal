@@ -336,6 +336,9 @@ void WriteColorPipelineUiAutomationReport(
     out << "  \"current_fractal_type\": ";
     WriteAutomationReportString(out, currentFractalTypeId ? currentFractalTypeId : "");
     out << ",\n";
+    out << "  \"view_center_hp_x\": " << std::setprecision(17) << view.center_hp_x << ",\n";
+    out << "  \"view_center_hp_y\": " << std::setprecision(17) << view.center_hp_y << ",\n";
+    out << "  \"view_log2_zoom\": " << std::setprecision(17) << view.log2_zoom << ",\n";
     out << "  \"requested_enum_path\": ";
     if (enumCommandReport.requested_enum_path.empty()) {
         out << "null";

@@ -2872,6 +2872,24 @@ static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
             armedCommand = true;
         }
     }
+    if (const json_min::Value* panViewport = commandRoot.get("pan_viewport_pixels")) {
+        if (panViewport->is_object()) {
+            double dx = 0.0;
+            double dy = 0.0;
+            if (ReadJsonNumberFieldLocal(*panViewport, "dx", &dx) &&
+                ReadJsonNumberFieldLocal(*panViewport, "dy", &dy)) {
+                if (ApplyDragPanStep(
+                        view,
+                        static_cast<float>(dx),
+                        static_cast<float>(dy),
+                        (std::max)(1, render.resolution.x),
+                        (std::max)(1, render.resolution.y))) {
+                    dirty = true;
+                }
+                armedCommand = true;
+            }
+        }
+    }
     if (armedCommand) {
         commandState.last_sequence = sequence;
     }

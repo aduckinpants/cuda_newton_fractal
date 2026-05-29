@@ -593,6 +593,38 @@ class PersistentRuntimeViewerAutomation:
             time.sleep(0.05)
         raise AssertionError(f"persistent viewer never consumed click command {self.sequence} for {control_id}; last_payload={last_payload!r}")
 
+    def pan_viewport_pixels(
+        self,
+        dx: float,
+        dy: float,
+        *,
+        expected_fractal_type: str | None = None,
+        timeout_seconds: float = 10.0,
+    ) -> dict[str, Any]:
+        self.sequence += 1
+        command = {
+            "sequence": self.sequence,
+            "pan_viewport_pixels": {
+                "dx": dx,
+                "dy": dy,
+            },
+        }
+        self.command_path.write_text(json.dumps(command, indent=2), encoding="utf-8")
+        deadline = time.monotonic() + timeout_seconds
+        last_payload: dict[str, Any] | None = None
+        while time.monotonic() < deadline:
+            if self.proc is not None and self.proc.poll() is not None:
+                raise AssertionError(f"viewer exited while waiting for pan command {self.sequence}; returncode={self.proc.returncode}")
+            payload = self._load_report()
+            if payload is not None:
+                last_payload = payload
+                if payload.get("ui_automation_command_sequence") == self.sequence:
+                    if expected_fractal_type is None or payload.get("current_fractal_type") == expected_fractal_type:
+                        if payload.get("rendered_frame_ready") is True:
+                            return payload
+            time.sleep(0.05)
+        raise AssertionError(f"persistent viewer never consumed pan command {self.sequence}; last_payload={last_payload!r}")
+
     def set_control_value(self, control_id: str, value: float, *, timeout_seconds: float = 10.0) -> dict[str, Any]:
         self.sequence += 1
         command = {

@@ -40,7 +40,7 @@ double PixelToWorldX(const SdfPackFieldGeometry& geometry, int x, int width) {
 }
 
 double PixelToWorldY(const SdfPackFieldGeometry& geometry, int y, int height) {
-    const double v = 1.0 - ((static_cast<double>(y) + 0.5) / static_cast<double>(height)) * 2.0;
+    const double v = ((static_cast<double>(y) + 0.5) / static_cast<double>(height) - 0.5) * 2.0;
     return geometry.center_y + v * geometry.half_height;
 }
 

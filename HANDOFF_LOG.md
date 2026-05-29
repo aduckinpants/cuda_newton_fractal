@@ -156,3 +156,5 @@
 - `ck:06fb90cc` 2026-05-29 06:55 UTC | score 93 — Closed SDF pack built-in catalog seed with selector, pack catalog, native/runtime proof, and bounded performance witness.
 - `ck:06fb90cc` 2026-05-29 06:59 UTC | score 93 — Aligned SDF pack catalog validation contract to the exact one-target proof commands used for receipts.
 - `ck:06fb90cc` 2026-05-29 07:01 UTC | score 93 — Aligned SDF pack catalog hostile-audit assertion receipt path to the final validation artifact.
+- `ck:9cbe7472` 2026-05-29 15:31 UTC — session-start | branch=codex/sdf-pack-builtin-catalog-seed | head=d78bdf9 | status=dirty | profile=runtime | intent=SDF drag camera mapping repair
+- `ck:9cbe7472` 2026-05-29 16:01 UTC | score 8 — SDF drag camera mapping repair: fixed authored SDF field Y mapping to match viewport drag, added no-mouse pan proof, and added focused viewport native target.

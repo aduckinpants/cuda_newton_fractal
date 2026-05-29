@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "contract_id": "sdf_drag_camera_mapping_repair",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_drag_camera_mapping_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "fix SDF-based source mouse/drag camera mapping after reported vertical flip",
+    "add deterministic no-mouse or native UX proof for SDF drag/camera orientation",
+    "preserve normal viewport drag semantics"
+  ],
+  "forbidden_operator_prompts": [
+    "use physical mouse automation",
+    "redesign SDF composition or Color Pipeline workflow",
+    "add new SDF pack operations or new fractal families",
+    "change normal non-SDF drag semantics without proof"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_sdf_drag_camera_mapping_repair",
+    "source_head": "d78bdf9",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "physical_mouse_automation_allowed": false
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "broad_sdf_redesign": "forbidden",
+    "new_sdf_ops": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_drag_camera_mapping_repair.contract.json --out-json artifacts/validation/sdf_drag_camera_mapping_repair_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_drag_camera_mapping_repair_native_viewport --log artifacts/logs/sdf_drag_camera_mapping_repair_native_viewport.log --out-json artifacts/validation/sdf_drag_camera_mapping_repair_native_viewport.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_viewport_interaction",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_drag_camera_mapping_repair_native_sdf_pack_field --log artifacts/logs/sdf_drag_camera_mapping_repair_native_sdf_pack_field.log --out-json artifacts/validation/sdf_drag_camera_mapping_repair_native_sdf_pack_field.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack_field_producer",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_drag_camera_mapping_repair_runtime_publish --log artifacts/logs/sdf_drag_camera_mapping_repair_runtime_publish.log --out-json artifacts/validation/sdf_drag_camera_mapping_repair_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_drag_camera_mapping_repair_runtime_lane --log artifacts/logs/sdf_drag_camera_mapping_repair_runtime_lane.log --out-json artifacts/validation/sdf_drag_camera_mapping_repair_runtime_lane.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_pack_scene_lane.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_drag_camera_mapping_repair_PHASED_PLAN.md --out-json artifacts/validation/sdf_drag_camera_mapping_repair_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_drag_camera_mapping_repair_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_drag_camera_mapping_repair_diff_check --log artifacts/logs/sdf_drag_camera_mapping_repair_diff_check.log --out-json artifacts/validation/sdf_drag_camera_mapping_repair_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "sdf_drag_orientation_proven",
+      "description": "SDF source viewport drag/camera orientation is proven by deterministic no-mouse or native UX proof",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_drag_camera_mapping_repair_native_sdf_pack_field.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "normal_drag_semantics_preserved",
+      "description": "Existing normal viewport drag semantics remain green",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_drag_camera_mapping_repair_native_viewport.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

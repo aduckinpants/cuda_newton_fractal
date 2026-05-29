@@ -131,6 +131,21 @@ def test_sdf_pack_scene_lane_selects_and_edits_built_in_pack_no_mouse(tmp_path: 
         }.issubset(_built_in_pack_ids(selected)), selected
 
         previous_hash = _require_frame_hash(selected)
+        selected_center_y = selected.get("view_center_hp_y")
+        assert isinstance(selected_center_y, (int, float)), selected
+        panned = viewer.pan_viewport_pixels(
+            0.0,
+            48.0,
+            expected_fractal_type="sdf_pack_scene",
+            timeout_seconds=60.0,
+        )
+        assert panned.get("current_fractal_type") == "sdf_pack_scene", panned
+        panned_center_y = panned.get("view_center_hp_y")
+        assert isinstance(panned_center_y, (int, float)), panned
+        assert panned_center_y < selected_center_y, panned
+        assert _require_frame_hash(panned) != previous_hash, panned
+        previous_hash = _require_frame_hash(panned)
+
         for pack_id in ["sdf_capsule_weave_2d", "sdf_ring_cells_2d", "sdf_smooth_lattice_2d"]:
             switched = viewer.set_enum_id(
                 "sdf_pack.builtin_pack",

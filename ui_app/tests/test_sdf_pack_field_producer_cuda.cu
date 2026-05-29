@@ -27,6 +27,23 @@ static bool Nearly(double a, double b, double tol = 1.0e-5) {
     return std::fabs(a - b) <= tol * scale;
 }
 
+static float At(const SdfFieldResult& field, int x, int y) {
+    return field.signed_distance_px[static_cast<size_t>(y) * static_cast<size_t>(field.width) + static_cast<size_t>(x)];
+}
+
+static int RowOfMinimumDistanceAtX(const SdfFieldResult& field, int x) {
+    int bestRow = 0;
+    float bestValue = At(field, x, 0);
+    for (int y = 1; y < field.height; ++y) {
+        const float value = At(field, x, y);
+        if (value < bestValue) {
+            bestValue = value;
+            bestRow = y;
+        }
+    }
+    return bestRow;
+}
+
 static const char* kCirclePack = R"json({
   "schema": 1,
   "pack_id": "field_circle_cuda",
@@ -43,6 +60,23 @@ static const char* kCirclePack = R"json({
     "op": "circle",
     "center": [0.0, 0.0],
     "radius": { "param": "radius" }
+  }
+})json";
+
+static const char* kYOffsetCirclePack = R"json({
+  "schema": 1,
+  "pack_id": "field_y_offset_circle_cuda",
+  "name": "Field Y Offset Circle CUDA",
+  "kind": "sdf_scene_2d",
+  "params": [],
+  "region": {
+    "center": [0.0, 0.0],
+    "half_height": 1.0
+  },
+  "ast": {
+    "op": "circle",
+    "center": [0.0, 0.5],
+    "radius": 0.2
   }
 })json";
 
@@ -121,6 +155,51 @@ static void CheckFieldParity(const char* label, const char* packJson, const std:
     }
 }
 
+static void TestCudaYAxisMatchesViewportDragContract() {
+    SdfPack pack = ParsePack(kYOffsetCirclePack);
+    SdfPackFieldRequest request{};
+    request.pack = &pack;
+    request.width = 5;
+    request.height = 5;
+    request.region.has_region = true;
+    request.region.center_x = 0.0;
+    request.region.center_y = 0.0;
+    request.region.half_height = 1.0;
+
+    SdfFieldResult centeredField;
+    std::string error;
+    CHECK(ComputeSdfPackFieldWithBackend(
+            request,
+            SdfPackFieldBackend::cuda_sample,
+            centeredField,
+            nullptr,
+            &error),
+        "CUDA y-offset field computes");
+    if (centeredField.signed_distance_px.empty()) {
+        std::printf("orientation cuda error: %s\n", error.c_str());
+        return;
+    }
+
+    const int centeredRow = RowOfMinimumDistanceAtX(centeredField, 2);
+    CHECK(centeredRow > 2, "CUDA positive world Y appears in the lower screen half like the fractal renderer");
+
+    request.region.center_y = -0.4;
+    SdfFieldResult draggedDownField;
+    error.clear();
+    CHECK(ComputeSdfPackFieldWithBackend(
+            request,
+            SdfPackFieldBackend::cuda_sample,
+            draggedDownField,
+            nullptr,
+            &error),
+        "CUDA dragged-down y-offset field computes");
+    if (draggedDownField.signed_distance_px.empty()) return;
+
+    const int draggedDownRow = RowOfMinimumDistanceAtX(draggedDownField, 2);
+    CHECK(draggedDownRow > centeredRow,
+        "CUDA decreasing center_y, the normal drag-down result, moves authored SDF content down on screen");
+}
+
 static void TestAutoBackendPrefersCuda() {
     SdfPack pack = ParsePack(kCirclePack);
     SdfPackFieldRequest request{};
@@ -165,6 +244,7 @@ int main() {
     CheckFieldParity("circle", kCirclePack, {});
     CheckFieldParity("circle override", kCirclePack, {{"radius", 0.7}});
     CheckFieldParity("smooth repeat", kSmoothRepeatPack, {{"blend", 0.35}});
+    TestCudaYAxisMatchesViewportDragContract();
     TestAutoBackendPrefersCuda();
     TestCpuBackendThroughDispatcher();
     std::printf("test_sdf_pack_field_producer_cuda: pass=%d fail=%d\n", g_pass, g_fail);

@@ -58,9 +58,35 @@ static const char* kCirclePack = R"json({
   }
 })json";
 
+static const char* kYOffsetCirclePack = R"json({
+  "schema": 1,
+  "pack_id": "field_y_offset_circle",
+  "name": "Field Y Offset Circle",
+  "kind": "sdf_scene_2d",
+  "params": [],
+  "region": {
+    "center": [0.0, 0.0],
+    "half_height": 1.0
+  },
+  "ast": {
+    "op": "circle",
+    "center": [0.0, 0.5],
+    "radius": 0.2
+  }
+})json";
+
 static SdfPack ParseCirclePack() {
     SdfPackParseResult parsed = ParseSdfPackJson(kCirclePack);
     CHECK(parsed.ok, "circle pack parses");
+    if (!parsed.ok) {
+        std::cerr << parsed.error << "\n";
+    }
+    return parsed.pack;
+}
+
+static SdfPack ParseYOffsetCirclePack() {
+    SdfPackParseResult parsed = ParseSdfPackJson(kYOffsetCirclePack);
+    CHECK(parsed.ok, "y-offset circle pack parses");
     if (!parsed.ok) {
         std::cerr << parsed.error << "\n";
     }
@@ -83,6 +109,19 @@ static bool FieldDiffers(const SdfFieldResult& left, const SdfFieldResult& right
 
 static float At(const SdfFieldResult& field, int x, int y) {
     return field.signed_distance_px[static_cast<size_t>(y) * static_cast<size_t>(field.width) + static_cast<size_t>(x)];
+}
+
+static int RowOfMinimumDistanceAtX(const SdfFieldResult& field, int x) {
+    int bestRow = 0;
+    float bestValue = At(field, x, 0);
+    for (int y = 1; y < field.height; ++y) {
+        const float value = At(field, x, y);
+        if (value < bestValue) {
+            bestValue = value;
+            bestRow = y;
+        }
+    }
+    return bestRow;
 }
 
 static void TestCpuFieldUsesPackRegionAndFieldPixelUnits() {
@@ -131,6 +170,36 @@ static void TestExplicitRegionOverridesPackRegion() {
     CHECK(ok, "explicit region field succeeds");
     if (!ok) return;
     CHECK(At(field, 2, 2) > 1.0f, "explicit region moves center sample away from the circle");
+}
+
+static void TestYAxisMatchesViewportDragContract() {
+    SdfPack pack = ParseYOffsetCirclePack();
+    SdfPackFieldRequest request{};
+    request.pack = &pack;
+    request.width = 5;
+    request.height = 5;
+    request.region.has_region = true;
+    request.region.center_x = 0.0;
+    request.region.center_y = 0.0;
+    request.region.half_height = 1.0;
+
+    SdfFieldResult centeredField;
+    CHECK(ComputeSdfPackFieldCpu(request, centeredField, nullptr, nullptr),
+        "centered y-offset field computes");
+    if (centeredField.signed_distance_px.empty()) return;
+
+    const int centeredRow = RowOfMinimumDistanceAtX(centeredField, 2);
+    CHECK(centeredRow > 2, "positive world Y appears in the lower screen half like the CUDA fractal renderer");
+
+    request.region.center_y = -0.4;
+    SdfFieldResult draggedDownField;
+    CHECK(ComputeSdfPackFieldCpu(request, draggedDownField, nullptr, nullptr),
+        "dragged-down y-offset field computes");
+    if (draggedDownField.signed_distance_px.empty()) return;
+
+    const int draggedDownRow = RowOfMinimumDistanceAtX(draggedDownField, 2);
+    CHECK(draggedDownRow > centeredRow,
+        "decreasing center_y, the normal drag-down result, moves authored SDF content down on screen");
 }
 
 static void TestParamOverrideChangesProducedField() {
@@ -249,6 +318,7 @@ static void TestInvalidRequestsFailClosed() {
 int main() {
     TestCpuFieldUsesPackRegionAndFieldPixelUnits();
     TestExplicitRegionOverridesPackRegion();
+    TestYAxisMatchesViewportDragContract();
     TestParamOverrideChangesProducedField();
     TestBuiltInSmoothLatticeControlSensitivity();
     TestDispatcherWorksWithoutCudaRegistration();

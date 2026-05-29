@@ -65,6 +65,7 @@ if /I "%FOCUSED_TEST%"=="test_lens_sdf_cuda" goto focused_test_lens_sdf_cuda
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
 if /I "%FOCUSED_TEST%"=="test_finding_state_actions" goto focused_test_finding_state_actions
 if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" goto focused_test_viewer_render_pacing
+if /I "%FOCUSED_TEST%"=="test_viewport_interaction" goto focused_test_viewport_interaction
 if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" goto focused_test_sample_tier_resolver
 if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
 if /I "%FOCUSED_TEST%"=="test_fractal_sample_kernel" goto focused_test_fractal_sample_kernel
@@ -574,6 +575,14 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_generic_equation_pack_cuda.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_generic_equation_pack_cuda.exe" || exit /b 1
+exit /b 0
+
+:focused_test_viewport_interaction
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\viewport_interaction.cpp .\tests\test_viewport_interaction.cpp ^
+  /Fe:"%TESTROOT%\test_viewport_interaction.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewport_interaction.exe" || exit /b 1
 exit /b 0
 
 :focused_test_sdf_pack
