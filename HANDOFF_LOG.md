@@ -154,3 +154,4 @@
 - `ck:06fb90cc` 2026-05-29 06:00 UTC — session-start | branch=codex/sdf-pack-builtin-catalog-seed | head=4845ee6 | status=dirty | profile=runtime | intent=SDF pack built-in catalog seed
 - `ck:06fb90cc` 2026-05-29 06:53 UTC | score 93 — Closed SDF pack built-in catalog seed: added no-mouse built-in selector/reporting, capsule weave and ring cells packs, default-clobber regression guard, focused native/runtime proof, and bounded pack performance witness.
 - `ck:06fb90cc` 2026-05-29 06:55 UTC | score 93 — Closed SDF pack built-in catalog seed with selector, pack catalog, native/runtime proof, and bounded performance witness.
+- `ck:06fb90cc` 2026-05-29 06:59 UTC | score 93 — Aligned SDF pack catalog validation contract to the exact one-target proof commands used for receipts.
