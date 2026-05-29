@@ -82,7 +82,7 @@
       "assertion_id": "hostile_audit_ok",
       "description": "The SDF pack built-in catalog seed hostile audit is complete before closure",
       "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/sdf_pack_builtin_catalog_seed_hostile_audit.json",
+      "artifact_path": "artifacts/validation/sdf_pack_builtin_catalog_seed_hostile_audit_final.json",
       "json_path": "ok",
       "equals": true
     }
