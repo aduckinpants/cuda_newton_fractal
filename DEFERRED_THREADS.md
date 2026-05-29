@@ -7,15 +7,15 @@ Agent protocol: see `AGENT_WORKING_PROTOCOL.md` for working rules.
 
 Last reconciled: 2026-05-28 on `codex/sdf-postprocess-roadmap-truth-sync` after the measured SDF postprocess optimization merged to `master`.
 
-## Urgent Deferred Interrupt - Deploy/Findings Disk Pressure
+## ~~Urgent Deferred Interrupt - Deploy/Findings Disk Pressure~~ RESOLVED
 
-Status: deferred high-priority cleanup; do not mix into the active `sdf_pack_scene` lane slice.
+Status: resolved by the deploy_diagnostics_disk_pressure slice.
 
-Reported 2026-05-28: deploy/publish work is copying about 8 GB of diagnostics plus full findings copies, and `C:\code` disk pressure is now a concern. The next bounded cleanup slice should audit deploy/copy manifests, diagnostics output retention, findings duplication, and repo-local artifact retention, then tighten deploy contents to only files needed by the runtime/test proof path.
+Reported 2026-05-28: deploy/publish work was pulling diagnostics/findings bulk into deploy surfaces, and generated runtime diagnostics had accumulated to 7.70 GiB under D:\salt-fractal\cuda_newton_fractal_clone\runtime\diagnostics.
 
-Acceptance direction: prove the deploy output excludes stale diagnostics/findings bulk, keep required runtime artifacts intact, add a regression test or manifest audit so the copy bloat cannot silently return, and clean unnecessary old data from this checkout only after confirming it is generated or safely archived elsewhere.
+Resolution: tools/publish_repo_artifacts.ps1 now delegates to a filtered manifest helper that excludes diagnostics/findings bulk, focused pytest covers the manifest and cleanup classifier, and the generated timestamped runtime diagnostic archives were pruned while preserving diagnostics\last, named diagnostic folders, and all findings/manual captures.
 
-Owner note: user explicitly asked to record this for later and continue the current SDF pack scene lane task.
+Follow-up: if a future external deploy path still copies the whole D:\salt-fractal\cuda_newton_fractal_clone tree, point it at the filtered manifest/published package instead of the whole runtime/findings root.
 
 ## Deferred Workflow Debt - Mini-Sprint Planning Formalization
 

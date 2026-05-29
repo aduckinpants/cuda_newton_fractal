@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "deploy_diagnostics_disk_pressure",
+  "feature_id": "viewer_host_deploy_tooling",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/deploy_diagnostics_disk_pressure_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "tools",
+    "tests",
+    "ui_app",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "stop deploy/publish paths from copying diagnostics and findings bulk by default",
+    "clean only safe repo-local generated data after an explicit dry-run classification",
+    "add regression coverage for diagnostics/findings deploy exclusion",
+    "preserve the current SDF pack scene and Color Pipeline runtime behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "delete D:\\salt-fractal captures or user-owned findings",
+    "change fractal renderer, SDF pack scene, Color Pipeline, or UI behavior",
+    "hide disk usage by moving bulk into another tracked/runtime deploy path",
+    "claim cleanup without exact path and size receipts",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "workflow_only_deploy_disk_pressure_cleanup",
+    "source_head": "a57ccc6",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "dry_run_cleanup_required": true,
+    "delete_user_findings": false
+  },
+  "forbidden_defaults": {
+    "runtime_behavior_change": "forbidden",
+    "external_findings_deletion": "forbidden",
+    "broad_repo_prune_without_allowlist": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/deploy_diagnostics_disk_pressure.contract.json --out-json artifacts/validation/deploy_diagnostics_disk_pressure_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label deploy_diagnostics_disk_pressure_plan_sync --log artifacts/logs/deploy_diagnostics_disk_pressure_plan_sync.log --out-json artifacts/validation/deploy_diagnostics_disk_pressure_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/deploy_diagnostics_disk_pressure_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label deploy_diagnostics_disk_pressure_pytest --log artifacts/logs/deploy_diagnostics_disk_pressure_pytest.log --out-json artifacts/validation/deploy_diagnostics_disk_pressure_pytest.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_viewer_host_deploy_disk_pressure.py -q",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/deploy_diagnostics_disk_pressure_PHASED_PLAN.md --out-json artifacts/validation/deploy_diagnostics_disk_pressure_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/deploy_diagnostics_disk_pressure_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label deploy_diagnostics_disk_pressure_diff_check --log artifacts/logs/deploy_diagnostics_disk_pressure_diff_check.log --out-json artifacts/validation/deploy_diagnostics_disk_pressure_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The deploy diagnostics disk-pressure contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/deploy_diagnostics_disk_pressure_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The deploy diagnostics disk-pressure hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/deploy_diagnostics_disk_pressure_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
