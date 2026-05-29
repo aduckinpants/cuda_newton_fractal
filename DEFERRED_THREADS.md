@@ -19,7 +19,7 @@ Follow-up: if a future external deploy path still copies the whole D:\salt-fract
 
 ## Deferred Workflow Debt - Mini-Sprint Planning Formalization
 
-Status: deferred workflow-design cleanup; do not change hooks, `AGENTS.md`, or workflow tools under the active `sdf_pack_scene` product slice.
+Status: deferred workflow-design cleanup; do not change hooks, `AGENTS.md`, or workflow tools under SDF product slices.
 
 The recent bounded mini-campaign pattern was useful: a small sprint-like plan grouped related feature slices, recorded replan gates up front, kept deferred ideas visible, and made it easier to resume without sprawling per-turn context. A future workflow slice should evaluate whether to formalize that as a lightweight campaign planning surface, including expected branch-per-feature boundaries, progress/status reporting, explicit stop/replan points, and how it coexists with the existing phased-plan/contract/rearward-review rails.
 
@@ -182,10 +182,10 @@ Shipped since the original deferred note:
 Active follow-up:
 - Broader composition/preset UX now has preset workflow truth and visible implementation-wording cleanup covered by bounded slices. Keep later composition work split by topic instead of turning it into a broad redesign.
 - The immediate composition repair for disabled-row compatibility/error authority and `sdf_curvature` plus `sdf_normal_angle` SDF-only Source-stack blending is shipped on `08e62b6`.
-- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked normal-angle UX, and authored-pack live field consumption are shipped. The closed postprocess witness measured median improvements of `27%` to `62%`; the next unresolved SDF product seams are SDF masks/gates, full authored-pack catalog/authoring UX, and the first SDF-native lane.
+- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked normal-angle UX, authored-pack live field consumption, and the first `sdf_pack_scene` selectable lane shell are shipped. The closed postprocess witness measured median improvements of `27%` to `62%`; the next bounded SDF product seam is a curated built-in pack catalog seed for `sdf_pack_scene`, while SDF masks/gates, full authored-pack catalog/authoring UX, new SDF ops, and broader SDF-native families remain separate follow-ups.
 
 Still deferred follow-ups:
-- Add SDF-native selectable fractal lanes only after the field producer and consumer proof is stable.
+- Add more SDF-native selectable fractal lanes only after the `sdf_pack_scene` catalog seed and field producer/consumer proof stay stable.
 - Add full authored SDF pack catalog/authoring UX after the field-source path stays stable.
 - Keep treating Lens SDF as the first mask-derived SDF field producer, not as the place to embed authored SDF packs.
 - Use `docs/notes/sdf_field_pack_near_term_TODO.md` as the detailed implementation sequencing surface.
@@ -194,7 +194,7 @@ Resume constraints:
 - Do not mix this with organized selector/common-fractal implementation unless the selector slice directly surfaces stale Lens controls.
 - Do not merge Salticid's analytic SDF operator pack wholesale into this repo. Port only bounded, reviewed pieces when a slice explicitly needs them.
 - Keep mask-derived Lens SDF and authored analytic SDF pack authority separate; they meet at the field interface.
-- Do not claim SDF-native lanes or full authored-pack catalog/authoring UX are shipped until their normal viewer paths prove them.
+- Do not claim additional SDF-native lanes, new SDF ops, recursive/apollonian packs, or full authored-pack catalog/authoring UX are shipped until their normal viewer paths prove them.
 
 ## 6. CUDA-Resident sample_fn + Optimization Staging + Reflexive Sidecar
 

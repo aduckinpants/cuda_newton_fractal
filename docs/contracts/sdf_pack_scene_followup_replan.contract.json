@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "contract_id": "sdf_pack_scene_followup_replan",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/sdf_pack_scene_followup_replan_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "honor the sdf_pack_scene lane-shell mandatory replan point before new SDF composition work",
+    "merge the closed sdf_pack_scene lane and deploy cleanup to master before selecting the next SDF work",
+    "choose the next bounded SDF implementation slice by difficulty-to-reward and dependency order",
+    "keep product code unchanged in this replan slice"
+  ],
+  "forbidden_operator_prompts": [
+    "add new SDF pack ops under this planning contract",
+    "add recursive folds, apollonian fields, SDF-native lane variants, or broader pack-catalog UI under this planning contract",
+    "change renderer, Color Pipeline, SDF pack parser/evaluator, schema, or runtime UI behavior under this planning contract",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "workflow_only_sdf_pack_scene_followup_replan",
+    "source_head": "8ea592d",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "product_mutation_allowed": false
+  },
+  "forbidden_defaults": {
+    "runtime_behavior_change": "forbidden",
+    "new_sdf_pack_ops": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_pack_scene_followup_replan.contract.json --out-json artifacts/validation/sdf_pack_scene_followup_replan_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_followup_replan_plan_sync --log artifacts/logs/sdf_pack_scene_followup_replan_plan_sync.log --out-json artifacts/validation/sdf_pack_scene_followup_replan_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/sdf_pack_scene_followup_replan_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_pack_scene_followup_replan_PHASED_PLAN.md --out-json artifacts/validation/sdf_pack_scene_followup_replan_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_pack_scene_followup_replan_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_pack_scene_followup_replan_diff_check --log artifacts/logs/sdf_pack_scene_followup_replan_diff_check.log --out-json artifacts/validation/sdf_pack_scene_followup_replan_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF pack scene follow-up replan contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_pack_scene_followup_replan_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    }
+  ]
+}

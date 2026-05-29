@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, live-only adaptive SDF field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked SDF Normal Angle Beauty, authored SDF pack viewer UI, and authored-pack Color Pipeline/overlay field consumption. Broader composition UX, full authored-pack catalog/authoring UX, and SDF-native lanes remain separate later product slices.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, live-only adaptive SDF field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked SDF Normal Angle Beauty, authored SDF pack viewer UI, authored-pack Color Pipeline/overlay field consumption, and the first selectable `sdf_pack_scene` lane shell with `sdf_smooth_lattice_2d`. The next bounded product slice is a curated built-in pack catalog seed for that lane; broader composition UX, full authored-pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes remain separate later product slices.
 
 Shipped since this roadmap was first written:
 
@@ -34,16 +34,17 @@ Shipped since this roadmap was first written:
 - Repeated median SDF witness reporting and measured CUDA SDF postprocess scratch-buffer reuse: the closed witness measured postprocess median improvements of `27%` to `62%` across identical SDF rows.
 - Row-local SDF field downsample UI/runtime authority: SDF Source rows expose `Field Downsample` with `Inherit`, `1x`, `2x`, `4x`, `8x`, and `16x`; inherited rows keep the shared `LensSettings::downsample` authority while explicit rows can form distinct SDF field groups.
 - Authored SDF pack viewer UI: the viewer can load a bounded SDF pack, expose numeric controls through no-mouse automation, preview the pack field, and persist pack state through capture/replay.
-- Authored SDF pack Color Pipeline and overlay consumption: selected authored packs can feed existing SDF Source rows and viewport overlay reports without becoming a new fractal lane.
+- Authored SDF pack Color Pipeline and overlay consumption: selected authored packs can feed existing SDF Source rows and viewport overlay reports.
+- SDF pack scene lane shell: sdf_pack_scene is a selectable field-primary fractal lane backed by the authored SDF pack field producer, with sdf_smooth_lattice_2d as the first curated built-in/default pack.
 
 Next performance/design choices:
 
 - Phase-safe normal-angle UX is shipped: keep the full-field diagnostic view, and use SDF Normal Angle Beauty for the boundary-masked product-facing path without deleting the diagnostic behavior.
-- Color Pipeline composition/preset UX, SDF-backed masks/gates, full authored-pack catalog/authoring UX, and SDF-native lanes remain planned product work after the shipped authored-pack field-source seam.
+- Next selected product step: add a small curated built-in pack catalog for `sdf_pack_scene` using only shipped SDF pack ops. Color Pipeline composition/preset UX, SDF-backed masks/gates, full authored-pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes remain separate later slices.
 
 Still deferred:
 
-- SDF-native selectable fractal lanes.
+- Additional SDF-native selectable fractal lanes beyond the shipped `sdf_pack_scene` shell.
 - Full authored SDF pack catalog/authoring UX.
 
 This document slots the SDF composition / field-pack idea into the current
@@ -535,7 +536,7 @@ Current state:
 
 - Shipped. Normal viewport SDF overlays for boundary, band, and field-debug modes are proved by `tests/test_fractal_runtime_sdf_viewport_overlay.py`.
 
-### Slice 8 - First SDF-Native Fractal Lane - Deferred
+### Slice 8 - First SDF-Native Fractal Lane - Shipped
 
 Difficulty: medium/high.
 Reward: high proof of concept.
@@ -572,7 +573,7 @@ Exit criteria:
 
 Current state:
 
-- Deferred. No SDF-native selectable fractal lane is shipped yet. Step 6 evidence review recommends the `sdf_pack_scene` lane shell plus `sdf_smooth_lattice_2d` built-in pack as the next implementation slice.
+- Shipped. `sdf_pack_scene` is the first selectable SDF-native lane shell, with `sdf_smooth_lattice_2d` as the first curated built-in/default pack. The next selected implementation is a small built-in pack catalog seed for this lane, not new SDF ops or recursive/apollonian fields yet.
 
 ## Open Design Questions
 
@@ -628,7 +629,7 @@ Recommended immediate ordering:
 20. Field-generation/downsample optimization. Stage telemetry and CUDA JFA buffer reuse shipped.
 21. Measured SDF postprocess optimization. Repeated median witness reporting and CUDA scratch-buffer reuse shipped; closed proof measured `27%` to `62%` postprocess median improvement across identical SDF rows.
 22. Phase-safe normal-angle UX. Shipped as a diagnostic/beauty split: full-field SDF Normal Angle Diagnostic stays available, and SDF Normal Angle Beauty applies the existing boundary-band gate by default.
-23. First SDF-native fractal lane. Deferred.
+23. First SDF-native fractal lane. Shipped as `sdf_pack_scene`; next selected product step is the built-in pack catalog seed.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
 blocks all other product polish. It also keeps the first implementation wins
