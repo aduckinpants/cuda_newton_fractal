@@ -57,6 +57,48 @@ void WriteRenderPacingAndFrameReportFields(
     out << ",\n";
 }
 
+const ColorPipelineParamState* FindColorPipelineReportParam(
+    const ColorPipelineRowState& row,
+    const char* path) {
+    if (!path) {
+        return nullptr;
+    }
+    for (const ColorPipelineParamState& param : row.parameter_values) {
+        if (param.path == path) {
+            return &param;
+        }
+    }
+    return nullptr;
+}
+
+void WriteColorPipelineReportOptionalString(
+    std::ostream& out,
+    const ColorPipelineParamState* param) {
+    if (!param) {
+        out << "null";
+        return;
+    }
+    if (param->type == "enum") {
+        WriteAutomationReportString(out, param->enum_value);
+        return;
+    }
+    out << "null";
+}
+
+void WriteColorPipelineReportOptionalNumber(
+    std::ostream& out,
+    const ColorPipelineParamState* param) {
+    if (!param) {
+        out << "null";
+        return;
+    }
+    if (param->type == "float" || param->type == "double" || param->type == "int") {
+        out << std::setprecision(12) << param->number_value;
+        return;
+    }
+    out << "null";
+}
+
 void WriteLensSdfReportFields(
     std::ostream& out,
     const ViewerUiAutomationLensSdfProbe& lensSdfProbe) {
@@ -629,7 +671,22 @@ void WriteColorPipelineUiAutomationReport(
             WriteAutomationReportString(out, lane.lane_id);
             out << ", \"ui_row_id\": " << row.ui_row_id << ", \"function_id\": ";
             WriteAutomationReportString(out, row.function_id);
-            out << ", \"enabled\": " << (row.enabled ? "true" : "false") << "}";
+            out << ", \"enabled\": " << (row.enabled ? "true" : "false");
+            if (lane.lane_id == "source") {
+                out << ", \"applicator_mode\": ";
+                WriteColorPipelineReportOptionalString(out, FindColorPipelineReportParam(row, "signal.sdf_gate"));
+                out << ", \"effective_field_downsample_group\": ";
+                WriteColorPipelineReportOptionalString(out, FindColorPipelineReportParam(row, "signal.sdf_field_downsample"));
+                out << ", \"blend_weight\": ";
+                WriteColorPipelineReportOptionalNumber(out, FindColorPipelineReportParam(row, "signal.blend_weight"));
+                out << ", \"fail_closed_reason\": ";
+                if (!row.enabled) {
+                    WriteAutomationReportString(out, "row disabled");
+                } else {
+                    out << "null";
+                }
+            }
+            out << "}";
         }
     }
     if (!firstRowState) {

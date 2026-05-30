@@ -206,6 +206,10 @@ inline const char* ColorPipelineSdfGateModeId(ColorPipelineSdfGateMode value) {
         return "none";
     case ColorPipelineSdfGateMode::boundary_band:
         return "boundary_band";
+    case ColorPipelineSdfGateMode::sdf_inside:
+        return "sdf_inside";
+    case ColorPipelineSdfGateMode::sdf_outside:
+        return "sdf_outside";
     }
     return nullptr;
 }
@@ -219,6 +223,14 @@ inline bool TryParseColorPipelineSdfGateModeId(const std::string& id, ColorPipel
         if (outValue) *outValue = ColorPipelineSdfGateMode::boundary_band;
         return true;
     }
+    if (id == "sdf_inside") {
+        if (outValue) *outValue = ColorPipelineSdfGateMode::sdf_inside;
+        return true;
+    }
+    if (id == "sdf_outside") {
+        if (outValue) *outValue = ColorPipelineSdfGateMode::sdf_outside;
+        return true;
+    }
     return false;
 }
 
@@ -226,6 +238,8 @@ inline std::vector<UISchemaOption> ColorPipelineSdfGateModeOptions() {
     return {
         {"none", "None", "Use this SDF Source row across the full field."},
         {"boundary_band", "Boundary Band", "Mask this SDF Source row by a local SDF boundary band."},
+        {"sdf_inside", "Inside", "Mask this SDF Source row to the inside of the SDF field."},
+        {"sdf_outside", "Outside", "Mask this SDF Source row to the outside of the SDF field."},
     };
 }
 

@@ -342,6 +342,41 @@ void TestNormalAngleBoundaryGateMasksFullFieldDiagnostic() {
         "TestNormalAngleBoundaryGateMasksFullFieldDiagnostic_GateWidthChangesFrame");
 }
 
+
+void TestSdfInsideOutsideApplicatorsMaskRowsBeforeBlend() {
+    const SdfFieldResult field = MakeTestField();
+    RenderSettings render{};
+    render.resolution = {4, 4};
+
+    KernelParams fullField = SdfParams(ColorSignal::sdf_signed_distance);
+    fullField.color_source_stack[0].params.scale = 1.0f;
+    fullField.color_source_stack[0].params.bias = 0.0f;
+    KernelParams inside = fullField;
+    inside.color_source_stack[0].params.sdf_gate = ColorPipelineSdfGateMode::sdf_inside;
+    KernelParams outside = fullField;
+    outside.color_source_stack[0].params.sdf_gate = ColorPipelineSdfGateMode::sdf_outside;
+
+    std::vector<std::uint32_t> fullPixels(16, 0x12345678u);
+    std::vector<std::uint32_t> insidePixels(16, 0x12345678u);
+    std::vector<std::uint32_t> outsidePixels(16, 0x12345678u);
+    std::string error;
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, fullField, fullPixels.data(), &error),
+        "TestSdfInsideOutsideApplicatorsMaskRowsBeforeBlend_FullSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, inside, insidePixels.data(), &error),
+        "TestSdfInsideOutsideApplicatorsMaskRowsBeforeBlend_InsideSucceeds");
+    error.clear();
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, outside, outsidePixels.data(), &error),
+        "TestSdfInsideOutsideApplicatorsMaskRowsBeforeBlend_OutsideSucceeds");
+
+    Check(HashFrame(fullPixels) != HashFrame(insidePixels),
+        "TestSdfInsideOutsideApplicatorsMaskRowsBeforeBlend_InsideChangesFrame");
+    Check(HashFrame(fullPixels) != HashFrame(outsidePixels),
+        "TestSdfInsideOutsideApplicatorsMaskRowsBeforeBlend_OutsideChangesFrame");
+    Check(HashFrame(insidePixels) != HashFrame(outsidePixels),
+        "TestSdfInsideOutsideApplicatorsMaskRowsBeforeBlend_InsideOutsideDiffer");
+}
+
 void TestNormalAngleGateWidthIsInactiveWhenGateIsOff() {
     const SdfFieldResult field = MakeTestField();
     RenderSettings render{};
@@ -750,6 +785,7 @@ int main() {
     TestSdfSourceDistinctnessMatrixRejectsRawSignedDistanceAliases();
     TestNormalAnglePhaseOffsetChangesFrameWithoutReclassifyingScalarSdfSources();
     TestNormalAngleBoundaryGateMasksFullFieldDiagnostic();
+    TestSdfInsideOutsideApplicatorsMaskRowsBeforeBlend();
     TestNormalAngleGateWidthIsInactiveWhenGateIsOff();
     TestMixedSourceStackFailsClosed();
     TestBoundaryBandWidthStillAffectsMixedSdfStack();

@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_applicative_glue_mini_campaign",
+  "feature_id": "color_pipeline_ui_salt_metadata_authority",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/color_pipeline_applicative_glue_mini_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "spec_intake/_STATUS.md",
+    "KNOWN_ISSUES.md",
+    "DEFERRED_THREADS.md",
+    "docs/notes",
+    "docs/contracts",
+    "docs/ui_salt",
+    "tools/viewer_host_materialize_ui_salt.py",
+    "tests",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "sync stale SDF and Color Pipeline docs before runtime mutation",
+    "add Source-row applicator metadata for none, sdf_boundary_band, sdf_inside, and sdf_outside",
+    "route Source-row contribution through applicators before blend_weight",
+    "preserve current UI layout, persisted Source-row gate fields, SDF Normal Angle Beauty behavior, and no-mouse proof discipline"
+  ],
+  "forbidden_operator_prompts": [
+    "add broad new Color Pipeline function entries as the main work",
+    "redesign the Color Pipeline UI layout",
+    "add new SDF pack ops or SDF-native fractal lanes",
+    "add Salticid runtime dependency",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_color_pipeline_applicative_glue",
+    "source_head": "bb987a6",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "applicator_storage_authority": "existing_source_row_sdf_gate_fields",
+    "physical_mouse_automation_allowed": false
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "second_gate_state_authority": "forbidden",
+    "broad_color_pipeline_ui_redesign": "forbidden",
+    "new_fractal_type": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_applicative_glue_mini_campaign.contract.json --out-json artifacts/validation/color_pipeline_applicative_glue_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_applicative_glue_mini_campaign_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_applicative_glue_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_applicative_glue_materializer --log artifacts/logs/color_pipeline_applicative_glue_materializer.log --out-json artifacts/validation/color_pipeline_applicative_glue_materializer.json --heartbeat-seconds 30 --timeout-seconds 600 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_applicative_glue_core --log artifacts/logs/color_pipeline_applicative_glue_core.log --out-json artifacts/validation/color_pipeline_applicative_glue_core.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_applicative_glue_window --log artifacts/logs/color_pipeline_applicative_glue_window.log --out-json artifacts/validation/color_pipeline_applicative_glue_window.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_applicative_glue_sdf_postprocess --log artifacts/logs/color_pipeline_applicative_glue_sdf_postprocess.log --out-json artifacts/validation/color_pipeline_applicative_glue_sdf_postprocess.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_applicative_glue_sdf_postprocess_cuda --log artifacts/logs/color_pipeline_applicative_glue_sdf_postprocess_cuda.log --out-json artifacts/validation/color_pipeline_applicative_glue_sdf_postprocess_cuda.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_color_pipeline_sdf_postprocess_cuda",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_applicative_glue_diagnostics_state --log artifacts/logs/color_pipeline_applicative_glue_diagnostics_state.log --out-json artifacts/validation/color_pipeline_applicative_glue_diagnostics_state.json --heartbeat-seconds 30 --timeout-seconds 900 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_diagnostics_state_io",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_applicative_glue_publish --log artifacts/logs/color_pipeline_applicative_glue_publish.log --out-json artifacts/validation/color_pipeline_applicative_glue_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_applicative_glue_runtime --log artifacts/logs/color_pipeline_applicative_glue_runtime.log --out-json artifacts/validation/color_pipeline_applicative_glue_runtime.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py tests/test_fractal_runtime_capture_replay_authority.py tests/test_fractal_runtime_color_pipeline_presets.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_applicative_glue_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_applicative_glue_diff_check --log artifacts/logs/color_pipeline_applicative_glue_diff_check.log --out-json artifacts/validation/color_pipeline_applicative_glue_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Color Pipeline applicative glue mini-campaign contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_applicative_glue_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit records docs, metadata, runtime, UI, and replay findings before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_applicative_glue_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

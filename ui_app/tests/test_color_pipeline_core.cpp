@@ -837,6 +837,8 @@ void TestSdfSourceRowsAreRuntimeBackedCatalogRows() {
                 HasParam(*descriptor, "signal.sdf_field_downsample") &&
                 HasEnumOption(*descriptor, "signal.sdf_gate", "none") &&
                 HasEnumOption(*descriptor, "signal.sdf_gate", "boundary_band") &&
+                HasEnumOption(*descriptor, "signal.sdf_gate", "sdf_inside") &&
+                HasEnumOption(*descriptor, "signal.sdf_gate", "sdf_outside") &&
                 HasEnumOption(*descriptor, "signal.sdf_field_downsample", "0") &&
                 HasEnumOption(*descriptor, "signal.sdf_field_downsample", "1") &&
                 HasEnumOption(*descriptor, "signal.sdf_field_downsample", "2") &&
@@ -881,6 +883,31 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     Check(contract.compatibility.size() == 22,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
     Check(contract.recipes.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
+    Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
+    const std::vector<std::string> expectedApplicatorIds = {
+        "none",
+        "sdf_boundary_band",
+        "sdf_inside",
+        "sdf_outside",
+    };
+    for (std::size_t applicatorIndex = 0;
+         applicatorIndex < expectedApplicatorIds.size() && applicatorIndex < contract.row_applicators.size();
+         ++applicatorIndex) {
+        const MaterializedColorPipelineRowApplicator& applicator = contract.row_applicators[applicatorIndex];
+        Check(applicator.id == expectedApplicatorIds[applicatorIndex],
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorOrder");
+        Check(applicator.target_lane == "source",
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorTargetLane");
+        Check(applicator.required_signal_kind == "any",
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorSignalKind");
+        Check(applicator.storage_param == "signal.sdf_gate",
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorStorageParam");
+        Check(!applicator.fail_closed_reason.empty(),
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorFailClosedReason");
+    }
+    Check(contract.row_applicators.size() < 2 ||
+            contract.row_applicators[1].width_param == "signal.sdf_gate_width_px",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_BoundaryApplicatorWidthParam");
     Check(!contract.explaino_entries.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoEntriesPresent");
 
     const ColorPipelineMetadataParityReport parity = ValidateColorPipelineMetadataParity(contract);
@@ -1377,7 +1404,7 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
       }
     ]
   },
-  "composition_recipe_contract": {"compatibility": [], "recipes": []},
+  "composition_recipe_contract": {"compatibility": [], "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}], "recipes": []},
   "explaino_contract": {"entries": [
     {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
   ]}
@@ -1428,6 +1455,7 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
     "compatibility": [
       {"source": "missing_source", "palette": "heatmap", "signal": "smooth_escape_ramp", "palette_runtime": "heatmap", "grading": "contrast_lift", "mode": "smooth_escape", "reason": "tampered"}
     ],
+    "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}],
     "recipes": []
   },
   "explaino_contract": {"entries": [

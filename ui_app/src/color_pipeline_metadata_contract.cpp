@@ -273,6 +273,28 @@ bool ReadRecipe(
     return true;
 }
 
+bool ReadRowApplicator(
+    const json_min::Value& value,
+    MaterializedColorPipelineRowApplicator* outApplicator,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Row applicator entry must be an object");
+    }
+    MaterializedColorPipelineRowApplicator applicator;
+    if (!ReadString(value, "id", &applicator.id, outError) ||
+        !ReadString(value, "label", &applicator.label, outError) ||
+        !ReadString(value, "target_lane", &applicator.target_lane, outError) ||
+        !ReadString(value, "required_signal_kind", &applicator.required_signal_kind, outError) ||
+        !ReadBool(value, "requires_sdf_field", &applicator.requires_sdf_field, outError) ||
+        !ReadString(value, "storage_param", &applicator.storage_param, outError) ||
+        !ReadOptionalString(value, "width_param", &applicator.width_param, outError) ||
+        !ReadString(value, "fail_closed_reason", &applicator.fail_closed_reason, outError)) {
+        return false;
+    }
+    *outApplicator = std::move(applicator);
+    return true;
+}
+
 bool ReadExplainoEntry(
     const json_min::Value& value,
     MaterializedExplainoContractEntry* outEntry,
@@ -405,6 +427,34 @@ bool ValidateMaterializedRecipes(
     return true;
 }
 
+bool ValidateMaterializedRowApplicators(
+    const std::vector<MaterializedColorPipelineRowApplicator>& applicators,
+    std::string* outError) {
+    std::set<std::string> applicatorIds;
+    for (const MaterializedColorPipelineRowApplicator& applicator : applicators) {
+        if (!applicatorIds.insert(applicator.id).second) {
+            return SetError(outError, std::string("Duplicate materialized row applicator id '") + applicator.id + "'");
+        }
+        if (applicator.target_lane != "source") {
+            return SetError(outError, std::string("Materialized row applicator '") + applicator.id + "' has invalid target_lane");
+        }
+        if (applicator.required_signal_kind != "any" &&
+            applicator.required_signal_kind != "scalar" &&
+            applicator.required_signal_kind != "phase" &&
+            applicator.required_signal_kind != "categorical") {
+            return SetError(outError, std::string("Materialized row applicator '") + applicator.id + "' has invalid required_signal_kind");
+        }
+        if (applicator.storage_param.empty()) {
+            return SetError(outError, std::string("Materialized row applicator '") + applicator.id + "' is missing storage_param");
+        }
+        if (applicator.fail_closed_reason.empty()) {
+            return SetError(outError, std::string("Materialized row applicator '") + applicator.id + "' is missing fail_closed_reason");
+        }
+    }
+    return !applicators.empty() || SetError(outError, "Materialized contract must contain at least one row applicator");
+}
+
+
 bool ValidateMaterializedExplainoEntries(
     const std::vector<MaterializedExplainoContractEntry>& entries,
     std::string* outError) {
@@ -422,6 +472,7 @@ bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, s
     return ValidateMaterializedLanes(contract.lanes, &functionIds, outError) &&
         ValidateMaterializedCompatibility(contract.compatibility, functionIds, outError) &&
         ValidateMaterializedRecipes(contract.recipes, functionIds, outError) &&
+        ValidateMaterializedRowApplicators(contract.row_applicators, outError) &&
         ValidateMaterializedExplainoEntries(contract.explaino_entries, outError);
 }
 
@@ -503,6 +554,18 @@ bool LoadColorPipelineMaterializedContractJson(
             return false;
         }
         contract.recipes.push_back(std::move(recipe));
+    }
+
+    const json_min::Value* rowApplicators = RequiredField(*compositionContract, "row_applicators", outError);
+    if (!rowApplicators || !rowApplicators->is_array()) {
+        return SetError(outError, "composition_recipe_contract.row_applicators must be an array");
+    }
+    for (const json_min::Value& applicatorValue : rowApplicators->as_array()) {
+        MaterializedColorPipelineRowApplicator applicator;
+        if (!ReadRowApplicator(applicatorValue, &applicator, outError)) {
+            return false;
+        }
+        contract.row_applicators.push_back(std::move(applicator));
     }
 
     const json_min::Value* entries = RequiredField(*explainoContract, "entries", outError);

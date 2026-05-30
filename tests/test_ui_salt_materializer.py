@@ -20,6 +20,10 @@ VALID_UI_SALT = '''
 contract(kind="function_library", contract_id="viewer.function_library_contract.v1", version=1)
 contract(kind="composition_recipe", contract_id="viewer.composition_recipe_contract.v1", version=1)
 contract(kind="explaino", contract_id="viewer.explaino_contract.v1", version=1)
+row_applicator(id="none", label="None", target_lane="source", required_signal_kind="any", requires_sdf_field=False, storage_param="signal.sdf_gate", fail_closed_reason="ungated source row contribution")
+row_applicator(id="sdf_boundary_band", label="SDF Boundary Band", target_lane="source", required_signal_kind="any", requires_sdf_field=True, storage_param="signal.sdf_gate", width_param="signal.sdf_gate_width_px", fail_closed_reason="requires an SDF field for boundary-band row masking")
+row_applicator(id="sdf_inside", label="SDF Inside", target_lane="source", required_signal_kind="any", requires_sdf_field=True, storage_param="signal.sdf_gate", fail_closed_reason="requires an SDF field for inside row masking")
+row_applicator(id="sdf_outside", label="SDF Outside", target_lane="source", required_signal_kind="any", requires_sdf_field=True, storage_param="signal.sdf_gate", fail_closed_reason="requires an SDF field for outside row masking")
 lane(id="source", label="Source", default="smooth_escape_ramp")
 lane(id="palette", label="Palette", default="heatmap")
 function(lane="source", id="smooth_escape_ramp", label="Smooth Escape Ramp", taxonomy_group="escape", signal_kind="scalar", runtime_backed=True, params=[["signal.scale", "float", "Scale", 0.25, 4.0, 0.01, 1.0], ["signal.bias", "float", "Bias", -1.0, 1.0, 0.01, 0.0]])
@@ -68,6 +72,33 @@ def test_materializer_accepts_valid_contract(tmp_path):
     assert payload["composition_recipe_contract"]["compatibility"][0]["mode"] == "smooth_escape"
     assert payload["explaino_contract"]["entries"][0]["proof"] == "color_pipeline_metadata_parity"
 
+    applicators = payload["composition_recipe_contract"]["row_applicators"]
+    assert [item["id"] for item in applicators] == [
+        "none",
+        "sdf_boundary_band",
+        "sdf_inside",
+        "sdf_outside",
+    ]
+    assert all(item["target_lane"] == "source" for item in applicators)
+    assert applicators[0]["requires_sdf_field"] is False
+    assert applicators[1]["requires_sdf_field"] is True
+    assert applicators[1]["width_param"] == "signal.sdf_gate_width_px"
+    assert all(item["storage_param"] == "signal.sdf_gate" for item in applicators)
+
+
+def test_materializer_rejects_duplicate_row_applicator_ids(tmp_path):
+    text = VALID_UI_SALT + 'row_applicator(id="none", label="Duplicate", target_lane="source", required_signal_kind="any", requires_sdf_field=False, storage_param="signal.sdf_gate", fail_closed_reason="duplicate")\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "duplicate row_applicator id" in proc.stderr
+
+
+def test_materializer_rejects_invalid_row_applicator_target_lane(tmp_path):
+    text = VALID_UI_SALT.replace('target_lane="source"', 'target_lane="palette"', 1)
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "row_applicator none has invalid target_lane" in proc.stderr
+
 
 def test_materializer_rejects_unknown_statement(tmp_path):
     proc, _ = run_materializer(tmp_path, 'surprise(id="bad")\n')
@@ -94,6 +125,20 @@ def test_materializer_requires_taxonomy_group(tmp_path):
     proc, _ = run_materializer(tmp_path, text)
     assert proc.returncode != 0
     assert "function smooth_escape_ramp requires taxonomy_group" in proc.stderr
+
+
+def test_materializer_rejects_invalid_row_applicator_signal_kind(tmp_path):
+    text = VALID_UI_SALT.replace('required_signal_kind="any"', 'required_signal_kind="vector"', 1)
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "row_applicator none has invalid required_signal_kind" in proc.stderr
+
+
+def test_materializer_requires_row_applicator_fail_closed_reason(tmp_path):
+    text = VALID_UI_SALT.replace(', fail_closed_reason="ungated source row contribution"', '', 1)
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "row_applicator none requires fail_closed_reason" in proc.stderr
 
 
 def test_materializer_rejects_invalid_param_range(tmp_path):
@@ -164,4 +209,17 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert lens_v2_params["signal.sign_contrast"]["default"] == 0.35
     assert lens_v2_params["signal.sign_contrast"]["min"] == 0.0
     assert lens_v2_params["signal.sign_contrast"]["max"] == 1.0
+    row_applicators = actual["composition_recipe_contract"]["row_applicators"]
+    assert [item["id"] for item in row_applicators] == [
+        "none",
+        "sdf_boundary_band",
+        "sdf_inside",
+        "sdf_outside",
+    ]
+    assert row_applicators[0]["requires_sdf_field"] is False
+    assert row_applicators[1]["requires_sdf_field"] is True
+    assert row_applicators[1]["required_signal_kind"] == "any"
+    assert row_applicators[1]["width_param"] == "signal.sdf_gate_width_px"
+    assert all(item["target_lane"] == "source" for item in row_applicators)
+    assert all(item["fail_closed_reason"] for item in row_applicators)
     assert len(actual["composition_recipe_contract"]["compatibility"]) == 22

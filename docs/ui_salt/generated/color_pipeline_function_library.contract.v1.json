@@ -304,7 +304,9 @@
                 "default": "none",
                 "options": [
                   "none",
-                  "boundary_band"
+                  "boundary_band",
+                  "sdf_inside",
+                  "sdf_outside"
                 ]
               },
               {
@@ -385,7 +387,9 @@
                 "default": "none",
                 "options": [
                   "none",
-                  "boundary_band"
+                  "boundary_band",
+                  "sdf_inside",
+                  "sdf_outside"
                 ]
               },
               {
@@ -475,7 +479,9 @@
                 "default": "none",
                 "options": [
                   "none",
-                  "boundary_band"
+                  "boundary_band",
+                  "sdf_inside",
+                  "sdf_outside"
                 ]
               },
               {
@@ -556,7 +562,9 @@
                 "default": "none",
                 "options": [
                   "none",
-                  "boundary_band"
+                  "boundary_band",
+                  "sdf_inside",
+                  "sdf_outside"
                 ]
               },
               {
@@ -637,7 +645,9 @@
                 "default": "none",
                 "options": [
                   "none",
-                  "boundary_band"
+                  "boundary_band",
+                  "sdf_inside",
+                  "sdf_outside"
                 ]
               },
               {
@@ -727,7 +737,9 @@
                 "default": "none",
                 "options": [
                   "none",
-                  "boundary_band"
+                  "boundary_band",
+                  "sdf_inside",
+                  "sdf_outside"
                 ]
               },
               {
@@ -1666,6 +1678,48 @@
         "grading": "contrast_lift",
         "mode": "smooth_escape",
         "reason": "supported_runtime_bridge"
+      }
+    ],
+    "row_applicators": [
+      {
+        "id": "none",
+        "label": "None",
+        "target_lane": "source",
+        "required_signal_kind": "any",
+        "requires_sdf_field": false,
+        "storage_param": "signal.sdf_gate",
+        "width_param": "",
+        "fail_closed_reason": "ungated source row contribution"
+      },
+      {
+        "id": "sdf_boundary_band",
+        "label": "SDF Boundary Band",
+        "target_lane": "source",
+        "required_signal_kind": "any",
+        "requires_sdf_field": true,
+        "storage_param": "signal.sdf_gate",
+        "width_param": "signal.sdf_gate_width_px",
+        "fail_closed_reason": "requires an SDF field for boundary-band row masking"
+      },
+      {
+        "id": "sdf_inside",
+        "label": "SDF Inside",
+        "target_lane": "source",
+        "required_signal_kind": "any",
+        "requires_sdf_field": true,
+        "storage_param": "signal.sdf_gate",
+        "width_param": "",
+        "fail_closed_reason": "requires an SDF field for inside row masking"
+      },
+      {
+        "id": "sdf_outside",
+        "label": "SDF Outside",
+        "target_lane": "source",
+        "required_signal_kind": "any",
+        "requires_sdf_field": true,
+        "storage_param": "signal.sdf_gate",
+        "width_param": "",
+        "fail_closed_reason": "requires an SDF field for outside row masking"
       }
     ],
     "recipes": [

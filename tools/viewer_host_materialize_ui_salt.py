@@ -12,8 +12,10 @@ from typing import Any
 
 VALID_CONTRACT_KINDS = {"function_library", "composition_recipe", "explaino"}
 VALID_SIGNAL_KINDS = {"scalar", "phase", "categorical"}
+VALID_APPLICATOR_SIGNAL_KINDS = VALID_SIGNAL_KINDS | {"any"}
+VALID_APPLICATOR_TARGET_LANES = {"source"}
 VALID_PARAM_TYPES = {"float", "double", "int", "bool", "enum"}
-VALID_STATEMENTS = {"contract", "lane", "function", "param", "compat", "recipe", "explaino_contract"}
+VALID_STATEMENTS = {"contract", "lane", "function", "param", "compat", "recipe", "row_applicator", "explaino_contract"}
 
 
 class MaterializerError(ValueError):
@@ -204,6 +206,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     compatibility: list[dict[str, Any]] = []
     recipes: list[dict[str, Any]] = []
     explaino_entries: list[dict[str, Any]] = []
+    row_applicators: list[dict[str, Any]] = []
+    row_applicator_ids: set[str] = set()
     lane_ids: set[str] = set()
     contract_keys: set[tuple[str, str]] = set()
 
@@ -305,6 +309,43 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 "grading": _require_string(kwargs, "grading", statement=name),
                 "fail_closed_reason": _optional_string(kwargs, "fail_closed_reason", ""),
             })
+        elif name == "row_applicator":
+            _check_known_args(
+                name,
+                kwargs,
+                {
+                    "id",
+                    "label",
+                    "target_lane",
+                    "required_signal_kind",
+                    "requires_sdf_field",
+                    "storage_param",
+                    "width_param",
+                    "fail_closed_reason",
+                },
+            )
+            applicator_id = _require_string(kwargs, "id", statement=name)
+            if applicator_id in row_applicator_ids:
+                raise MaterializerError(f"duplicate row_applicator id '{applicator_id}'")
+            row_applicator_ids.add(applicator_id)
+            target_lane = _require_string(kwargs, "target_lane", statement=f"row_applicator {applicator_id}")
+            if target_lane not in VALID_APPLICATOR_TARGET_LANES:
+                raise MaterializerError(f"row_applicator {applicator_id} has invalid target_lane '{target_lane}'")
+            required_signal_kind = _require_string(kwargs, "required_signal_kind", statement=f"row_applicator {applicator_id}")
+            if required_signal_kind not in VALID_APPLICATOR_SIGNAL_KINDS:
+                raise MaterializerError(f"row_applicator {applicator_id} has invalid required_signal_kind '{required_signal_kind}'")
+            if "requires_sdf_field" not in kwargs:
+                raise MaterializerError(f"row_applicator {applicator_id} requires requires_sdf_field")
+            row_applicators.append({
+                "id": applicator_id,
+                "label": _require_string(kwargs, "label", statement=name),
+                "target_lane": target_lane,
+                "required_signal_kind": required_signal_kind,
+                "requires_sdf_field": _optional_bool(kwargs, "requires_sdf_field", False),
+                "storage_param": _require_string(kwargs, "storage_param", statement=f"row_applicator {applicator_id}"),
+                "width_param": _optional_string(kwargs, "width_param", ""),
+                "fail_closed_reason": _require_string(kwargs, "fail_closed_reason", statement=f"row_applicator {applicator_id}"),
+            })
         elif name == "explaino_contract":
             required = ("id", "hypothesis_space", "authority", "lens", "invariant", "proof", "fallback")
             _check_known_args(name, kwargs, set(required) | {"product_facing", "diagnostic"})
@@ -329,6 +370,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             raise MaterializerError(f"compat references unknown palette '{item['palette']}'")
     if not explaino_entries:
         raise MaterializerError("at least one explaino_contract is required")
+    if not row_applicators:
+        raise MaterializerError("at least one row_applicator is required")
 
     return {
         "schema_version": 1,
@@ -337,6 +380,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         "function_library": {"lanes": lanes},
         "composition_recipe_contract": {
             "compatibility": compatibility,
+            "row_applicators": row_applicators,
             "recipes": recipes,
         },
         "explaino_contract": {"entries": explaino_entries},

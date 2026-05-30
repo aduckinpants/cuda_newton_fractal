@@ -4309,7 +4309,7 @@ int main() {
     "color_palette": "phase_wheel",
     "color_grading": "phase_default",
     "color_source_stack": [
-      { "signal": "sdf_boundary_band", "scale": 0.75, "bias": 0.25, "blend_weight": 1.0, "sdf_boundary_width_px": 5.5, "sdf_sample_step": 3, "sdf_field_downsample": 4 },
+      { "signal": "sdf_boundary_band", "scale": 0.75, "bias": 0.25, "blend_weight": 1.0, "sdf_boundary_width_px": 5.5, "sdf_gate": "sdf_outside", "sdf_gate_width_px": 2.75, "sdf_sample_step": 3, "sdf_field_downsample": 4 },
       { "signal": "sdf_normal_angle", "scale": 1.0, "bias": 0.0, "blend_weight": 0.5, "sdf_gate": "boundary_band", "sdf_gate_width_px": 3.25, "sdf_sample_step": 4, "sdf_field_downsample": 1 }
     ],
     "nova_alpha": 0.5,
@@ -4336,6 +4336,8 @@ int main() {
             !NearlyEqual(p.color_source_stack[0].params.scale, 0.75, 0.001) ||
             !NearlyEqual(p.color_source_stack[0].params.bias, 0.25, 0.001) ||
             !NearlyEqual(p.color_source_stack[0].params.sdf_boundary_width_px, 5.5, 0.001) ||
+            p.color_source_stack[0].params.sdf_gate != ColorPipelineSdfGateMode::sdf_outside ||
+            !NearlyEqual(p.color_source_stack[0].params.sdf_gate_width_px, 2.75, 0.001) ||
             p.color_source_stack[0].params.sdf_sample_step != 3 ||
             p.color_source_stack[0].params.sdf_field_downsample != 4 ||
             p.color_source_stack[1].signal != ColorSignal::sdf_normal_angle ||
@@ -4356,6 +4358,8 @@ int main() {
             !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.scale", 0.75, 0.001) ||
             !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.bias", 0.25, 0.001) ||
             !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.boundary_width_px", 5.5, 0.001) ||
+            !DraftRowHasEnumParam(windowState.live_snapshot.lanes[0].rows[0], "signal.sdf_gate", "sdf_outside") ||
+            !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.sdf_gate_width_px", 2.75, 0.001) ||
             !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[0], "signal.sdf_sample_step", 3.0, 0.001) ||
             !DraftRowHasEnumParam(windowState.live_snapshot.lanes[0].rows[1], "signal.sdf_gate", "boundary_band") ||
             !DraftRowHasNumberParam(windowState.live_snapshot.lanes[0].rows[1], "signal.sdf_gate_width_px", 3.25, 0.001) ||

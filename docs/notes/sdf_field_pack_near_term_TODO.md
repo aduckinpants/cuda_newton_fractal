@@ -1,7 +1,7 @@
 # SDF Field Pack Near-Term TODO
 
 Status: living roadmap. The SDF field-pack system is partially shipped as
-headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, live-only adaptive SDF field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked SDF Normal Angle Beauty, authored SDF pack viewer UI, authored-pack Color Pipeline/overlay field consumption, and the first selectable `sdf_pack_scene` lane shell with `sdf_smooth_lattice_2d`. The next bounded product slice is a curated built-in pack catalog seed for that lane; broader composition UX, full authored-pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes remain separate later product slices.
+headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, live-only adaptive SDF field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked SDF Normal Angle Beauty, authored SDF pack viewer UI, authored-pack Color Pipeline/overlay field consumption, the first selectable `sdf_pack_scene` lane shell with `sdf_smooth_lattice_2d`, the curated built-in SDF pack catalog seed, and the SDF drag camera mapping repair. The next bounded product slice is Color Pipeline applicative glue for typed Source-row applicators; broader composition UI, full authored-pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes remain separate later product slices.
 
 Shipped since this roadmap was first written:
 
@@ -36,11 +36,13 @@ Shipped since this roadmap was first written:
 - Authored SDF pack viewer UI: the viewer can load a bounded SDF pack, expose numeric controls through no-mouse automation, preview the pack field, and persist pack state through capture/replay.
 - Authored SDF pack Color Pipeline and overlay consumption: selected authored packs can feed existing SDF Source rows and viewport overlay reports.
 - SDF pack scene lane shell: sdf_pack_scene is a selectable field-primary fractal lane backed by the authored SDF pack field producer, with sdf_smooth_lattice_2d as the first curated built-in/default pack.
+- SDF pack built-in catalog seed: capsule weave and ring cells are shipped built-in packs with no-mouse selector/reporting proof.
+- SDF drag camera mapping repair: authored SDF pack field mapping now matches normal viewport drag orientation with no-mouse pan proof.
 
 Next performance/design choices:
 
 - Phase-safe normal-angle UX is shipped: keep the full-field diagnostic view, and use SDF Normal Angle Beauty for the boundary-masked product-facing path without deleting the diagnostic behavior.
-- Next selected product step: add a small curated built-in pack catalog for `sdf_pack_scene` using only shipped SDF pack ops. Color Pipeline composition/preset UX, SDF-backed masks/gates, full authored-pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes remain separate later slices.
+- Next selected product step: implement Color Pipeline applicative glue for typed Source-row applicators using existing SDF gate storage as v1 authority. Broader Color Pipeline UI redesign, full authored-pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes remain separate later slices.
 
 Still deferred:
 
@@ -573,7 +575,7 @@ Exit criteria:
 
 Current state:
 
-- Shipped. `sdf_pack_scene` is the first selectable SDF-native lane shell, with `sdf_smooth_lattice_2d` as the first curated built-in/default pack. The next selected implementation is a small built-in pack catalog seed for this lane, not new SDF ops or recursive/apollonian fields yet.
+- Shipped. `sdf_pack_scene` is the first selectable SDF-native lane shell, with `sdf_smooth_lattice_2d` as the first curated built-in/default pack. The built-in pack catalog seed is shipped; the next selected implementation is Color Pipeline applicative glue, not new SDF ops or recursive/apollonian fields yet.
 
 ## Open Design Questions
 
@@ -629,7 +631,7 @@ Recommended immediate ordering:
 20. Field-generation/downsample optimization. Stage telemetry and CUDA JFA buffer reuse shipped.
 21. Measured SDF postprocess optimization. Repeated median witness reporting and CUDA scratch-buffer reuse shipped; closed proof measured `27%` to `62%` postprocess median improvement across identical SDF rows.
 22. Phase-safe normal-angle UX. Shipped as a diagnostic/beauty split: full-field SDF Normal Angle Diagnostic stays available, and SDF Normal Angle Beauty applies the existing boundary-band gate by default.
-23. First SDF-native fractal lane. Shipped as `sdf_pack_scene`; next selected product step is the built-in pack catalog seed.
+23. First SDF-native fractal lane. Shipped as `sdf_pack_scene`; built-in pack catalog seed and SDF drag mapping repair are shipped; next selected product step is typed Color Pipeline applicative glue.
 
 This makes the SDF idea a near-term substrate campaign, not a side quest that
 blocks all other product polish. It also keeps the first implementation wins

@@ -154,6 +154,20 @@ void TestSupportedDirectScalarStacksUseCudaWithExactPixels() {
         field,
         Render(16, 12),
         SdfParams(ColorSignal::sdf_inside_outside));
+    KernelParams insideGate = SdfParams(ColorSignal::sdf_signed_distance);
+    insideGate.color_source_stack[0].params.sdf_gate = ColorPipelineSdfGateMode::sdf_inside;
+    CheckCpuGpuParity(
+        "TestSupportedDirectScalarStacksUseCudaWithExactPixels_InsideGatePixelsMatch",
+        field,
+        Render(16, 12),
+        insideGate);
+    KernelParams outsideGate = SdfParams(ColorSignal::sdf_signed_distance);
+    outsideGate.color_source_stack[0].params.sdf_gate = ColorPipelineSdfGateMode::sdf_outside;
+    CheckCpuGpuParity(
+        "TestSupportedDirectScalarStacksUseCudaWithExactPixels_OutsideGatePixelsMatch",
+        field,
+        Render(16, 12),
+        outsideGate);
     KernelParams boundary = SdfParams(ColorSignal::sdf_boundary_band);
     boundary.color_source_stack[0].params.sdf_boundary_width_px = 5.0f;
     CheckCpuGpuParity(
@@ -275,6 +289,26 @@ void TestNeighborhoodFieldSignalsUseCudaWithExactPixels() {
         field,
         Render(17, 13),
         normalAngle,
+        1,
+        SdfColorPipelinePostprocessBackend::cuda_field_signal);
+
+    KernelParams insideGatedNormalAngle = normalAngle;
+    insideGatedNormalAngle.color_source_stack[0].params.sdf_gate = ColorPipelineSdfGateMode::sdf_inside;
+    CheckCpuGpuParity(
+        "TestNeighborhoodFieldSignalsUseCudaWithExactPixels_NormalAngleInsideGatePixelsMatch",
+        field,
+        Render(20, 14),
+        insideGatedNormalAngle,
+        1,
+        SdfColorPipelinePostprocessBackend::cuda_field_signal);
+
+    KernelParams outsideGatedNormalAngle = normalAngle;
+    outsideGatedNormalAngle.color_source_stack[0].params.sdf_gate = ColorPipelineSdfGateMode::sdf_outside;
+    CheckCpuGpuParity(
+        "TestNeighborhoodFieldSignalsUseCudaWithExactPixels_NormalAngleOutsideGatePixelsMatch",
+        field,
+        Render(20, 14),
+        outsideGatedNormalAngle,
         1,
         SdfColorPipelinePostprocessBackend::cuda_field_signal);
 

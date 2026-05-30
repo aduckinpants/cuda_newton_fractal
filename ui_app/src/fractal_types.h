@@ -108,6 +108,8 @@ constexpr int kColorPipelineMaxGradingStackCount = 8;
 enum class ColorPipelineSdfGateMode : int {
     none = 0,
     boundary_band = 1,
+    sdf_inside = 2,
+    sdf_outside = 3,
 };
 
 struct ColorPipelineSourceRuntimeParams {

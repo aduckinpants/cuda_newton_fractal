@@ -91,6 +91,28 @@ __device__ float ResolveLensFieldV2ResponseDevice(float signedDistancePx, float 
     return response;
 }
 
+__device__ float ResolveSdfApplicatorMaskDevice(
+    float signedDistancePx,
+    ColorPipelineSdfGateMode gate,
+    float gateWidthPx) {
+    switch (gate) {
+    case ColorPipelineSdfGateMode::none:
+        return 1.0f;
+    case ColorPipelineSdfGateMode::boundary_band:
+        return EscapeTimeColorClamp(
+            ResolveBoundaryBandDevice(
+                signedDistancePx,
+                EscapeTimeColorClamp(gateWidthPx, 0.25f, 16.0f)),
+            0.0f,
+            1.0f);
+    case ColorPipelineSdfGateMode::sdf_inside:
+        return signedDistancePx < 0.0f ? 1.0f : 0.0f;
+    case ColorPipelineSdfGateMode::sdf_outside:
+        return signedDistancePx >= 0.0f ? 1.0f : 0.0f;
+    }
+    return 1.0f;
+}
+
 __device__ bool ResolveDirectSdfSourceValueDevice(
     float center,
     float fieldPixelScale,
@@ -114,12 +136,10 @@ __device__ bool ResolveDirectSdfSourceValueDevice(
     }
 
     value = value * entry.params.scale + entry.params.bias;
-    if (entry.params.sdf_gate == ColorPipelineSdfGateMode::boundary_band) {
-        const float mask = ResolveBoundaryBandDevice(
-            center,
-            EscapeTimeColorClamp(entry.params.sdf_gate_width_px, 0.25f, 16.0f));
-        value *= EscapeTimeColorClamp(mask, 0.0f, 1.0f);
-    }
+    value *= ResolveSdfApplicatorMaskDevice(
+        center,
+        entry.params.sdf_gate,
+        entry.params.sdf_gate_width_px);
     *outValue = value;
     return true;
 }
@@ -257,12 +277,10 @@ __device__ bool ResolveFieldSdfSourceValueDevice(
     }
 
     value = value * entry.params.scale + entry.params.bias;
-    if (entry.params.sdf_gate == ColorPipelineSdfGateMode::boundary_band) {
-        const float mask = ResolveBoundaryBandDevice(
-            sample.center,
-            EscapeTimeColorClamp(entry.params.sdf_gate_width_px, 0.25f, 16.0f));
-        value *= EscapeTimeColorClamp(mask, 0.0f, 1.0f);
-    }
+    value *= ResolveSdfApplicatorMaskDevice(
+        sample.center,
+        entry.params.sdf_gate,
+        entry.params.sdf_gate_width_px);
     *outValue = value;
     return isfinite(value);
 }

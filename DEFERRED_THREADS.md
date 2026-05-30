@@ -182,10 +182,10 @@ Shipped since the original deferred note:
 Active follow-up:
 - Broader composition/preset UX now has preset workflow truth and visible implementation-wording cleanup covered by bounded slices. Keep later composition work split by topic instead of turning it into a broad redesign.
 - The immediate composition repair for disabled-row compatibility/error authority and `sdf_curvature` plus `sdf_normal_angle` SDF-only Source-stack blending is shipped on `08e62b6`.
-- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked normal-angle UX, authored-pack live field consumption, and the first `sdf_pack_scene` selectable lane shell are shipped. The closed postprocess witness measured median improvements of `27%` to `62%`; the next bounded SDF product seam is a curated built-in pack catalog seed for `sdf_pack_scene`, while SDF masks/gates, full authored-pack catalog/authoring UX, new SDF ops, and broader SDF-native families remain separate follow-ups.
+- Field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked normal-angle UX, authored-pack live field consumption, the first `sdf_pack_scene` selectable lane shell, the curated built-in SDF pack catalog seed, and the SDF drag camera mapping repair are shipped. The closed postprocess witness measured median improvements of `27%` to `62%`; the next bounded composition seam is Color Pipeline applicative glue for typed Source-row applicators, while full authored-pack catalog/authoring UX, new SDF ops, and broader SDF-native families remain separate follow-ups.
 
 Still deferred follow-ups:
-- Add more SDF-native selectable fractal lanes only after the `sdf_pack_scene` catalog seed and field producer/consumer proof stay stable.
+- Add more SDF-native selectable fractal lanes only after `sdf_pack_scene`, the built-in catalog seed, and typed Color Pipeline applicative glue stay stable.
 - Add full authored SDF pack catalog/authoring UX after the field-source path stays stable.
 - Keep treating Lens SDF as the first mask-derived SDF field producer, not as the place to embed authored SDF packs.
 - Use `docs/notes/sdf_field_pack_near_term_TODO.md` as the detailed implementation sequencing surface.

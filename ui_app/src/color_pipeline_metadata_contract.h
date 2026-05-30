@@ -60,6 +60,17 @@ struct MaterializedColorPipelineRecipe {
     std::string fail_closed_reason;
 };
 
+struct MaterializedColorPipelineRowApplicator {
+    std::string id;
+    std::string label;
+    std::string target_lane;
+    std::string required_signal_kind;
+    bool requires_sdf_field = false;
+    std::string storage_param;
+    std::string width_param;
+    std::string fail_closed_reason;
+};
+
 struct MaterializedExplainoContractEntry {
     std::string id;
     std::string hypothesis_space;
@@ -78,6 +89,7 @@ struct MaterializedColorPipelineContract {
     std::vector<MaterializedColorPipelineLane> lanes;
     std::vector<MaterializedColorPipelineCompatibility> compatibility;
     std::vector<MaterializedColorPipelineRecipe> recipes;
+    std::vector<MaterializedColorPipelineRowApplicator> row_applicators;
     std::vector<MaterializedExplainoContractEntry> explaino_entries;
 };
 

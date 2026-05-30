@@ -282,30 +282,44 @@ bool BuildSdfPostprocessExecutionPlanForFieldGroups(
     return outPlan.row_count > 0;
 }
 
+float ResolveSdfApplicatorMask(
+    float signedDistancePx,
+    ColorPipelineSdfGateMode gate,
+    float gateWidthPx) {
+    switch (gate) {
+    case ColorPipelineSdfGateMode::none:
+        return 1.0f;
+    case ColorPipelineSdfGateMode::boundary_band: {
+        SdfFieldSignalConfig gateConfig{};
+        gateConfig.boundary_band_px = EscapeTimeColorClamp(gateWidthPx, 0.25f, 16.0f);
+        return EscapeTimeColorClamp(
+            ResolveSdfBoundaryBandFromSignedDistancePx(signedDistancePx, gateConfig),
+            0.0f,
+            1.0f);
+    }
+    case ColorPipelineSdfGateMode::sdf_inside:
+        return signedDistancePx < 0.0f ? 1.0f : 0.0f;
+    case ColorPipelineSdfGateMode::sdf_outside:
+        return signedDistancePx >= 0.0f ? 1.0f : 0.0f;
+    }
+    return 1.0f;
+}
+
 float ApplySdfGateToSourceValue(
     float value,
     float signedDistancePx,
     const ColorPipelineSourceStackEntry& entry) {
-    if (entry.params.sdf_gate != ColorPipelineSdfGateMode::boundary_band) {
-        return value;
-    }
-    SdfFieldSignalConfig gateConfig{};
-    gateConfig.boundary_band_px = EscapeTimeColorClamp(entry.params.sdf_gate_width_px, 0.25f, 16.0f);
-    const float mask = ResolveSdfBoundaryBandFromSignedDistancePx(signedDistancePx, gateConfig);
-    return value * EscapeTimeColorClamp(mask, 0.0f, 1.0f);
+    return value * ResolveSdfApplicatorMask(
+        signedDistancePx,
+        entry.params.sdf_gate,
+        entry.params.sdf_gate_width_px);
 }
 
 float ApplyPlannedSdfGateToSourceValue(
     float value,
     float signedDistancePx,
     const PlannedSdfSourceRow& row) {
-    if (row.gate != ColorPipelineSdfGateMode::boundary_band) {
-        return value;
-    }
-    SdfFieldSignalConfig gateConfig{};
-    gateConfig.boundary_band_px = row.gate_width_px;
-    const float mask = ResolveSdfBoundaryBandFromSignedDistancePx(signedDistancePx, gateConfig);
-    return value * EscapeTimeColorClamp(mask, 0.0f, 1.0f);
+    return value * ResolveSdfApplicatorMask(signedDistancePx, row.gate, row.gate_width_px);
 }
 
 float ResolveSdfSourceValueFromSample(

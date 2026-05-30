@@ -233,7 +233,7 @@ def _assert_sdf_capture_state(
     assert source_entry.get("signal") == function_id
     assert source_entry.get("scale") == pytest.approx(scale, abs=1e-6)
     assert source_entry.get("bias") == pytest.approx(bias, abs=1e-6)
-    assert source_entry.get("sdf_gate", "none") in {"none", "boundary_band"}
+    assert source_entry.get("sdf_gate", "none") in {"none", "boundary_band", "sdf_inside", "sdf_outside"}
 
     source_row = _first_color_pipeline_row(state, "source")
     assert source_row.get("function_id") == function_id
@@ -546,6 +546,81 @@ def test_sdf_source_boundary_gate_changes_normal_angle_frame_no_mouse(tmp_path: 
     )
 
 
+
+def test_sdf_source_applicator_modes_change_frame_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline SDF runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    state_path = write_state_bundle(
+        tmp_path / "sdf_source_applicator_seed",
+        json.loads(json.dumps(neutral_capture["state"])),
+    )
+
+    full_field = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_signed_distance",
+        scale=1.0,
+        bias=0.0,
+        sdf_gate="none",
+        sdf_gate_width_px=2.0,
+    )
+    inside = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_signed_distance",
+        scale=1.0,
+        bias=0.0,
+        sdf_gate="sdf_inside",
+        sdf_gate_width_px=2.0,
+    )
+    outside = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_signed_distance",
+        scale=1.0,
+        bias=0.0,
+        sdf_gate="sdf_outside",
+        sdf_gate_width_px=2.0,
+    )
+    boundary = _capture_sdf_source_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        function_id="sdf_signed_distance",
+        scale=1.0,
+        bias=0.0,
+        sdf_gate="boundary_band",
+        sdf_gate_width_px=2.0,
+    )
+
+    for mode, capture in (
+        ("sdf_inside", inside),
+        ("sdf_outside", outside),
+        ("boundary_band", boundary),
+    ):
+        stack = capture["state"]["params"]["color_source_stack"]
+        assert isinstance(stack, list) and stack, capture
+        assert stack[0].get("sdf_gate") == mode, capture
+        assert capture["frame_hash"] != full_field["frame_hash"], (
+            f"expected Source-row applicator {mode} to mask the row before blend_weight"
+        )
+
+    assert inside["frame_hash"] != outside["frame_hash"], (
+        "inside and outside SDF applicators should be complementary, not aliases"
+    )
+
+
 def test_capture_finding_preserves_sdf_source_row_pixels_no_mouse(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Color Pipeline SDF Capture Finding regression is Windows-only")
@@ -570,6 +645,8 @@ def test_capture_finding_preserves_sdf_source_row_pixels_no_mouse(tmp_path: Path
         function_id="sdf_signed_distance",
         scale=0.05,
         bias=0.5,
+        sdf_gate="sdf_inside",
+        sdf_gate_width_px=2.0,
     )
     assert sdf_capture["frame_hash"] != neutral_capture["frame_hash"]
     sdf_state_path = write_state_bundle(tmp_path / "capture_finding_sdf", sdf_capture["state"])
@@ -794,6 +871,10 @@ def test_color_pipeline_sdf_source_controls_are_visible_and_live_no_mouse(tmp_pa
         ]
         assert len(disabled_rows) == 1, disabled_report
         assert disabled_rows[0].get("enabled") is False, disabled_report
+        assert disabled_rows[0].get("applicator_mode") == "none", disabled_report
+        assert disabled_rows[0].get("effective_field_downsample_group") == "0", disabled_report
+        assert disabled_rows[0].get("blend_weight") == pytest.approx(1.0), disabled_report
+        assert disabled_rows[0].get("fail_closed_reason") == "row disabled", disabled_report
         assert disabled_report.get("validation_messages") == [], disabled_report
 
     boundary_capture = _capture_sdf_source_row(
