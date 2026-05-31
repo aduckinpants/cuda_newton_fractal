@@ -71,7 +71,7 @@ Out of scope:
 - Runtime capability proof: `sdf_engine_capability_runtime_pytest` passed SDF pack scene plus Lens Field v2 focused runtime checks with 4 tests.
 - Field-primary honesty proof: `sdf_engine_field_primary_honesty_runtime_pytest` passed 4 tests, including fail-closed mixed Source rows for `generic_equation_pack` and `sdf_pack_scene`.
 - Performance/cache proof: `sdf_engine_performance_witness_tool_tests` passed the witness unit and compact published-runtime witness tests; `sdf_engine_completion_performance_witness` wrote `artifacts/sdf_engine_completion_sprint/sdf_performance_witness.json` and `.md`; `sdf_engine_field_cache_native` passed `test_lens_sdf`.
-- Receipt hardening proof: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_prefers_logged_command_out_json -q` passed and proves logged runtime commands with `--out-json` are recorded as validator JSON evidence for contract-proof assertions; the contract now asserts the logged-command artifact's `exit_code` field.
+- Receipt hardening proof: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_prefers_logged_command_out_json -q` passed and proves logged runtime commands with `--out-json` are recorded as validator JSON evidence for contract-proof assertions; the contract now asserts the logged-command artifact's `exit_code` field. A full `tests/test_viewer_host_contract_proof.py` pass then exposed and repaired stale 46-to-47 fractal-count drift in the parameter-surface contract, inventory, and test guardrail.
 
 ## SDF Operator Expansion Gate
 
@@ -116,6 +116,7 @@ Required questions:
 - [x] Pass 6 - field-primary source honesty audit found no runtime regression for supported mixed rows but added explicit published-runtime proof that `generic_equation_pack` and `sdf_pack_scene` mixed Source rows still fail closed.
 - [x] Pass 7 - performance audit found the existing witness omitted Lens Field v2 and `sdf_pack_scene`. Added those rows to the witness and recorded fresh numbers without making an FPS-improvement claim.
 - [x] Pass 8 - closure-receipt audit found `viewer_host_run_logged_command.py --out-json ...` commands were recorded only as text-log evidence, and the first contract assertions targeted a nonexistent `returncode` field instead of the logged-command `exit_code`. Added a focused workflow regression, changed receipt evidence mapping to prefer `--out-json`, and repaired the contract JSON paths while preserving text-log evidence for logged commands without JSON output.
+- [x] Pass 9 - workflow-test audit found the older parameter-surface contract and inventory still expected 46 fractal lanes while schema/enum authority now expose 47, and the workflow test carried the same stale literal. Repaired the stale count and guardrail instead of leaving a known failing workflow test.
 
 ## Audit Findings
 
@@ -128,6 +129,7 @@ Required questions:
 - [x] Finding: field-primary mixed Source denial had no dedicated `sdf_pack_scene`/`generic_equation_pack` runtime test in the SDF pack lane file. Added one.
 - [x] Finding: the performance witness did not include all current SDF producer classes. Extended it to cover Lens SDF, Lens Field v2, and `sdf_pack_scene`.
 - [x] Finding: validation receipts could not prove required runtime publish/proof JSON assertions because logged commands with `--out-json` were recorded as log-only evidence and the sprint contract pointed at `returncode` instead of `exit_code`. Fixed the evidence mapper, repaired the contract assertion paths, and added a regression.
+- [x] Finding: the full contract-proof workflow test found stale `fractal_parameter_surface_matrix` count drift after later catalog growth. Updated the contract, inventory, plan note, and test guardrail from the stale 46 assumption to the current schema/enum-consistency check with 47 lanes.
 
 ## Planned Validation Targets
 

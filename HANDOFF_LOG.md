@@ -177,3 +177,4 @@
 - `ck:95382b15` 2026-05-31 22:24 UTC | score 93 — Closed SDF engine completion sprint with runtime pack staging, capability reporting, field-primary mixed Source denial proof, and producer-class performance witness.
 - `ck:95382b15` 2026-05-31 22:44 UTC | score 93 — Closed follow-up receipt hardening for SDF engine sprint: logged runtime commands with --out-json now provide validator JSON evidence for contract-proof assertions; focused workflow regression passed.
 - `ck:95382b15` 2026-05-31 22:47 UTC | score 93 — Closed final SDF sprint contract-proof repair: runtime publish/proof assertions now target logged-command exit_code JSON fields and the contract is re-locked.
+- `ck:95382b15` 2026-05-31 22:57 UTC | score 93 — Closed workflow-test stale-count cleanup discovered during SDF sprint closeout: parameter-surface contract, inventory, and test guardrail now match the current 47-lane schema/enum authority.

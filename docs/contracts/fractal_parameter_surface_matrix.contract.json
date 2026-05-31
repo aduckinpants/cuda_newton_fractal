@@ -75,7 +75,7 @@
     "runtime_walk_viewer_default_proof": "forbidden_legacy_relaunch_module",
     "runtime_walk_viewer_e2e_module": "legacy_opt_in_only",
     "persistent_runtime_viewer_harness": "required",
-    "all_fractal_count": 46,
+    "all_fractal_count": 47,
     "selected_subset_closeout_is_insufficient": true,
     "legacy_relaunch_runtime_walk_module": "forbidden_default_proof",
     "descriptor_export": "required_all_current_schema_cpp_derived",

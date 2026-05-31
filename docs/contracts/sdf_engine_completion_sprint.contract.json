@@ -7,6 +7,9 @@
   "allowed_mutation_scope": [
     "docs/notes/sdf_engine_completion_sprint_PHASED_PLAN.md",
     "docs/contracts/sdf_engine_completion_sprint.contract.json",
+    "docs/contracts/fractal_parameter_surface_matrix.contract.json",
+    "docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md",
+    "docs/notes/fractal_control_surface_audit_inventory.md",
     "docs/notes/sdf_field_pack_near_term_TODO.md",
     "docs/notes/color_pipeline_function_picker_layout_PHASED_PLAN.md",
     "spec_intake/_STATUS.md",

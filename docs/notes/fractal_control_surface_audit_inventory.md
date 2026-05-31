@@ -39,8 +39,8 @@ Out of scope here:
 
 ## Current Source Inventory
 
-- `FractalType` enum count: 46.
-- `fractal_type` schema option count: 46.
+- `FractalType` enum count: 47.
+- `fractal_type` schema option count: 47.
 - Static schema source: `ui/fractal_binding_surface_v1.ui_schema.json`.
 - Runtime formula sources inspected: `ui_app/src/fractal_sample_device.inl`, `ui_app/src/escape_time_direct_formulas.h`, `ui_app/src/escape_time_specialized_formulas.h`, `ui_app/src/fractal_derived_fields.cpp`, `ui_app/src/fractal_family_rules.h`, and current runtime/native tests.
 - Numeric controls below exclude global view/render/color controls such as size, camera, max iter, block size, device, sample tier, exposure, tint, and benchmark.

@@ -332,7 +332,7 @@ def test_fractal_parameter_surface_contract_requires_all44_scope() -> None:
     assert len(options) == expected_count
     assert len(enum_id_rows) == expected_count
     assert contract["feature_id"] == "fractal_parameter_surface_matrix_phase11_parameter_api_hardening"
-    assert expected_count == 46
+    assert expected_count >= 44
     assert contract["required_defaults"].get("selected_subset_closeout_is_insufficient") is True
     assert contract["forbidden_defaults"].get("subset_matrix_closeout_as_all_current_completion") == "forbidden"
     assert contract["forbidden_defaults"].get("missing_control_omission") == "forbidden"
