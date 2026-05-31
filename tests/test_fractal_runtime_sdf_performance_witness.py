@@ -51,8 +51,8 @@ def test_sdf_performance_witness_runs_against_published_runtime_no_mouse(tmp_pat
     assert report["schema_version"] == 1
     assert report["no_mouse_automation"] is True
     assert report["persistent_viewer_launch_count"] == 1
-    assert report["summary"]["scenario_count"] >= 5
-    assert report["summary"]["sdf_scenario_count"] >= 4
+    assert report["summary"]["scenario_count"] >= 7
+    assert report["summary"]["sdf_scenario_count"] >= 6
     assert report["summary"]["preview_sample_count"] >= 1
     assert report["summary"]["full_quality_sample_count"] >= 4
     assert report["summary"]["recommendation"] in {
@@ -76,3 +76,5 @@ def test_sdf_performance_witness_runs_against_published_runtime_no_mouse(tmp_pat
             assert scenario["rendered_frame_width"] >= scenario["target_render_width"], scenario
             assert scenario["rendered_frame_height"] >= scenario["target_render_height"], scenario
             assert scenario["lens_sdf_postprocess_pixel_step"] == 1, scenario
+    producer_kinds = {scenario["lens_sdf_field_producer_kind"] for scenario in report["scenarios"]}
+    assert {"lens_sdf", "lens_field_v2", "sdf_pack_scene"}.issubset(producer_kinds)

@@ -135,6 +135,17 @@ if exist ..\docs\ui_salt\generated\color_pipeline_function_library.contract.v1.j
   exit /b 1
 )
 
+if not exist "%OUTROOT%\docs" mkdir "%OUTROOT%\docs"
+if not exist "%OUTROOT%\docs\examples" mkdir "%OUTROOT%\docs\examples"
+if not exist "%OUTROOT%\docs\examples\sdf_packs" mkdir "%OUTROOT%\docs\examples\sdf_packs"
+for %%F in ("%OUTROOT%\docs\examples\sdf_packs\*.sdf_pack.json") do if exist "%%~fF" del /Q "%%~fF"
+if exist ..\docs\examples\sdf_packs\*.sdf_pack.json (
+  copy /Y ..\docs\examples\sdf_packs\*.sdf_pack.json "%OUTROOT%\docs\examples\sdf_packs\" >NUL
+) else (
+  echo ERROR: built-in SDF packs missing at ..\docs\examples\sdf_packs\*.sdf_pack.json
+  exit /b 1
+)
+
 copy /Y .\fractal_ui_launcher_template.cmd "%OUTROOT%\fractal_ui.cmd" >NUL
 if errorlevel 1 (
   echo Failed to stage runtime launcher script to %OUTROOT%\fractal_ui.cmd

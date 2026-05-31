@@ -69,6 +69,7 @@
 #include "safe_mode_schema.h"
 #include "schema_binding.h"
 #include "schema_startup_policy.h"
+#include "sdf_field_capability.h"
 #include "sdf_pack_viewer_ui.h"
 #include "sweep_player.h"
 #include "ui_schema.h"
@@ -587,6 +588,32 @@ static const char* ColorPipelineSourceStackKindId(const KernelParams& params) {
         return "sdf_only";
     }
     return "non_sdf_only";
+}
+
+static bool ColorPipelineUsesLensFieldV2Source(const KernelParams& params) {
+    const int sourceStackCount = ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count);
+    if (sourceStackCount > 0) {
+        for (int index = 0; index < sourceStackCount; ++index) {
+            if (params.color_source_stack[index].signal == ColorSignal::lens_field_v2_distance) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return params.color_pipeline.signal == ColorSignal::lens_field_v2_distance;
+}
+
+static void PublishSdfFieldCapability(
+    ViewerUiAutomationLensSdfProbe& probe,
+    SdfFieldProducerKind producerKind) {
+    probe.field_producer_kind = SdfFieldProducerKindId(producerKind);
+    probe.supported_signal_ids.clear();
+    if (producerKind == SdfFieldProducerKind::none) {
+        return;
+    }
+    for (const char* signalId : kSdfFieldCapabilitySignalIds) {
+        probe.supported_signal_ids.push_back(signalId);
+    }
 }
 
 static bool FractalTypeCanEmitRendererColorSourceSignals(FractalType fractalType) {
@@ -1209,6 +1236,17 @@ static void DispatchRenderFrame(
     lensSdfProbe.field_source = authoredSdfFieldSelected
         ? "authored_sdf_pack"
         : (needsLensSdfField ? "mask_derived_lens_sdf" : "none");
+    PublishSdfFieldCapability(
+        lensSdfProbe,
+        authoredSdfFieldSelected
+            ? (view.fractal_type == FractalType::sdf_pack_scene
+                ? SdfFieldProducerKind::sdf_pack_scene
+                : SdfFieldProducerKind::authored_sdf_pack)
+            : (needsLensSdfField
+                ? (ColorPipelineUsesLensFieldV2Source(params)
+                    ? SdfFieldProducerKind::lens_field_v2
+                    : SdfFieldProducerKind::lens_sdf)
+                : SdfFieldProducerKind::none));
     if (authoredSdfFieldSelected && sdfPackViewer.have_pack) {
         lensSdfProbe.field_source_pack_id = sdfPackViewer.pack.pack_id;
     }
@@ -1224,6 +1262,8 @@ static void DispatchRenderFrame(
     bool sourceSignalFramePrepared = true;
     if (mixedSourceStack && !FractalTypeCanEmitRendererColorSourceSignals(view.fractal_type)) {
         genericRenderError = MixedSourceSignalsDeferredMessage(view.fractal_type);
+        lensSdfProbe.field_capability_fail_closed_reason = genericRenderError;
+        lensSdfProbe.field_source_error = genericRenderError;
         sourceSignalFramePrepared = false;
     } else if (mixedSourceStack && !PrepareColorPipelineSourceSignalFrame(dispatchRender, sourceSignalRowCount, sourceSignalValues, sourceSignalFrame, &genericRenderError)) {
         sourceSignalFramePrepared = false;
@@ -1279,6 +1319,10 @@ static void DispatchRenderFrame(
     if (!renderOk) {
         ImGui::Begin("CUDA Error");
         const char* message = !genericRenderError.empty() ? genericRenderError.c_str() : (err ? err : "unknown error");
+        if (!genericRenderError.empty() && lensSdfProbe.field_capability_fail_closed_reason.empty()) {
+            lensSdfProbe.field_capability_fail_closed_reason = genericRenderError;
+            lensSdfProbe.field_source_error = genericRenderError;
+        }
         ImGui::TextWrapped("Render failed: %s", message);
         ImGui::End();
     } else {

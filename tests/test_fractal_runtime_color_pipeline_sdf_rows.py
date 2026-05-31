@@ -570,6 +570,9 @@ def test_lens_field_v2_distance_source_reports_gpu_backed_no_mouse(tmp_path: Pat
 
     assert ready_report.get("lens_sdf_enabled") is False, ready_report
     assert ready_report.get("lens_sdf_valid") is True, ready_report
+    assert ready_report.get("lens_sdf_field_producer_kind") == "lens_field_v2", ready_report
+    assert "lens_field_v2_distance" in ready_report.get("lens_sdf_supported_signals", []), ready_report
+    assert ready_report.get("lens_sdf_field_capability_fail_closed_reason") is None, ready_report
     assert ready_report.get("lens_sdf_backend_used") == "cuda_jfa", ready_report
     assert ready_report.get("lens_sdf_postprocess_backend_used") == "cuda_direct_scalar", ready_report
     assert ready_report.get("lens_sdf_postprocess_backend_fallback_used") is False, ready_report

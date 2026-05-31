@@ -76,6 +76,10 @@ void TestLensSdfProbeDefaults() {
     ViewerUiAutomationLensSdfProbe probe{};
     Check(probe.overlay_mode == "off" && !probe.overlay_active && probe.overlay_opacity > 0.5f,
         "lens SDF automation probe reports stable overlay defaults");
+    Check(probe.field_producer_kind == "none" &&
+            probe.supported_signal_ids.empty() &&
+            probe.field_capability_fail_closed_reason.empty(),
+        "lens SDF automation probe reports stable capability defaults");
     Check(!probe.color_pipeline_active && probe.base_render_ms == 0.0f &&
             probe.field_ms == 0.0f && probe.requested_equivalent_field_ms == 0.0f &&
             probe.postprocess_ms == 0.0f && probe.total_ms == 0.0f,
@@ -126,6 +130,16 @@ void TestLensSdfProbeTimingFields() {
     probe.field_cache_status = "hit";
     probe.field_cache_hit = true;
     probe.field_cache_mask_bytes = 76800;
+    probe.field_producer_kind = "lens_field_v2";
+    probe.supported_signal_ids = {
+        "sdf_signed_distance",
+        "sdf_inside_outside",
+        "sdf_boundary_band",
+        "sdf_normal_angle",
+        "sdf_curvature",
+        "lens_field_v2_distance",
+    };
+    probe.field_capability_fail_closed_reason = "mixed Source rows require renderer-backed non-SDF source signals";
     ViewerUiAutomationLensSdfFieldGroupProbe group{};
     group.group_index = 0;
     group.requested_downsample = 1;
@@ -171,6 +185,11 @@ void TestLensSdfProbeTimingFields() {
             probe.field_cache_hit &&
             probe.field_cache_mask_bytes == 76800,
         "lens SDF automation probe carries field cache status");
+    Check(probe.field_producer_kind == "lens_field_v2" &&
+            probe.supported_signal_ids.size() == kSdfFieldCapabilitySignalIds.size() &&
+            SdfFieldCapabilitySupportsSignalId(probe.supported_signal_ids.back()) &&
+            !probe.field_capability_fail_closed_reason.empty(),
+        "lens SDF automation probe carries field capability identity and fail-closed reason");
     Check(probe.field_group_count == 1 &&
             probe.field_groups[0].requested_downsample == 1 &&
             probe.field_groups[0].effective_downsample == 4 &&

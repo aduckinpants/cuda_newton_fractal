@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <set>
 #include <sstream>
@@ -29,6 +30,16 @@ static bool ReadTextFile(const char* path, std::string* outText) {
     buffer << in.rdbuf();
     *outText = buffer.str();
     return true;
+}
+
+static bool WriteTextFile(const std::filesystem::path& path, const std::string& text) {
+    std::error_code ec;
+    std::filesystem::create_directories(path.parent_path(), ec);
+    if (ec) return false;
+    std::ofstream out(path, std::ios::binary);
+    if (!out) return false;
+    out << text;
+    return static_cast<bool>(out);
 }
 
 static bool ReadCatalogPackJson(const SdfPackViewerBuiltInPackCatalogEntry& entry, std::string* outText) {
@@ -184,6 +195,46 @@ static void TestDefaultLoadPolicyDoesNotClobberCurrentPack() {
     failed.pack_load_error = "intentional failure";
     Check(!SdfPackViewerShouldLoadDefaultBuiltInPack(failed),
         "default built-in load policy does not retry over a failed initialized state");
+}
+
+static void TestRuntimeStagedBuiltInPackWinsOverRepoRootMetadata() {
+    namespace fs = std::filesystem;
+    const SdfPackViewerBuiltInPackCatalogEntry& entry = SdfPackViewerBuiltInPackCatalog().front();
+    std::string validJson;
+    Check(ReadCatalogPackJson(entry, &validJson), "runtime staging priority test reads catalog JSON");
+    if (validJson.empty()) return;
+
+    std::string repoRootJson = validJson;
+    const std::string expectedId = "\"pack_id\": \"sdf_smooth_lattice_2d\"";
+    const std::string wrongId = "\"pack_id\": \"repo_root_should_not_win\"";
+    const std::size_t idPos = repoRootJson.find(expectedId);
+    Check(idPos != std::string::npos, "runtime staging priority test finds built-in pack id");
+    if (idPos == std::string::npos) return;
+    repoRootJson.replace(idPos, expectedId.size(), wrongId);
+
+    const fs::path tempRoot = fs::temp_directory_path() / "cuda_newton_sdf_pack_runtime_staging_tests";
+    std::error_code ec;
+    fs::remove_all(tempRoot, ec);
+    const fs::path runtimeDir = tempRoot / "runtime";
+    const fs::path repoRoot = tempRoot / "repo_root";
+    const fs::path relativePath(entry.relative_path);
+    Check(WriteTextFile(runtimeDir / relativePath, validJson),
+        "runtime staging priority test writes staged runtime built-in pack");
+    Check(WriteTextFile(repoRoot / relativePath, repoRootJson),
+        "runtime staging priority test writes conflicting repo-root built-in pack");
+    Check(WriteTextFile(runtimeDir / "fractal_ui_repo_root.txt", repoRoot.string()),
+        "runtime staging priority test writes repo-root metadata");
+
+    SdfPackViewerState state{};
+    std::string error;
+    Check(LoadSdfPackViewerBuiltInPack(&state, runtimeDir.string(), entry.pack_id, &error),
+        "runtime staged built-in pack loads even when repo-root metadata points at conflicting pack");
+    Check(state.have_pack, "runtime staged built-in pack sets have_pack");
+    Check(state.pack.pack_id == entry.pack_id, "runtime staged built-in pack keeps expected pack id");
+    Check(state.pack_path.find(runtimeDir.string()) != std::string::npos,
+        "runtime staged built-in pack path comes from runtime directory before repo-root fallback");
+
+    fs::remove_all(tempRoot, ec);
 }
 
 static void TestAllBuiltInPacksHaveSensitiveControls() {
@@ -352,6 +403,7 @@ int main() {
     TestBuiltInCatalogEntriesLoadAndLower();
     TestBuiltInSmoothLatticeViewerControls();
     TestDefaultLoadPolicyDoesNotClobberCurrentPack();
+    TestRuntimeStagedBuiltInPackWinsOverRepoRootMetadata();
     TestAllBuiltInPacksHaveSensitiveControls();
     TestPackControlsAreVisibleAndEditable();
     TestAutomationReportAndPreviewHashChanges();

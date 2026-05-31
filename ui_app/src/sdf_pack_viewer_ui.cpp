@@ -253,6 +253,10 @@ const SdfPackViewerBuiltInPackCatalogEntry* FindBuiltInPackEntry(const std::stri
 std::string ResolveBuiltInPackPath(const std::string& exeDir, const SdfPackViewerBuiltInPackCatalogEntry& entry) {
     const std::filesystem::path relativePath(entry.relative_path);
     if (!exeDir.empty()) {
+        const std::filesystem::path exeCandidate = std::filesystem::path(exeDir) / relativePath;
+        if (std::filesystem::exists(exeCandidate)) {
+            return exeCandidate.string();
+        }
         const std::filesystem::path metadataPath = std::filesystem::path(exeDir) / "fractal_ui_repo_root.txt";
         const std::string repoRoot = ReadTrimmedTextFileLocal(metadataPath);
         if (!repoRoot.empty()) {
@@ -260,10 +264,6 @@ std::string ResolveBuiltInPackPath(const std::string& exeDir, const SdfPackViewe
             if (std::filesystem::exists(candidate)) {
                 return candidate.string();
             }
-        }
-        const std::filesystem::path exeCandidate = std::filesystem::path(exeDir) / relativePath;
-        if (std::filesystem::exists(exeCandidate)) {
-            return exeCandidate.string();
         }
     }
     const std::filesystem::path cwdCandidate = std::filesystem::current_path() / relativePath;

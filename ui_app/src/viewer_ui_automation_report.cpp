@@ -113,6 +113,24 @@ void WriteLensSdfReportFields(
     out << "  \"lens_sdf_field_source\": ";
     WriteAutomationReportString(out, lensSdfProbe.field_source);
     out << ",\n";
+    out << "  \"lens_sdf_field_producer_kind\": ";
+    WriteAutomationReportString(out, lensSdfProbe.field_producer_kind);
+    out << ",\n";
+    out << "  \"lens_sdf_supported_signals\": [";
+    for (std::size_t index = 0; index < lensSdfProbe.supported_signal_ids.size(); ++index) {
+        if (index > 0) {
+            out << ", ";
+        }
+        WriteAutomationReportString(out, lensSdfProbe.supported_signal_ids[index]);
+    }
+    out << "],\n";
+    out << "  \"lens_sdf_field_capability_fail_closed_reason\": ";
+    if (lensSdfProbe.field_capability_fail_closed_reason.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, lensSdfProbe.field_capability_fail_closed_reason);
+    }
+    out << ",\n";
     out << "  \"lens_sdf_field_source_pack_id\": ";
     if (lensSdfProbe.field_source_pack_id.empty()) {
         out << "null";

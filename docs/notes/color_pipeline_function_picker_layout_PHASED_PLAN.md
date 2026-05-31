@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - hostile audit, focused native rails, runtime publish/proof, plan sync, contract validation, receipts, rearward review, push, and clean tree.
+Complete - hostile audit, focused native rails, runtime publish/proof, plan sync, contract validation, receipts, rearward review, push, and clean tree.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - hostile audit, focused native rails, runtime publish/proof, plan sync,
 - [x] Phase 2 - add grouped function-picker helpers and native/window regressions proving all existing functions remain selectable exactly once under taxonomy groups.
 - [x] Phase 3 - wire the grouped picker into the existing Color Pipeline row editor without changing row semantics, function ids, control ids, recipes, source-stack math, or persisted state.
 - [x] Phase 4 - add no-mouse runtime/report proof that representative Source, Shape, Palette, and Grading selections still apply through the published viewer.
-- [ ] Phase 5 - hostile audit, focused native rails, runtime publish/proof, plan sync, contract validation, receipts, rearward review, push, and clean tree.
+- [x] Phase 5 - hostile audit, focused native rails, runtime publish/proof, plan sync, contract validation, receipts, rearward review, push, and clean tree.
 
 ## Explicit User Asks
 

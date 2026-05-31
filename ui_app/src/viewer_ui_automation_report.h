@@ -4,6 +4,7 @@
 #include "fractal_types.h"
 #include "generic_equation_pack_workbench.h"
 #include "render_capture_guard.h"
+#include "sdf_field_capability.h"
 #include "sdf_pack_viewer_ui.h"
 #include "viewer_render_pacing.h"
 
@@ -68,6 +69,9 @@ struct ViewerUiAutomationLensSdfProbe {
     std::string source_stack_kind = "non_sdf_only";
     bool mixed_source_signal_frame_used = false;
     std::string field_source = "none";
+    std::string field_producer_kind = SdfFieldProducerKindId(SdfFieldProducerKind::none);
+    std::vector<std::string> supported_signal_ids;
+    std::string field_capability_fail_closed_reason;
     std::string field_source_pack_id;
     std::string field_source_error;
     std::string backend_used = "none";

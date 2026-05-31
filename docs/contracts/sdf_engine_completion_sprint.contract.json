@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "contract_id": "sdf_engine_completion_sprint",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_engine_completion_sprint_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_engine_completion_sprint_PHASED_PLAN.md",
+    "docs/contracts/sdf_engine_completion_sprint.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "docs/notes/color_pipeline_function_picker_layout_PHASED_PLAN.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "docs/examples/sdf_packs",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "tools",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "merge the Capture Finding fractal-state sidecar branch into master before new SDF mutation",
+    "run a looking-back hostile review of sidecar, native helper optimization, function picker layout, mixed Source rows, and SDF pack scene/catalog work",
+    "repair published-runtime SDF built-in pack resolution before broader SDF feature growth",
+    "add SDF field capability/reporting truth for current producers",
+    "keep field-primary mixed Source rows fail-closed unless a real renderer-backed non-SDF source-signal producer exists",
+    "use measured performance witnesses for hot-path claims"
+  ],
+  "forbidden_operator_prompts": [
+    "do not treat fractal-state.json as replay authority",
+    "do not claim mixed Source support for generic_equation_pack or sdf_pack_scene without a real source-signal producer",
+    "do not add new SDF ops before the hardening phases are green",
+    "do not add recursive/apollonian packs, IFS, Flame/attractor density, 3D DE, or perturbation work under this sprint",
+    "do not redesign the Color Pipeline workflow broadly",
+    "do not introduce a Salticid runtime dependency",
+    "do not use physical mouse automation"
+  ],
+  "required_defaults": {
+    "source_head": "c3d6d3a",
+    "branch": "codex/sdf-engine-completion-sprint",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "state_json_replay_authority": true,
+    "fractal_state_review_authority_only": true,
+    "unsupported_field_primary_mixed_sources_fail_closed": true,
+    "new_sdf_ops_allowed_before_gate": false
+  },
+  "forbidden_defaults": {
+    "state_json_trimming": "forbidden",
+    "fake_mixed_source_support": "forbidden",
+    "new_sdf_ops_before_gate": "forbidden",
+    "new_sdf_native_lanes_before_replan": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_engine_completion_sprint.contract.json --out-json artifacts/validation/sdf_engine_completion_sprint_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_engine_completion_sprint_PHASED_PLAN.md --out-json artifacts/validation/sdf_engine_completion_sprint_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_engine_completion_sprint_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_engine_completion_sprint_diff_check --log artifacts/logs/sdf_engine_completion_sprint_diff_check.log --out-json artifacts/validation/sdf_engine_completion_sprint_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_engine_completion_sprint_runtime_publish --log artifacts/logs/sdf_engine_completion_sprint_runtime_publish.log --out-json artifacts/validation/sdf_engine_completion_sprint_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_engine_completion_sprint_runtime_proof --log artifacts/logs/sdf_engine_completion_sprint_runtime_proof.log --out-json artifacts/validation/sdf_engine_completion_sprint_runtime_proof.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_pack_scene_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF engine completion sprint contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_engine_completion_sprint_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF engine completion sprint hostile audit is complete before checkpoint.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_engine_completion_sprint_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_publish_green",
+      "description": "The viewer runtime publishes successfully for viewer-first SDF sprint work.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_engine_completion_sprint_runtime_publish.json",
+      "json_path": "returncode",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_proof_green",
+      "description": "Published no-mouse runtime proof covers SDF pack scene and Color Pipeline SDF rows.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_engine_completion_sprint_runtime_proof.json",
+      "json_path": "returncode",
+      "equals": 0
+    }
+  ]
+}

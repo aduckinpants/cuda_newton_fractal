@@ -23,6 +23,7 @@ class SdfWitnessScenario:
     name: str
     color_signal: str
     source_stack: tuple[dict[str, object], ...]
+    fractal_type: str = "multibrot"
     palette: str = "cyclic_escape"
     grading: str = "escape_default"
     lens_downsample: int = 1
@@ -68,6 +69,17 @@ DEFAULT_SCENARIOS: tuple[SdfWitnessScenario, ...] = (
         color_signal="sdf_signed_distance",
         source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
         lens_downsample=4,
+    ),
+    SdfWitnessScenario(
+        name="lens_field_v2_fullres",
+        color_signal="lens_field_v2_distance",
+        source_stack=({"signal": "lens_field_v2_distance", "scale": 1.0, "bias": 0.0, "blend_weight": 1.0},),
+    ),
+    SdfWitnessScenario(
+        name="sdf_pack_scene_signed_distance",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="sdf_pack_scene",
     ),
 )
 
@@ -121,6 +133,7 @@ def measurement_from_payload(
     *,
     source_stack: list[str] | tuple[str, ...],
     lens_downsample: int,
+    is_sdf: bool | None = None,
 ) -> dict[str, object]:
     field_ms = _as_float(payload, "lens_sdf_field_ms")
     postprocess_ms = _as_float(payload, "lens_sdf_postprocess_ms")
@@ -129,7 +142,8 @@ def measurement_from_payload(
         total_ms = field_ms + postprocess_ms
     base_ms = _as_float(payload, "base_render_ms")
     last_render_ms = _as_float(payload, "last_render_ms")
-    is_sdf = any(str(signal).startswith("sdf_") for signal in source_stack)
+    if is_sdf is None:
+        is_sdf = any(str(signal).startswith("sdf_") for signal in source_stack)
     classification = _classification(
         payload,
         is_sdf=is_sdf,
@@ -153,6 +167,12 @@ def measurement_from_payload(
         "source_stack": list(source_stack),
         "lens_downsample": int(lens_downsample),
         "current_fractal_type": str(payload.get("current_fractal_type", "")),
+        "lens_sdf_field_source": str(payload.get("lens_sdf_field_source", "none")),
+        "lens_sdf_field_producer_kind": str(payload.get("lens_sdf_field_producer_kind", "none")),
+        "lens_sdf_supported_signals": [
+            str(item) for item in payload.get("lens_sdf_supported_signals", [])
+        ] if isinstance(payload.get("lens_sdf_supported_signals"), list) else [],
+        "lens_sdf_field_capability_fail_closed_reason": payload.get("lens_sdf_field_capability_fail_closed_reason"),
         "rendered_frame_ready": payload.get("rendered_frame_ready") is True,
         "rendered_frame_hash": rendered_hash,
         "target_render_width": _as_int(payload, "target_render_width"),
@@ -244,6 +264,7 @@ def _measurement_group_key(item: dict[str, object]) -> tuple[object, ...]:
     return (
         item.get("name", ""),
         item.get("phase", ""),
+        item.get("current_fractal_type", ""),
         tuple(item.get("source_stack", [])) if isinstance(item.get("source_stack"), list) else (),
         item.get("lens_downsample", 0),
     )
@@ -323,7 +344,9 @@ def aggregate_measurement_samples(measurements: list[dict[str, object]]) -> list
         row["field_fraction_of_sdf_total"] = field_ms / total_ms if total_ms > 0.0 else 0.0
         row["postprocess_fraction_of_sdf_total"] = postprocess_ms / total_ms if total_ms > 0.0 else 0.0
         source_stack = row.get("source_stack", [])
-        is_sdf = isinstance(source_stack, list) and any(str(signal).startswith("sdf_") for signal in source_stack)
+        is_sdf = row.get("lens_sdf_field_producer_kind", "none") != "none" or (
+            isinstance(source_stack, list) and any(str(signal).startswith("sdf_") for signal in source_stack)
+        )
         row["lens_sdf_color_pipeline_active"] = is_sdf
         row["classification"] = _classification(
             row,
@@ -504,6 +527,7 @@ def _base_state(runtime_exe: Path, *, width: int, height: int) -> dict[str, obje
 def _state_for_scenario(base_state: dict[str, object], scenario: SdfWitnessScenario) -> dict[str, object]:
     state = copy.deepcopy(base_state)
     params = state["params"]
+    state["fractal_type"] = scenario.fractal_type
     params["coloring_mode"] = "smooth_escape"
     params["color_signal"] = scenario.color_signal
     params["color_shape"] = "identity"
@@ -585,10 +609,11 @@ def collect_runtime_measurements(
                     first_payload,
                     source_stack=[str(entry.get("signal", "")) for entry in first_scenario.source_stack],
                     lens_downsample=first_scenario.lens_downsample,
+                    is_sdf=first_scenario.is_sdf,
                 )
             )
             for _repeat_index in range(1, max(1, repeat_count)):
-                payload = viewer.load_state_json(first_path, expected_fractal_type="multibrot", timeout_seconds=timeout_seconds)
+                payload = viewer.load_state_json(first_path, expected_fractal_type=first_scenario.fractal_type, timeout_seconds=timeout_seconds)
                 measurements.append(
                     measurement_from_payload(
                         first_scenario.name,
@@ -596,6 +621,7 @@ def collect_runtime_measurements(
                         payload,
                         source_stack=[str(entry.get("signal", "")) for entry in first_scenario.source_stack],
                         lens_downsample=first_scenario.lens_downsample,
+                        is_sdf=first_scenario.is_sdf,
                     )
                 )
 
@@ -603,7 +629,7 @@ def collect_runtime_measurements(
             preview_scenario: SdfWitnessScenario | None = None
             for scenario, state_path in scenario_paths[1:]:
                 for _repeat_index in range(max(1, repeat_count)):
-                    payload = viewer.load_state_json(state_path, expected_fractal_type="multibrot", timeout_seconds=timeout_seconds)
+                    payload = viewer.load_state_json(state_path, expected_fractal_type=scenario.fractal_type, timeout_seconds=timeout_seconds)
                     measurements.append(
                         measurement_from_payload(
                             scenario.name,
@@ -611,6 +637,7 @@ def collect_runtime_measurements(
                             payload,
                             source_stack=[str(entry.get("signal", "")) for entry in scenario.source_stack],
                             lens_downsample=scenario.lens_downsample,
+                            is_sdf=scenario.is_sdf,
                         )
                     )
                 if scenario.name == "sdf_normal_angle_curvature_stack":
@@ -618,7 +645,7 @@ def collect_runtime_measurements(
                     preview_scenario = scenario
 
             if include_preview_sample and preview_path is not None and preview_scenario is not None:
-                viewer.load_state_json(preview_path, expected_fractal_type="multibrot", timeout_seconds=timeout_seconds)
+                viewer.load_state_json(preview_path, expected_fractal_type=preview_scenario.fractal_type, timeout_seconds=timeout_seconds)
                 preview_payload = viewer.set_control_value(
                     "fractal_control.center_x.primary",
                     -0.49,
@@ -631,6 +658,7 @@ def collect_runtime_measurements(
                         preview_payload,
                         source_stack=[str(entry.get("signal", "")) for entry in preview_scenario.source_stack],
                         lens_downsample=preview_scenario.lens_downsample,
+                        is_sdf=preview_scenario.is_sdf,
                     )
                 )
                 settled_payload = _wait_for_report_predicate(
@@ -650,6 +678,7 @@ def collect_runtime_measurements(
                         settled_payload,
                         source_stack=[str(entry.get("signal", "")) for entry in preview_scenario.source_stack],
                         lens_downsample=preview_scenario.lens_downsample,
+                        is_sdf=preview_scenario.is_sdf,
                     )
                 )
             return measurements, int(viewer.launch_count)

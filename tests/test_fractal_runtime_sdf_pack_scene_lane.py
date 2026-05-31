@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -59,6 +60,50 @@ def _built_in_pack_ids(payload: dict[str, Any]) -> set[str]:
     return ids
 
 
+def test_published_runtime_stages_builtin_sdf_pack_files() -> None:
+    exe_path = active_runtime_exe()
+    runtime_dir = exe_path.parent
+    expected = [
+        "sdf_smooth_lattice_2d.sdf_pack.json",
+        "sdf_capsule_weave_2d.sdf_pack.json",
+        "sdf_ring_cells_2d.sdf_pack.json",
+    ]
+    for file_name in expected:
+        staged = runtime_dir / "docs" / "examples" / "sdf_packs" / file_name
+        assert staged.exists(), f"published runtime did not stage built-in SDF pack {staged}"
+
+
+def test_field_primary_lanes_fail_closed_for_mixed_renderer_source_rows() -> None:
+    exe_path = active_runtime_exe()
+    for fractal_type in ("sdf_pack_scene", "generic_equation_pack"):
+        result = subprocess.run(
+            [
+                str(exe_path),
+                "--fractal-type",
+                fractal_type,
+                "--width",
+                "96",
+                "--height",
+                "72",
+                "--color-pipeline-action",
+                "select_function:source:0:smooth_escape_ramp",
+                "--color-pipeline-action",
+                "add_row:source:sdf_signed_distance",
+                "--capture-diagnostic",
+            ],
+            cwd=str(exe_path.parent),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode != 0, result.stdout + result.stderr
+        combined = result.stdout + result.stderr
+        assert (
+            f"{fractal_type} mixed Source rows require renderer-backed non-SDF source signals"
+            in combined
+        ), combined
+
+
 def _first_pack_control_id(payload: dict[str, Any]) -> str:
     controls = _sdf_pack_report(payload).get("controls")
     assert isinstance(controls, list), payload
@@ -112,6 +157,16 @@ def test_sdf_pack_scene_lane_selects_and_edits_built_in_pack_no_mouse(tmp_path: 
         )
         assert selected.get("current_fractal_type") == "sdf_pack_scene", selected
         assert selected.get("lens_sdf_field_source") == "authored_sdf_pack", selected
+        assert selected.get("lens_sdf_field_producer_kind") == "sdf_pack_scene", selected
+        assert set(selected.get("lens_sdf_supported_signals", [])) >= {
+            "sdf_signed_distance",
+            "sdf_inside_outside",
+            "sdf_boundary_band",
+            "sdf_normal_angle",
+            "sdf_curvature",
+            "lens_field_v2_distance",
+        }, selected
+        assert selected.get("lens_sdf_field_capability_fail_closed_reason") is None, selected
         assert selected.get("lens_sdf_field_source_pack_id") == "sdf_smooth_lattice_2d", selected
         assert selected.get("lens_sdf_valid") is True, selected
         assert selected.get("lens_sdf_pack_backend_used") in {"cuda_sample", "cpu_reference"}, selected
