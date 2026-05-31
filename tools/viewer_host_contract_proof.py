@@ -169,6 +169,18 @@ def _dynamic_logged_command_spec(command: str) -> ValidationEvidenceSpec | None:
     normalized = command.replace("\\", "/").strip()
     if "tools/viewer_host_run_logged_command.py" not in normalized:
         return None
+    json_match = re.search(r"(?:^|\s)--out-json\s+(?P<artifact>\S+\.json)(?:\s|$)", normalized)
+    if json_match is not None:
+        artifact_path = json_match.group("artifact")
+        if not artifact_path.startswith("artifacts/"):
+            return None
+        safe_suffix = re.sub(r"[^A-Za-z0-9]+", "_", artifact_path).strip("_") or "json"
+        return ValidationEvidenceSpec(
+            evidence_id=f"validator_json_{safe_suffix}",
+            command=command,
+            artifact_kind="validator_json",
+            artifact_path=artifact_path,
+        )
     match = re.search(r"(?:^|\s)--log\s+(?P<artifact>\S+\.log)(?:\s|$)", normalized)
     if match is None:
         return None

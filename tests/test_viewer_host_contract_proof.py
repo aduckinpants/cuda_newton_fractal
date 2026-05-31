@@ -245,6 +245,21 @@ def test_validation_evidence_spec_for_command_recognizes_redirected_log_command(
     assert spec.artifact_path == "artifacts/logs/phase4d_full_native.log"
 
 
+def test_validation_evidence_spec_for_command_prefers_logged_command_out_json() -> None:
+    command = (
+        "py -3.14 tools/viewer_host_run_logged_command.py --label sprint_runtime_publish "
+        "--log artifacts/logs/sprint_runtime_publish.log "
+        "--out-json artifacts/validation/sprint_runtime_publish.json "
+        "--heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd"
+    )
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "validator_json"
+    assert spec.artifact_path == "artifacts/validation/sprint_runtime_publish.json"
+
+
 
 def test_validation_evidence_spec_for_command_recognizes_logged_command_wrapper() -> None:
     command = (

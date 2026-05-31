@@ -71,6 +71,7 @@ Out of scope:
 - Runtime capability proof: `sdf_engine_capability_runtime_pytest` passed SDF pack scene plus Lens Field v2 focused runtime checks with 4 tests.
 - Field-primary honesty proof: `sdf_engine_field_primary_honesty_runtime_pytest` passed 4 tests, including fail-closed mixed Source rows for `generic_equation_pack` and `sdf_pack_scene`.
 - Performance/cache proof: `sdf_engine_performance_witness_tool_tests` passed the witness unit and compact published-runtime witness tests; `sdf_engine_completion_performance_witness` wrote `artifacts/sdf_engine_completion_sprint/sdf_performance_witness.json` and `.md`; `sdf_engine_field_cache_native` passed `test_lens_sdf`.
+- Receipt hardening proof: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_prefers_logged_command_out_json -q` passed and proves logged runtime commands with `--out-json` are recorded as validator JSON evidence for contract-proof assertions.
 
 ## SDF Operator Expansion Gate
 
@@ -114,6 +115,7 @@ Required questions:
 - [x] Pass 5 - report audit found existing fields did not identify field producer capability as a first-class surface. Added producer kind, supported signals, and fail-closed reason to the runtime report.
 - [x] Pass 6 - field-primary source honesty audit found no runtime regression for supported mixed rows but added explicit published-runtime proof that `generic_equation_pack` and `sdf_pack_scene` mixed Source rows still fail closed.
 - [x] Pass 7 - performance audit found the existing witness omitted Lens Field v2 and `sdf_pack_scene`. Added those rows to the witness and recorded fresh numbers without making an FPS-improvement claim.
+- [x] Pass 8 - closure-receipt audit found `viewer_host_run_logged_command.py --out-json ...` commands were recorded only as text-log evidence, which blocked contract proof assertions against the JSON return-code artifacts. Added a focused workflow regression and changed receipt evidence mapping to prefer `--out-json` while preserving text-log evidence for logged commands without JSON output.
 
 ## Audit Findings
 
@@ -125,6 +127,7 @@ Required questions:
 - [x] Finding: SDF report capability was implicit. Added explicit producer-kind/supported-signal/fail-closed report fields and runtime assertions for Lens Field v2 plus `sdf_pack_scene`.
 - [x] Finding: field-primary mixed Source denial had no dedicated `sdf_pack_scene`/`generic_equation_pack` runtime test in the SDF pack lane file. Added one.
 - [x] Finding: the performance witness did not include all current SDF producer classes. Extended it to cover Lens SDF, Lens Field v2, and `sdf_pack_scene`.
+- [x] Finding: validation receipts could not prove required runtime publish/proof JSON assertions because logged commands with `--out-json` were recorded as log-only evidence. Fixed the evidence mapper and added a regression.
 
 ## Planned Validation Targets
 
@@ -133,4 +136,6 @@ Required questions:
 - `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_engine_completion_sprint_PHASED_PLAN.md --out-json artifacts/validation/sdf_engine_completion_sprint_hostile_audit.json`
 - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_engine_completion_sprint_code_quality.json`
 - `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_engine_completion_sprint_diff_check --log artifacts/logs/sdf_engine_completion_sprint_diff_check.log --out-json artifacts/validation/sdf_engine_completion_sprint_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_engine_completion_sprint_runtime_publish --log artifacts/logs/sdf_engine_completion_sprint_runtime_publish.log --out-json artifacts/validation/sdf_engine_completion_sprint_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\build_vsdevcmd.cmd`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_engine_completion_sprint_runtime_proof --log artifacts/logs/sdf_engine_completion_sprint_runtime_proof.log --out-json artifacts/validation/sdf_engine_completion_sprint_runtime_proof.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_pack_scene_lane.py tests/test_fractal_runtime_color_pipeline_sdf_rows.py`
 - Product slices add focused native and published-runtime proofs before checkpoint.
