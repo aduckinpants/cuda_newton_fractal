@@ -131,7 +131,7 @@ Required questions:
 ## Planned Validation Targets
 
 - `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_post_mixed_source_replan.contract.json --out-json artifacts/validation/color_pipeline_post_mixed_source_replan_contract.json`
-- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/color_pipeline_post_mixed_source_replan_PHASED_PLAN.md`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
 - `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_post_mixed_source_replan_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_post_mixed_source_replan_hostile_audit.json`
 - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_post_mixed_source_replan_code_quality.json`
 - `py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_post_mixed_source_replan_diff_check --log artifacts/logs/color_pipeline_post_mixed_source_replan_diff_check.log --out-json artifacts/validation/color_pipeline_post_mixed_source_replan_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`

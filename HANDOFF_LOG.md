@@ -165,3 +165,4 @@
 - `ck:fc6e0b95` 2026-05-31 06:35 UTC | score 93 — Closed Color Pipeline mixed Source rows with signal-exact mixed SDF/non-SDF row blending, renderer source-signal sidecar, published no-mouse runtime proof, capture/replay preservation, and code-quality refactor.
 - `ck:04ac6efb` 2026-05-31 15:48 UTC — session-start | branch=codex/color-pipeline-post-mixed-source-replan | head=3465487 | status=dirty | profile=native | intent=Color Pipeline post-mixed Source-row replan
 - `ck:04ac6efb` 2026-05-31 15:54 UTC | score 93 — Closed Color Pipeline post-mixed Source-row replan: marked applicators and mixed Source rows shipped, kept unsupported lanes fail-closed, and selected function picker/layout as the next bounded implementation seam.
+- `ck:04ac6efb` 2026-05-31 15:56 UTC | score 93 — Follow-up for Color Pipeline post-mixed replan: corrected the plan-sync validation command to the receipt-parseable form and revalidated the docs-only slice.
