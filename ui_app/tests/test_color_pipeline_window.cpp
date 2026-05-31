@@ -1083,6 +1083,71 @@ void TestDraftEditsSurviveCompatibleFractalSwitchSync() {
         "TestDraftEditsSurviveCompatibleFractalSwitchSync_PreservesAuthoredDraftInsteadOfAdoptingLiveDefaults");
 }
 
+void TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries() {
+    const std::vector<ColorPipelineLaneCatalog>& catalogs = GetColorPipelineLaneCatalogs();
+    std::size_t catalogFunctionTotal = 0;
+    std::size_t groupedFunctionTotal = 0;
+    bool sawSourceSdfPhaseGroup = false;
+    bool sawLensFieldV2Group = false;
+    bool sawPalettePhaseGroup = false;
+    bool sawGradeManifoldGroup = false;
+
+    for (const ColorPipelineLaneCatalog& catalog : catalogs) {
+        const std::vector<ColorPipelineFunctionPickerGroup> groups = BuildColorPipelineFunctionPickerGroups(catalog);
+        catalogFunctionTotal += catalog.functions.size();
+        groupedFunctionTotal += CountColorPipelineFunctionPickerGroupEntries(groups);
+        Check(!groups.empty(), "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_EachLaneHasGroups");
+        Check(CountColorPipelineFunctionPickerGroupEntries(groups) == catalog.functions.size(),
+            "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_GroupEntryCountMatchesCatalog");
+
+        std::vector<int> seen(catalog.functions.size(), 0);
+        std::size_t previousIndex = 0;
+        bool firstEntry = true;
+        for (const ColorPipelineFunctionPickerGroup& group : groups) {
+            Check(!group.taxonomy_group_id.empty() && !group.display_label.empty(),
+                "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_GroupHasLabels");
+            for (std::size_t functionIndex : group.function_indexes) {
+                Check(functionIndex < catalog.functions.size(),
+                    "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_IndexInRange");
+                if (functionIndex >= catalog.functions.size()) {
+                    continue;
+                }
+                ++seen[functionIndex];
+                const FunctionDescriptor& function = catalog.functions[functionIndex];
+                Check(group.taxonomy_group_id == NormalizeColorPipelineFunctionPickerGroupId(function.taxonomy_group),
+                    "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_GroupMatchesFunctionTaxonomy");
+                Check(firstEntry || functionIndex > previousIndex,
+                    "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_PreservesCatalogOrder");
+                previousIndex = functionIndex;
+                firstEntry = false;
+            }
+            if (std::strcmp(catalog.lane_id, "source") == 0 && group.taxonomy_group_id == "sdf_phase") {
+                sawSourceSdfPhaseGroup = true;
+            }
+            if (std::strcmp(catalog.lane_id, "source") == 0 && group.taxonomy_group_id == "lens_field_v2") {
+                sawLensFieldV2Group = true;
+            }
+            if (std::strcmp(catalog.lane_id, "palette") == 0 && group.taxonomy_group_id == "palette_phase") {
+                sawPalettePhaseGroup = true;
+            }
+            if (std::strcmp(catalog.lane_id, "grading") == 0 && group.taxonomy_group_id == "grade_manifold") {
+                sawGradeManifoldGroup = true;
+            }
+        }
+        for (int count : seen) {
+            Check(count == 1, "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_EachFunctionAppearsOnce");
+        }
+    }
+
+    Check(catalogFunctionTotal == groupedFunctionTotal && catalogFunctionTotal > 0,
+        "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_TotalCatalogCountPreserved");
+    Check(sawSourceSdfPhaseGroup && sawLensFieldV2Group && sawPalettePhaseGroup && sawGradeManifoldGroup,
+        "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_UsesMaterializedTaxonomyGroups");
+    Check(ColorPipelineFunctionPickerGroupDisplayLabel("sdf_phase") == "SDF Phase" &&
+            ColorPipelineFunctionPickerGroupDisplayLabel("lens_field_v2") == "Lens Field V2",
+        "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_GroupLabelsAreReadable");
+}
+
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -1108,6 +1173,8 @@ void TestWindowUtilityContracts() {
     Check(BuildColorPipelinePrimaryControlId("shape", "offset_scale", param) ==
             "color_pipeline.shape.offset_scale.shape.scale.primary",
         "TestWindowUtilityContracts_PrimaryControlIdIsStable");
+    Check(BuildColorPipelineFunctionPickerControlId("source", 42) == "color_pipeline.source.42.function",
+        "TestWindowUtilityContracts_FunctionPickerControlIdIsStable");
     Check(!ShouldDisableLegacyColorPanelControlWhileAdvancedWindowOpen(state, "fractal.params.coloring_mode"),
         "TestWindowUtilityContracts_LegacyControlsAvailableWhenClosed");
     state.open = true;
@@ -1143,6 +1210,7 @@ int main() {
     TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority();
     TestMixedSdfAndNonSdfSourceRowsApplyThroughDraftBridge();
     TestDraftEditsSurviveCompatibleFractalSwitchSync();
+    TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries();
     TestPresetWorkflowTruthSurface();
     TestRecipeExpansionUsesExistingWindowDraftRows();
     TestWindowUtilityContracts();

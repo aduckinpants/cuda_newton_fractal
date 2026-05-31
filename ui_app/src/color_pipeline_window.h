@@ -5,6 +5,7 @@
 #include "fractal_family_rules.h"
 #include "schema_binding.h"
 
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -112,6 +113,12 @@ inline std::string BuildColorPipelineRowRemoveControlId(
     return std::string("color_pipeline.") + laneId + "." + std::to_string(rowId) + ".remove";
 }
 
+inline std::string BuildColorPipelineFunctionPickerControlId(
+    const std::string& laneId,
+    std::uint64_t rowId) {
+    return std::string("color_pipeline.") + laneId + "." + std::to_string(rowId) + ".function";
+}
+
 inline std::string BuildColorPipelineSdfFieldDownsampleControlId() {
     return "color_pipeline.source.sdf_field.downsample.primary";
 }
@@ -146,6 +153,77 @@ inline const char* ColorPipelineUnsupportedShapeRowsMessage() {
 
 inline const char* ColorPipelineShapeRowBridgeHelpText() {
     return "Shape rows edit the authored row stack; shipped ordered Shape stacks participate in runtime application, and the last enabled Shape row still mirrors into the legacy single-shape owners.";
+}
+
+struct ColorPipelineFunctionPickerGroup {
+    std::string taxonomy_group_id;
+    std::string display_label;
+    std::vector<std::size_t> function_indexes;
+};
+
+inline std::string NormalizeColorPipelineFunctionPickerGroupId(const std::string& taxonomyGroup) {
+    return taxonomyGroup.empty() ? std::string("uncategorized") : taxonomyGroup;
+}
+
+inline std::string ColorPipelineFunctionPickerGroupDisplayLabel(const std::string& taxonomyGroup) {
+    const std::string groupId = NormalizeColorPipelineFunctionPickerGroupId(taxonomyGroup);
+    std::string label;
+    std::string token;
+    auto flushToken = [&]() {
+        if (token.empty()) {
+            return;
+        }
+        if (!label.empty()) {
+            label.push_back(' ');
+        }
+        if (token == "sdf") {
+            label += "SDF";
+        } else if (token == "ui") {
+            label += "UI";
+        } else if (token.size() > 1 && token[0] == 'v' && std::isdigit(static_cast<unsigned char>(token[1]))) {
+            label.push_back('V');
+            label.append(token.begin() + 1, token.end());
+        } else {
+            token[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(token[0])));
+            label += token;
+        }
+        token.clear();
+    };
+    for (char raw : groupId) {
+        if (raw == '_' || raw == '-' || raw == ' ') {
+            flushToken();
+        } else {
+            token.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(raw))));
+        }
+    }
+    flushToken();
+    return label.empty() ? std::string("Uncategorized") : label;
+}
+
+inline std::vector<ColorPipelineFunctionPickerGroup> BuildColorPipelineFunctionPickerGroups(
+    const ColorPipelineLaneCatalog& catalog) {
+    std::vector<ColorPipelineFunctionPickerGroup> groups;
+    for (std::size_t functionIndex = 0; functionIndex < catalog.functions.size(); ++functionIndex) {
+        const FunctionDescriptor& function = catalog.functions[functionIndex];
+        const std::string groupId = NormalizeColorPipelineFunctionPickerGroupId(function.taxonomy_group);
+        if (groups.empty() || groups.back().taxonomy_group_id != groupId) {
+            ColorPipelineFunctionPickerGroup next;
+            next.taxonomy_group_id = groupId;
+            next.display_label = ColorPipelineFunctionPickerGroupDisplayLabel(groupId);
+            groups.push_back(std::move(next));
+        }
+        groups.back().function_indexes.push_back(functionIndex);
+    }
+    return groups;
+}
+
+inline std::size_t CountColorPipelineFunctionPickerGroupEntries(
+    const std::vector<ColorPipelineFunctionPickerGroup>& groups) {
+    std::size_t count = 0;
+    for (const ColorPipelineFunctionPickerGroup& group : groups) {
+        count += group.function_indexes.size();
+    }
+    return count;
 }
 
 #ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
@@ -4549,6 +4627,67 @@ inline void RenderColorPipelineSdfFieldDownsampleAlias(
     }
 }
 
+inline bool RenderColorPipelineFunctionPickerCombo(
+    ColorPipelineWindowState* ioState,
+    const ColorPipelineLaneCatalog& catalog,
+    const ColorPipelineLaneState& lane,
+    ColorPipelineRowState& row,
+    std::size_t laneIndex,
+    std::size_t rowIndex,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    const FunctionDescriptor* currentDescriptor = FindColorPipelineFunctionDescriptor(catalog, row.function_id);
+    const char* comboPreview = (currentDescriptor && !currentDescriptor->name.empty())
+        ? currentDescriptor->name.c_str()
+        : "(select)";
+    const std::string controlId = BuildColorPipelineFunctionPickerControlId(lane.lane_id, row.ui_row_id);
+    const bool comboOpen = ImGui::BeginCombo("Function", comboPreview);
+    NoteColorPipelineUiAutomationRect(ioState, controlId.c_str());
+    if (!comboOpen) {
+        return false;
+    }
+
+    bool changed = false;
+    const std::vector<ColorPipelineFunctionPickerGroup> groups = BuildColorPipelineFunctionPickerGroups(catalog);
+    for (std::size_t groupIndex = 0; groupIndex < groups.size(); ++groupIndex) {
+        const ColorPipelineFunctionPickerGroup& group = groups[groupIndex];
+        if (groupIndex > 0) {
+            ImGui::Separator();
+        }
+        ImGui::TextDisabled("%s", group.display_label.c_str());
+        for (std::size_t functionIndex : group.function_indexes) {
+            if (functionIndex >= catalog.functions.size()) {
+                continue;
+            }
+            const FunctionDescriptor& candidate = catalog.functions[functionIndex];
+            const bool isSelected = (candidate.id == row.function_id);
+            const bool candidateDraftOnly = ShouldColorPipelineCandidateUseDraftOnlyLabel(
+                *ioState,
+                laneIndex,
+                rowIndex,
+                candidate.id.c_str(),
+                liveFractalType,
+                liveParams);
+            std::string optionLabel = candidate.name;
+            if (!isSelected && candidateDraftOnly) {
+                optionLabel += " (unsupported for current selection)";
+            }
+            if (ImGui::Selectable(optionLabel.c_str(), isSelected)) {
+                if (ioInteraction) {
+                    ioInteraction->interacted = true;
+                }
+                changed = SelectColorPipelineRowFunction(ioState, laneIndex, rowIndex, candidate.id.c_str()) || changed;
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+    }
+    ImGui::EndCombo();
+    return changed;
+}
+
 inline void RenderColorPipelineWindowLane(
     ColorPipelineWindowState* ioState,
     std::size_t laneIndex,
@@ -4618,38 +4757,18 @@ inline void RenderColorPipelineWindowLane(
             ImGui::SetNextItemOpen(true, ImGuiCond_Always);
         }
         const ImGuiStackEditorRowChromeResult rowResult = RenderImGuiStackEditorRowChrome(rowSpec, [&]() {
-            const FunctionDescriptor* currentDescriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
-            const char* comboPreview = (currentDescriptor && !currentDescriptor->name.empty())
-                ? currentDescriptor->name.c_str()
-                : "(select)";
-            if (ImGui::BeginCombo("Function", comboPreview)) {
-                for (const FunctionDescriptor& candidate : catalog->functions) {
-                    const bool isSelected = (candidate.id == row.function_id);
-                    const bool candidateDraftOnly = ShouldColorPipelineCandidateUseDraftOnlyLabel(
-                        *ioState,
-                        laneIndex,
-                        rowIndex,
-                        candidate.id.c_str(),
-                        liveFractalType,
-                        liveParams);
-                    std::string optionLabel = candidate.name;
-                    if (!isSelected && candidateDraftOnly) {
-                        optionLabel += " (unsupported for current selection)";
-                    }
-                    if (ImGui::Selectable(optionLabel.c_str(), isSelected)) {
-                        if (ioInteraction) {
-                            ioInteraction->interacted = true;
-                        }
-                        SelectColorPipelineRowFunction(ioState, laneIndex, rowIndex, candidate.id.c_str());
-                    }
-                    if (isSelected) {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
-            }
+            RenderColorPipelineFunctionPickerCombo(
+                ioState,
+                *catalog,
+                lane,
+                row,
+                laneIndex,
+                rowIndex,
+                liveFractalType,
+                liveParams,
+                ioInteraction);
 
-            currentDescriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
+            const FunctionDescriptor* currentDescriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
             if (!currentDescriptor) {
                 PushColorPipelineValidationMessage(ioState,
                     std::string("Unknown advanced color function '") + row.function_id + "' for lane " + lane.label);

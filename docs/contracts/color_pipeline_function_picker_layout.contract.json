@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_function_picker_layout",
+  "feature_id": "color_pipeline_composition_followups",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/color_pipeline_function_picker_layout_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/color_pipeline_function_picker_layout_PHASED_PLAN.md",
+    "docs/contracts/color_pipeline_function_picker_layout.contract.json",
+    "docs/contracts/color_pipeline_post_mixed_source_replan.contract.json",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tests/test_fractal_runtime_ui_salt_contract.py",
+    "tests/test_fractal_runtime_color_pipeline_sdf_rows.py",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "continue from the post-mixed Source-row replan",
+    "improve the Color Pipeline function picker/layout using existing metadata",
+    "preserve current row semantics, function ids, control ids, recipes, state, and runtime behavior",
+    "prove representative published no-mouse row selection remains functional"
+  ],
+  "forbidden_operator_prompts": [
+    "add new Color Pipeline functions",
+    "add new SDF ops or SDF-native lanes",
+    "change mixed Source-row scalar semantics or applicator semantics",
+    "perform broad Factorio-style UI redesign in this slice",
+    "introduce a Salticid runtime dependency",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "function_picker_layout_refinement",
+    "source_head": "e868a81",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "new_functions_allowed": false,
+    "row_semantics_must_remain_stable": true
+  },
+  "forbidden_defaults": {
+    "new_color_pipeline_functions": "forbidden",
+    "new_sdf_ops": "forbidden",
+    "new_fractal_type": "forbidden",
+    "row_stack_semantic_changes": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_function_picker_layout.contract.json --out-json artifacts/validation/color_pipeline_function_picker_layout_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_function_picker_layout_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_function_picker_layout_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_function_picker_layout_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_picker_layout_diff_check --log artifacts/logs/color_pipeline_function_picker_layout_diff_check.log --out-json artifacts/validation/color_pipeline_function_picker_layout_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_picker_layout_window_focused_after_harness --log artifacts/logs/color_pipeline_function_picker_layout_window_focused_after_harness.log --out-json artifacts/validation/color_pipeline_function_picker_layout_window_focused_after_harness.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_picker_layout_core_focused --log artifacts/logs/color_pipeline_function_picker_layout_core_focused.log --out-json artifacts/validation/color_pipeline_function_picker_layout_core_focused.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_picker_layout_report_focused --log artifacts/logs/color_pipeline_function_picker_layout_report_focused.log --out-json artifacts/validation/color_pipeline_function_picker_layout_report_focused.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_picker_layout_runtime_publish --log artifacts/logs/color_pipeline_function_picker_layout_runtime_publish.log --out-json artifacts/validation/color_pipeline_function_picker_layout_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_picker_layout_runtime_ui_salt_retry --log artifacts/logs/color_pipeline_function_picker_layout_runtime_ui_salt_retry.log --out-json artifacts/validation/color_pipeline_function_picker_layout_runtime_ui_salt_retry.json --heartbeat-seconds 30 --timeout-seconds 420 -- py -3.14 -m pytest tests/test_fractal_runtime_ui_salt_contract.py -q"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The function-picker layout contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_function_picker_layout_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The function-picker layout hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_function_picker_layout_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
