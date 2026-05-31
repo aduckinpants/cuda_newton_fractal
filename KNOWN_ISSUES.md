@@ -113,18 +113,18 @@ Next correct step:
 
 ## P1 - Color Pipeline composition and effective-source UX are underdeveloped
 
-**Status:** preset workflow truth, visible implementation-wording cleanup, and the reported SDF composition runtime-authority regressions are shipped; broader composition redesign remains deferred
+**Status:** preset workflow truth, visible implementation-wording cleanup, SDF composition runtime-authority repairs, typed Source-row applicators, and mixed SDF/non-SDF Source rows for supported renderer-backed lanes are shipped; broader composition redesign remains deferred
 **Area:** advanced color / SDF source rows / presets
 
 The Color Pipeline has useful Source, Shape, Palette, and Grading rows, including SDF Source rows. Effective Source-stack summary/report clarity is shipped, UI-Salt materialized metadata now owns catalog descriptors, compatibility lookup, companion suggestions, and recipe expansion backend seams, product-facing preset workflow truth is shipped, and the current composition cleanup removes remaining visible draft/live-bridge wording without changing the internal row-stack implementation.
 
 Remaining review direction:
 - Preserve full-field `sdf_normal_angle` as a diagnostic phase view; SDF Normal Angle Beauty now provides the boundary-masked product-facing preset without deleting that diagnostic behavior.
-- Treat SDF fields as typed Source signals now, with SDF masks/gates as the next plausible composition operand.
+- Treat SDF fields as typed Source signals now; SDF masks/gates and mixed SDF/non-SDF Source-row blending are shipped for supported renderer-backed lanes.
 - Keep the repaired row-enabled/effective-selection and SDF-only Source-stack regressions green: disabled rows must stay inactive for compatibility/runtime, and `sdf_curvature` must keep blending with `sdf_normal_angle` through the runtime-backed SDF postprocess path.
 - Keep row-local SDF Field Downsample authority explicit: SDF Source rows now default to shared `LensSettings::downsample` through `Inherit`, but individual rows can request `1x`, `2x`, `4x`, `8x`, or `16x` field resolution.
 - Keep preset/workflow truth green so compatible fractal switches preserve authored work and unsupported rows project safely.
-- Keep full preset manager UI, full authored SDF pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes as separate slices.
+- Keep function picker/layout refinement as the next bounded UX step before adding more functions. Keep full preset manager UI, full authored SDF pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes as separate slices.
 
 ---
 

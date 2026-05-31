@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_post_mixed_source_replan",
+  "feature_id": "color_pipeline_composition_followups",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/color_pipeline_post_mixed_source_replan_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/color_pipeline_post_mixed_source_replan_PHASED_PLAN.md",
+    "docs/contracts/color_pipeline_post_mixed_source_replan.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "continue after the mixed Source-row slice looked good",
+    "mark typed Source-row applicators and mixed SDF/non-SDF Source rows as shipped",
+    "re-rank remaining Color Pipeline composition follow-ups",
+    "select the next bounded implementation slice without product code changes"
+  ],
+  "forbidden_operator_prompts": [
+    "change product code or tests in this docs-only slice",
+    "add new Color Pipeline functions",
+    "add new SDF ops or SDF-native lanes",
+    "claim generic_equation_pack or sdf_pack_scene mixed Source-row support before those lanes have renderer-backed source signals",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "scope": "documentation_only_post_mixed_source_replan",
+    "source_head": "3465487",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "product_code_changes_forbidden": true,
+    "selected_next_slice": "color_pipeline_function_picker_layout"
+  },
+  "forbidden_defaults": {
+    "product_mutation": "forbidden",
+    "new_color_pipeline_functions": "forbidden",
+    "new_sdf_ops": "forbidden",
+    "new_fractal_type": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_post_mixed_source_replan.contract.json --out-json artifacts/validation/color_pipeline_post_mixed_source_replan_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/color_pipeline_post_mixed_source_replan_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_post_mixed_source_replan_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_post_mixed_source_replan_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_post_mixed_source_replan_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_post_mixed_source_replan_diff_check --log artifacts/logs/color_pipeline_post_mixed_source_replan_diff_check.log --out-json artifacts/validation/color_pipeline_post_mixed_source_replan_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The post-mixed Source-row replan contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_post_mixed_source_replan_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The post-mixed Source-row replan hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_post_mixed_source_replan_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
