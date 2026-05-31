@@ -638,6 +638,323 @@ void WriteLensStateJson(std::ostringstream& js, const LensSettings& lens) {
     js << "  }";
 }
 
+bool FindingColorSignalUsesSdfField(ColorSignal signal) {
+    switch (signal) {
+    case ColorSignal::sdf_signed_distance:
+    case ColorSignal::sdf_inside_outside:
+    case ColorSignal::sdf_boundary_band:
+    case ColorSignal::sdf_normal_angle:
+    case ColorSignal::sdf_curvature:
+    case ColorSignal::lens_field_v2_distance:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool FindingCaptureUsesSdfField(const KernelParams& params) {
+    if (FindingColorSignalUsesSdfField(params.color_pipeline.signal)) {
+        return true;
+    }
+    const int sourceStackCount = CaptureColorSourceStackCount(params);
+    for (int index = 0; index < sourceStackCount; ++index) {
+        if (FindingColorSignalUsesSdfField(params.color_source_stack[index].signal)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void WriteFindingSourceRowsJson(std::ostringstream& js, const KernelParams& params) {
+    const int sourceStackCount = CaptureColorSourceStackCount(params);
+    js << "    \"color_source_stack\": [\n";
+    for (int index = 0; index < sourceStackCount; ++index) {
+        const ColorPipelineSourceStackEntry& sourceEntry = params.color_source_stack[index];
+        js << "      {\n";
+        js << "        \"index\": " << index << ",\n";
+        js << "        \"signal\": \"" << CaptureColorSignalId(sourceEntry.signal) << "\",\n";
+        js << "        \"signal_kind\": \"" << CaptureColorSignalKindId(sourceEntry.signal) << "\",\n";
+        js << "        \"scale\": " << static_cast<double>(sourceEntry.params.scale) << ",\n";
+        js << "        \"bias\": " << static_cast<double>(sourceEntry.params.bias) << ",\n";
+        js << "        \"sdf_boundary_width_px\": " << static_cast<double>(sourceEntry.params.sdf_boundary_width_px) << ",\n";
+        js << "        \"lens_field_v2_sign_contrast\": " << static_cast<double>(sourceEntry.params.lens_field_v2_sign_contrast) << ",\n";
+        js << "        \"sdf_gate\": \"" << (color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) ? color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) : "none") << "\",\n";
+        js << "        \"sdf_gate_width_px\": " << static_cast<double>(sourceEntry.params.sdf_gate_width_px) << ",\n";
+        js << "        \"sdf_sample_step\": " << sourceEntry.params.sdf_sample_step << ",\n";
+        js << "        \"sdf_field_downsample\": " << sourceEntry.params.sdf_field_downsample << ",\n";
+        js << "        \"blend_weight\": " << static_cast<double>(sourceEntry.params.blend_weight) << "\n";
+        js << "      }" << (index + 1 < sourceStackCount ? "," : "") << "\n";
+    }
+    js << "    ],\n";
+}
+
+void WriteFindingShapeRowsJson(std::ostringstream& js, const KernelParams& params) {
+    int count = params.color_shape_stack_count;
+    if (count < 0) count = 0;
+    if (count > kColorPipelineMaxShapeStackCount) count = kColorPipelineMaxShapeStackCount;
+    js << "    \"color_shape_stack\": [\n";
+    for (int index = 0; index < count; ++index) {
+        const ColorPipelineShapeStackEntry& entry = params.color_shape_stack[index];
+        js << "      {\n";
+        js << "        \"index\": " << index << ",\n";
+        js << "        \"shape\": \"" << CaptureColorPipelineShapeId(entry.shape) << "\",\n";
+        js << "        \"offset\": " << static_cast<double>(entry.params.offset) << ",\n";
+        js << "        \"scale\": " << static_cast<double>(entry.params.scale) << ",\n";
+        js << "        \"repeat_frequency\": " << static_cast<double>(entry.params.repeat_frequency) << ",\n";
+        js << "        \"repeat_phase\": " << static_cast<double>(entry.params.repeat_phase) << ",\n";
+        js << "        \"posterize_steps\": " << entry.params.posterize_steps << ",\n";
+        js << "        \"posterize_mix\": " << static_cast<double>(entry.params.posterize_mix) << ",\n";
+        js << "        \"bias\": " << static_cast<double>(entry.params.bias) << ",\n";
+        js << "        \"gain\": " << static_cast<double>(entry.params.gain) << "\n";
+        js << "      }" << (index + 1 < count ? "," : "") << "\n";
+    }
+    js << "    ],\n";
+}
+
+void WriteFindingPaletteRowsJson(std::ostringstream& js, const KernelParams& params) {
+    int count = params.color_palette_stack_count;
+    if (count < 0) count = 0;
+    if (count > kColorPipelineMaxPaletteStackCount) count = kColorPipelineMaxPaletteStackCount;
+    js << "    \"color_palette_stack\": [\n";
+    for (int index = 0; index < count; ++index) {
+        const ColorPipelinePaletteStackEntry& entry = params.color_palette_stack[index];
+        js << "      {\n";
+        js << "        \"index\": " << index << ",\n";
+        js << "        \"palette\": \"" << CaptureColorPaletteId(entry.palette) << "\",\n";
+        js << "        \"cycle_scale\": " << static_cast<double>(entry.params.cycle_scale) << ",\n";
+        js << "        \"saturation\": " << static_cast<double>(entry.params.saturation) << ",\n";
+        js << "        \"phase_offset\": " << static_cast<double>(entry.params.phase_offset) << ",\n";
+        js << "        \"blend_weight\": " << static_cast<double>(entry.params.blend_weight) << "\n";
+        js << "      }" << (index + 1 < count ? "," : "") << "\n";
+    }
+    js << "    ],\n";
+}
+
+void WriteFindingGradingRowsJson(std::ostringstream& js, const KernelParams& params) {
+    int count = params.color_grading_stack_count;
+    if (count < 0) count = 0;
+    if (count > kColorPipelineMaxGradingStackCount) count = kColorPipelineMaxGradingStackCount;
+    js << "    \"color_grading_stack\": [\n";
+    for (int index = 0; index < count; ++index) {
+        const ColorPipelineGradingStackEntry& entry = params.color_grading_stack[index];
+        js << "      {\n";
+        js << "        \"index\": " << index << ",\n";
+        js << "        \"grading\": \"" << CaptureColorGradingPresetId(entry.grading) << "\",\n";
+        js << "        \"exposure\": " << static_cast<double>(entry.params.exposure) << ",\n";
+        js << "        \"saturation\": " << static_cast<double>(entry.params.saturation) << ",\n";
+        js << "        \"contrast\": " << static_cast<double>(entry.params.contrast) << ",\n";
+        js << "        \"glow\": " << static_cast<double>(entry.params.glow) << ",\n";
+        js << "        \"balance_void\": " << static_cast<double>(entry.params.balance_void) << ",\n";
+        js << "        \"chroma_tension\": " << static_cast<double>(entry.params.chroma_tension) << ",\n";
+        js << "        \"accent_bias\": " << static_cast<double>(entry.params.accent_bias) << "\n";
+        js << "      }" << (index + 1 < count ? "," : "") << "\n";
+    }
+    js << "    ]\n";
+}
+
+struct FindingControlJsonWriter {
+    std::ostringstream& js;
+    bool first{true};
+
+    void Number(const char* name, double value) {
+        Prefix(name);
+        js << value;
+    }
+
+    void Int(const char* name, int value) {
+        Prefix(name);
+        js << value;
+    }
+
+    void String(const char* name, const char* value) {
+        Prefix(name);
+        WriteJsonEscapedString(js, value ? value : "unknown");
+    }
+
+    void Bool(const char* name, bool value) {
+        Prefix(name);
+        js << (value ? "true" : "false");
+    }
+
+    void Raw(const char* name, const std::string& value) {
+        Prefix(name);
+        js << value;
+    }
+
+private:
+    void Prefix(const char* name) {
+        if (!first) js << ",\n";
+        first = false;
+        js << "    ";
+        WriteJsonEscapedString(js, name);
+        js << ": ";
+    }
+};
+
+std::string BuildFindingFloatArrayJson(const float* values, int count) {
+    std::ostringstream js;
+    js << "[";
+    for (int index = 0; index < count; ++index) {
+        if (index > 0) js << ", ";
+        js << static_cast<double>(values[index]);
+    }
+    js << "]";
+    return js.str();
+}
+
+std::string BuildFindingExplainoRootsJson(const KernelParams& params) {
+    const int rootCount = params.explaino_root_count < 0
+        ? 0
+        : (params.explaino_root_count > 4 ? 4 : params.explaino_root_count);
+    std::ostringstream js;
+    js << "[";
+    for (int index = 0; index < rootCount; ++index) {
+        if (index > 0) js << ", ";
+        js << "{\"x\": " << static_cast<double>(params.explaino_roots[index].x)
+           << ", \"y\": " << static_cast<double>(params.explaino_roots[index].y) << "}";
+    }
+    js << "]";
+    return js.str();
+}
+
+void WriteFindingPolynomialControls(FindingControlJsonWriter& writer, FractalType fractalType, const KernelParams& params) {
+    if (fractalType != FractalType::newton &&
+        fractalType != FractalType::halley &&
+        !IsExplainoFamily(fractalType)) {
+        return;
+    }
+    writer.String("poly_kind", PolyKindId(params.poly_kind));
+    writer.Raw("poly_coeffs", BuildFindingFloatArrayJson(params.poly_coeffs, 5));
+    if (fractalType == FractalType::explaino_splice || fractalType == FractalType::explaino_all) {
+        writer.Raw("poly_coeffs_b", BuildFindingFloatArrayJson(params.poly_coeffs_b, 5));
+    }
+}
+
+void WriteFindingExplainoCommonControls(FindingControlJsonWriter& writer, const ViewState& view, const KernelParams& params) {
+    if (!IsExplainoFamily(view.fractal_type)) {
+        return;
+    }
+    writer.Number("explaino_seed", params.explaino_seed);
+    writer.Number("explaino_seed_b", params.explaino_seed_b);
+    writer.Number("explaino_mix", static_cast<double>(params.explaino_mix));
+    writer.Number("explaino_warp_strength", static_cast<double>(params.explaino_warp_strength));
+    writer.Number("explaino_root_spread", static_cast<double>(params.explaino_root_spread));
+    writer.String("explaino_root_authority", CaptureExplainoRootAuthorityId(params.explaino_root_authority));
+    writer.Number("explaino_damping", static_cast<double>(params.explaino_damping));
+    writer.Int("explaino_root_count", params.explaino_root_count);
+    writer.Raw("explaino_roots", BuildFindingExplainoRootsJson(params));
+    writer.Number("explaino_phase", static_cast<double>(view.explaino_phase));
+    writer.Number("explaino_seed_drift", static_cast<double>(view.explaino_seed_drift));
+    writer.Bool("explaino_seed_tween", view.explaino_seed_tween);
+    writer.Number("explaino_cluster_radius", static_cast<double>(params.explaino_cluster_radius));
+}
+
+void WriteFindingCoreFractalControls(FindingControlJsonWriter& writer, FractalType fractalType, const KernelParams& params) {
+    switch (fractalType) {
+    case FractalType::julia:
+        writer.Number("julia_c_real", static_cast<double>(params.julia_c_real));
+        writer.Number("julia_c_imag", static_cast<double>(params.julia_c_imag));
+        break;
+    case FractalType::multibrot:
+        writer.Number("multibrot_power_float", static_cast<double>(params.multibrot_power_float));
+        writer.Number("multibrot_power_imag", static_cast<double>(params.multibrot_power_imag));
+        break;
+    case FractalType::nova:
+    case FractalType::explaino_nova:
+        writer.Number("nova_alpha", static_cast<double>(params.nova_alpha));
+        break;
+    case FractalType::phoenix:
+    case FractalType::explaino_phoenix:
+        writer.Number("phoenix_p_real", static_cast<double>(params.phoenix_p_real));
+        writer.Number("phoenix_p_imag", static_cast<double>(params.phoenix_p_imag));
+        break;
+    case FractalType::collatz:
+    case FractalType::explaino_collatz_direct:
+        writer.Number("collatz_transition_strength", static_cast<double>(params.collatz_transition_strength));
+        break;
+    case FractalType::spider:
+        writer.Number("spider_feedback", static_cast<double>(params.spider_feedback));
+        break;
+    case FractalType::burning_ship:
+        writer.Number("burning_ship_fold_mix", static_cast<double>(params.burning_ship_fold_mix));
+        break;
+    case FractalType::celtic_mandelbrot:
+        writer.Number("celtic_abs_mix", static_cast<double>(params.celtic_abs_mix));
+        break;
+    case FractalType::perpendicular_burning_ship:
+        writer.Number("perpendicular_fold_mix", static_cast<double>(params.perpendicular_fold_mix));
+        break;
+    case FractalType::lambda_map:
+    case FractalType::explaino_lambda:
+        writer.Number("lambda_real", static_cast<double>(params.lambda_real));
+        writer.Number("lambda_imag", static_cast<double>(params.lambda_imag));
+        break;
+    case FractalType::magnet:
+        writer.Number("magnet_seed_real", static_cast<double>(params.magnet_seed_real));
+        writer.Number("magnet_seed_imag", static_cast<double>(params.magnet_seed_imag));
+        writer.Number("magnet_relaxation", static_cast<double>(params.magnet_relaxation));
+        writer.Number("magnet_bailout", static_cast<double>(params.magnet_bailout));
+        break;
+    case FractalType::mcmullen:
+        writer.String("mcmullen_preset", CaptureMcMullenPresetId(params.mcmullen_preset));
+        writer.Int("mcmullen_m", params.mcmullen_m);
+        writer.Int("mcmullen_n", params.mcmullen_n);
+        writer.Number("mcmullen_lambda", static_cast<double>(params.mcmullen_lambda));
+        break;
+    case FractalType::explaino_rational_escape:
+        writer.Int("explaino_rational_escape_denominator_power", params.explaino_rational_escape_denominator_power);
+        break;
+    default:
+        break;
+    }
+}
+
+void WriteFindingExplainoAxisControls(FindingControlJsonWriter& writer, FractalType fractalType, const KernelParams& params) {
+    switch (fractalType) {
+    case FractalType::explaino_ripple:
+        writer.Number("ripple_amplitude", static_cast<double>(params.ripple_amplitude));
+        break;
+    case FractalType::explaino_splice:
+        writer.Number("splice_offset", static_cast<double>(params.splice_offset));
+        break;
+    case FractalType::explaino_vortex:
+        writer.Number("vortex_strength", static_cast<double>(params.vortex_strength));
+        break;
+    case FractalType::explaino_tension:
+        writer.Number("tension_strength", static_cast<double>(params.tension_strength));
+        break;
+    case FractalType::explaino_balance_void:
+        writer.Number("balance_void", static_cast<double>(params.balance_void));
+        writer.Number("symmetry_tension", static_cast<double>(params.symmetry_tension));
+        writer.Number("field_curvature", static_cast<double>(params.field_curvature));
+        break;
+    case FractalType::explaino_all:
+        writer.Number("ripple_amplitude", static_cast<double>(params.ripple_amplitude));
+        writer.Number("splice_offset", static_cast<double>(params.splice_offset));
+        writer.Number("vortex_strength", static_cast<double>(params.vortex_strength));
+        writer.Number("tension_strength", static_cast<double>(params.tension_strength));
+        writer.Number("balance_void", static_cast<double>(params.balance_void));
+        writer.Number("symmetry_tension", static_cast<double>(params.symmetry_tension));
+        writer.Number("field_curvature", static_cast<double>(params.field_curvature));
+        break;
+    default:
+        break;
+    }
+}
+
+void WriteFindingActiveControlsJson(std::ostringstream& js, const ViewState& view, const KernelParams& params) {
+    js << "  \"active_fractal_controls\": {\n";
+    FindingControlJsonWriter writer{js};
+    writer.Int("max_iter", params.max_iter);
+    writer.Number("epsilon", static_cast<double>(params.epsilon));
+    writer.Number("exposure", static_cast<double>(params.exposure));
+    WriteFindingPolynomialControls(writer, view.fractal_type, params);
+    WriteFindingExplainoCommonControls(writer, view, params);
+    WriteFindingCoreFractalControls(writer, view.fractal_type, params);
+    WriteFindingExplainoAxisControls(writer, view.fractal_type, params);
+    js << "\n  }";
+}
+
 std::string BuildStateJson(
     const ViewState& view,
     const KernelParams& params,
@@ -811,6 +1128,106 @@ std::string BuildStateJson(
     js << "}\n";
     return js.str();
 }
+
+} // namespace
+
+std::string BuildFindingFractalStateJson(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    const LensSettings* lens) {
+    const FractalType publicFractalType = ResolveExplainoPublicFractalType(view.fractal_type);
+    const bool includeLens = lens && (lens->enabled ||
+        lens->sdf_overlay_mode != LensSdfOverlayMode::off ||
+        FindingCaptureUsesSdfField(params));
+
+    std::ostringstream js;
+    js << std::setprecision(std::numeric_limits<double>::max_digits10);
+    js << "{\n";
+    js << "  \"schema_id\": \"viewer.finding_fractal_state.v1\",\n";
+    js << "  \"references\": {\n";
+    js << "    \"state_file\": \"state.json\",\n";
+    js << "    \"frame_file\": \"frame.png\"\n";
+    js << "  },\n";
+    js << "  \"capture_context\": {\n";
+    js << "    \"fractal_type\": \"" << CaptureFractalTypeId(publicFractalType) << "\",\n";
+    js << "    \"selected_fractal_type\": \"" << CaptureFractalTypeId(view.fractal_type) << "\",\n";
+    js << "    \"public_selector_id\": \"" << CaptureFractalTypeId(publicFractalType) << "\",\n";
+    js << "    \"render_width\": " << render.resolution.x << ",\n";
+    js << "    \"render_height\": " << render.resolution.y << ",\n";
+    js << "    \"sample_tier\": \"" << CaptureSampleTierId(render.sample_tier) << "\",\n";
+    js << "    \"resolved_backend\": \"" << CaptureNumericBackendId(stats.resolved_eval.backend) << "\",\n";
+    js << "    \"resolved_strategy\": \"" << CaptureIterationStrategyId(stats.resolved_eval.strategy) << "\",\n";
+    js << "    \"capture_type\": \"finding\"\n";
+    js << "  },\n";
+    js << "  \"view\": {\n";
+    js << "    \"center_x\": " << static_cast<double>(view.center.x) << ",\n";
+    js << "    \"center_y\": " << static_cast<double>(view.center.y) << ",\n";
+    js << "    \"zoom\": " << static_cast<double>(view.zoom) << ",\n";
+    js << "    \"rotation_degrees\": " << static_cast<double>(view.rotation_degrees) << ",\n";
+    js << "    \"center_hp_x\": " << view.center_hp_x << ",\n";
+    js << "    \"center_hp_y\": " << view.center_hp_y << ",\n";
+    js << "    \"log2_zoom\": " << view.log2_zoom << "\n";
+    js << "  },\n";
+    WriteFindingActiveControlsJson(js, view, params);
+    js << ",\n";
+    js << "  \"derived_runtime_values\": {\n";
+    js << "    \"last_render_ms\": " << static_cast<double>(stats.last_render_ms) << ",\n";
+    js << "    \"last_iters_avg\": " << stats.last_iters_avg << ",\n";
+    js << "    \"last_pixel_count\": " << stats.last_pixel_count << "\n";
+    js << "  },\n";
+    js << "  \"color_pipeline\": {\n";
+    js << "    \"color_signal\": \"" << CaptureColorSignalId(params.color_pipeline.signal) << "\",\n";
+    js << "    \"color_signal_kind\": \"" << CaptureColorSignalKindId(params.color_pipeline.signal) << "\",\n";
+    js << "    \"color_shape\": \"" << CaptureColorPipelineShapeId(params.color_shape) << "\",\n";
+    js << "    \"color_palette\": \"" << CaptureColorPaletteId(params.color_pipeline.palette) << "\",\n";
+    js << "    \"color_grading\": \"" << CaptureColorGradingPresetId(params.color_pipeline.grading) << "\",\n";
+    js << "    \"source_stack_authority\": \"" << (CaptureColorSourceStackCount(params) > 0 ? "source_stack" : "flat_signal") << "\",\n";
+    WriteFindingSourceRowsJson(js, params);
+    WriteFindingShapeRowsJson(js, params);
+    WriteFindingPaletteRowsJson(js, params);
+    WriteFindingGradingRowsJson(js, params);
+    js << "  }";
+    if (HasSerializableColorPipelineDraft(colorPipelineWindow)) {
+        js << ",\n";
+        WriteColorPipelineDraftJson(js, *colorPipelineWindow);
+    }
+    if (includeLens) {
+        js << ",\n";
+        WriteLensStateJson(js, *lens);
+    }
+    js << ",\n";
+    js << "  \"omitted_groups\": [\n";
+    js << "    \"inactive_family_parameter_groups\",\n";
+    js << "    \"hidden_default_kernel_params\",\n";
+    js << "    \"diagnostic_only_stats\"\n";
+    js << "  ]\n";
+    js << "}\n";
+    return js.str();
+}
+
+bool WriteFindingFractalStateJsonFile(
+    const std::string& outputPath,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    const LensSettings* lens,
+    std::string* outError) {
+    if (outputPath.empty()) {
+        if (outError) *outError = "Missing finding fractal-state output path.";
+        return false;
+    }
+    return WriteTextFile(
+        std::filesystem::path(outputPath),
+        BuildFindingFractalStateJson(view, params, render, stats, colorPipelineWindow, lens),
+        outError);
+}
+
+namespace {
 
 std::filesystem::path DiagnosticsRootDir(const std::string& exeDir) {
     return (std::filesystem::path(exeDir) / "diagnostics").lexically_normal();

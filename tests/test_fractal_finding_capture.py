@@ -83,12 +83,24 @@ def test_validate_finding_id_rejects_spaces() -> None:
         raise AssertionError("Expected invalid finding_id to raise ValueError")
 
 
-def test_archive_finding_bundle_writes_png_state_and_sidecar(tmp_path: Path) -> None:
+def test_archive_finding_bundle_writes_png_state_fractal_state_and_sidecar(tmp_path: Path) -> None:
     diagnostics_dir = tmp_path / "diagnostics_last"
     diagnostics_dir.mkdir()
     _write_test_bmp24(diagnostics_dir / "frame.bmp")
     (diagnostics_dir / "state.json").write_text(
         json.dumps({"fractal_type": "nova", "params": {"max_iter": 300}}, indent=2),
+        encoding="utf-8",
+    )
+    fractal_state_source = tmp_path / "capture-fractal-state.json"
+    fractal_state_source.write_text(
+        json.dumps(
+            {
+                "schema_id": "viewer.finding_fractal_state.v1",
+                "fractal_type": "nova",
+                "active_fractal_controls": [{"id": "max_iter", "value": 300}],
+            },
+            indent=2,
+        ),
         encoding="utf-8",
     )
 
@@ -99,15 +111,18 @@ def test_archive_finding_bundle_writes_png_state_and_sidecar(tmp_path: Path) -> 
         finding_id="nova_escape_default",
         why="Nova renders through the escape-time path after the rules fix.",
         repro_command="fractal_ui.exe --capture-diagnostic --fractal-type nova",
+        fractal_state_json_path=fractal_state_source,
     )
 
     png_path = output_dir / "frame.png"
     state_path = output_dir / "state.json"
+    fractal_state_path = output_dir / "fractal-state.json"
     sidecar_path = output_dir / "finding.md"
     json_path = output_dir / "finding.json"
 
     assert png_path.exists()
     assert state_path.exists()
+    assert fractal_state_path.exists()
     assert sidecar_path.exists()
     assert json_path.exists()
 
@@ -122,7 +137,11 @@ def test_archive_finding_bundle_writes_png_state_and_sidecar(tmp_path: Path) -> 
     assert "nova_escape_default" in sidecar_text
     assert "escape-time path" in sidecar_text
     assert "--fractal-type nova" in sidecar_text
+    assert "fractal-state.json" in sidecar_text
 
     metadata = json.loads(json_path.read_text(encoding="utf-8"))
     assert metadata["finding_id"] == "nova_escape_default"
     assert metadata["fractal_type"] == "nova"
+    assert metadata["state_file"] == "state.json"
+    assert metadata["fractal_state_file"] == "fractal-state.json"
+    assert json.loads(fractal_state_path.read_text(encoding="utf-8"))["schema_id"] == "viewer.finding_fractal_state.v1"

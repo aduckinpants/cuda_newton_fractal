@@ -15,6 +15,24 @@ struct DiagnosticsCaptureResult {
     std::string state_json_path;
 };
 
+std::string BuildFindingFractalStateJson(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    const LensSettings* lens);
+
+bool WriteFindingFractalStateJsonFile(
+    const std::string& outputPath,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    const LensSettings* lens,
+    std::string* outError);
+
 bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const ViewState& view,
     const KernelParams& params,

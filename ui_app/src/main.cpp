@@ -2818,28 +2818,44 @@ static void PersistSdfPackViewerStateToCaptureStateFile(
     if (!sdfPackViewer.initialized && !sdfPackViewer.have_pack && !sdfPackViewer.open) {
         return;
     }
-    std::ifstream in(capture.state_json_path, std::ios::binary);
-    if (!in) {
-        if (ioStatus) *ioStatus += " SDF pack state append failed: state.json not readable.";
-        return;
-    }
-    std::ostringstream buffer;
-    buffer << in.rdbuf();
-    std::string merged;
-    std::string error;
-    if (!MergeSdfPackViewerStateIntoDiagnosticsStateJson(buffer.str(), sdfPackViewer, &merged, &error)) {
-        if (ioStatus) *ioStatus += " SDF pack state append failed: " + error + ".";
-        return;
-    }
-    std::ofstream out(capture.state_json_path, std::ios::binary | std::ios::trunc);
-    if (!out) {
-        if (ioStatus) *ioStatus += " SDF pack state append failed: state.json not writable.";
-        return;
-    }
-    out.write(merged.data(), static_cast<std::streamsize>(merged.size()));
-    if (!out.good() && ioStatus) {
-        *ioStatus += " SDF pack state append failed: state.json write error.";
-    }
+
+    const auto mergePackStateIntoJsonFile = [&sdfPackViewer, ioStatus](const std::string& path, const char* label, bool required) {
+        if (path.empty()) {
+            if (required && ioStatus) *ioStatus += std::string(" SDF pack state append failed: ") + label + " path missing.";
+            return;
+        }
+        std::error_code existsError;
+        if (!required && !std::filesystem::exists(path, existsError)) {
+            return;
+        }
+        std::ifstream in(path, std::ios::binary);
+        if (!in) {
+            if (ioStatus) *ioStatus += std::string(" SDF pack state append failed: ") + label + " not readable.";
+            return;
+        }
+        std::ostringstream buffer;
+        buffer << in.rdbuf();
+        std::string merged;
+        std::string error;
+        if (!MergeSdfPackViewerStateIntoDiagnosticsStateJson(buffer.str(), sdfPackViewer, &merged, &error)) {
+            if (ioStatus) *ioStatus += std::string(" SDF pack state append failed for ") + label + ": " + error + ".";
+            return;
+        }
+        std::ofstream out(path, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            if (ioStatus) *ioStatus += std::string(" SDF pack state append failed: ") + label + " not writable.";
+            return;
+        }
+        out.write(merged.data(), static_cast<std::streamsize>(merged.size()));
+        if (!out.good() && ioStatus) {
+            *ioStatus += std::string(" SDF pack state append failed: ") + label + " write error.";
+        }
+    };
+
+    mergePackStateIntoJsonFile(capture.state_json_path, "state.json", true);
+    const std::filesystem::path statePath = capture.state_json_path;
+    const std::filesystem::path fractalStatePath = statePath.parent_path() / "fractal-state.json";
+    mergePackStateIntoJsonFile(fractalStatePath.string(), "fractal-state.json", false);
 }
 
 static void PersistSdfPackViewerStateToDiagnosticLastMirror(

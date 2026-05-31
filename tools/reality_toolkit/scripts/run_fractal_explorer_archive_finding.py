@@ -25,6 +25,7 @@ def main() -> int:
     parser.add_argument("--finding-id", required=True, help="Stable finding folder name, for example explaino_seed_0p375_shell_transition.")
     parser.add_argument("--why", required=True, help="Short importance note explaining why this frame is worth keeping.")
     parser.add_argument("--repro-command", required=True, help="Exact command line needed to reproduce the frame.")
+    parser.add_argument("--fractal-state-json", help="Optional review-focused fractal-state sidecar to archive beside state.json.")
     parser.add_argument("--overwrite", action="store_true", help="Replace an existing finding folder with the same finding id.")
     args = parser.parse_args()
 
@@ -39,6 +40,7 @@ def main() -> int:
         finding_id=args.finding_id,
         why=args.why,
         repro_command=args.repro_command,
+        fractal_state_json_path=Path(args.fractal_state_json).resolve() if args.fractal_state_json else None,
         overwrite=args.overwrite,
     )
 
@@ -48,6 +50,7 @@ def main() -> int:
                 "output_dir": str(output_dir),
                 "frame_png": str(output_dir / "frame.png"),
                 "state_json": str(output_dir / "state.json"),
+                "fractal_state_json": str(output_dir / "fractal-state.json") if args.fractal_state_json else None,
                 "sidecar": str(output_dir / "finding.md"),
                 "field_notes": str(output_dir / "field-notes.md"),
             },

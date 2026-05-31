@@ -40,7 +40,8 @@ std::wstring BuildArchiveScriptCommandLine(
     const std::filesystem::path& outRoot,
     const std::string& findingId,
     const std::string& why,
-    const std::string& reproCommand);
+    const std::string& reproCommand,
+    const std::filesystem::path& fractalStateJsonPath = {});
 
 bool CaptureAndArchiveFindingBundle(
     const std::string& exeDir,

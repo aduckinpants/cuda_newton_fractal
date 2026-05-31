@@ -283,6 +283,7 @@ bool RunArchiveScript(
     const std::string& findingId,
     const std::string& why,
     const std::string& reproCommand,
+    const std::filesystem::path& fractalStateJsonPath,
     std::string* outError) {
     const std::filesystem::path resolvedRepoRoot = repoRoot.empty() ? ResolveRepoRoot({}) : repoRoot;
     if (resolvedRepoRoot.empty()) {
@@ -309,7 +310,8 @@ bool RunArchiveScript(
         outRoot,
         findingId,
         why,
-        reproCommand);
+        reproCommand,
+        fractalStateJsonPath);
 
     SECURITY_ATTRIBUTES sa{};
     sa.nLength = sizeof(sa);
@@ -432,7 +434,8 @@ std::wstring BuildArchiveScriptCommandLine(
     const std::filesystem::path& outRoot,
     const std::string& findingId,
     const std::string& why,
-    const std::string& reproCommand) {
+    const std::string& reproCommand,
+    const std::filesystem::path& fractalStateJsonPath) {
     std::wstring commandLine;
     AppendCommandLineArg(&commandLine, pythonLauncher.wstring());
     AppendCommandLineArg(&commandLine, L"-3.14");
@@ -449,6 +452,10 @@ std::wstring BuildArchiveScriptCommandLine(
     AppendCommandLineArg(&commandLine, WidenUtf8(why));
     AppendCommandLineArg(&commandLine, L"--repro-command");
     AppendCommandLineArg(&commandLine, WidenUtf8(reproCommand));
+    if (!fractalStateJsonPath.empty()) {
+        AppendCommandLineArg(&commandLine, L"--fractal-state-json");
+        AppendCommandLineArg(&commandLine, fractalStateJsonPath.wstring());
+    }
     return commandLine;
 }
 
@@ -708,8 +715,22 @@ bool CaptureAndArchiveFindingBundleWithLens(
     const std::filesystem::path reproRuntimePath = PathExists(launcherPath) ? launcherPath : publishedExePath;
     const std::string reproCommand = reproRuntimePath.string() + " --load-state-json " + (identity.output_dir / "state.json").string() + " --capture-diagnostic";
     const std::filesystem::path repoRoot = ResolveRepoRoot(std::filesystem::path(exeDir));
+    const std::filesystem::path fractalStatePath = std::filesystem::path(capture.output_dir) / "fractal-state.json";
+    std::string fractalStateError;
+    if (!WriteFindingFractalStateJsonFile(
+            fractalStatePath.string(),
+            view,
+            params,
+            render,
+            stats,
+            colorPipelineWindow,
+            lens,
+            &fractalStateError)) {
+        if (outError) *outError = fractalStateError;
+        return false;
+    }
 
-    if (!RunArchiveScript(repoRoot, capture.output_dir, identity.out_root, identity.finding_id, why, reproCommand, outError)) {
+    if (!RunArchiveScript(repoRoot, capture.output_dir, identity.out_root, identity.finding_id, why, reproCommand, fractalStatePath, outError)) {
         return false;
     }
 

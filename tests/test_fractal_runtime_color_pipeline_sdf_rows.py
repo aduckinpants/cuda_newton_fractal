@@ -96,6 +96,34 @@ def _finding_dirs_for_group(group: str) -> list[Path]:
     return sorted(path for path in root.glob("*/*") if path.is_dir())
 
 
+def _assert_finding_fractal_state_sidecar(finding_dir: Path, *, expected_signal: str | None = None) -> dict[str, object]:
+    metadata_path = finding_dir / "finding.json"
+    fractal_state_path = finding_dir / "fractal-state.json"
+    assert metadata_path.exists(), f"missing finding metadata: {metadata_path}"
+    assert fractal_state_path.exists(), f"missing review sidecar: {fractal_state_path}"
+
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert metadata.get("fractal_state_file") == "fractal-state.json"
+    sidecar = json.loads(fractal_state_path.read_text(encoding="utf-8"))
+    assert sidecar.get("schema_id") == "viewer.finding_fractal_state.v1"
+    references = sidecar.get("references")
+    assert isinstance(references, dict)
+    assert references.get("state_file") == "state.json"
+    assert references.get("frame_file") == "frame.png"
+    controls = sidecar.get("active_fractal_controls")
+    assert isinstance(controls, dict)
+    assert "magnet_seed_real" not in controls
+    assert "explaino_seed" not in controls
+    color_pipeline = sidecar.get("color_pipeline")
+    assert isinstance(color_pipeline, dict)
+    if expected_signal:
+        source_rows = color_pipeline.get("color_source_stack")
+        assert isinstance(source_rows, list) and source_rows
+        assert any(isinstance(row, dict) and row.get("signal") == expected_signal for row in source_rows)
+    assert isinstance(sidecar.get("omitted_groups"), list) and sidecar["omitted_groups"]
+    return sidecar
+
+
 def _first_color_pipeline_row(state: dict[str, object], lane_id: str) -> dict[str, object]:
     draft = state.get("color_pipeline_draft")
     assert isinstance(draft, dict), "expected captured state to include color_pipeline_draft"
@@ -800,6 +828,7 @@ def test_capture_finding_preserves_sdf_source_row_pixels_no_mouse(tmp_path: Path
         ui_frame_path = ui_finding_dir / "frame.png"
         assert ui_state_path.exists()
         assert ui_frame_path.exists()
+        _assert_finding_fractal_state_sidecar(ui_finding_dir, expected_signal="sdf_signed_distance")
 
         headless = subprocess.run(
             [
@@ -822,6 +851,7 @@ def test_capture_finding_preserves_sdf_source_row_pixels_no_mouse(tmp_path: Path
         assert len(reference_dirs) == 1
         reference_frame_path = reference_dirs[0] / "frame.png"
         assert reference_frame_path.exists()
+        _assert_finding_fractal_state_sidecar(reference_dirs[0], expected_signal="sdf_signed_distance")
 
         ui_frame = image_module.open(ui_frame_path).convert("RGB")
         reference_frame = image_module.open(reference_frame_path).convert("RGB")
@@ -897,12 +927,17 @@ def test_capture_finding_replays_live_sdf_field_resolution_for_multi_row_stack_n
         ui_frame_path = ui_finding_dir / "frame.png"
         assert ui_state_path.exists()
         assert ui_frame_path.exists()
+        sidecar = _assert_finding_fractal_state_sidecar(ui_finding_dir, expected_signal="sdf_normal_angle")
 
         ui_state = json.loads(ui_state_path.read_text(encoding="utf-8"))
         ui_lens = ui_state.get("lens")
         assert isinstance(ui_lens, dict)
         assert ui_lens.get("sdf_field_source_width") == capture_width
         assert ui_lens.get("sdf_field_source_height") == capture_height
+        sidecar_lens = sidecar.get("lens")
+        assert isinstance(sidecar_lens, dict)
+        assert sidecar_lens.get("sdf_field_source_width") == capture_width
+        assert sidecar_lens.get("sdf_field_source_height") == capture_height
         ui_render = ui_state.get("render")
         assert isinstance(ui_render, dict)
         assert int(ui_render["width"]) >= capture_width

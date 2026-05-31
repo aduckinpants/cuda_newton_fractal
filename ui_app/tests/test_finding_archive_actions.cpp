@@ -936,6 +936,46 @@ int main() {
         }
     }
 
+    {
+        const fs::path pythonLauncher = R"(C:\Windows\py.exe)";
+        const fs::path scriptPath = R"(C:\code\cuda newton fractal clone\tools\reality_toolkit\scripts\run_fractal_explorer_archive_finding.py)";
+        const fs::path repoRoot = R"(C:\code\cuda newton fractal clone)";
+        const fs::path diagnosticsDir = R"(D:\salt fractal\cuda_newton_fractal_clone\runtime\diagnostics\last)";
+        const fs::path outRoot = R"(D:\salt fractal\cuda_newton_fractal_clone\findings\manual capture\2026-04-05)";
+        const fs::path fractalStateJson = R"(D:\salt fractal\cuda_newton_fractal_clone\runtime\diagnostics\last\fractal-state.json)";
+        const std::string findingId = "235959_999__julia";
+        const std::string why = "Sidecar capture.";
+        const std::string reproCommand =
+            R"(D:\salt fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --load-state-json D:\salt fractal\cuda_newton_fractal_clone\findings\manual capture\2026-04-05\235959_999__julia\state.json --capture-diagnostic)";
+
+        const std::wstring commandLine = BuildArchiveScriptCommandLine(
+            pythonLauncher,
+            scriptPath,
+            repoRoot,
+            diagnosticsDir,
+            outRoot,
+            findingId,
+            why,
+            reproCommand,
+            fractalStateJson);
+        const std::vector<std::wstring> argv = ParseWindowsCommandLine(commandLine);
+
+        bool sawFractalStateArg = false;
+        bool sawFractalStatePath = false;
+        for (std::size_t i = 0; i < argv.size(); ++i) {
+            if (argv[i] == L"--fractal-state-json") {
+                sawFractalStateArg = true;
+                if (i + 1 < argv.size() && argv[i + 1] == fractalStateJson.wstring()) {
+                    sawFractalStatePath = true;
+                }
+            }
+        }
+        if (!sawFractalStateArg || !sawFractalStatePath) {
+            std::cerr << "Expected archive script command line to pass explicit fractal-state.json source path\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_finding_archive_actions: all passed\n";
     return 0;
 }

@@ -509,6 +509,112 @@ void TestLastBundleAndSidecarOverloads() {
         "default diagnostic captures do not overwrite the only durable output directory");
 }
 
+void TestFindingFractalStateSidecarSummarizesActiveValuesOnly() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+
+    view.fractal_type = FractalType::julia;
+    view.center = {-0.25f, 0.125f};
+    view.center_hp_x = -0.25;
+    view.center_hp_y = 0.125;
+    view.log2_zoom = 4.0;
+    params.julia_c_real = -0.402f;
+    params.julia_c_imag = 0.6125f;
+    params.magnet_seed_real = 9.0f;
+    params.magnet_seed_imag = -8.0f;
+    params.explaino_seed = 1234.0;
+    params.explaino_warp_strength = 7.0f;
+    params.color_source_stack_count = 2;
+    params.color_source_stack[0].signal = ColorSignal::smooth_escape;
+    params.color_source_stack[0].params.scale = 1.25f;
+    params.color_source_stack[0].params.bias = -0.25f;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    params.color_source_stack[1].signal = ColorSignal::sdf_signed_distance;
+    params.color_source_stack[1].params.sdf_gate = ColorPipelineSdfGateMode::sdf_inside;
+    params.color_source_stack[1].params.sdf_gate_width_px = 4.0f;
+    params.color_source_stack[1].params.sdf_field_downsample = 4;
+    params.color_source_stack[1].params.blend_weight = 0.35f;
+
+    LensSettings lens{};
+    lens.enabled = false;
+    lens.downsample = 4;
+    lens.sdf_field_source_resolution = {320, 180};
+
+    const std::string json = BuildFindingFractalStateJson(view, params, render, stats, nullptr, &lens);
+    Check(json.find("\"schema_id\": \"viewer.finding_fractal_state.v1\"") != std::string::npos,
+        "finding fractal-state sidecar declares its schema id");
+    Check(json.find("\"state_file\": \"state.json\"") != std::string::npos,
+        "finding fractal-state sidecar references replay state.json");
+    Check(json.find("\"frame_file\": \"frame.png\"") != std::string::npos,
+        "finding fractal-state sidecar references frame.png");
+    Check(json.find("\"fractal_type\": \"julia\"") != std::string::npos,
+        "finding fractal-state sidecar records selected fractal");
+    Check(json.find("\"julia_c_real\"") != std::string::npos &&
+          json.find("\"julia_c_imag\"") != std::string::npos,
+        "finding fractal-state sidecar records active Julia controls");
+    Check(json.find("\"color_source_stack\"") != std::string::npos &&
+          json.find("\"sdf_signed_distance\"") != std::string::npos &&
+          json.find("\"sdf_inside\"") != std::string::npos &&
+          json.find("\"sdf_field_downsample\": 4") != std::string::npos,
+        "finding fractal-state sidecar records active Color Pipeline Source rows and SDF authority");
+    Check(json.find("\"lens\"") != std::string::npos &&
+          json.find("\"sdf_field_source_width\": 320") != std::string::npos,
+        "finding fractal-state sidecar records Lens/SDF field values when SDF rows affect output");
+    Check(json.find("\"magnet_seed_real\"") == std::string::npos &&
+          json.find("\"explaino_seed\"") == std::string::npos,
+        "finding fractal-state sidecar omits inactive Magnet and Explaino family knobs");
+    Check(json.find("\"omitted_groups\"") != std::string::npos,
+        "finding fractal-state sidecar explains omitted inactive groups");
+}
+
+void TestFindingFractalStateSidecarIncludesExplainoActiveControls() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+
+    view.fractal_type = FractalType::explaino_all;
+    view.explaino_phase = 0.375f;
+    params.explaino_seed = 42.0;
+    params.explaino_seed_b = 84.0;
+    params.explaino_mix = 0.65f;
+    params.explaino_root_authority = ExplainoRootAuthority::custom;
+    params.explaino_root_count = 2;
+    params.explaino_roots[0] = {1.0f, 0.0f};
+    params.explaino_roots[1] = {-1.0f, 0.25f};
+    params.ripple_amplitude = 0.11f;
+    params.splice_offset = 0.22f;
+    params.vortex_strength = 0.33f;
+    params.tension_strength = 0.44f;
+    params.balance_void = 0.55f;
+    params.symmetry_tension = 0.66f;
+    params.field_curvature = 0.77f;
+    params.magnet_seed_real = 9.0f;
+
+    const std::string json = BuildFindingFractalStateJson(view, params, render, stats, nullptr, nullptr);
+    Check(json.find("\"fractal_type\": \"explaino_all\"") != std::string::npos,
+        "finding fractal-state sidecar preserves explicit Explaino selector identity");
+    Check(json.find("\"explaino_seed\"") != std::string::npos &&
+          json.find("\"explaino_mix\"") != std::string::npos &&
+          json.find("\"explaino_root_authority\": \"custom\"") != std::string::npos &&
+          json.find("\"explaino_roots\"") != std::string::npos,
+        "finding fractal-state sidecar records shared Explaino controls when the active family owns them");
+    Check(json.find("\"ripple_amplitude\"") != std::string::npos &&
+          json.find("\"splice_offset\"") != std::string::npos &&
+          json.find("\"vortex_strength\"") != std::string::npos &&
+          json.find("\"tension_strength\"") != std::string::npos &&
+          json.find("\"balance_void\"") != std::string::npos &&
+          json.find("\"symmetry_tension\"") != std::string::npos &&
+          json.find("\"field_curvature\"") != std::string::npos,
+        "finding fractal-state sidecar records Explaino-all axis controls");
+    Check(json.find("\"magnet_seed_real\"") == std::string::npos,
+        "finding fractal-state sidecar still omits unrelated Magnet controls for Explaino captures");
+}
+
 } // namespace
 
 int main() {
@@ -521,6 +627,8 @@ int main() {
     TestBundlePersistsMagnetParams();
     TestRejectsMismatchedPixelCount();
     TestLastBundleAndSidecarOverloads();
+    TestFindingFractalStateSidecarSummarizesActiveValuesOnly();
+    TestFindingFractalStateSidecarIncludesExplainoActiveControls();
 
     if (g_failed != 0) {
         std::cerr << "test_diagnostics_capture: " << g_failed << " failed\n";
