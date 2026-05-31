@@ -87,7 +87,7 @@
       "description": "The viewer runtime publishes successfully for viewer-first SDF sprint work.",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/sdf_engine_completion_sprint_runtime_publish.json",
-      "json_path": "returncode",
+      "json_path": "exit_code",
       "equals": 0
     },
     {
@@ -95,7 +95,7 @@
       "description": "Published no-mouse runtime proof covers SDF pack scene and Color Pipeline SDF rows.",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/sdf_engine_completion_sprint_runtime_proof.json",
-      "json_path": "returncode",
+      "json_path": "exit_code",
       "equals": 0
     }
   ]
