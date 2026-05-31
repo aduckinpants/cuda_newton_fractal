@@ -105,6 +105,11 @@ void WriteLensSdfReportFields(
     out << "  \"lens_sdf_enabled\": " << (lensSdfProbe.enabled ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_valid\": " << (lensSdfProbe.valid ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_color_pipeline_active\": " << (lensSdfProbe.color_pipeline_active ? "true" : "false") << ",\n";
+    out << "  \"source_stack_kind\": ";
+    WriteAutomationReportString(out, lensSdfProbe.source_stack_kind);
+    out << ",\n";
+    out << "  \"mixed_source_signal_frame_used\": " <<
+        (lensSdfProbe.mixed_source_signal_frame_used ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_field_source\": ";
     WriteAutomationReportString(out, lensSdfProbe.field_source);
     out << ",\n";

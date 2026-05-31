@@ -3507,12 +3507,6 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
             return false;
         }
     }
-    if (hasSdfSourceRows && hasNonSdfSourceRows) {
-        if (outError) {
-            *outError = "Current live SDF color bridge requires enabled Source rows to be all SDF rows or all non-SDF rows.";
-        }
-        return false;
-    }
 
     if (hasRootBasinPairFamily) {
         std::vector<ColorPipelineSelection> rootBasinPairs;
@@ -3549,8 +3543,8 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     }
 
     const ColorPipelineRowState* sourceCompatibilityRow = sourceRows.back();
-    if (hasSdfSourceRows && !hasNonSdfSourceRows) {
-        // SDF postprocess uses the first Source row as the base signal; later SDF rows blend into it.
+    if (hasSdfSourceRows) {
+        // SDF postprocess uses the first Source row as the base signal; later rows blend into it.
         sourceCompatibilityRow = sourceRows.front();
     }
 

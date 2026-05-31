@@ -577,6 +577,25 @@ bool RenderFractalCUDA(
     RenderStats* outStats,
     const char** outError);
 
+struct ColorPipelineSourceSignalFrameView {
+    const float* row_major_values{nullptr};
+    int row_count{0};
+    int width{0};
+    int height{0};
+    int row_stride{0};
+};
+
+bool RenderFractalCUDAWithColorSourceSignals(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    uint32_t* outRGBA,
+    uint8_t* outMask,
+    float* outSourceSignals,
+    int sourceSignalRowCount,
+    RenderStats* outStats,
+    const char** outError);
+
 // K2: Sample arbitrary complex-plane coordinates without pixel mapping or coloring.
 // coords: host array of complex-plane points (Double2: .x = Re, .y = Im).
 // outEvidence: host array of FractalSampleEvidence (caller-allocated, length numPoints).

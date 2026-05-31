@@ -545,6 +545,84 @@ static bool RenderSdfPackSceneBaseFrame(
     return true;
 }
 
+struct ColorPipelineSourceStackClassification {
+    bool has_sdf = false;
+    bool has_non_sdf = false;
+    int row_count = 0;
+};
+
+static int ClampColorPipelineSourceStackCountForMain(int value) {
+    return (std::max)(0, (std::min)(value, kColorPipelineMaxSourceStackCount));
+}
+
+static ColorPipelineSourceStackClassification ClassifyColorPipelineSourceStack(const KernelParams& params) {
+    ColorPipelineSourceStackClassification classification{};
+    const int sourceStackCount = ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count);
+    classification.row_count = sourceStackCount;
+    if (sourceStackCount > 0) {
+        for (int index = 0; index < sourceStackCount; ++index) {
+            const bool isSdf = IsColorPipelineSdfSourceSignal(params.color_source_stack[index].signal);
+            classification.has_sdf = classification.has_sdf || isSdf;
+            classification.has_non_sdf = classification.has_non_sdf || !isSdf;
+        }
+        return classification;
+    }
+    const bool isSdf = IsColorPipelineSdfSourceSignal(params.color_pipeline.signal);
+    classification.has_sdf = isSdf;
+    classification.has_non_sdf = !isSdf;
+    return classification;
+}
+
+static bool ColorPipelineSourceStackIsMixed(const KernelParams& params) {
+    const ColorPipelineSourceStackClassification classification = ClassifyColorPipelineSourceStack(params);
+    return classification.has_sdf && classification.has_non_sdf;
+}
+
+static const char* ColorPipelineSourceStackKindId(const KernelParams& params) {
+    const ColorPipelineSourceStackClassification classification = ClassifyColorPipelineSourceStack(params);
+    if (classification.has_sdf && classification.has_non_sdf) {
+        return "mixed";
+    }
+    if (classification.has_sdf) {
+        return "sdf_only";
+    }
+    return "non_sdf_only";
+}
+
+static bool FractalTypeCanEmitRendererColorSourceSignals(FractalType fractalType) {
+    return fractalType != FractalType::generic_equation_pack &&
+        fractalType != FractalType::sdf_pack_scene;
+}
+
+static std::string MixedSourceSignalsDeferredMessage(FractalType fractalType) {
+    const char* fractalTypeId = FractalTypeId(fractalType);
+    std::string id = fractalTypeId ? fractalTypeId : "unknown";
+    return id + " mixed Source rows require renderer-backed non-SDF source signals and are deferred.";
+}
+
+static bool PrepareColorPipelineSourceSignalFrame(
+    const RenderSettings& render,
+    int rowCount,
+    std::vector<float>& values,
+    ColorPipelineSourceSignalFrameView& outFrame,
+    std::string* outError) {
+    outFrame = {};
+    if (rowCount <= 0 || rowCount > kColorPipelineMaxSourceStackCount ||
+        render.resolution.x <= 0 || render.resolution.y <= 0) {
+        if (outError) *outError = "mixed Color Pipeline Source stack has invalid source-signal frame dimensions";
+        return false;
+    }
+    const std::size_t pixelCount = static_cast<std::size_t>(render.resolution.x) *
+        static_cast<std::size_t>(render.resolution.y);
+    values.assign(pixelCount * static_cast<std::size_t>(rowCount), 0.0f);
+    outFrame.row_major_values = values.data();
+    outFrame.row_count = rowCount;
+    outFrame.width = render.resolution.x;
+    outFrame.height = render.resolution.y;
+    outFrame.row_stride = static_cast<int>(pixelCount);
+    return true;
+}
+
 static bool RenderHeadlessFractalFrame(
     const ViewState& view,
     const KernelParams& params,
@@ -562,6 +640,8 @@ static bool RenderHeadlessFractalFrame(
         sdfSourceResolution = lensSettings.sdf_field_source_resolution;
     }
     const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
+    const bool mixedSourceStack = ColorPipelineSourceStackIsMixed(params);
+    const int sourceSignalRowCount = mixedSourceStack ? ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count) : 0;
     const bool sdfSourceDiffersFromRender =
         colorPipelineNeedsSdf &&
         (sdfSourceResolution.x != render.resolution.x ||
@@ -580,10 +660,34 @@ static bool RenderHeadlessFractalFrame(
         maskPtr = mask.data();
     }
 
+    std::vector<float> sourceSignalValues;
+    ColorPipelineSourceSignalFrameView sourceSignalFrame{};
+    if (mixedSourceStack && !FractalTypeCanEmitRendererColorSourceSignals(view.fractal_type)) {
+        if (outError) *outError = MixedSourceSignalsDeferredMessage(view.fractal_type);
+        return false;
+    }
+    if (mixedSourceStack && !PrepareColorPipelineSourceSignalFrame(render, sourceSignalRowCount, sourceSignalValues, sourceSignalFrame, outError)) {
+        return false;
+    }
+
     const char* renderError = nullptr;
     if (view.fractal_type == FractalType::sdf_pack_scene) {
         if (!RenderSdfPackSceneBaseFrame(render, outRgba.data(), maskPtr, outStats)) {
             if (outError) *outError = "SDF Pack Scene base frame failed during headless capture.";
+            return false;
+        }
+    } else if (mixedSourceStack) {
+        if (!RenderFractalCUDAWithColorSourceSignals(
+                view,
+                params,
+                render,
+                outRgba.data(),
+                maskPtr,
+                sourceSignalValues.data(),
+                sourceSignalRowCount,
+                outStats,
+                &renderError)) {
+            if (outError) *outError = renderError ? renderError : "RenderFractalCUDAWithColorSourceSignals failed during headless capture.";
             return false;
         }
     } else if (!RenderFractalCUDA(view, params, render, outRgba.data(), maskPtr, outStats, &renderError)) {
@@ -614,12 +718,16 @@ static bool RenderHeadlessFractalFrame(
                 : packError;
             return false;
         }
+        SdfColorPipelinePostprocessOptions postprocessOptions{};
+        postprocessOptions.source_signal_frame = mixedSourceStack ? &sourceSignalFrame : nullptr;
         if (!ApplyLensSdfColorPipelinePostprocess(
                 packField.View(),
                 render,
                 params,
                 outRgba.data(),
-                outError)) {
+                outError,
+                nullptr,
+                &postprocessOptions)) {
             if (outError && outError->empty()) {
                 *outError = "SDF Color Pipeline postprocess failed during headless authored SDF pack capture";
             }
@@ -668,12 +776,16 @@ static bool RenderHeadlessFractalFrame(
         return false;
     }
 
+    SdfColorPipelinePostprocessOptions postprocessOptions{};
+    postprocessOptions.source_signal_frame = mixedSourceStack ? &sourceSignalFrame : nullptr;
     if (!ApplyLensSdfColorPipelinePostprocess(
             lensSdfField.View(),
             render,
             params,
             outRgba.data(),
-            outError)) {
+            outError,
+            nullptr,
+            &postprocessOptions)) {
         if (outError && outError->empty()) {
             *outError = "SDF Color Pipeline postprocess failed during headless capture";
         }
@@ -1086,6 +1198,9 @@ static void DispatchRenderFrame(
 
     uint8_t* maskPtr = nullptr;
     const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
+    const bool mixedSourceStack = ColorPipelineSourceStackIsMixed(params);
+    const int sourceSignalRowCount = mixedSourceStack ? ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count) : 0;
+    lensSdfProbe.source_stack_kind = ColorPipelineSourceStackKindId(params);
     const bool lensSdfOverlayEnabled = LensSdfOverlayEnabled(lens);
     const bool needsLensSdfField = lens.enabled || colorPipelineNeedsSdf || lensSdfOverlayEnabled;
     const bool authoredSdfFieldSelected =
@@ -1104,10 +1219,21 @@ static void DispatchRenderFrame(
 
     const char* err = nullptr;
     std::string genericRenderError;
+    std::vector<float> sourceSignalValues;
+    ColorPipelineSourceSignalFrameView sourceSignalFrame{};
+    bool sourceSignalFramePrepared = true;
+    if (mixedSourceStack && !FractalTypeCanEmitRendererColorSourceSignals(view.fractal_type)) {
+        genericRenderError = MixedSourceSignalsDeferredMessage(view.fractal_type);
+        sourceSignalFramePrepared = false;
+    } else if (mixedSourceStack && !PrepareColorPipelineSourceSignalFrame(dispatchRender, sourceSignalRowCount, sourceSignalValues, sourceSignalFrame, &genericRenderError)) {
+        sourceSignalFramePrepared = false;
+    }
     RenderStats newStats{};
     bool renderOk = false;
     if (view.fractal_type == FractalType::generic_equation_pack) {
-        if (!equationPackWorkbench || !equationPackWorkbench->have_pack) {
+        if (mixedSourceStack) {
+            renderOk = false;
+        } else if (!equationPackWorkbench || !equationPackWorkbench->have_pack) {
             genericRenderError = "no equation pack loaded for generic_equation_pack";
         } else {
             GenericEquationPack livePack = equationPackWorkbench->pack;
@@ -1123,9 +1249,29 @@ static void DispatchRenderFrame(
                 &genericRenderError);
         }
     } else if (view.fractal_type == FractalType::sdf_pack_scene) {
-        renderOk = RenderSdfPackSceneBaseFrame(dispatchRender, rgba.data(), maskPtr, &newStats);
-        if (!renderOk) {
-            genericRenderError = "SDF Pack Scene base frame failed";
+        if (mixedSourceStack) {
+            renderOk = false;
+        } else {
+            renderOk = RenderSdfPackSceneBaseFrame(dispatchRender, rgba.data(), maskPtr, &newStats);
+            if (!renderOk) {
+                genericRenderError = "SDF Pack Scene base frame failed";
+            }
+        }
+    } else if (mixedSourceStack) {
+        if (!sourceSignalFramePrepared) {
+            renderOk = false;
+        } else {
+            renderOk = RenderFractalCUDAWithColorSourceSignals(
+                view,
+                params,
+                dispatchRender,
+                rgba.data(),
+                maskPtr,
+                sourceSignalValues.data(),
+                sourceSignalRowCount,
+                &newStats,
+                &err);
+            lensSdfProbe.mixed_source_signal_frame_used = renderOk;
         }
     } else {
         renderOk = RenderFractalCUDA(view, params, dispatchRender, rgba.data(), maskPtr, &newStats, &err);
@@ -1165,7 +1311,7 @@ static void DispatchRenderFrame(
                     : 0;
             SdfFieldGroupPlan fieldGroupPlan{};
             bool hasFieldGroupPlan = false;
-            if (colorPipelineNeedsSdf) {
+            if (colorPipelineNeedsSdf && !mixedSourceStack) {
                 std::string fieldGroupError;
                 if (!BuildColorPipelineSdfFieldGroupPlan(
                         params,
@@ -1344,7 +1490,7 @@ static void DispatchRenderFrame(
                 }
             }
 
-            const bool sharedDisplayNeeded = lens.enabled || lensSdfOverlayEnabled || !colorPipelineNeedsSdf;
+            const bool sharedDisplayNeeded = lens.enabled || lensSdfOverlayEnabled || !colorPipelineNeedsSdf || mixedSourceStack;
             if (fieldOk && sharedDisplayNeeded && !displayLensSdfField) {
                 if (!computeOrReuseField(kSharedLensSdfCacheIndex, fieldQuality.effective_downsample, sharedDisplayField)) {
                     fieldOk = false;
@@ -1410,6 +1556,7 @@ static void DispatchRenderFrame(
                 if (colorPipelineNeedsSdf) {
                     const auto postprocessStart = std::chrono::steady_clock::now();
                     SdfColorPipelinePostprocessOptions postprocessOptions{};
+                    postprocessOptions.source_signal_frame = mixedSourceStack ? &sourceSignalFrame : nullptr;
                     postprocessOptions.output_pixel_step =
                         ResolveSdfColorPipelinePostprocessOutputPixelStep(params, renderPacing.preview_active, renderPacing.preview_scale, forceFullQuality);
                     SdfColorPipelinePostprocessStats postprocessStats{};
@@ -4300,4 +4447,3 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     ShutdownViewer(hwnd, wc);
     return 0;
 }
-

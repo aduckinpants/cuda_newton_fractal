@@ -209,6 +209,36 @@ def _capture_sdf_normal_angle_curvature_stack(
     )
 
 
+
+def _capture_mixed_smooth_escape_sdf_stack(
+    *,
+    exe_path: Path,
+    state_path: Path,
+    smooth_scale: float,
+    sdf_scale: float,
+    sdf_blend_weight: float,
+) -> dict[str, object]:
+    return run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--color-pipeline-action",
+        "select_function:source:0:smooth_escape_ramp",
+        "--color-pipeline-action",
+        f"set_param:source:0:signal.scale:number:{smooth_scale}",
+        "--color-pipeline-action",
+        "set_param:source:0:signal.bias:number:0.0",
+        "--color-pipeline-action",
+        "add_row:source:sdf_signed_distance",
+        "--color-pipeline-action",
+        f"set_param:source:1:signal.scale:number:{sdf_scale}",
+        "--color-pipeline-action",
+        "set_param:source:1:signal.bias:number:0.5",
+        "--color-pipeline-action",
+        f"set_param:source:1:signal.blend_weight:number:{sdf_blend_weight}",
+        "--capture-diagnostic",
+    )
+
 def _assert_sdf_capture_state(
     capture: dict[str, object],
     *,
@@ -240,6 +270,100 @@ def _assert_sdf_capture_state(
     assert _row_number(source_row, "signal.scale") == pytest.approx(scale, abs=1e-6)
     assert _row_number(source_row, "signal.bias") == pytest.approx(bias, abs=1e-6)
 
+
+
+def test_mixed_sdf_and_non_sdf_source_rows_are_signal_exact_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline mixed Source row runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    neutral_state = json.loads(json.dumps(neutral_capture["state"]))
+    state_path = write_state_bundle(tmp_path / "mixed_source_seed", neutral_state)
+
+    baseline = _capture_mixed_smooth_escape_sdf_stack(
+        exe_path=exe_path,
+        state_path=state_path,
+        smooth_scale=1.0,
+        sdf_scale=0.05,
+        sdf_blend_weight=0.45,
+    )
+    smooth_edited = _capture_mixed_smooth_escape_sdf_stack(
+        exe_path=exe_path,
+        state_path=state_path,
+        smooth_scale=0.35,
+        sdf_scale=0.05,
+        sdf_blend_weight=0.45,
+    )
+    sdf_edited = _capture_mixed_smooth_escape_sdf_stack(
+        exe_path=exe_path,
+        state_path=state_path,
+        smooth_scale=1.0,
+        sdf_scale=0.18,
+        sdf_blend_weight=0.75,
+    )
+
+    state = baseline["state"]
+    assert isinstance(state, dict)
+    params = state.get("params")
+    assert isinstance(params, dict)
+    source_stack = params.get("color_source_stack")
+    assert isinstance(source_stack, list) and len(source_stack) == 2
+    assert source_stack[0].get("signal") == "smooth_escape"
+    assert source_stack[1].get("signal") == "sdf_signed_distance"
+    assert source_stack[1].get("blend_weight") == pytest.approx(0.45, abs=1e-6)
+    assert baseline["frame_hash"] != neutral_capture["frame_hash"]
+    assert smooth_edited["frame_hash"] != baseline["frame_hash"], (
+        "mixed Source rows must consume the renderer-side non-SDF signal plane"
+    )
+    assert sdf_edited["frame_hash"] != baseline["frame_hash"], (
+        "mixed Source rows must still consume the SDF row and blend_weight"
+    )
+
+    live_state = json.loads(json.dumps(baseline["state"]))
+    render = live_state.setdefault("render", {})
+    assert isinstance(render, dict)
+    render.update({"width": 160, "height": 120, "sample_tier": "fast"})
+    lens = live_state.setdefault("lens", {})
+    assert isinstance(lens, dict)
+    lens.update({"enabled": False, "downsample": 1, "sdf_overlay_mode": "off"})
+    live_state_path = write_state_bundle(tmp_path / "mixed_source_live", live_state)
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=live_state_path,
+        report_path=tmp_path / "mixed_source_report.json",
+        command_path=tmp_path / "mixed_source_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        ready_report = viewer.wait_for_report(timeout_seconds=60.0)
+        viewer.wait_for_control("color_pipeline.source.smooth_escape_ramp.signal.scale.primary", timeout_seconds=20.0)
+        viewer.wait_for_control("color_pipeline.source.sdf_signed_distance.signal.scale.primary", timeout_seconds=20.0)
+        smooth_report = viewer.set_control_value(
+            "color_pipeline.source.smooth_escape_ramp.signal.scale.primary",
+            0.55,
+            timeout_seconds=40.0,
+        )
+        sdf_report = viewer.set_control_value(
+            "color_pipeline.source.sdf_signed_distance.signal.scale.primary",
+            0.12,
+            timeout_seconds=40.0,
+        )
+
+    assert ready_report.get("source_stack_kind") == "mixed", ready_report
+    assert ready_report.get("mixed_source_signal_frame_used") is True, ready_report
+    assert ready_report.get("lens_sdf_valid") is True, ready_report
+    assert smooth_report.get("rendered_frame_hash") != ready_report.get("rendered_frame_hash"), smooth_report
+    assert sdf_report.get("rendered_frame_hash") != smooth_report.get("rendered_frame_hash"), sdf_report
 
 def test_color_pipeline_sdf_source_rows_are_live_backed_no_mouse(tmp_path: Path) -> None:
     if sys.platform != "win32":

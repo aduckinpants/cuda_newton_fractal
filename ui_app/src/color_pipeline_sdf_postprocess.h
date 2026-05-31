@@ -29,6 +29,7 @@ struct SdfColorPipelinePostprocessOptions {
     int output_pixel_step{1};
     int max_worker_threads{0};
     SdfColorPipelinePostprocessBackend backend_preference{SdfColorPipelinePostprocessBackend::auto_backend};
+    const ColorPipelineSourceSignalFrameView* source_signal_frame{nullptr};
 };
 
 struct SdfColorPipelinePostprocessStats {

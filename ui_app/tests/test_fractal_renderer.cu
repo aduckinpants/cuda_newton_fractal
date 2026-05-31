@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <cmath>
 #include <vector>
 
 namespace {
@@ -48,6 +49,27 @@ int CountNonBlackPixels(const std::vector<uint32_t>& pixels) {
         if ((pixel & 0x00ffffffu) != 0u) ++count;
     }
     return count;
+}
+
+uint64_t HashFloatValues(const std::vector<float>& values, int offset, int count) {
+    uint64_t hash = 1469598103934665603ull;
+    for (int index = 0; index < count; ++index) {
+        uint32_t bits = 0;
+        const float value = values[static_cast<std::size_t>(offset + index)];
+        std::memcpy(&bits, &value, sizeof(bits));
+        hash ^= static_cast<uint64_t>(bits);
+        hash *= 1099511628211ull;
+    }
+    return hash;
+}
+
+bool AllFiniteValues(const std::vector<float>& values, int offset, int count) {
+    for (int index = 0; index < count; ++index) {
+        if (!std::isfinite(values[static_cast<std::size_t>(offset + index)])) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void TestNullOutputFailsBeforeCudaWork() {
@@ -586,6 +608,59 @@ void TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold() {
     CleanupFractalCUDA();
 }
 
+void TestColorSourceSignalSidecarProducesFiniteRowOrderedSignals() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::multibrot;
+    view.center_hp_x = -0.5;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    params.max_iter = 64;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    params.color_source_stack_count = 2;
+    params.color_source_stack[0].signal = ColorSignal::smooth_escape;
+    params.color_source_stack[0].params.scale = 1.0f;
+    params.color_source_stack[0].params.bias = 0.0f;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    params.color_source_stack[1].signal = ColorSignal::escape_magnitude;
+    params.color_source_stack[1].params.scale = 1.0f;
+    params.color_source_stack[1].params.bias = 0.0f;
+    params.color_source_stack[1].params.blend_weight = 0.5f;
+    render.resolution = {16, 12};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    const int pixelCount = render.resolution.x * render.resolution.y;
+    std::vector<uint32_t> pixels(static_cast<std::size_t>(pixelCount), 0u);
+    std::vector<float> signals(static_cast<std::size_t>(pixelCount * 2), -999.0f);
+    const bool ok = RenderFractalCUDAWithColorSourceSignals(
+        view,
+        params,
+        render,
+        pixels.data(),
+        nullptr,
+        signals.data(),
+        2,
+        &stats,
+        &error);
+    Check(ok, error ? error : "RenderFractalCUDAWithColorSourceSignals succeeds");
+    if (!ok) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(AllFiniteValues(signals, 0, pixelCount), "Source signal sidecar row 0 is finite");
+    Check(AllFiniteValues(signals, pixelCount, pixelCount), "Source signal sidecar row 1 is finite");
+    Check(HashFloatValues(signals, 0, pixelCount) != HashFloatValues(signals, pixelCount, pixelCount),
+        "Source signal sidecar preserves distinct row signals");
+    CleanupFractalCUDA();
+}
+
 } // namespace
 
 int main() {
@@ -602,6 +677,7 @@ int main() {
     TestNovaRenderRespondsToPolyC4();
     TestMultibrotRenderRespondsToRealAndImaginaryPower();
     TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold();
+    TestColorSourceSignalSidecarProducesFiniteRowOrderedSignals();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";
     return g_failed == 0 ? 0 : 1;

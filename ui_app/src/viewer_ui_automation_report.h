@@ -65,6 +65,8 @@ struct ViewerUiAutomationLensSdfProbe {
     bool enabled = false;
     bool valid = false;
     bool color_pipeline_active = false;
+    std::string source_stack_kind = "non_sdf_only";
+    bool mixed_source_signal_frame_used = false;
     std::string field_source = "none";
     std::string field_source_pack_id;
     std::string field_source_error;

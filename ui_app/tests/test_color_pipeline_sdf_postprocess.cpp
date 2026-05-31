@@ -400,23 +400,42 @@ void TestNormalAngleGateWidthIsInactiveWhenGateIsOff() {
         "TestNormalAngleGateWidthIsInactiveWhenGateIsOff_WidthIgnoredWhenGateOff");
 }
 
-void TestMixedSourceStackFailsClosed() {
+void TestMixedSourceStackUsesRendererSignalFrame() {
     const SdfFieldResult field = MakeTestField();
     RenderSettings render{};
     render.resolution = {4, 4};
-    KernelParams params = SdfParams(ColorSignal::sdf_signed_distance);
+    KernelParams params = SdfParams(ColorSignal::smooth_escape);
     params.color_source_stack_count = 2;
-    params.color_source_stack[1].signal = ColorSignal::smooth_escape;
+    params.color_source_stack[0].signal = ColorSignal::smooth_escape;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    params.color_source_stack[1].signal = ColorSignal::sdf_signed_distance;
     params.color_source_stack[1].params.blend_weight = 0.5f;
-    std::vector<std::uint32_t> pixels(16, 0);
+
+    std::vector<std::uint32_t> missingPixels(16, 0);
     std::string error;
-    Check(!ColorPipelineSourceStackIsSdfOnly(params, &error) &&
-            error.find("mix") != std::string::npos,
-        "TestMixedSourceStackFailsClosed_SourceStackClassified");
+    Check(!ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, missingPixels.data(), &error) &&
+            error.find("source-signal") != std::string::npos,
+        "TestMixedSourceStackUsesRendererSignalFrame_MissingFrameFailsClosed");
+
+    std::vector<float> sourceSignals(16 * 2, 0.25f);
+    for (int index = 0; index < 16; ++index) {
+        sourceSignals[16 + index] = -777.0f;
+    }
+    ColorPipelineSourceSignalFrameView signalFrame{};
+    signalFrame.row_major_values = sourceSignals.data();
+    signalFrame.row_count = 2;
+    signalFrame.width = 4;
+    signalFrame.height = 4;
+    signalFrame.row_stride = 16;
+    SdfColorPipelinePostprocessOptions options{};
+    options.source_signal_frame = &signalFrame;
+
+    std::vector<std::uint32_t> mixedPixels(16, 0x12345678u);
     error.clear();
-    Check(!ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, pixels.data(), &error) &&
-            error.find("mix") != std::string::npos,
-        "TestMixedSourceStackFailsClosed_PostprocessRejects");
+    Check(ApplyLensSdfColorPipelinePostprocess(field.View(), render, params, mixedPixels.data(), &error, nullptr, &options),
+        "TestMixedSourceStackUsesRendererSignalFrame_PostprocessConsumesFrame");
+    Check(HashFrame(mixedPixels) != HashFrame(missingPixels),
+        "TestMixedSourceStackUsesRendererSignalFrame_FrameChangesAfterMixedCompose");
 }
 
 void TestBoundaryBandWidthStillAffectsMixedSdfStack() {
@@ -787,7 +806,7 @@ int main() {
     TestNormalAngleBoundaryGateMasksFullFieldDiagnostic();
     TestSdfInsideOutsideApplicatorsMaskRowsBeforeBlend();
     TestNormalAngleGateWidthIsInactiveWhenGateIsOff();
-    TestMixedSourceStackFailsClosed();
+    TestMixedSourceStackUsesRendererSignalFrame();
     TestBoundaryBandWidthStillAffectsMixedSdfStack();
     TestScalarOnlySdfStackUsesDirectSamplesWithoutNeighborhood();
     TestNormalAngleRequiresNeighborhoodSamples();

@@ -63,6 +63,59 @@ __device__ __forceinline__ int ResolveBasinRenderRootIndex(FractalType ft, Cx z,
     return NearestRootIndexUnitRoots(z, rootCount);
 }
 
+__device__ __forceinline__ bool IsRendererBackedColorSourceSignal(ColorSignal signal) {
+    return signal != ColorSignal::sdf_signed_distance &&
+        signal != ColorSignal::sdf_inside_outside &&
+        signal != ColorSignal::sdf_boundary_band &&
+        signal != ColorSignal::sdf_normal_angle &&
+        signal != ColorSignal::sdf_curvature &&
+        signal != ColorSignal::lens_field_v2_distance;
+}
+
+__device__ __forceinline__ float ResolveRendererBackedColorSourceSignal(
+    FractalType ft,
+    bool hasExplicitSyntheticClass,
+    bool converged,
+    bool escaped,
+    int iteration,
+    int maxIter,
+    Cx z,
+    float residual,
+    const KernelParams& params,
+    const ColorPipelineSourceStackEntry& entry) {
+    if (!IsRendererBackedColorSourceSignal(entry.signal)) {
+        return 0.0f;
+    }
+    const float magnitude = EscapeTimeColorAbs(z);
+    const float angle = atan2f(z.y, z.x);
+    if (SupportsBasinColoring(ft)) {
+        const bool programmableBasinColorable = converged || hasExplicitSyntheticClass || IsProjectionAndFlowCarrier(ft);
+        if (!programmableBasinColorable) {
+            return 0.0f;
+        }
+        return ResolveColorPipelineSourceStackEntryBasinSignal(
+            ft,
+            iteration,
+            maxIter,
+            z,
+            magnitude,
+            angle,
+            residual,
+            params,
+            entry);
+    }
+    (void)escaped;
+    return ResolveColorPipelineSourceStackEntryEscapeSignal(
+        ft,
+        iteration,
+        maxIter,
+        z,
+        magnitude,
+        angle,
+        params,
+        entry);
+}
+
 __global__ void kernel_render(
     uint32_t* outRGBA,
     uint8_t* outMask,
@@ -74,6 +127,8 @@ __global__ void kernel_render(
     const double2* refOrbit,
     int refLen,
     double2 refC0,
+    float* outSourceSignals,
+    int sourceSignalRows,
     unsigned long long* outItersSum)
 {
     int px = (int)(blockIdx.x * blockDim.x + threadIdx.x);
@@ -126,6 +181,32 @@ __global__ void kernel_render(
     if (outItersSum) {
         const int iterationCount = it < 0 ? 0 : it;
         atomicAdd(outItersSum, static_cast<unsigned long long>(iterationCount));
+    }
+
+    if (outSourceSignals && sourceSignalRows > 0) {
+        const int pixelIndex = py * width + px;
+        const int pixelCount = width * height;
+        const int requestedRows = sourceSignalRows > kColorPipelineMaxSourceStackCount
+            ? kColorPipelineMaxSourceStackCount
+            : sourceSignalRows;
+        const int stackRows = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
+        for (int rowIndex = 0; rowIndex < requestedRows; ++rowIndex) {
+            float signal = 0.0f;
+            if (rowIndex < stackRows) {
+                signal = ResolveRendererBackedColorSourceSignal(
+                    ft,
+                    hasExplicitSyntheticClass,
+                    converged,
+                    escaped,
+                    it,
+                    maxIter,
+                    z,
+                    pAbs,
+                    params,
+                    params.color_source_stack[rowIndex]);
+            }
+            outSourceSignals[rowIndex * pixelCount + pixelIndex] = signal;
+        }
     }
 
     ColoringMode mode = params.coloring_mode;
@@ -242,6 +323,8 @@ struct CachedBuffers {
     uint8_t* d_mask = nullptr;
     unsigned long long* d_itersSum = nullptr;
     double2* d_refOrbit = nullptr;
+    float* d_sourceSignals = nullptr;
+    int sourceSignalRows = 0;
     int refOrbitLen = 0;
 
     // Host-side ref-orbit cache to avoid rebuilding/uploading every frame.
@@ -252,33 +335,62 @@ struct CachedBuffers {
 
 CachedBuffers g_cached;
 
-bool ensure_buffers(int w, int h, const char** outError) {
-    if (w <= 0 || h <= 0) {
-        if (outError) *outError = "Invalid resolution";
+bool ensure_source_signal_buffer(int w, int h, int sourceSignalRows, const char** outError) {
+    if (sourceSignalRows <= 0) {
+        return true;
+    }
+    if (g_cached.d_sourceSignals && g_cached.sourceSignalRows >= sourceSignalRows) {
+        return true;
+    }
+    if (g_cached.d_sourceSignals) {
+        cudaFree(g_cached.d_sourceSignals);
+        g_cached.d_sourceSignals = nullptr;
+        g_cached.sourceSignalRows = 0;
+    }
+    const size_t bytes = static_cast<size_t>(w) * static_cast<size_t>(h) *
+        static_cast<size_t>(sourceSignalRows) * sizeof(float);
+    if (cudaMalloc(&g_cached.d_sourceSignals, bytes) != cudaSuccess) {
+        if (outError) *outError = "cudaMalloc failed for color source signal buffer";
+        g_cached.d_sourceSignals = nullptr;
         return false;
     }
-    if (g_cached.w == w && g_cached.h == h && g_cached.d_rgba && g_cached.d_mask && g_cached.d_itersSum) return true;
+    g_cached.sourceSignalRows = sourceSignalRows;
+    return true;
+}
 
+void free_cached_device_buffers_for_resize() {
     if (g_cached.d_rgba) cudaFree(g_cached.d_rgba);
     if (g_cached.d_mask) cudaFree(g_cached.d_mask);
     if (g_cached.d_itersSum) cudaFree(g_cached.d_itersSum);
     if (g_cached.d_refOrbit) cudaFree(g_cached.d_refOrbit);
+    if (g_cached.d_sourceSignals) cudaFree(g_cached.d_sourceSignals);
+}
 
+void reset_cached_buffer_state(int w, int h) {
     g_cached.w = w;
     g_cached.h = h;
     g_cached.refOrbitLen = 0;
+    g_cached.sourceSignalRows = 0;
+    g_cached.d_rgba = nullptr;
+    g_cached.d_mask = nullptr;
+    g_cached.d_itersSum = nullptr;
+    g_cached.d_refOrbit = nullptr;
+    g_cached.d_sourceSignals = nullptr;
     g_cached.hostRefOrbit.clear();
     g_cached.hostRefValid = false;
     g_cached.hostRefKey = {};
+}
 
-    size_t bytes = (size_t)w * (size_t)h * sizeof(uint32_t);
-    if (cudaMalloc(&g_cached.d_rgba, bytes) != cudaSuccess) {
+bool allocate_core_render_buffers(int w, int h, const char** outError) {
+    const size_t pixelCount = static_cast<size_t>(w) * static_cast<size_t>(h);
+    const size_t rgbaBytes = pixelCount * sizeof(uint32_t);
+    if (cudaMalloc(&g_cached.d_rgba, rgbaBytes) != cudaSuccess) {
         if (outError) *outError = "cudaMalloc failed for output buffer";
         g_cached.d_rgba = nullptr;
         return false;
     }
 
-    size_t maskBytes = (size_t)w * (size_t)h * sizeof(uint8_t);
+    const size_t maskBytes = pixelCount * sizeof(uint8_t);
     if (cudaMalloc(&g_cached.d_mask, maskBytes) != cudaSuccess) {
         if (outError) *outError = "cudaMalloc failed for mask buffer";
         g_cached.d_mask = nullptr;
@@ -290,8 +402,26 @@ bool ensure_buffers(int w, int h, const char** outError) {
         g_cached.d_itersSum = nullptr;
         return false;
     }
-
     return true;
+}
+
+bool ensure_buffers(int w, int h, int sourceSignalRows, const char** outError) {
+    if (w <= 0 || h <= 0) {
+        if (outError) *outError = "Invalid resolution";
+        return false;
+    }
+    const bool coreReady = g_cached.w == w && g_cached.h == h &&
+        g_cached.d_rgba && g_cached.d_mask && g_cached.d_itersSum;
+    if (coreReady) {
+        return ensure_source_signal_buffer(w, h, sourceSignalRows, outError);
+    }
+
+    free_cached_device_buffers_for_resize();
+    reset_cached_buffer_state(w, h);
+    if (!allocate_core_render_buffers(w, h, outError)) {
+        return false;
+    }
+    return ensure_source_signal_buffer(w, h, sourceSignalRows, outError);
 }
 
 bool ensure_ref_orbit(int len, const char** outError) {
@@ -324,9 +454,40 @@ bool RenderFractalCUDA(
     RenderStats* outStats,
     const char** outError)
 {
+    return RenderFractalCUDAWithColorSourceSignals(
+        view,
+        params,
+        render,
+        outRGBA,
+        outMask,
+        nullptr,
+        0,
+        outStats,
+        outError);
+}
+
+bool RenderFractalCUDAWithColorSourceSignals(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    uint32_t* outRGBA,
+    uint8_t* outMask,
+    float* outSourceSignals,
+    int sourceSignalRowCount,
+    RenderStats* outStats,
+    const char** outError)
+{
     if (outError) *outError = nullptr;
     if (!outRGBA) {
         if (outError) *outError = "outRGBA is null";
+        return false;
+    }
+    if (sourceSignalRowCount < 0 || sourceSignalRowCount > kColorPipelineMaxSourceStackCount) {
+        if (outError) *outError = "color source signal row count is invalid";
+        return false;
+    }
+    if (sourceSignalRowCount > 0 && !outSourceSignals) {
+        if (outError) *outError = "outSourceSignals is null";
         return false;
     }
 
@@ -345,7 +506,7 @@ bool RenderFractalCUDA(
     int w = render.resolution.x;
     int h = render.resolution.y;
 
-    if (!ensure_buffers(w, h, outError)) return false;
+    if (!ensure_buffers(w, h, sourceSignalRowCount, outError)) return false;
 
     // Resolve the sample tier into a concrete (backend, strategy) pair.
     RenderSettings resolvedRender = render;
@@ -411,6 +572,8 @@ bool RenderFractalCUDA(
         wantPerturb ? g_cached.d_refOrbit : nullptr,
         refLen,
         refC0,
+        sourceSignalRowCount > 0 ? g_cached.d_sourceSignals : nullptr,
+        sourceSignalRowCount,
         g_cached.d_itersSum);
 
     cudaError_t launchErr = cudaGetLastError();
@@ -435,6 +598,11 @@ bool RenderFractalCUDA(
     if (outMask) {
         size_t maskBytes = (size_t)w * (size_t)h * sizeof(uint8_t);
         cudaMemcpy(outMask, g_cached.d_mask, maskBytes, cudaMemcpyDeviceToHost);
+    }
+    if (sourceSignalRowCount > 0) {
+        const size_t sourceBytes = static_cast<size_t>(w) * static_cast<size_t>(h) *
+            static_cast<size_t>(sourceSignalRowCount) * sizeof(float);
+        cudaMemcpy(outSourceSignals, g_cached.d_sourceSignals, sourceBytes, cudaMemcpyDeviceToHost);
     }
 
     unsigned long long itersSum = 0;
@@ -465,6 +633,8 @@ void CleanupFractalCUDA() {
     if (g_cached.d_mask) { cudaFree(g_cached.d_mask); g_cached.d_mask = nullptr; }
     if (g_cached.d_itersSum) { cudaFree(g_cached.d_itersSum); g_cached.d_itersSum = nullptr; }
     if (g_cached.d_refOrbit) { cudaFree(g_cached.d_refOrbit); g_cached.d_refOrbit = nullptr; }
+    if (g_cached.d_sourceSignals) { cudaFree(g_cached.d_sourceSignals); g_cached.d_sourceSignals = nullptr; }
+    g_cached.sourceSignalRows = 0;
     g_cached.w = 0;
     g_cached.h = 0;
     CleanupFractalSampleCore();

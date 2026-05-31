@@ -1016,26 +1016,32 @@ void TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority() {
         "TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority_DisabledCurvatureRowDoesNotPoisonCompatibility");
 }
 
-void TestMixedSdfAndNonSdfSourceRowsFailClosed() {
+void TestMixedSdfAndNonSdfSourceRowsApplyThroughDraftBridge() {
     ColorPipelineWindowState state{};
     KernelParams params = SmoothEscapeParams();
     Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
-        "TestMixedSdfAndNonSdfSourceRowsFailClosed_SyncStartsSupported");
+        "TestMixedSdfAndNonSdfSourceRowsApplyThroughDraftBridge_SyncStartsSupported");
     Check(AddColorPipelineLaneRow(&state, 0, "sdf_curvature") && state.lanes[0].rows.size() == 2,
-        "TestMixedSdfAndNonSdfSourceRowsFailClosed_AddsSdfRowBesideSmoothEscape");
+        "TestMixedSdfAndNonSdfSourceRowsApplyThroughDraftBridge_AddsSdfRowBesideSmoothEscape");
+    Check(SetRowNumber(state.lanes[0].rows[1], "signal.blend_weight", 0.45) &&
+            SetRowNumber(state.lanes[0].rows[1], "signal.scale", 1.5),
+        "TestMixedSdfAndNonSdfSourceRowsApplyThroughDraftBridge_EditsSdfBlendRow");
 
     const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(
         state,
         FractalType::newton,
         &params);
-    Check(applyState.status == ColorPipelineDraftApplyStatus::unsupported_tuple &&
-            applyState.message.find("all SDF rows or all non-SDF rows") != std::string::npos,
-        "TestMixedSdfAndNonSdfSourceRowsFailClosed_MixedStackClassifiedUnsupported");
-    Check(!ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params) &&
-            !state.validation_messages.empty() &&
+    Check(applyState.status == ColorPipelineDraftApplyStatus::can_apply,
+        "TestMixedSdfAndNonSdfSourceRowsApplyThroughDraftBridge_MixedStackCanApply");
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed &&
             params.color_pipeline.signal == ColorSignal::smooth_escape &&
-            params.color_source_stack_count == 0,
-        "TestMixedSdfAndNonSdfSourceRowsFailClosed_ApplyRejectsBeforeMutation");
+            params.color_source_stack_count == 2 &&
+            params.color_source_stack[0].signal == ColorSignal::smooth_escape &&
+            params.color_source_stack[1].signal == ColorSignal::sdf_curvature &&
+            Near(params.color_source_stack[1].params.blend_weight, 0.45) &&
+            Near(params.color_source_stack[1].params.scale, 1.5),
+        "TestMixedSdfAndNonSdfSourceRowsApplyThroughDraftBridge_RuntimeStackPreservesMixedRows");
 }
 
 void TestDraftEditsSurviveCompatibleFractalSwitchSync() {
@@ -1135,7 +1141,7 @@ int main() {
     TestCandidateDraftOnlyTruthAndCopySurfaces();
     TestSdfSourceRowsApplyThroughDraftLiveBridge();
     TestSdfOnlySourceStackUsesBaseRowForRuntimeAuthority();
-    TestMixedSdfAndNonSdfSourceRowsFailClosed();
+    TestMixedSdfAndNonSdfSourceRowsApplyThroughDraftBridge();
     TestDraftEditsSurviveCompatibleFractalSwitchSync();
     TestPresetWorkflowTruthSurface();
     TestRecipeExpansionUsesExistingWindowDraftRows();
