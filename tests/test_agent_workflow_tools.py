@@ -373,8 +373,8 @@ def test_build_tests_script_exposes_advanced_color_grading_focus_modes() -> None
     build_script = (REPO_ROOT / "ui_app" / "build_tests_vsdevcmd.cmd").read_text(encoding="utf-8")
 
     for snippet in (
-        'if /I "%FOCUSED_TEST%"=="advanced_color_grading_red" goto focused_advanced_color_grading_red',
-        'if /I "%FOCUSED_TEST%"=="advanced_color_grading_owner" goto focused_advanced_color_grading_owner',
+        'if /I "%FOCUSED_TEST%"=="advanced_color_grading_red" call :focused_advanced_color_grading_red',
+        'if /I "%FOCUSED_TEST%"=="advanced_color_grading_owner" call :focused_advanced_color_grading_owner',
         ":focused_advanced_color_grading_red",
         ":focused_advanced_color_grading_owner",
         'test_color_pipeline_core.exe',

@@ -10,6 +10,7 @@ if "%SALT_FRACTAL_ROOT%"=="" set SALT_FRACTAL_ROOT=D:\salt-fractal
 set TESTROOT=%SALT_FRACTAL_ROOT%\cuda_newton_fractal_clone\build_tests
 set OBJROOT=%TESTROOT%\obj
 set PDBROOT=%TESTROOT%\pdb
+set CUDA_GENCODE_FLAGS=-gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121
 
 if not exist "%TESTROOT%" mkdir "%TESTROOT%"
 
@@ -48,57 +49,102 @@ if not "%RUN_TEST_RC%"=="0" (
   exit /b 1
 )
 exit /b 0
+
+:build_fractal_cuda_common_objects
+if defined FRACTAL_CUDA_COMMON_READY exit /b 0
+set FRACTAL_RENDERER_OBJ=%OBJROOT%\fractal_renderer_common.obj
+set FRACTAL_SAMPLE_CORE_OBJ=%OBJROOT%\fractal_sample_core_common.obj
+set SAMPLE_TIER_RESOLVER_OBJ=%OBJROOT%\sample_tier_resolver_common.obj
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  %CUDA_GENCODE_FLAGS% ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  -c .\src\fractal_renderer.cu -o "%FRACTAL_RENDERER_OBJ%"
+if errorlevel 1 exit /b 1
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  %CUDA_GENCODE_FLAGS% ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  -c .\src\fractal_sample_core.cu -o "%FRACTAL_SAMPLE_CORE_OBJ%"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  /c .\src\sample_tier_resolver.cpp /Fo"%SAMPLE_TIER_RESOLVER_OBJ%"
+if errorlevel 1 exit /b 1
+set FRACTAL_CUDA_COMMON_READY=1
+exit /b 0
+
+:build_generic_sample_core_object
+if defined GENERIC_SAMPLE_CORE_READY exit /b 0
+set GENERIC_SAMPLE_CORE_OBJ=%OBJROOT%\generic_sample_core_common.obj
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  %CUDA_GENCODE_FLAGS% ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  -c .\src\generic_sample_core.cu -o "%GENERIC_SAMPLE_CORE_OBJ%"
+if errorlevel 1 exit /b 1
+set GENERIC_SAMPLE_CORE_READY=1
+exit /b 0
 :after_test_helpers
 
-set FOCUSED_TEST=%~1
-if /I "%FOCUSED_TEST%"=="advanced_color_grading_red" goto focused_advanced_color_grading_red
-if /I "%FOCUSED_TEST%"=="advanced_color_grading_owner" goto focused_advanced_color_grading_owner
-if /I "%FOCUSED_TEST%"=="serializer_owner_fast" goto focused_serializer_owner_fast
-if /I "%FOCUSED_TEST%"=="test_viewer_ui_automation_report" goto focused_test_viewer_ui_automation_report
-if /I "%FOCUSED_TEST%"=="test_viewer_cli" goto focused_test_viewer_cli
-if /I "%FOCUSED_TEST%"=="test_viewer_state_init" goto focused_test_viewer_state_init
-if /I "%FOCUSED_TEST%"=="test_flashlight_probe" goto focused_test_flashlight_probe
-if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
-if /I "%FOCUSED_TEST%"=="test_diagnostics_capture" goto focused_test_diagnostics_capture
-if /I "%FOCUSED_TEST%"=="test_lens_sdf" goto focused_test_lens_sdf
-if /I "%FOCUSED_TEST%"=="test_lens_sdf_cuda" goto focused_test_lens_sdf_cuda
-if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
-if /I "%FOCUSED_TEST%"=="test_finding_state_actions" goto focused_test_finding_state_actions
-if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" goto focused_test_viewer_render_pacing
-if /I "%FOCUSED_TEST%"=="test_viewport_interaction" goto focused_test_viewport_interaction
-if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" goto focused_test_sample_tier_resolver
-if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
-if /I "%FOCUSED_TEST%"=="test_fractal_sample_kernel" goto focused_test_fractal_sample_kernel
-if /I "%FOCUSED_TEST%"=="test_runtime_walk_headless" goto focused_test_runtime_walk_headless
-if /I "%FOCUSED_TEST%"=="test_ui_schema" goto focused_test_ui_schema
-if /I "%FOCUSED_TEST%"=="test_safe_mode_schema" goto focused_test_safe_mode_schema
-if /I "%FOCUSED_TEST%"=="test_color_pipeline_core" goto focused_test_color_pipeline_core
-if /I "%FOCUSED_TEST%"=="test_color_pipeline_window" goto focused_test_color_pipeline_window
-if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_field_groups" goto focused_test_color_pipeline_sdf_field_groups
-if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess" goto focused_test_color_pipeline_sdf_postprocess
-if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess_cuda" goto focused_test_color_pipeline_sdf_postprocess_cuda
-if /I "%FOCUSED_TEST%"=="test_escape_time_coloring" goto focused_test_escape_time_coloring
-if /I "%FOCUSED_TEST%"=="test_fractal_parameter_surface_descriptor" goto focused_test_fractal_parameter_surface_descriptor
-if /I "%FOCUSED_TEST%"=="test_fractal_catalog_authority" goto focused_test_fractal_catalog_authority
-if /I "%FOCUSED_TEST%"=="test_fractal_types" goto focused_test_fractal_types
-if /I "%FOCUSED_TEST%"=="test_fractal_derived_fields" goto focused_test_fractal_derived_fields
-if /I "%FOCUSED_TEST%"=="test_fractal_family_rules" goto focused_test_fractal_family_rules
-if /I "%FOCUSED_TEST%"=="test_schema_binding" goto focused_test_schema_binding
-if /I "%FOCUSED_TEST%"=="test_explaino_counterfactual_repair" goto focused_test_explaino_counterfactual_repair
-if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" goto focused_test_generic_equation_pack_workbench_ui
-if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_live" goto focused_test_generic_equation_pack_live
-if /I "%FOCUSED_TEST%"=="test_generic_equation_pack" goto focused_test_generic_equation_pack
-if /I "%FOCUSED_TEST%"=="test_sdf_pack" goto focused_test_sdf_pack
-if /I "%FOCUSED_TEST%"=="test_sdf_pack_cuda" goto focused_test_sdf_pack_cuda
-if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer" goto focused_test_sdf_pack_field_producer
-if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer_cuda" goto focused_test_sdf_pack_field_producer_cuda
-if /I "%FOCUSED_TEST%"=="test_sdf_pack_viewer_ui" goto focused_test_sdf_pack_viewer_ui
-if /I "%FOCUSED_TEST%"=="test_generic_probe" goto focused_test_generic_probe
-if not "%FOCUSED_TEST%"=="" (
-  echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
-  exit /b 1
-)
+if not "%~1"=="" goto focused_arg_loop
+goto full_build_start
 
+:focused_arg_loop
+if "%~1"=="" exit /b 0
+call :dispatch_focused "%~1"
+if errorlevel 1 exit /b 1
+shift
+goto focused_arg_loop
+
+:dispatch_focused
+set FOCUSED_TEST=%~1
+if /I "%FOCUSED_TEST%"=="advanced_color_grading_red" call :focused_advanced_color_grading_red & exit /b
+if /I "%FOCUSED_TEST%"=="advanced_color_grading_owner" call :focused_advanced_color_grading_owner & exit /b
+if /I "%FOCUSED_TEST%"=="serializer_owner_fast" call :focused_serializer_owner_fast & exit /b
+if /I "%FOCUSED_TEST%"=="test_viewer_ui_automation_report" call :focused_test_viewer_ui_automation_report & exit /b
+if /I "%FOCUSED_TEST%"=="test_viewer_cli" call :focused_test_viewer_cli & exit /b
+if /I "%FOCUSED_TEST%"=="test_viewer_state_init" call :focused_test_viewer_state_init & exit /b
+if /I "%FOCUSED_TEST%"=="test_flashlight_probe" call :focused_test_flashlight_probe & exit /b
+if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" call :focused_test_diagnostics_state_io & exit /b
+if /I "%FOCUSED_TEST%"=="test_diagnostics_capture" call :focused_test_diagnostics_capture & exit /b
+if /I "%FOCUSED_TEST%"=="test_lens_sdf" call :focused_test_lens_sdf & exit /b
+if /I "%FOCUSED_TEST%"=="test_lens_sdf_cuda" call :focused_test_lens_sdf_cuda & exit /b
+if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" call :focused_test_finding_archive_actions & exit /b
+if /I "%FOCUSED_TEST%"=="test_finding_state_actions" call :focused_test_finding_state_actions & exit /b
+if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" call :focused_test_viewer_render_pacing & exit /b
+if /I "%FOCUSED_TEST%"=="test_viewport_interaction" call :focused_test_viewport_interaction & exit /b
+if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" call :focused_test_sample_tier_resolver & exit /b
+if /I "%FOCUSED_TEST%"=="test_fractal_renderer" call :focused_test_fractal_renderer & exit /b
+if /I "%FOCUSED_TEST%"=="test_fractal_sample_kernel" call :focused_test_fractal_sample_kernel & exit /b
+if /I "%FOCUSED_TEST%"=="test_runtime_walk_headless" call :focused_test_runtime_walk_headless & exit /b
+if /I "%FOCUSED_TEST%"=="test_ui_schema" call :focused_test_ui_schema & exit /b
+if /I "%FOCUSED_TEST%"=="test_safe_mode_schema" call :focused_test_safe_mode_schema & exit /b
+if /I "%FOCUSED_TEST%"=="test_color_pipeline_core" call :focused_test_color_pipeline_core & exit /b
+if /I "%FOCUSED_TEST%"=="test_color_pipeline_window" call :focused_test_color_pipeline_window & exit /b
+if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_field_groups" call :focused_test_color_pipeline_sdf_field_groups & exit /b
+if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess" call :focused_test_color_pipeline_sdf_postprocess & exit /b
+if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess_cuda" call :focused_test_color_pipeline_sdf_postprocess_cuda & exit /b
+if /I "%FOCUSED_TEST%"=="test_escape_time_coloring" call :focused_test_escape_time_coloring & exit /b
+if /I "%FOCUSED_TEST%"=="test_fractal_parameter_surface_descriptor" call :focused_test_fractal_parameter_surface_descriptor & exit /b
+if /I "%FOCUSED_TEST%"=="test_fractal_catalog_authority" call :focused_test_fractal_catalog_authority & exit /b
+if /I "%FOCUSED_TEST%"=="test_fractal_types" call :focused_test_fractal_types & exit /b
+if /I "%FOCUSED_TEST%"=="test_fractal_derived_fields" call :focused_test_fractal_derived_fields & exit /b
+if /I "%FOCUSED_TEST%"=="test_fractal_family_rules" call :focused_test_fractal_family_rules & exit /b
+if /I "%FOCUSED_TEST%"=="test_schema_binding" call :focused_test_schema_binding & exit /b
+if /I "%FOCUSED_TEST%"=="test_explaino_counterfactual_repair" call :focused_test_explaino_counterfactual_repair & exit /b
+if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" call :focused_test_generic_equation_pack_workbench_ui & exit /b
+if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_live" call :focused_test_generic_equation_pack_live & exit /b
+if /I "%FOCUSED_TEST%"=="test_generic_equation_pack" call :focused_test_generic_equation_pack & exit /b
+if /I "%FOCUSED_TEST%"=="test_sdf_pack" call :focused_test_sdf_pack & exit /b
+if /I "%FOCUSED_TEST%"=="test_sdf_pack_cuda" call :focused_test_sdf_pack_cuda & exit /b
+if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer" call :focused_test_sdf_pack_field_producer & exit /b
+if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer_cuda" call :focused_test_sdf_pack_field_producer_cuda & exit /b
+if /I "%FOCUSED_TEST%"=="test_sdf_pack_viewer_ui" call :focused_test_sdf_pack_viewer_ui & exit /b
+if /I "%FOCUSED_TEST%"=="test_generic_probe" call :focused_test_generic_probe & exit /b
+echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
+exit /b 1
+
+:full_build_start
 cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /I. /I.\src ^
   .\src\viewer_ui_automation_report.cpp .\tests\test_viewer_ui_automation_report.cpp ^
   /Fe:"%TESTROOT%\test_viewer_ui_automation_report.exe" ^
@@ -346,13 +392,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /Fe:"%TESTROOT%\test_fractal_parameter_surface_descriptor.exe"
 if errorlevel 1 exit /b 1
 
-set GENERIC_SAMPLE_CORE_OBJ=%TESTROOT%\generic_sample_core_runner.obj
-nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
-  -Xcompiler "/EHsc /MD" ^
-  -I. -I.\src ^
-  -c .\src\generic_sample_core.cu -o "%GENERIC_SAMPLE_CORE_OBJ%"
-if errorlevel 1 exit /b 1
+call :build_generic_sample_core_object || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
@@ -550,11 +590,12 @@ call :run_test "%TESTROOT%\test_generic_equation_pack_workbench_ui.exe" || exit 
 exit /b 0
 
 :focused_test_generic_equation_pack_live
+call :build_generic_sample_core_object || exit /b 1
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_equation_pack_live.cpp .\src\generic_sample_core.cu .\tests\test_generic_equation_pack_live.cpp ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_equation_pack_live.cpp .\tests\test_generic_equation_pack_live.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   -o "%TESTROOT%\test_generic_equation_pack_live.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_generic_equation_pack_live.exe" || exit /b 1
@@ -567,11 +608,12 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_generic_equation_pack.exe" || exit /b 1
 
+call :build_generic_sample_core_object || exit /b 1
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_sample_core.cu .\tests\test_generic_equation_pack_cuda.cu ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\tests\test_generic_equation_pack_cuda.cu "%GENERIC_SAMPLE_CORE_OBJ%" ^
   -o "%TESTROOT%\test_generic_equation_pack_cuda.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_generic_equation_pack_cuda.exe" || exit /b 1
@@ -595,7 +637,7 @@ exit /b 0
 
 :focused_test_sdf_pack_cuda
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
   .\src\json_min.cpp .\src\sdf_pack.cpp .\src\sdf_pack_cuda.cu .\tests\test_sdf_pack_cuda.cu ^
@@ -614,7 +656,7 @@ exit /b 0
 
 :focused_test_sdf_pack_field_producer_cuda
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
   .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_cuda.cu .\src\sdf_pack_field_producer.cpp .\src\sdf_pack_field_producer_cuda.cu .\tests\test_sdf_pack_field_producer_cuda.cu ^
@@ -632,13 +674,7 @@ call :run_test "%TESTROOT%\test_sdf_pack_viewer_ui.exe" || exit /b 1
 exit /b 0
 
 :focused_test_generic_probe
-set GENERIC_SAMPLE_CORE_OBJ=%TESTROOT%\generic_sample_core_runner.obj
-nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
-  -Xcompiler "/EHsc /MD" ^
-  -I. -I.\src ^
-  -c .\src\generic_sample_core.cu -o "%GENERIC_SAMPLE_CORE_OBJ%"
-if errorlevel 1 exit /b 1
+call :build_generic_sample_core_object || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
@@ -700,7 +736,7 @@ exit /b 0
 
 :focused_test_lens_sdf_cuda
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
   .\src\lens_sdf.cpp .\src\lens_sdf_cuda.cu .\tests\test_lens_sdf_cuda.cu ^
@@ -763,22 +799,24 @@ call :run_test "%TESTROOT%\test_sample_tier_resolver.exe" || exit /b 1
 exit /b 0
 
 :focused_test_fractal_renderer
+call :build_fractal_cuda_common_objects || exit /b 1
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_renderer.cu ^
+  .\tests\test_fractal_renderer.cu "%FRACTAL_RENDERER_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_fractal_renderer.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_fractal_renderer.exe" || exit /b 1
 exit /b 0
 
 :focused_test_fractal_sample_kernel
+call :build_fractal_cuda_common_objects || exit /b 1
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_sample_kernel.cu ^
+  .\tests\test_fractal_sample_kernel.cu "%FRACTAL_RENDERER_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_fractal_sample_kernel.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_fractal_sample_kernel.exe" || exit /b 1
@@ -885,7 +923,7 @@ exit /b 0
 
 :focused_test_color_pipeline_sdf_postprocess_cuda
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
   .\src\lens_sdf.cpp .\src\sdf_field_signal.cpp .\src\color_pipeline_sdf_postprocess.cpp .\src\color_pipeline_sdf_postprocess_cuda.cu .\tests\test_color_pipeline_sdf_postprocess_cuda.cu ^
@@ -1187,67 +1225,69 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_sample_tier_resolver.exe"
 if errorlevel 1 exit /b 1
 
+call :build_fractal_cuda_common_objects || exit /b 1
+
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_escape_time_sample_tier.cu ^
+  .\tests\test_escape_time_sample_tier.cu "%FRACTAL_RENDERER_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_escape_time_sample_tier.exe"
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_newton_basin_regression.cu ^
+  .\tests\test_newton_basin_regression.cu "%FRACTAL_RENDERER_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_newton_basin_regression.exe"
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_sample_device.cu ^
+  .\tests\test_fractal_sample_device.cu "%FRACTAL_RENDERER_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_fractal_sample_device.exe"
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_renderer.cu ^
+  .\tests\test_fractal_renderer.cu "%FRACTAL_RENDERER_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_fractal_renderer.exe"
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_sample_core.cu ^
+  .\tests\test_fractal_sample_core.cu "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_fractal_sample_core.exe"
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_sample_kernel.cu ^
+  .\tests\test_fractal_sample_kernel.cu "%FRACTAL_RENDERER_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_fractal_sample_kernel.exe"
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_sample_equivalence.cu ^
+  .\tests\test_fractal_sample_equivalence.cu "%FRACTAL_RENDERER_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_fractal_sample_equivalence.exe"
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_explaino_zero_axis_equivalence.cu ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_explaino_zero_axis_equivalence.cu "%FRACTAL_RENDERER_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   -o "%TESTROOT%\test_explaino_zero_axis_equivalence.exe"
 if errorlevel 1 exit /b 1
 
@@ -1366,7 +1406,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
   .\src\json_min.cpp .\src\sdf_pack.cpp .\src\sdf_pack_cuda.cu .\tests\test_sdf_pack_cuda.cu ^
@@ -1374,7 +1414,7 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
   .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_cuda.cu .\src\sdf_pack_field_producer.cpp .\src\sdf_pack_field_producer_cuda.cu .\tests\test_sdf_pack_field_producer_cuda.cu ^
@@ -1393,18 +1433,19 @@ call :run_test "%TESTROOT%\test_sdf_pack_field_producer.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_field_producer_cuda.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_generic_equation_pack_workbench_ui.exe" || exit /b 1
 
+call :build_generic_sample_core_object || exit /b 1
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_equation_pack_live.cpp .\src\generic_sample_core.cu .\tests\test_generic_equation_pack_live.cpp ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_equation_pack_live.cpp .\tests\test_generic_equation_pack_live.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   -o "%TESTROOT%\test_generic_equation_pack_live.exe"
 if errorlevel 1 exit /b 1
 
 call :run_test "%TESTROOT%\test_generic_equation_pack_live.exe" || exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
   .\tests\test_generic_function_eval.cu ^
@@ -1414,30 +1455,30 @@ if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_generic_function_eval.exe" || exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\generic_sample_core.cu .\tests\test_generic_sample_core.cu ^
+  .\tests\test_generic_sample_core.cu "%GENERIC_SAMPLE_CORE_OBJ%" ^
   -o "%TESTROOT%\test_generic_sample_core.exe"
 if errorlevel 1 exit /b 1
 
 call :run_test "%TESTROOT%\test_generic_sample_core.exe" || exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\generic_sample_core.cu .\tests\test_generic_sample_parity.cu ^
+  .\tests\test_generic_sample_parity.cu "%GENERIC_SAMPLE_CORE_OBJ%" ^
   -o "%TESTROOT%\test_generic_sample_parity.exe"
 if errorlevel 1 exit /b 1
 
 call :run_test "%TESTROOT%\test_generic_sample_parity.exe" || exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
-  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
   -I. -I.\src ^
-  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_sample_core.cu .\tests\test_generic_equation_pack_cuda.cu ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\tests\test_generic_equation_pack_cuda.cu "%GENERIC_SAMPLE_CORE_OBJ%" ^
   -o "%TESTROOT%\test_generic_equation_pack_cuda.exe"
 if errorlevel 1 exit /b 1
 

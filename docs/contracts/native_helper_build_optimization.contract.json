@@ -1,0 +1,62 @@
+{
+  "contract_id": "native_helper_build_optimization",
+  "feature_id": "native_helper_build_optimization",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/native_helper_build_optimization_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes",
+    "docs/contracts",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "tools",
+    "tests",
+    ".vscode/tasks.json",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "normal checked-in native helper commands"
+  ],
+  "forbidden_operator_prompts": [
+    "manual GUI validation",
+    "physical mouse automation",
+    "removing native/CUDA tests to make the suite faster"
+  ],
+  "required_defaults": {
+    "coverage_policy": "preserve_existing_native_and_cuda_coverage",
+    "cuda_arch_policy": "preserve_existing_multi_arch_flags_unless_explicitly_measured_later"
+  },
+  "forbidden_defaults": {
+    "skip_slow_tests_by_default": true,
+    "claim_full_green_on_timeout": true
+  },
+  "required_validation_commands": [
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py tests/test_native_helper_build_optimization.py -q --junitxml artifacts/pytest/native_helper_build_optimization.junit.xml",
+    "py -3.14 tools/viewer_host_validate_native_helper_build.py --out-json artifacts/validation/native_helper_build_optimization_validator.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/native_helper_build_optimization_PHASED_PLAN.md --out-json artifacts/validation/native_helper_build_optimization_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "topology_pytest_green",
+      "description": "The native-helper topology tests prove grouped helper structure and workflow profile expectations.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/native_helper_build_optimization.junit.xml",
+      "test_nodeid": "tests/test_native_helper_build_optimization.py::test_full_helper_reuses_heavy_cuda_objects_instead_of_recompiling_per_test"
+    },
+    {
+      "assertion_id": "validator_confirms_optimized_topology",
+      "description": "The native-helper validator reports the optimized topology as valid.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/native_helper_build_optimization_validator.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_closed",
+      "description": "The hostile audit plan section is closed before checkpoint.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/native_helper_build_optimization_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
