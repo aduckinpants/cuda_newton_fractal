@@ -416,7 +416,7 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Slice D final code quality: `artifacts/validation/ui_salt_edge_resolver_shadow_code_quality.json` passed baseline with score 93/100.
 - Slice D final logged Python proof: `artifacts/validation/ui_salt_edge_resolver_shadow_pytest.json` passed `32 passed`.
 - Slice D final logged materialization proof: `artifacts/validation/ui_salt_edge_resolver_shadow_materialize.json` passed.
-- Slice D final logged native proof: `artifacts/validation/ui_salt_edge_resolver_shadow_native.json` passed after `842.624` seconds and ended with `All helper tests passed`.
+- Slice D final logged native proof: `artifacts/validation/ui_salt_edge_resolver_shadow_native.json` passed `test_color_pipeline_core: passed=2986 failed=0` using the focused native target.
 - Slice D final diff check: `artifacts/validation/ui_salt_edge_resolver_shadow_diff_check.json` passed `git diff --check`.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
