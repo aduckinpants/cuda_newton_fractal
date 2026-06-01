@@ -18,7 +18,8 @@ VALID_ADAPTER_POLICIES = {"safe", "visible_default", "explicit_only", "diagnosti
 VALID_APPLICATOR_SIGNAL_KINDS = VALID_SIGNAL_KINDS | {"any"}
 VALID_APPLICATOR_TARGET_LANES = {"source"}
 VALID_PARAM_TYPES = {"float", "double", "int", "bool", "enum"}
-VALID_STATEMENTS = {"contract", "signal_type", "lane", "function", "param", "compat", "recipe", "row_applicator", "explaino_contract"}
+VALID_PORT_DIRECTIONS = {"input", "output"}
+VALID_STATEMENTS = {"contract", "signal_type", "lane", "function", "param", "port", "compat", "recipe", "row_applicator", "explaino_contract"}
 
 
 class MaterializerError(ValueError):
@@ -30,6 +31,7 @@ class FunctionRecord:
     lane: str
     function: dict[str, Any]
     seen_params: set[str] = field(default_factory=set)
+    seen_ports: set[tuple[str, str]] = field(default_factory=set)
 
 
 def _strip_comment(line: str) -> str:
@@ -202,6 +204,76 @@ def _append_param(record: FunctionRecord, param: dict[str, Any]) -> None:
     record.function.setdefault("params", []).append(param)
 
 
+
+def _is_generic_type(type_id: str) -> bool:
+    return type_id.startswith("generic.") and len(type_id) > len("generic.")
+
+
+def _append_port(record: FunctionRecord, port: dict[str, Any]) -> None:
+    key = (port["direction"], port["id"])
+    if key in record.seen_ports:
+        raise MaterializerError(
+            f"duplicate {port['direction']} port id '{port['id']}' for function '{record.function['id']}'"
+        )
+    record.seen_ports.add(key)
+    record.function.setdefault("ports", []).append(port)
+
+
+def _build_port(function_id: str, kwargs: dict[str, Any], signal_type_ids: set[str]) -> dict[str, Any]:
+    direction = _require_string(kwargs, "direction", statement="port")
+    if direction not in VALID_PORT_DIRECTIONS:
+        raise MaterializerError(f"port for {function_id} invalid direction '{direction}'")
+    port_id = _require_string(kwargs, "id", statement="port")
+    type_id = _require_string(kwargs, "type", statement="port")
+    if type_id == "any":
+        raise MaterializerError("port type 'any' is forbidden")
+    generic_group = _optional_string(kwargs, "generic_group", "")
+    if _is_generic_type(type_id):
+        if not generic_group:
+            raise MaterializerError(f"port {function_id}.{port_id} generic type requires generic_group")
+        if generic_group == "any":
+            raise MaterializerError("generic_group 'any' is forbidden")
+        if type_id != f"generic.{generic_group}":
+            raise MaterializerError(f"port {function_id}.{port_id} generic_group must match type '{type_id}'")
+    elif type_id not in signal_type_ids:
+        raise MaterializerError(f"port references unknown signal type '{type_id}'")
+    elif generic_group:
+        raise MaterializerError(f"port {function_id}.{port_id} non-generic type cannot declare generic_group")
+    port = {
+        "direction": direction,
+        "id": port_id,
+        "type": type_id,
+    }
+    if generic_group:
+        port["generic_group"] = generic_group
+    if _optional_bool(kwargs, "canonical", False):
+        port["canonical"] = True
+    return port
+
+
+def _validate_function_ports(record: FunctionRecord) -> None:
+    ports = record.function.get("ports", [])
+    if not ports:
+        return
+    function_id = record.function["id"]
+    if record.lane == "source" and any(port["direction"] == "input" for port in ports):
+        raise MaterializerError(f"source function {function_id} cannot declare input ports")
+    canonical_outputs = [
+        port for port in ports if port["direction"] == "output" and bool(port.get("canonical", False))
+    ]
+    if len(canonical_outputs) != 1:
+        raise MaterializerError(f"function {function_id} port signatures require exactly one canonical output")
+    if function_id == "identity":
+        generic_inputs = [port for port in ports if port["direction"] == "input" and _is_generic_type(port["type"])]
+        generic_outputs = [port for port in ports if port["direction"] == "output" and _is_generic_type(port["type"])]
+        if len(ports) != 2 or len(generic_inputs) != 1 or len(generic_outputs) != 1 or generic_inputs[0]["type"] != generic_outputs[0]["type"]:
+            raise MaterializerError("identity ports must declare exactly one matching generic input and output")
+    if record.lane == "shape" and function_id != "identity":
+        for port in ports:
+            if not port["type"].startswith("scalar."):
+                raise MaterializerError(f"shape function {function_id} only supports scalar ports in Slice B")
+
+
 def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     contracts: list[dict[str, Any]] = []
     lanes: list[dict[str, Any]] = []
@@ -352,6 +424,12 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                     param[key] = kwargs[key]
             _validate_param(function_id, param)
             _append_param(functions[function_id], param)
+        elif name == "port":
+            _check_known_args(name, kwargs, {"function", "direction", "id", "type", "canonical", "generic_group"})
+            function_id = _require_string(kwargs, "function", statement=name)
+            if function_id not in functions:
+                raise MaterializerError(f"port references unknown function '{function_id}'")
+            _append_port(functions[function_id], _build_port(function_id, kwargs, signal_type_ids))
         elif name == "compat":
             _check_known_args(name, kwargs, {"source", "palette", "signal", "palette_runtime", "grading", "mode", "reason"})
             compatibility.append({
@@ -429,6 +507,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             raise MaterializerError(
                 f"function {record.function['id']} typed_signal references unknown signal type '{typed_signal}'"
             )
+        _validate_function_ports(record)
     lane_by_id = {lane["id"]: lane for lane in lanes}
     for function_id, record in functions.items():
         lane_by_id[record.lane]["functions"].append(record.function)

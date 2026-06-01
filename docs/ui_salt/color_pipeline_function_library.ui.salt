@@ -65,6 +65,37 @@ function(lane="grading", id="tone_map_finish", label="Tone Map Finish", descript
 function(lane="grading", id="grade_glow", label="Grade Glow", description="Apply shared exposure, saturation, and contrast grading, then add a dedicated glow highlight finish through the runtime glow owner.", taxonomy_group="grade_fx", runtime_backed=True, params=[["grade.exposure", "float", "Exposure", 0.1, 3.0, 0.01, 1.0], ["grade.saturation", "float", "Saturation", 0.0, 2.0, 0.01, 1.15], ["grade.contrast", "float", "Contrast", 0.0, 3.0, 0.01, 1.10], ["grade.glow", "float", "Glow", 0.0, 2.0, 0.01, 0.25]])
 function(lane="grading", id="balance_void_grade", label="Balance Void Grade", description="Apply the reusable balance-void grading manifold through dedicated runtime owners instead of the shared neutral or ExplainO-specific finish rails.", taxonomy_group="grade_manifold", runtime_backed=True, params=[["grade.balance_void", "float", "Balance Void", -1.0, 1.0, 0.01, 0.0], ["grade.chroma_tension", "float", "Chroma Tension", -1.0, 1.0, 0.01, 0.0], ["grade.accent_bias", "float", "Accent Bias", -1.0, 1.0, 0.01, 0.0]])
 
+# Slice B pilot port signatures are shadow metadata only; live compatibility still uses the existing runtime bridge.
+port(function="smooth_escape_ramp", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="phase_orbit", direction="output", id="signal", type="phase.radians", canonical=True)
+port(function="root_index", direction="output", id="signal", type="category.root_index", canonical=True)
+port(function="sdf_signed_distance", direction="output", id="signal", type="scalar.sdf_signed_distance", canonical=True)
+port(function="sdf_normal_angle", direction="output", id="signal", type="phase.radians", canonical=True)
+port(function="sdf_inside_outside", direction="output", id="signal", type="category.inside_outside", canonical=True)
+
+port(function="identity", direction="input", id="signal", type="generic.T", generic_group="T")
+port(function="identity", direction="output", id="signal", type="generic.T", generic_group="T", canonical=True)
+port(function="repeat", direction="input", id="signal", type="scalar.unit")
+port(function="repeat", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="bias_gain_curve", direction="input", id="signal", type="scalar.unit")
+port(function="bias_gain_curve", direction="output", id="signal", type="scalar.unit", canonical=True)
+
+port(function="heatmap", direction="input", id="signal", type="scalar.unit")
+port(function="heatmap", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="phase_wheel_palette", direction="input", id="signal", type="phase.radians")
+port(function="phase_wheel_palette", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="root_classic_palette", direction="input", id="signal", type="category.root_index")
+port(function="root_classic_palette", direction="output", id="color", type="color.linear_rgb", canonical=True)
+
+port(function="contrast_lift", direction="input", id="color", type="color.linear_rgb")
+port(function="contrast_lift", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="phase_finish", direction="input", id="color", type="color.linear_rgb")
+port(function="phase_finish", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="basin_default", direction="input", id="color", type="color.linear_rgb")
+port(function="basin_default", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="neutral_finish", direction="input", id="color", type="color.linear_rgb")
+port(function="neutral_finish", direction="output", id="color", type="color.linear_rgb", canonical=True)
+
 compat(source="smooth_escape_ramp", palette="heatmap", signal="smooth_escape_ramp", palette_runtime="heatmap", grading="contrast_lift", mode="smooth_escape")
 compat(source="smooth_escape_ramp", palette="explaino_cmap", signal="smooth_escape_ramp", palette_runtime="explaino_cmap", grading="contrast_lift", mode="smooth_escape")
 compat(source="phase_orbit", palette="phase_wheel_palette", signal="phase_orbit", palette_runtime="phase_wheel_palette", grading="phase_finish", mode="phase")

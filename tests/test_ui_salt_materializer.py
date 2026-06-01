@@ -221,6 +221,122 @@ def test_materializer_requires_explaino_proof_fields(tmp_path):
     assert "explaino_contract requires proof" in proc.stderr
 
 
+
+
+def _function_by_id(payload, lane_id, function_id):
+    lanes = {lane["id"]: lane for lane in payload["function_library"]["lanes"]}
+    lane = lanes[lane_id]
+    return next(fn for fn in lane["functions"] if fn["id"] == function_id)
+
+
+def _ports(payload, lane_id, function_id):
+    return _function_by_id(payload, lane_id, function_id).get("ports", [])
+
+
+def test_materializer_accepts_pilot_port_signatures(tmp_path):
+    text = VALID_UI_SALT + """
+signal_type(id="color.linear_rgb", kind="color", domain="linear_rgb", topology="color", arity=3, color_space="linear_rgb", default_adapter_policy="forbidden")
+lane(id="shape", label="Shape", default="identity")
+lane(id="grading", label="Grading", default="contrast_lift")
+function(lane="shape", id="identity", label="Identity", taxonomy_group="identity", runtime_backed=True)
+function(lane="shape", id="repeat", label="Repeat", taxonomy_group="repeat", runtime_backed=True)
+function(lane="shape", id="bias_gain_curve", label="Bias + Gain Curve", taxonomy_group="remap", runtime_backed=True)
+function(lane="palette", id="root_classic_palette", label="Root Classic Palette", taxonomy_group="palette_basin", runtime_backed=True)
+function(lane="grading", id="contrast_lift", label="Contrast Lift", taxonomy_group="grade_escape", runtime_backed=True)
+port(function="smooth_escape_ramp", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="sdf_signed_distance", direction="output", id="signal", type="scalar.sdf_signed_distance", canonical=True)
+port(function="sdf_normal_angle", direction="output", id="signal", type="phase.radians", canonical=True)
+port(function="root_index", direction="output", id="signal", type="category.root_index", canonical=True)
+port(function="identity", direction="input", id="signal", type="generic.T", generic_group="T")
+port(function="identity", direction="output", id="signal", type="generic.T", generic_group="T", canonical=True)
+port(function="repeat", direction="input", id="signal", type="scalar.unit")
+port(function="repeat", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="bias_gain_curve", direction="input", id="signal", type="scalar.unit")
+port(function="bias_gain_curve", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="heatmap", direction="input", id="signal", type="scalar.unit")
+port(function="heatmap", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="root_classic_palette", direction="input", id="signal", type="category.root_index")
+port(function="root_classic_palette", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="contrast_lift", direction="input", id="color", type="color.linear_rgb")
+port(function="contrast_lift", direction="output", id="color", type="color.linear_rgb", canonical=True)
+"""
+    proc, out = run_materializer(tmp_path, text)
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+
+    assert _ports(payload, "source", "smooth_escape_ramp") == [
+        {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True}
+    ]
+    assert _ports(payload, "shape", "identity") == [
+        {"direction": "input", "id": "signal", "type": "generic.T", "generic_group": "T"},
+        {"direction": "output", "id": "signal", "type": "generic.T", "generic_group": "T", "canonical": True},
+    ]
+    assert _ports(payload, "shape", "repeat")[0]["type"] == "scalar.unit"
+    assert _ports(payload, "shape", "bias_gain_curve")[1] == {
+        "direction": "output",
+        "id": "signal",
+        "type": "scalar.unit",
+        "canonical": True,
+    }
+    assert _ports(payload, "palette", "heatmap")[-1]["type"] == "color.linear_rgb"
+    assert _ports(payload, "grading", "contrast_lift")[-1]["type"] == "color.linear_rgb"
+
+
+def test_materializer_rejects_unknown_port_signal_type(tmp_path):
+    text = VALID_UI_SALT + 'port(function="smooth_escape_ramp", direction="output", id="signal", type="scalar.missing", canonical=True)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "port references unknown signal type" in proc.stderr
+
+
+def test_materializer_rejects_any_port_type(tmp_path):
+    text = VALID_UI_SALT + 'port(function="smooth_escape_ramp", direction="output", id="signal", type="any", canonical=True)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "port type 'any' is forbidden" in proc.stderr
+
+
+def test_materializer_rejects_source_input_port(tmp_path):
+    text = VALID_UI_SALT + """
+port(function="smooth_escape_ramp", direction="input", id="signal", type="scalar.unit")
+port(function="smooth_escape_ramp", direction="output", id="signal", type="scalar.unit", canonical=True)
+"""
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "source function smooth_escape_ramp cannot declare input ports" in proc.stderr
+
+
+def test_materializer_rejects_generic_any_port_type(tmp_path):
+    text = VALID_UI_SALT + """
+lane(id="shape", label="Shape", default="identity")
+function(lane="shape", id="identity", label="Identity", taxonomy_group="identity", runtime_backed=True)
+port(function="identity", direction="input", id="signal", type="generic.any", generic_group="any")
+port(function="identity", direction="output", id="signal", type="generic.any", generic_group="any", canonical=True)
+"""
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "generic_group 'any' is forbidden" in proc.stderr
+
+
+def test_materializer_rejects_identity_extra_ports(tmp_path):
+    text = VALID_UI_SALT + """
+lane(id="shape", label="Shape", default="identity")
+function(lane="shape", id="identity", label="Identity", taxonomy_group="identity", runtime_backed=True)
+port(function="identity", direction="input", id="signal", type="generic.T", generic_group="T")
+port(function="identity", direction="output", id="signal", type="generic.T", generic_group="T", canonical=True)
+port(function="identity", direction="input", id="aux", type="scalar.unit")
+"""
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "identity ports must declare exactly one matching generic input and output" in proc.stderr
+
+
+def test_materializer_rejects_missing_canonical_output_port(tmp_path):
+    text = VALID_UI_SALT + 'port(function="heatmap", direction="input", id="signal", type="scalar.unit")\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "function heatmap port signatures require exactly one canonical output" in proc.stderr
+
 def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     out = tmp_path / "materialized.json"
     proc = subprocess.run(
@@ -310,3 +426,44 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert all(item["target_lane"] == "source" for item in row_applicators)
     assert all(item["fail_closed_reason"] for item in row_applicators)
     assert len(actual["composition_recipe_contract"]["compatibility"]) == 22
+
+    assert _ports(actual, "source", "smooth_escape_ramp") == [
+        {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True}
+    ]
+    assert _ports(actual, "source", "sdf_signed_distance") == [
+        {"direction": "output", "id": "signal", "type": "scalar.sdf_signed_distance", "canonical": True}
+    ]
+    assert _ports(actual, "source", "sdf_normal_angle") == [
+        {"direction": "output", "id": "signal", "type": "phase.radians", "canonical": True}
+    ]
+    assert _ports(actual, "source", "sdf_inside_outside") == [
+        {"direction": "output", "id": "signal", "type": "category.inside_outside", "canonical": True}
+    ]
+    assert _ports(actual, "shape", "identity") == [
+        {"direction": "input", "id": "signal", "type": "generic.T", "generic_group": "T"},
+        {"direction": "output", "id": "signal", "type": "generic.T", "generic_group": "T", "canonical": True},
+    ]
+    assert _ports(actual, "shape", "repeat") == [
+        {"direction": "input", "id": "signal", "type": "scalar.unit"},
+        {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+    ]
+    assert _ports(actual, "shape", "bias_gain_curve") == [
+        {"direction": "input", "id": "signal", "type": "scalar.unit"},
+        {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+    ]
+    assert _ports(actual, "palette", "heatmap") == [
+        {"direction": "input", "id": "signal", "type": "scalar.unit"},
+        {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+    ]
+    assert _ports(actual, "palette", "phase_wheel_palette") == [
+        {"direction": "input", "id": "signal", "type": "phase.radians"},
+        {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+    ]
+    assert _ports(actual, "palette", "root_classic_palette") == [
+        {"direction": "input", "id": "signal", "type": "category.root_index"},
+        {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+    ]
+    assert _ports(actual, "grading", "contrast_lift") == [
+        {"direction": "input", "id": "color", "type": "color.linear_rgb"},
+        {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+    ]

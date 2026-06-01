@@ -61,6 +61,19 @@ bool ReadBool(const json_min::Value& object, const char* key, bool* outValue, st
     return true;
 }
 
+bool ReadOptionalBool(const json_min::Value& object, const char* key, bool* outValue, std::string* outError) {
+    const json_min::Value* value = object.get(key);
+    if (!value || value->is_null()) {
+        *outValue = false;
+        return true;
+    }
+    if (!value->is_bool()) {
+        return SetError(outError, std::string("Field '") + key + "' must be a bool");
+    }
+    *outValue = value->as_bool();
+    return true;
+}
+
 bool ReadNumber(const json_min::Value& object, const char* key, double* outValue, std::string* outError) {
     const json_min::Value* value = RequiredField(object, key, outError);
     if (!value) {
@@ -100,6 +113,15 @@ bool StringInList(const std::string& value, const char* const* items, std::size_
         }
     }
     return false;
+}
+
+bool StartsWith(const std::string& value, const char* prefix) {
+    const std::string prefixValue = prefix ? prefix : "";
+    return value.rfind(prefixValue, 0) == 0;
+}
+
+bool IsGenericPortType(const std::string& type) {
+    return StartsWith(type, "generic.") && type.size() > 8;
 }
 
 bool ReadPositiveInteger(const json_min::Value& object, const char* key, int* outValue, std::string* outError) {
@@ -206,6 +228,25 @@ bool ReadParam(
     return true;
 }
 
+bool ReadPort(
+    const json_min::Value& value,
+    MaterializedColorPipelinePort* outPort,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Port entry must be an object");
+    }
+    MaterializedColorPipelinePort port;
+    if (!ReadString(value, "direction", &port.direction, outError) ||
+        !ReadString(value, "id", &port.id, outError) ||
+        !ReadString(value, "type", &port.type, outError) ||
+        !ReadOptionalBool(value, "canonical", &port.canonical, outError) ||
+        !ReadOptionalString(value, "generic_group", &port.generic_group, outError)) {
+        return false;
+    }
+    *outPort = std::move(port);
+    return true;
+}
+
 bool ReadFunction(
     const json_min::Value& value,
     MaterializedColorPipelineFunction* outFunction,
@@ -241,6 +282,19 @@ bool ReadFunction(
             return false;
         }
         function.params.push_back(std::move(param));
+    }
+
+    if (const json_min::Value* ports = value.get("ports")) {
+        if (!ports->is_array()) {
+            return SetError(outError, "Function ports must be an array");
+        }
+        for (const json_min::Value& portValue : ports->as_array()) {
+            MaterializedColorPipelinePort port;
+            if (!ReadPort(portValue, &port, outError)) {
+                return false;
+            }
+            function.ports.push_back(std::move(port));
+        }
     }
 
     *outFunction = std::move(function);
@@ -409,6 +463,85 @@ bool ValidateMaterializedSignalTypes(
     return !types.empty() || SetError(outError, "Materialized contract must contain at least one signal type");
 }
 
+bool ValidateMaterializedPorts(
+    const MaterializedColorPipelineFunction& function,
+    const std::string& laneId,
+    const std::set<std::string>& signalTypeIds,
+    std::string* outError) {
+    if (function.ports.empty()) {
+        return true;
+    }
+    std::set<std::string> portKeys;
+    int canonicalOutputCount = 0;
+    int genericInputCount = 0;
+    int genericOutputCount = 0;
+    std::string genericInputType;
+    std::string genericOutputType;
+    for (const MaterializedColorPipelinePort& port : function.ports) {
+        if (port.direction != "input" && port.direction != "output") {
+            return SetError(outError, std::string("Materialized function '") + function.id + "' has invalid port direction");
+        }
+        if (port.id.empty()) {
+            return SetError(outError, std::string("Materialized function '") + function.id + "' contains an empty port id");
+        }
+        const std::string key = port.direction + "\n" + port.id;
+        if (!portKeys.insert(key).second) {
+            return SetError(outError, std::string("Duplicate materialized port '") + port.id + "' for function '" + function.id + "'");
+        }
+        if (port.type == "any") {
+            return SetError(outError, "Materialized port type 'any' is forbidden");
+        }
+        const bool isGeneric = IsGenericPortType(port.type);
+        if (isGeneric) {
+            if (port.generic_group.empty()) {
+                return SetError(outError, std::string("Materialized function '") + function.id + "' generic port requires generic_group");
+            }
+            if (port.generic_group == "any") {
+                return SetError(outError, "Materialized generic_group 'any' is forbidden");
+            }
+            if (port.type != std::string("generic.") + port.generic_group) {
+                return SetError(outError, std::string("Materialized function '") + function.id + "' generic_group must match port type");
+            }
+        } else {
+            if (signalTypeIds.find(port.type) == signalTypeIds.end()) {
+                return SetError(outError, std::string("Materialized function '") + function.id + "' port references unknown signal type '" + port.type + "'");
+            }
+            if (!port.generic_group.empty()) {
+                return SetError(outError, std::string("Materialized function '") + function.id + "' non-generic port cannot declare generic_group");
+            }
+        }
+        if (port.canonical) {
+            if (port.direction != "output") {
+                return SetError(outError, std::string("Materialized function '") + function.id + "' canonical port must be an output");
+            }
+            ++canonicalOutputCount;
+        }
+        if (laneId == "source" && port.direction == "input") {
+            return SetError(outError, std::string("Materialized source function '") + function.id + "' cannot declare input ports");
+        }
+        if (laneId == "shape" && function.id != "identity" && !StartsWith(port.type, "scalar.")) {
+            return SetError(outError, std::string("Materialized shape function '") + function.id + "' only supports scalar ports in Slice B");
+        }
+        if (function.id == "identity" && isGeneric) {
+            if (port.direction == "input") {
+                ++genericInputCount;
+                genericInputType = port.type;
+            } else if (port.direction == "output") {
+                ++genericOutputCount;
+                genericOutputType = port.type;
+            }
+        }
+    }
+    if (canonicalOutputCount != 1) {
+        return SetError(outError, std::string("Materialized function '") + function.id + "' port signatures require exactly one canonical output");
+    }
+    if (function.id == "identity" &&
+        (function.ports.size() != 2 || genericInputCount != 1 || genericOutputCount != 1 || genericInputType != genericOutputType)) {
+        return SetError(outError, "Materialized identity ports must declare exactly one matching generic input and output");
+    }
+    return true;
+}
+
 bool ValidateMaterializedParams(
     const MaterializedColorPipelineFunction& function,
     std::string* outError) {
@@ -456,7 +589,8 @@ bool ValidateMaterializedLanes(
                 return SetError(outError, std::string("Materialized function '") + function.id + "' typed_signal references unknown signal type '" + function.typed_signal + "'");
             }
             defaultFound = defaultFound || function.id == lane.default_function_id;
-            if (!ValidateMaterializedParams(function, outError)) {
+            if (!ValidateMaterializedParams(function, outError) ||
+                !ValidateMaterializedPorts(function, lane.id, signalTypeIds, outError)) {
                 return false;
             }
         }

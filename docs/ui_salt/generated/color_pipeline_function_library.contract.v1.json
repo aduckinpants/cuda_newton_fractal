@@ -158,7 +158,15 @@
               }
             ],
             "signal_kind": "scalar",
-            "typed_signal": "scalar.unit"
+            "typed_signal": "scalar.unit",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.unit",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "phase_orbit",
@@ -198,7 +206,15 @@
               }
             ],
             "signal_kind": "phase",
-            "typed_signal": "phase.radians"
+            "typed_signal": "phase.radians",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "phase.radians",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "banded_signal",
@@ -370,7 +386,15 @@
             "output_kind": "scalar",
             "params": [],
             "signal_kind": "categorical",
-            "typed_signal": "category.root_index"
+            "typed_signal": "category.root_index",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "category.root_index",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "sdf_signed_distance",
@@ -454,7 +478,15 @@
               }
             ],
             "signal_kind": "scalar",
-            "typed_signal": "scalar.sdf_signed_distance"
+            "typed_signal": "scalar.sdf_signed_distance",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.sdf_signed_distance",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "sdf_inside_outside",
@@ -538,7 +570,15 @@
               }
             ],
             "signal_kind": "categorical",
-            "typed_signal": "category.inside_outside"
+            "typed_signal": "category.inside_outside",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "category.inside_outside",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "sdf_boundary_band",
@@ -715,7 +755,15 @@
               }
             ],
             "signal_kind": "phase",
-            "typed_signal": "phase.radians"
+            "typed_signal": "phase.radians",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "phase.radians",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "sdf_curvature",
@@ -909,7 +957,22 @@
             "runtime_backed": true,
             "input_kind": "scalar",
             "output_kind": "scalar",
-            "params": []
+            "params": [],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "generic.T",
+                "generic_group": "T"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "generic.T",
+                "generic_group": "T",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "offset_scale",
@@ -966,6 +1029,19 @@
                 "max": 1.0,
                 "step": 0.01,
                 "default": 0.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.unit"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.unit",
+                "canonical": true
               }
             ]
           },
@@ -1053,6 +1129,19 @@
                 "max": 1.0,
                 "step": 0.01,
                 "default": 0.5
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.unit"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.unit",
+                "canonical": true
               }
             ]
           },
@@ -1146,6 +1235,19 @@
                   "normal"
                 ]
               }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.unit"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
             ]
           },
           {
@@ -1192,6 +1294,19 @@
                 "options": [
                   "normal"
                 ]
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "phase.radians"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
               }
             ]
           },
@@ -1306,7 +1421,20 @@
             "runtime_backed": true,
             "input_kind": "scalar",
             "output_kind": "scalar",
-            "params": []
+            "params": [],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "category.root_index"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "joy_root_palette",
@@ -1352,6 +1480,19 @@
                 "step": 0.01,
                 "default": 1.0
               }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "color",
+                "type": "color.linear_rgb"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
             ]
           },
           {
@@ -1380,6 +1521,19 @@
                 "max": 3.0,
                 "step": 0.01,
                 "default": 1.1
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "color",
+                "type": "color.linear_rgb"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
               }
             ]
           },
@@ -1420,7 +1574,20 @@
             "runtime_backed": true,
             "input_kind": "scalar",
             "output_kind": "scalar",
-            "params": []
+            "params": [],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "color",
+                "type": "color.linear_rgb"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "neutral_finish",
@@ -1457,6 +1624,19 @@
                 "max": 3.0,
                 "step": 0.01,
                 "default": 1.1
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "color",
+                "type": "color.linear_rgb"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
               }
             ]
           },

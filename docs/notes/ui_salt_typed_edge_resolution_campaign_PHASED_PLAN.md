@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 complete - Slice A signal type registry shadow contract is checkpointed and validated; next implementation phase is Slice B port signatures after merge/replan.
+Phase 7 complete - Slice B pilot port-signature shadow metadata is implemented, validated, hostile-audit repaired, and ready for checkpoint/receipt closeout.
 
 ## Phase Checklist
 
@@ -12,6 +12,8 @@ Phase 5 complete - Slice A signal type registry shadow contract is checkpointed 
 - [x] Phase 3 - validate contract, plan sync, hostile audit, code-quality baseline, diff check, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 4 - incorporate typed-edge review refinement, validate, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 5 - implement Slice A shadow signal type registry, focused tests, validation, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 6 - fast-forward Slice A to `master`, push `master`, and branch `codex/ui-salt-port-signatures` for Slice B.
+- [x] Phase 7 - implement Slice B pilot function port signatures, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -25,6 +27,10 @@ Phase 5 complete - Slice A signal type registry shadow contract is checkpointed 
 - [closed] Implement Slice A only: materialized shadow signal type registry and coarse-to-typed mapping audit.
 - [closed] Preserve all current visible Color Pipeline behavior and live compatibility behavior.
 - [closed] Do not implement adapters, resolver routing, graph UI, or function-library expansion under Slice A.
+- [closed] Implement Slice B only: shadow `inputs`/`outputs` for the bounded pilot function subset.
+- [closed] Preserve current visible Color Pipeline row/function order, labels, controls, and runtime compatibility behavior.
+- [closed] Prove `identity` is generic or explicitly overloaded without introducing unsafe `any`.
+- [closed] Do not implement adapters, resolver routing, graph UI, runtime behavior switches, or new function-library entries under Slice B.
 
 ## Current Repo Truth
 
@@ -361,6 +367,20 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Slice A logged materialization proof: `artifacts/validation/ui_salt_signal_type_registry_shadow_materialize.json` passed.
 - Slice A logged native proof: `artifacts/validation/ui_salt_signal_type_registry_shadow_native.json` passed.
 - Slice A diff check: `artifacts/validation/ui_salt_signal_type_registry_shadow_diff_check.json` passed `git diff --check`.
+- Slice B preflight: fast-forwarded `master` from `7f68f0d` to `86aa4a6`, pushed `origin/master`, reran rearward review `ok`, and branched `codex/ui-salt-port-signatures`.
+- Slice B contract: `docs/contracts/ui_salt_pilot_port_signatures_shadow.contract.json`.
+- Slice B RED proof: `py -3.14 -m pytest tests/test_ui_salt_materializer.py -q` initially failed because `port(...)` was unsupported and generated metadata lacked ports.
+- Slice B focused Python proof after implementation/audit repair: `py -3.14 -m pytest tests/test_ui_salt_materializer.py -q` passed 24 tests.
+- Slice B focused native proof after implementation/audit repair: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_native_audit_fix.json` passed `test_color_pipeline_core: passed=2961 failed=0`.
+- Slice B clean re-read: generated contract has zero `any`, `generic.any`, or `generic_group=any` ports; no live Color Pipeline runtime/catalog source files changed.
+- Slice B final contract validation: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_contract.json` passed.
+- Slice B final plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
+- Slice B final hostile-audit validation: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_hostile_audit.json` passed.
+- Slice B final code quality: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_code_quality.json` passed baseline with score 93/100.
+- Slice B final logged materialization proof: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_materialize.json` passed.
+- Slice B final logged Python proof: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_pytest.json` passed 24 tests.
+- Slice B final logged native proof: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_native.json` passed `test_color_pipeline_core: passed=2961 failed=0`.
+- Slice B final diff check: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_diff_check.json` passed `git diff --check`.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -370,7 +390,7 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 ## Hostile Audit
 
 - Status: complete
-- Required posture: assume this plan accidentally overreaches into UI replacement, skips proof before function expansion, or creates another broad metadata abstraction with no route to runtime proof.
+- Required posture: assume this plan accidentally overreaches into UI replacement, skips proof before function expansion, creates unsafe `any` ports, or lets port metadata alter live compatibility behavior.
 
 Required questions:
 
@@ -395,6 +415,9 @@ Required questions:
 - [x] Pass 7 - reviewed Slice A implementation diff for schema drift, accidental runtime behavior changes, and missing typed mapping checks.
 - [x] Pass 8 - repaired Slice A audit findings and re-ran focused Python and native validations.
 - [x] Pass 9 - clean re-read after repair confirms no Slice A scope leak into adapters, resolver routing, graph UI, or visible workflow changes.
+- [x] Pass 10 - reviewed Slice B implementation diff for unsafe `any`, missing canonical outputs, pilot subset drift, and accidental runtime behavior changes.
+- [x] Pass 11 - repaired the real Slice B defect where `generic.any` and extra identity ports could pass validation, then revalidated Python and native rails.
+- [x] Pass 12 - clean re-read confirmed zero generated `any`/`generic.any` ports, no live Color Pipeline behavior switch, and no graph UI, adapter, resolver, or function-library expansion changes.
 
 ## Audit Findings
 
@@ -407,6 +430,19 @@ Required questions:
 - [x] Slice A first implementation missed an existing categorical SDF Source-row domain: `sdf_inside_outside` needed `category.inside_outside` in addition to the originally listed `category.root_index`. The registry now includes that current shipped category without adding new behavior.
 - [x] Slice A native rail caught a malformed C++ error string and a tampered-fixture redeclaration after adding parser tests. Both were repaired before closeout, and the native rail now passes.
 - [x] Clean Slice A re-read found no adapters, resolver routing, graph UI, visible workflow changes, or function-library expansion in this implementation.
+- [x] Slice B hostile audit found the first port-validation implementation still allowed `generic.any` and allowed `identity` to carry extra ports beyond the required generic `T -> T` pair. Python and C++ validation now reject both, with focused regressions.
+- [x] Clean Slice B re-read found no adapters, resolver routing, graph UI, visible workflow changes, live compatibility switch, or new function-library entries in this implementation.
+
+## Slice B Validation Targets
+
+- `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_pilot_port_signatures_shadow.contract.json --out-json artifacts/validation/ui_salt_pilot_port_signatures_shadow_contract.json`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_pilot_port_signatures_shadow_hostile_audit.json`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_pilot_port_signatures_shadow_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_pilot_port_signatures_shadow_pytest --log artifacts/logs/ui_salt_pilot_port_signatures_shadow_pytest.log --out-json artifacts/validation/ui_salt_pilot_port_signatures_shadow_pytest.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_pilot_port_signatures_shadow_materialize --log artifacts/logs/ui_salt_pilot_port_signatures_shadow_materialize.log --out-json artifacts/validation/ui_salt_pilot_port_signatures_shadow_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_pilot_port_signatures_shadow_native --log artifacts/logs/ui_salt_pilot_port_signatures_shadow_native.log --out-json artifacts/validation/ui_salt_pilot_port_signatures_shadow_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_pilot_port_signatures_shadow_diff_check --log artifacts/logs/ui_salt_pilot_port_signatures_shadow_diff_check.log --out-json artifacts/validation/ui_salt_pilot_port_signatures_shadow_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Slice A Validation Targets
 

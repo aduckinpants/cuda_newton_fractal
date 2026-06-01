@@ -21,6 +21,14 @@ struct MaterializedColorPipelineParam {
     std::vector<std::string> enum_options;
 };
 
+
+struct MaterializedColorPipelinePort {
+    std::string direction;
+    std::string id;
+    std::string type;
+    bool canonical = false;
+    std::string generic_group;
+};
 struct MaterializedSignalType {
     std::string id;
     std::string kind;
@@ -46,6 +54,7 @@ struct MaterializedColorPipelineFunction {
     std::string signal_kind;
     std::string typed_signal;
     std::vector<MaterializedColorPipelineParam> params;
+    std::vector<MaterializedColorPipelinePort> ports;
 };
 
 struct MaterializedColorPipelineLane {

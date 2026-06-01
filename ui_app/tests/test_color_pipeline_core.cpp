@@ -95,6 +95,39 @@ const MaterializedSignalType* FindSignalType(
     return nullptr;
 }
 
+void CheckMaterializedPort(
+    const MaterializedColorPipelineContract& contract,
+    const char* laneId,
+    const char* functionId,
+    std::size_t portIndex,
+    std::size_t expectedPortCount,
+    const char* direction,
+    const char* portId,
+    const char* type,
+    bool canonical,
+    const char* genericGroup) {
+    const std::string prefix = std::string("TestMaterializedUiSaltMetadataShadowsCurrentCatalog_Port_") +
+        (laneId ? laneId : "") + "_" + (functionId ? functionId : "") + "_" +
+        (direction ? direction : "") + "_" + (portId ? portId : "");
+    const MaterializedColorPipelineLane* lane = FindMaterializedColorPipelineLane(contract, laneId ? laneId : "");
+    Check(lane != nullptr, (prefix + "_LanePresent").c_str());
+    if (!lane) return;
+    const MaterializedColorPipelineFunction* function = FindMaterializedColorPipelineFunction(*lane, functionId ? functionId : "");
+    Check(function != nullptr, (prefix + "_FunctionPresent").c_str());
+    if (!function) return;
+    Check(function->ports.size() == expectedPortCount, (prefix + "_Count").c_str());
+    if (function->ports.size() <= portIndex) {
+        Check(false, (prefix + "_IndexPresent").c_str());
+        return;
+    }
+    const MaterializedColorPipelinePort& port = function->ports[portIndex];
+    Check(port.direction == (direction ? direction : ""), (prefix + "_Direction").c_str());
+    Check(port.id == (portId ? portId : ""), (prefix + "_Id").c_str());
+    Check(port.type == (type ? type : ""), (prefix + "_Type").c_str());
+    Check(port.canonical == canonical, (prefix + "_Canonical").c_str());
+    Check(port.generic_group == (genericGroup ? genericGroup : ""), (prefix + "_GenericGroup").c_str());
+}
+
 const char* ExpectedTypedSignalForFunction(const char* functionId) {
     if (!functionId) return "";
     if (std::strcmp(functionId, "smooth_escape_ramp") == 0) return "scalar.unit";
@@ -932,6 +965,34 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_InsideOutsideIsCategory");
     Check(paletteIndex && paletteIndex->kind == "palette" && paletteIndex->domain == "discrete_index",
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_DiscreteIndexIsPaletteDomain");
+
+    CheckMaterializedPort(contract, "source", "smooth_escape_ramp", 0, 1, "output", "signal", "scalar.unit", true, "");
+    CheckMaterializedPort(contract, "source", "phase_orbit", 0, 1, "output", "signal", "phase.radians", true, "");
+    CheckMaterializedPort(contract, "source", "root_index", 0, 1, "output", "signal", "category.root_index", true, "");
+    CheckMaterializedPort(contract, "source", "sdf_signed_distance", 0, 1, "output", "signal", "scalar.sdf_signed_distance", true, "");
+    CheckMaterializedPort(contract, "source", "sdf_normal_angle", 0, 1, "output", "signal", "phase.radians", true, "");
+    CheckMaterializedPort(contract, "source", "sdf_inside_outside", 0, 1, "output", "signal", "category.inside_outside", true, "");
+    CheckMaterializedPort(contract, "shape", "identity", 0, 2, "input", "signal", "generic.T", false, "T");
+    CheckMaterializedPort(contract, "shape", "identity", 1, 2, "output", "signal", "generic.T", true, "T");
+    CheckMaterializedPort(contract, "shape", "repeat", 0, 2, "input", "signal", "scalar.unit", false, "");
+    CheckMaterializedPort(contract, "shape", "repeat", 1, 2, "output", "signal", "scalar.unit", true, "");
+    CheckMaterializedPort(contract, "shape", "bias_gain_curve", 0, 2, "input", "signal", "scalar.unit", false, "");
+    CheckMaterializedPort(contract, "shape", "bias_gain_curve", 1, 2, "output", "signal", "scalar.unit", true, "");
+    CheckMaterializedPort(contract, "palette", "heatmap", 0, 2, "input", "signal", "scalar.unit", false, "");
+    CheckMaterializedPort(contract, "palette", "heatmap", 1, 2, "output", "color", "color.linear_rgb", true, "");
+    CheckMaterializedPort(contract, "palette", "phase_wheel_palette", 0, 2, "input", "signal", "phase.radians", false, "");
+    CheckMaterializedPort(contract, "palette", "phase_wheel_palette", 1, 2, "output", "color", "color.linear_rgb", true, "");
+    CheckMaterializedPort(contract, "palette", "root_classic_palette", 0, 2, "input", "signal", "category.root_index", false, "");
+    CheckMaterializedPort(contract, "palette", "root_classic_palette", 1, 2, "output", "color", "color.linear_rgb", true, "");
+    CheckMaterializedPort(contract, "grading", "contrast_lift", 0, 2, "input", "color", "color.linear_rgb", false, "");
+    CheckMaterializedPort(contract, "grading", "contrast_lift", 1, 2, "output", "color", "color.linear_rgb", true, "");
+    CheckMaterializedPort(contract, "grading", "phase_finish", 0, 2, "input", "color", "color.linear_rgb", false, "");
+    CheckMaterializedPort(contract, "grading", "phase_finish", 1, 2, "output", "color", "color.linear_rgb", true, "");
+    CheckMaterializedPort(contract, "grading", "basin_default", 0, 2, "input", "color", "color.linear_rgb", false, "");
+    CheckMaterializedPort(contract, "grading", "basin_default", 1, 2, "output", "color", "color.linear_rgb", true, "");
+    CheckMaterializedPort(contract, "grading", "neutral_finish", 0, 2, "input", "color", "color.linear_rgb", false, "");
+    CheckMaterializedPort(contract, "grading", "neutral_finish", 1, 2, "output", "color", "color.linear_rgb", true, "");
+
     const std::vector<std::string> expectedApplicatorIds = {
         "none",
         "sdf_boundary_band",
@@ -1507,6 +1568,105 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
             error.find("typed_signal references unknown signal type") != std::string::npos,
         "TestMaterializedContractLoaderRejectsTamperedJson_UnknownTypedSignalRejected");
     std::remove(unknownTypedSignalPath.c_str());
+
+    const char* unknownPortTypeJson = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"}
+  ]},
+  "function_library": {
+    "lanes": [
+      {
+        "id": "source",
+        "label": "Source",
+        "default": "smooth_escape_ramp",
+        "functions": [
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "typed_signal": "scalar.unit", "params": [], "ports": [{"direction": "output", "id": "signal", "type": "scalar.missing", "canonical": true}]}
+        ]
+      }
+    ]
+  },
+  "composition_recipe_contract": {"compatibility": [], "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}], "recipes": []},
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string unknownPortTypePath = TempContractPath("ui_salt_contract_unknown_port_type.json");
+    Check(WriteTextFile(unknownPortTypePath, unknownPortTypeJson),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WriteUnknownPortTypeFixture");
+    error.clear();
+    Check(!LoadColorPipelineMaterializedContractJson(unknownPortTypePath, &contract, &error) &&
+            error.find("port references unknown signal type") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_UnknownPortTypeRejected");
+    std::remove(unknownPortTypePath.c_str());
+
+    const char* anyPortTypeJson = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"}
+  ]},
+  "function_library": {
+    "lanes": [
+      {
+        "id": "source",
+        "label": "Source",
+        "default": "smooth_escape_ramp",
+        "functions": [
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "typed_signal": "scalar.unit", "params": [], "ports": [{"direction": "output", "id": "signal", "type": "any", "canonical": true}]}
+        ]
+      }
+    ]
+  },
+  "composition_recipe_contract": {"compatibility": [], "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}], "recipes": []},
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string anyPortTypePath = TempContractPath("ui_salt_contract_any_port_type.json");
+    Check(WriteTextFile(anyPortTypePath, anyPortTypeJson),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WriteAnyPortTypeFixture");
+    error.clear();
+    Check(!LoadColorPipelineMaterializedContractJson(anyPortTypePath, &contract, &error) &&
+            error.find("port type 'any' is forbidden") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_AnyPortTypeRejected");
+    std::remove(anyPortTypePath.c_str());
+
+    const char* genericAnyPortTypeJson = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"}
+  ]},
+  "function_library": {
+    "lanes": [
+      {
+        "id": "shape",
+        "label": "Shape",
+        "default": "identity",
+        "functions": [
+          {"id": "identity", "label": "Identity", "description": "", "taxonomy_group": "identity", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "params": [], "ports": [{"direction": "input", "id": "signal", "type": "generic.any", "generic_group": "any"}, {"direction": "output", "id": "signal", "type": "generic.any", "generic_group": "any", "canonical": true}]}
+        ]
+      }
+    ]
+  },
+  "composition_recipe_contract": {"compatibility": [], "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}], "recipes": []},
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string genericAnyPortTypePath = TempContractPath("ui_salt_contract_generic_any_port_type.json");
+    Check(WriteTextFile(genericAnyPortTypePath, genericAnyPortTypeJson),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WriteGenericAnyPortTypeFixture");
+    error.clear();
+    Check(!LoadColorPipelineMaterializedContractJson(genericAnyPortTypePath, &contract, &error) &&
+            error.find("generic_group 'any' is forbidden") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_GenericAnyPortTypeRejected");
+    std::remove(genericAnyPortTypePath.c_str());
 
     const char* duplicateFunctionJson = R"json({
   "schema_version": 1,
