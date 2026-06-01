@@ -41,6 +41,7 @@ struct SdfPackFieldReport {
     SdfPackFieldBackend requested{SdfPackFieldBackend::cpu_reference};
     SdfPackFieldBackend used{SdfPackFieldBackend::cpu_reference};
     bool fallback_used{false};
+    bool direct_grid_evaluation{false};
     std::string pack_id;
     std::string error;
 };

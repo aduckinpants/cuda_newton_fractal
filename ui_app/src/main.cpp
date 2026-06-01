@@ -1483,6 +1483,7 @@ static void DispatchRenderFrame(
             bool anyCpuField = false;
             bool anyPackCudaField = false;
             bool anyPackCpuField = false;
+            bool anyPackDirectGridEvaluation = false;
             bool anyFieldFallback = false;
             std::uint64_t reportedMaskBytes = 0;
 
@@ -1503,6 +1504,7 @@ static void DispatchRenderFrame(
                     anyCpuField = anyCpuField || runtimeField.backend_report.used == LensSdfBackend::cpu_chamfer;
                     anyPackCudaField = anyPackCudaField || runtimeField.pack_report.used == SdfPackFieldBackend::cuda_sample;
                     anyPackCpuField = anyPackCpuField || runtimeField.pack_report.used == SdfPackFieldBackend::cpu_reference;
+                    anyPackDirectGridEvaluation = anyPackDirectGridEvaluation || runtimeField.pack_report.direct_grid_evaluation;
                     anyFieldFallback = anyFieldFallback || runtimeField.backend_report.fallback_used || runtimeField.pack_report.fallback_used;
                     lensSdfProbe.field_ms += runtimeField.field_ms;
                     lensSdfProbe.field_cache_lookup_ms += runtimeField.lookup_ms;
@@ -1546,6 +1548,7 @@ static void DispatchRenderFrame(
                     anyCpuField = anyCpuField || sharedDisplayField.backend_report.used == LensSdfBackend::cpu_chamfer;
                     anyPackCudaField = anyPackCudaField || sharedDisplayField.pack_report.used == SdfPackFieldBackend::cuda_sample;
                     anyPackCpuField = anyPackCpuField || sharedDisplayField.pack_report.used == SdfPackFieldBackend::cpu_reference;
+                    anyPackDirectGridEvaluation = anyPackDirectGridEvaluation || sharedDisplayField.pack_report.direct_grid_evaluation;
                     anyFieldFallback = anyFieldFallback || sharedDisplayField.backend_report.fallback_used || sharedDisplayField.pack_report.fallback_used;
                     lensSdfProbe.field_ms += sharedDisplayField.field_ms;
                     lensSdfProbe.field_cache_lookup_ms += sharedDisplayField.lookup_ms;
@@ -1682,6 +1685,7 @@ static void DispatchRenderFrame(
                         lensSdfProbe.pack_backend_used = "cpu_reference";
                     }
                     lensSdfProbe.pack_backend_fallback_used = anyFieldFallback;
+                    lensSdfProbe.pack_direct_grid_evaluation = anyPackDirectGridEvaluation;
                 } else if (anyCudaField) {
                     lensSdfProbe.backend_used = "cuda_jfa";
                 } else if (anyCpuField) {

@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_generation_downsample_optimization",
+  "feature_id": "sdf_field_pack_near_term",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_field_generation_downsample_optimization_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_field_generation_downsample_optimization_PHASED_PLAN.md",
+    "docs/contracts/sdf_field_generation_downsample_optimization.contract.json",
+    "docs/notes/sdf_field_pack_near_term_TODO.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/sdf_pack_cuda.h",
+    "ui_app/src/sdf_pack_cuda.cu",
+    "ui_app/src/sdf_pack_field_producer.h",
+    "ui_app/src/sdf_pack_field_producer.cpp",
+    "ui_app/src/sdf_pack_field_producer_cuda.cu",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_sdf_pack_field_producer_cuda.cu",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tests/test_sdf_performance_witness_tool.py",
+    "tests/test_fractal_runtime_sdf_pack_scene_lane.py",
+    "tests/test_fractal_runtime_sdf_performance_witness.py",
+    "tools/viewer_host_sdf_performance_witness.py",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "optimize SDF field generation/downsample before new SDF ops",
+    "preserve existing SDF pack scene pixels and Color Pipeline behavior",
+    "use before/after performance witnesses for any speed claim",
+    "keep unsupported field-primary mixed Source rows fail-closed",
+    "use no-mouse runtime proof"
+  ],
+  "forbidden_operator_prompts": [
+    "add new SDF ops or new SDF-native families",
+    "change visible Color Pipeline or SDF pack UI controls",
+    "change capture/replay authority",
+    "claim FPS improvement without measured published-runtime evidence",
+    "enable mixed non-SDF Source rows for sdf_pack_scene or generic_equation_pack without real source-signal producers",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/sdf-field-generation-downsample-optimization",
+    "source_head": "dc30c12",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "pixel_semantics_changed": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "new_sdf_ops": "forbidden",
+    "new_visible_controls": "forbidden",
+    "capture_replay_changes": "forbidden",
+    "fake_mixed_source_support": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_downsample_native_cuda --log artifacts/logs/sdf_field_downsample_native_cuda.log --out-json artifacts/validation/sdf_field_downsample_native_cuda.json --heartbeat-seconds 30 --timeout-seconds 600 -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_sdf_pack_field_producer_cuda",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_downsample_witness_unit --log artifacts/logs/sdf_field_downsample_witness_unit.log --out-json artifacts/validation/sdf_field_downsample_witness_unit.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_sdf_performance_witness_tool.py tests/test_fractal_runtime_sdf_performance_witness.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_downsample_runtime_publish --log artifacts/logs/sdf_field_downsample_runtime_publish.log --out-json artifacts/validation/sdf_field_downsample_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_downsample_runtime_proof --log artifacts/logs/sdf_field_downsample_runtime_proof.log --out-json artifacts/validation/sdf_field_downsample_runtime_proof.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_sdf_pack_scene_lane.py tests/test_fractal_runtime_sdf_performance_witness.py",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_generation_downsample_optimization.contract.json --out-json artifacts/validation/sdf_field_downsample_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_generation_downsample_optimization_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_downsample_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_downsample_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_field_downsample_diff_check --log artifacts/logs/sdf_field_downsample_diff_check.log --out-json artifacts/validation/sdf_field_downsample_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field generation/downsample optimization contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_downsample_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete for the SDF field generation/downsample optimization slice.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_downsample_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_publish_green",
+      "description": "The viewer runtime publishes successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_downsample_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_proof_green",
+      "description": "Published no-mouse runtime proof covers SDF pack scene and SDF performance witness paths.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_downsample_runtime_proof.json",
+      "json_path": "exit_code",
+      "equals": 0
+    }
+  ]
+}

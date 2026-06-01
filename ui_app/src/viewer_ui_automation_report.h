@@ -77,6 +77,7 @@ struct ViewerUiAutomationLensSdfProbe {
     std::string backend_used = "none";
     std::string pack_backend_used = "none";
     bool pack_backend_fallback_used = false;
+    bool pack_direct_grid_evaluation = false;
     bool fallback_used = false;
     int width = 0;
     int height = 0;

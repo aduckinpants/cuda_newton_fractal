@@ -169,6 +169,7 @@ def measurement_from_payload(
         "current_fractal_type": str(payload.get("current_fractal_type", "")),
         "lens_sdf_field_source": str(payload.get("lens_sdf_field_source", "none")),
         "lens_sdf_field_producer_kind": str(payload.get("lens_sdf_field_producer_kind", "none")),
+        "lens_sdf_pack_direct_grid_evaluation": payload.get("lens_sdf_pack_direct_grid_evaluation") is True,
         "lens_sdf_supported_signals": [
             str(item) for item in payload.get("lens_sdf_supported_signals", [])
         ] if isinstance(payload.get("lens_sdf_supported_signals"), list) else [],
@@ -330,6 +331,9 @@ def aggregate_measurement_samples(measurements: list[dict[str, object]]) -> list
         row["lens_sdf_postprocess_backend_buffer_grew"] = any(
             sample.get("lens_sdf_postprocess_backend_buffer_grew") is True for sample in samples
         )
+        row["lens_sdf_pack_direct_grid_evaluation"] = any(
+            sample.get("lens_sdf_pack_direct_grid_evaluation") is True for sample in samples
+        )
         for metric in MEDIAN_FLOAT_KEYS:
             row[metric] = _median_float(samples, metric)
         for metric in MEDIAN_INT_KEYS:
@@ -427,14 +431,14 @@ def write_markdown_report(report: dict[str, object], out_path: Path) -> None:
         f"- Recommendation: `{report.get('summary', {}).get('recommendation', '')}`",
         f"- Persistent viewer launches: `{report.get('persistent_viewer_launch_count', '')}`",
         "",
-        "| Scenario | Samples | Phase | Class | Backend | Fallback | Buffer Reuse | Buffer Grow | Field Cache | Req DS | Eff DS | Quality | Base ms | Field ms | Down ms | Backend ms | Store ms | Post ms | SDF total ms | Last ms | Step | Workers |",
-        "|---|---:|---|---|---|---|---|---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Scenario | Samples | Phase | Class | Backend | Fallback | Buffer Reuse | Buffer Grow | Pack Grid | Field Cache | Req DS | Eff DS | Quality | Base ms | Field ms | Down ms | Backend ms | Store ms | Post ms | SDF total ms | Last ms | Step | Workers |",
+        "|---|---:|---|---|---|---|---|---|---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for item in report.get("scenarios", []):
         if not isinstance(item, dict):
             continue
         lines.append(
-            "| {name} | {samples} | {phase} | {classification} | {backend} | {fallback} | {buffer_reuse} | {buffer_grow} | {cache} | {requested} | {effective} | {quality} | {base:.3f} | {field:.3f} | {down:.3f} | {backend_ms:.3f} | {store:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} | {workers} |".format(
+            "| {name} | {samples} | {phase} | {classification} | {backend} | {fallback} | {buffer_reuse} | {buffer_grow} | {pack_grid} | {cache} | {requested} | {effective} | {quality} | {base:.3f} | {field:.3f} | {down:.3f} | {backend_ms:.3f} | {store:.3f} | {post:.3f} | {total:.3f} | {last:.3f} | {step} | {workers} |".format(
                 name=item.get("name", ""),
                 samples=int(item.get("sample_count", 1)),
                 phase=item.get("phase", ""),
@@ -443,6 +447,7 @@ def write_markdown_report(report: dict[str, object], out_path: Path) -> None:
                 fallback="yes" if item.get("lens_sdf_postprocess_backend_fallback_used") else "no",
                 buffer_reuse="yes" if item.get("lens_sdf_postprocess_backend_buffer_reused") else "no",
                 buffer_grow="yes" if item.get("lens_sdf_postprocess_backend_buffer_grew") else "no",
+                pack_grid="yes" if item.get("lens_sdf_pack_direct_grid_evaluation") else "no",
                 cache=item.get("lens_sdf_field_cache_status", "disabled"),
                 requested=int(item.get("lens_sdf_requested_downsample", item.get("lens_downsample", 0))),
                 effective=int(item.get("lens_sdf_effective_downsample", item.get("lens_downsample", 0))),

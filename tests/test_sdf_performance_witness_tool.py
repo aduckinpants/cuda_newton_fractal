@@ -26,6 +26,7 @@ def _payload(
     cache_hit: bool = True,
     buffer_reused: bool = False,
     buffer_grew: bool = False,
+    pack_direct_grid: bool = False,
 ) -> dict[str, object]:
     sdf_total = field_ms + postprocess_ms if total_ms is None else total_ms
     return {
@@ -39,6 +40,7 @@ def _payload(
         "base_render_ms": 4.0,
         "lens_sdf_valid": True,
         "lens_sdf_color_pipeline_active": True,
+        "lens_sdf_pack_direct_grid_evaluation": pack_direct_grid,
         "lens_sdf_field_ms": field_ms,
         "lens_sdf_requested_equivalent_field_ms": field_ms,
         "lens_sdf_field_cache_lookup_ms": 0.1,
@@ -121,6 +123,7 @@ def test_sdf_measurement_report_classifies_field_and_postprocess_pressure() -> N
     assert report["scenarios"][0]["lens_sdf_field_cache_mask_bytes"] == 320 * 240
     assert report["scenarios"][0]["lens_sdf_field_mask_downsample_ms"] == 0.2
     assert report["scenarios"][0]["lens_sdf_field_cache_store_ms"] == 0.1
+    assert report["scenarios"][0]["lens_sdf_pack_direct_grid_evaluation"] is False
     assert report["summary"]["recommendation"] == "mixed_or_inconclusive_measurement_review_required"
 
 
@@ -153,7 +156,15 @@ def test_sdf_measurement_report_aggregates_repeated_rows_by_median() -> None:
         witness.measurement_from_payload(
             "sdf_signed_distance_fullres",
             "full_quality",
-            _payload(name="signed-a", field_ms=2.0, postprocess_ms=9.0, cache_status="miss", cache_hit=False, buffer_grew=True),
+            _payload(
+                name="signed-a",
+                field_ms=2.0,
+                postprocess_ms=9.0,
+                cache_status="miss",
+                cache_hit=False,
+                buffer_grew=True,
+                pack_direct_grid=True,
+            ),
             source_stack=["sdf_signed_distance"],
             lens_downsample=1,
         ),
@@ -187,5 +198,6 @@ def test_sdf_measurement_report_aggregates_repeated_rows_by_median() -> None:
     assert row["lens_sdf_field_cache_status_samples"] == ["miss", "hit", "hit"]
     assert row["lens_sdf_postprocess_backend_buffer_reused"] is True
     assert row["lens_sdf_postprocess_backend_buffer_grew"] is True
+    assert row["lens_sdf_pack_direct_grid_evaluation"] is True
     assert row["lens_sdf_postprocess_backend_buffer_reused_samples"] == [False, True, True]
     assert [sample["lens_sdf_postprocess_ms"] for sample in row["timing_samples"]] == [9.0, 1.0, 3.0]

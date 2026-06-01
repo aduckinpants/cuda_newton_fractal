@@ -101,6 +101,8 @@ void TestLensSdfProbeDefaults() {
             probe.field_cache_status == "disabled" &&
             probe.field_cache_mask_bytes == 0,
         "lens SDF automation probe reports stable field cache defaults");
+    Check(!probe.pack_direct_grid_evaluation,
+        "lens SDF automation probe reports stable authored-pack direct-grid default");
     Check(probe.field_group_count == 0 && probe.field_groups.empty(),
         "lens SDF automation probe reports stable empty field-group defaults");
 }
@@ -131,6 +133,7 @@ void TestLensSdfProbeTimingFields() {
     probe.field_cache_hit = true;
     probe.field_cache_mask_bytes = 76800;
     probe.field_producer_kind = "lens_field_v2";
+    probe.pack_direct_grid_evaluation = true;
     probe.supported_signal_ids = {
         "sdf_signed_distance",
         "sdf_inside_outside",
@@ -198,6 +201,8 @@ void TestLensSdfProbeTimingFields() {
             probe.field_groups[0].cache_status == "hit" &&
             probe.field_groups[0].width == 80,
         "lens SDF automation probe carries field-group detail");
+    Check(probe.pack_direct_grid_evaluation,
+        "lens SDF automation probe carries authored-pack direct-grid status");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {

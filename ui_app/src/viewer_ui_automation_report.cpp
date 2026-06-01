@@ -153,6 +153,8 @@ void WriteLensSdfReportFields(
     out << ",\n";
     out << "  \"lens_sdf_pack_backend_fallback_used\": " <<
         (lensSdfProbe.pack_backend_fallback_used ? "true" : "false") << ",\n";
+    out << "  \"lens_sdf_pack_direct_grid_evaluation\": " <<
+        (lensSdfProbe.pack_direct_grid_evaluation ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_fallback_used\": " << (lensSdfProbe.fallback_used ? "true" : "false") << ",\n";
     out << "  \"lens_sdf_width\": " << lensSdfProbe.width << ",\n";
     out << "  \"lens_sdf_height\": " << lensSdfProbe.height << ",\n";

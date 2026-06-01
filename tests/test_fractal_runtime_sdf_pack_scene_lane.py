@@ -170,6 +170,8 @@ def test_sdf_pack_scene_lane_selects_and_edits_built_in_pack_no_mouse(tmp_path: 
         assert selected.get("lens_sdf_field_source_pack_id") == "sdf_smooth_lattice_2d", selected
         assert selected.get("lens_sdf_valid") is True, selected
         assert selected.get("lens_sdf_pack_backend_used") in {"cuda_sample", "cpu_reference"}, selected
+        if selected.get("lens_sdf_pack_backend_used") == "cuda_sample":
+            assert selected.get("lens_sdf_pack_direct_grid_evaluation") is True, selected
 
         viewer.wait_for_control("sdf_pack.builtin_pack", timeout_seconds=20.0)
         for control_id in expected_controls:

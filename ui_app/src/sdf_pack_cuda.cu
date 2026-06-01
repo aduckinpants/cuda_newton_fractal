@@ -4,6 +4,94 @@
 
 #include <cuda_runtime.h>
 
+namespace {
+
+constexpr int kThreadsPerBlock = 256;
+
+struct SdfPackGridBuffers {
+    float* distances{nullptr};
+    int* error_code{nullptr};
+    size_t distance_capacity{0};
+
+    bool Allocate(size_t distanceBytes) {
+        const bool ok = cudaMalloc(&distances, distanceBytes) == cudaSuccess &&
+            cudaMalloc(&error_code, sizeof(int)) == cudaSuccess;
+        if (!ok) {
+            Free();
+            return false;
+        }
+        distance_capacity = distanceBytes;
+        return true;
+    }
+
+    bool EnsureCapacity(size_t distanceBytes) {
+        if (distances && error_code && distance_capacity >= distanceBytes) {
+            return true;
+        }
+        Free();
+        return Allocate(distanceBytes);
+    }
+
+    void Free() {
+        cudaFree(distances);
+        cudaFree(error_code);
+        distances = nullptr;
+        error_code = nullptr;
+        distance_capacity = 0;
+    }
+
+    ~SdfPackGridBuffers() {
+        Free();
+    }
+};
+
+__device__ void SetFirstSdfPackGridError(int* errorCode, int code) {
+    if (code != SDF_PACK_EVAL_OK) {
+        atomicCAS(errorCode, SDF_PACK_EVAL_OK, code);
+    }
+}
+
+__global__ void sdf_pack_grid_field_kernel(
+    int width,
+    int height,
+    double centerX,
+    double centerY,
+    double halfWidth,
+    double halfHeight,
+    double pixelScale,
+    SdfPackRuntimeDesc desc,
+    float* outSignedDistancePx,
+    int* outErrorCode) {
+    const int idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+    const int count = width * height;
+    if (idx >= count) return;
+
+    const int x = idx % width;
+    const int y = idx / width;
+    const double u = ((static_cast<double>(x) + 0.5) / static_cast<double>(width)) * 2.0 - 1.0;
+    const double v = ((static_cast<double>(y) + 0.5) / static_cast<double>(height) - 0.5) * 2.0;
+    const double worldX = centerX + u * halfWidth;
+    const double worldY = centerY + v * halfHeight;
+
+    const SdfPackGpuSample sample = EvaluateSdfPackRuntimeDesc(desc, worldX, worldY);
+    if (!sample.ok || sample.error_code != SDF_PACK_EVAL_OK) {
+        SetFirstSdfPackGridError(outErrorCode, sample.error_code == SDF_PACK_EVAL_OK
+            ? SDF_PACK_EVAL_INVALID_GEOMETRY
+            : sample.error_code);
+        outSignedDistancePx[idx] = 0.0f;
+        return;
+    }
+    const double distancePx = sample.distance / pixelScale;
+    if (!isfinite(distancePx)) {
+        SetFirstSdfPackGridError(outErrorCode, SDF_PACK_EVAL_INVALID_GEOMETRY);
+        outSignedDistancePx[idx] = 0.0f;
+        return;
+    }
+    outSignedDistancePx[idx] = static_cast<float>(distancePx);
+}
+
+} // namespace
+
 __global__ void sdf_pack_sample_kernel(
     const SdfPackGpuPoint* points,
     int pointCount,
@@ -72,9 +160,8 @@ bool SampleSdfPackCuda(
         return false;
     }
 
-    const int threadsPerBlock = 256;
-    const int blocks = (pointCount + threadsPerBlock - 1) / threadsPerBlock;
-    sdf_pack_sample_kernel<<<blocks, threadsPerBlock>>>(dPoints, pointCount, desc, dSamples);
+    const int blocks = (pointCount + kThreadsPerBlock - 1) / kThreadsPerBlock;
+    sdf_pack_sample_kernel<<<blocks, kThreadsPerBlock>>>(dPoints, pointCount, desc, dSamples);
 
     cudaError_t launchErr = cudaGetLastError();
     if (launchErr != cudaSuccess) {
@@ -99,5 +186,102 @@ bool SampleSdfPackCuda(
 
     cudaFree(dPoints);
     cudaFree(dSamples);
+    return true;
+}
+
+bool SampleSdfPackGridCuda(
+    int width,
+    int height,
+    double centerX,
+    double centerY,
+    double halfWidth,
+    double halfHeight,
+    double pixelScale,
+    const SdfPackRuntimeDesc& desc,
+    float* outSignedDistancePx,
+    const char** outError) {
+    if (outError) *outError = nullptr;
+    if (width <= 0 || height <= 0) {
+        if (outError) *outError = "SDF pack grid dimensions must be positive";
+        return false;
+    }
+    const size_t count = static_cast<size_t>(width) * static_cast<size_t>(height);
+    if (count == 0 || count > static_cast<size_t>(0x7fffffff)) {
+        if (outError) *outError = "SDF pack grid dimensions are too large";
+        return false;
+    }
+    if (!isfinite(centerX) || !isfinite(centerY) ||
+        !isfinite(halfWidth) || !isfinite(halfHeight) ||
+        !isfinite(pixelScale) || halfWidth <= 0.0 || halfHeight <= 0.0 || pixelScale <= 0.0) {
+        if (outError) *outError = "SDF pack grid geometry is invalid";
+        return false;
+    }
+    if (!sdf_pack_desc_is_valid(desc)) {
+        if (outError) *outError = "invalid SDF pack runtime descriptor";
+        return false;
+    }
+    if (!outSignedDistancePx) {
+        if (outError) *outError = "outSignedDistancePx is null";
+        return false;
+    }
+
+    int deviceCount = 0;
+    cudaError_t deviceCountErr = cudaGetDeviceCount(&deviceCount);
+    if (deviceCountErr != cudaSuccess || deviceCount <= 0) {
+        if (outError) *outError = "CUDA backend unavailable: no CUDA device";
+        return false;
+    }
+    if (cudaSetDevice(0) != cudaSuccess) {
+        if (outError) *outError = "CUDA backend unavailable: failed to select device 0";
+        return false;
+    }
+
+    const size_t distanceBytes = count * sizeof(float);
+    static SdfPackGridBuffers buffers;
+    if (!buffers.EnsureCapacity(distanceBytes)) {
+        if (outError) *outError = "cudaMalloc failed for SDF pack grid field";
+        return false;
+    }
+    if (cudaMemset(buffers.error_code, 0, sizeof(int)) != cudaSuccess) {
+        if (outError) *outError = "cudaMemset failed for SDF pack grid error code";
+        return false;
+    }
+
+    const int blocks = static_cast<int>((count + kThreadsPerBlock - 1) / kThreadsPerBlock);
+    sdf_pack_grid_field_kernel<<<blocks, kThreadsPerBlock>>>(
+        width,
+        height,
+        centerX,
+        centerY,
+        halfWidth,
+        halfHeight,
+        pixelScale,
+        desc,
+        buffers.distances,
+        buffers.error_code);
+    cudaError_t launchErr = cudaGetLastError();
+    if (launchErr != cudaSuccess) {
+        if (outError) *outError = "CUDA SDF pack grid kernel launch failed";
+        return false;
+    }
+    cudaError_t syncErr = cudaDeviceSynchronize();
+    if (syncErr != cudaSuccess) {
+        if (outError) *outError = "CUDA SDF pack grid kernel execution failed";
+        return false;
+    }
+
+    int errorCode = SDF_PACK_EVAL_OK;
+    if (cudaMemcpy(&errorCode, buffers.error_code, sizeof(int), cudaMemcpyDeviceToHost) != cudaSuccess) {
+        if (outError) *outError = "cudaMemcpy failed for SDF pack grid error code";
+        return false;
+    }
+    if (errorCode != SDF_PACK_EVAL_OK) {
+        if (outError) *outError = "SDF pack grid CUDA sample returned a per-point error";
+        return false;
+    }
+    if (cudaMemcpy(outSignedDistancePx, buffers.distances, distanceBytes, cudaMemcpyDeviceToHost) != cudaSuccess) {
+        if (outError) *outError = "cudaMemcpy failed for SDF pack grid distances";
+        return false;
+    }
     return true;
 }

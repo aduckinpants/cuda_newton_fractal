@@ -146,6 +146,7 @@ static void CheckFieldParity(const char* label, const char* packJson, const std:
     CHECK(report.requested == SdfPackFieldBackend::cuda_sample, "report records requested CUDA backend");
     CHECK(report.used == SdfPackFieldBackend::cuda_sample, "report records used CUDA backend");
     CHECK(!report.fallback_used, "direct CUDA does not report fallback");
+    CHECK(report.direct_grid_evaluation, "CUDA field producer uses direct grid evaluation instead of host point staging");
     CHECK(cudaField.source_kind == SdfFieldSourceKind::authored_sdf_pack, "CUDA field source identifies authored pack");
     CHECK(cudaField.width == cpu.width && cudaField.height == cpu.height, "CUDA field dimensions match CPU");
     CHECK(Nearly(cudaField.pixel_scale, cpu.pixel_scale), "CUDA field pixel scale matches CPU");
