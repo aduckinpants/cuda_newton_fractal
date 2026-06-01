@@ -10,7 +10,13 @@ from pathlib import Path
 from typing import Any
 
 
-VALID_CONTRACT_KINDS = {"function_library", "composition_recipe", "explaino", "signal_type_registry"}
+VALID_CONTRACT_KINDS = {
+    "function_library",
+    "composition_recipe",
+    "explaino",
+    "signal_type_registry",
+    "adapter_library",
+}
 VALID_SIGNAL_KINDS = {"scalar", "phase", "categorical"}
 VALID_SIGNAL_TYPE_KINDS = {"scalar", "phase", "category", "palette", "mask", "color", "field"}
 VALID_SIGNAL_TYPE_TOPOLOGIES = {"linear", "circular", "discrete", "mask", "color", "field"}
@@ -19,7 +25,19 @@ VALID_APPLICATOR_SIGNAL_KINDS = VALID_SIGNAL_KINDS | {"any"}
 VALID_APPLICATOR_TARGET_LANES = {"source"}
 VALID_PARAM_TYPES = {"float", "double", "int", "bool", "enum"}
 VALID_PORT_DIRECTIONS = {"input", "output"}
-VALID_STATEMENTS = {"contract", "signal_type", "lane", "function", "param", "port", "compat", "recipe", "row_applicator", "explaino_contract"}
+VALID_STATEMENTS = {
+    "contract",
+    "signal_type",
+    "adapter",
+    "lane",
+    "function",
+    "param",
+    "port",
+    "compat",
+    "recipe",
+    "row_applicator",
+    "explaino_contract",
+}
 
 
 class MaterializerError(ValueError):
@@ -123,6 +141,15 @@ def _optional_bool(kwargs: dict[str, Any], key: str, default: bool) -> bool:
     value = kwargs.get(key, default)
     if not isinstance(value, bool):
         raise MaterializerError(f"{key} must be a bool")
+    return value
+
+
+def _require_bool(kwargs: dict[str, Any], key: str, *, statement: str) -> bool:
+    if key not in kwargs:
+        raise MaterializerError(f"{statement} requires {key}")
+    value = kwargs[key]
+    if not isinstance(value, bool):
+        raise MaterializerError(f"{statement} {key} must be a bool")
     return value
 
 
@@ -251,6 +278,64 @@ def _build_port(function_id: str, kwargs: dict[str, Any], signal_type_ids: set[s
     return port
 
 
+def _require_non_negative_int(kwargs: dict[str, Any], key: str, *, statement: str) -> int:
+    value = kwargs.get(key)
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise MaterializerError(f"{statement} requires non-negative integer {key}")
+    return value
+
+
+def _is_scalar_type(type_id: str) -> bool:
+    return type_id.startswith("scalar.")
+
+
+def _is_category_type(type_id: str) -> bool:
+    return type_id.startswith("category.")
+
+
+def _validate_adapter_semantics(adapter: dict[str, Any]) -> None:
+    adapter_id = adapter["id"]
+    source = adapter["source"]
+    target = adapter["target"]
+    policy = adapter["policy"]
+    lossy = bool(adapter["lossy"])
+    if lossy and policy == "safe":
+        raise MaterializerError(f"adapter {adapter_id} lossy adapters cannot use safe policy")
+    if policy != "safe" and not adapter["fail_closed_reason"]:
+        raise MaterializerError(f"adapter {adapter_id} requires fail_closed_reason for non-safe policy")
+    if _is_category_type(source) and _is_scalar_type(target) and policy in {"safe", "visible_default"}:
+        raise MaterializerError(f"adapter {adapter_id} category-to-scalar adapters cannot be safe or visible_default")
+    if source == "color.linear_rgb" and _is_scalar_type(target) and policy in {"safe", "visible_default"}:
+        raise MaterializerError(f"adapter {adapter_id} color-to-scalar adapters cannot be safe or visible_default")
+    if source in {"scalar.signed", "scalar.sdf_signed_distance"} and target == "scalar.unit" and policy in {"safe", "visible_default"}:
+        raise MaterializerError(f"adapter {adapter_id} signed-to-unit adapters require explicit normalization policy")
+
+
+def _build_adapter(kwargs: dict[str, Any], signal_type_ids: set[str]) -> dict[str, Any]:
+    adapter_id = _require_string(kwargs, "id", statement="adapter")
+    source = _require_string(kwargs, "source", statement=f"adapter {adapter_id}")
+    target = _require_string(kwargs, "target", statement=f"adapter {adapter_id}")
+    if source not in signal_type_ids:
+        raise MaterializerError(f"adapter {adapter_id} references unknown source type '{source}'")
+    if target not in signal_type_ids:
+        raise MaterializerError(f"adapter {adapter_id} references unknown target type '{target}'")
+    policy = _require_string(kwargs, "policy", statement=f"adapter {adapter_id}")
+    if policy not in VALID_ADAPTER_POLICIES:
+        raise MaterializerError(f"adapter {adapter_id} has invalid policy '{policy}'")
+    adapter = {
+        "id": adapter_id,
+        "source": source,
+        "target": target,
+        "policy": policy,
+        "lossy": _require_bool(kwargs, "lossy", statement=f"adapter {adapter_id}"),
+        "reversible": _require_bool(kwargs, "reversible", statement=f"adapter {adapter_id}"),
+        "cost": _require_non_negative_int(kwargs, "cost", statement=f"adapter {adapter_id}"),
+        "fail_closed_reason": _optional_string(kwargs, "fail_closed_reason", ""),
+    }
+    _validate_adapter_semantics(adapter)
+    return adapter
+
+
 def _validate_function_ports(record: FunctionRecord) -> None:
     ports = record.function.get("ports", [])
     if not ports:
@@ -287,6 +372,9 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     contract_keys: set[tuple[str, str]] = set()
     signal_types: list[dict[str, Any]] = []
     signal_type_ids: set[str] = set()
+    adapter_library_declared = False
+    adapters: list[dict[str, Any]] = []
+    adapter_ids: set[str] = set()
 
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
         parsed = _parse_statement(raw_line, line_number)
@@ -307,6 +395,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 raise MaterializerError(f"duplicate contract '{contract_id}'")
             contract_keys.add(key)
             contracts.append({"kind": kind, "contract_id": contract_id, "version": version})
+            if kind == "adapter_library":
+                adapter_library_declared = True
         elif name == "signal_type":
             _check_known_args(
                 name,
@@ -364,6 +454,27 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             if kind == "phase" and topology != "circular":
                 raise MaterializerError(f"signal_type {type_id} phase kind requires circular topology")
             signal_types.append(signal_type)
+        elif name == "adapter":
+            _check_known_args(
+                name,
+                kwargs,
+                {
+                    "id",
+                    "source",
+                    "target",
+                    "policy",
+                    "lossy",
+                    "reversible",
+                    "cost",
+                    "fail_closed_reason",
+                },
+            )
+            adapter = _build_adapter(kwargs, signal_type_ids)
+            adapter_id = adapter["id"]
+            if adapter_id in adapter_ids:
+                raise MaterializerError(f"duplicate adapter id '{adapter_id}'")
+            adapter_ids.add(adapter_id)
+            adapters.append(adapter)
         elif name == "lane":
             _check_known_args(name, kwargs, {"id", "label", "default"})
             lane_id = _require_string(kwargs, "id", statement=name)
@@ -523,12 +634,15 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         raise MaterializerError("at least one explaino_contract is required")
     if not row_applicators:
         raise MaterializerError("at least one row_applicator is required")
+    if adapter_library_declared and not adapters:
+        raise MaterializerError("adapter_library contract requires at least one adapter")
 
     return {
         "schema_version": 1,
         "source_path": source_path,
         "contracts": contracts,
         "signal_type_registry": {"types": signal_types},
+        "adapter_library_contract": {"adapters": adapters},
         "function_library": {"lanes": lanes},
         "composition_recipe_contract": {
             "compatibility": compatibility,

@@ -5,6 +5,7 @@ contract(kind="function_library", contract_id="viewer.function_library_contract.
 contract(kind="composition_recipe", contract_id="viewer.composition_recipe_contract.v1", version=1)
 contract(kind="explaino", contract_id="viewer.explaino_contract.v1", version=1)
 contract(kind="signal_type_registry", contract_id="viewer.signal_type_registry_contract.v1", version=1)
+contract(kind="adapter_library", contract_id="viewer.adapter_library_contract.v1", version=1)
 
 signal_type(id="scalar.unit", kind="scalar", domain="unit", topology="linear", arity=1, default_adapter_policy="safe")
 signal_type(id="scalar.signed", kind="scalar", domain="signed", topology="linear", arity=1, default_adapter_policy="explicit_only")
@@ -16,6 +17,19 @@ signal_type(id="palette.discrete_index", kind="palette", domain="discrete_index"
 signal_type(id="mask.alpha", kind="mask", domain="alpha", topology="mask", arity=1, default_adapter_policy="explicit_only")
 signal_type(id="color.linear_rgb", kind="color", domain="linear_rgb", topology="color", arity=3, color_space="linear_rgb", default_adapter_policy="forbidden")
 signal_type(id="field.sdf_signed_distance", kind="field", domain="signed_distance", topology="field", arity=1, units="field_pixels", coordinate_space="sdf_field", default_adapter_policy="forbidden")
+
+# Slice C adapter declarations are shadow metadata only. No live runtime route inserts adapters in this slice.
+adapter(id="identity.scalar_unit", source="scalar.unit", target="scalar.unit", policy="safe", lossy=False, reversible=True, cost=0)
+adapter(id="identity.scalar_sdf_signed_distance", source="scalar.sdf_signed_distance", target="scalar.sdf_signed_distance", policy="safe", lossy=False, reversible=True, cost=0)
+adapter(id="identity.phase_radians", source="phase.radians", target="phase.radians", policy="safe", lossy=False, reversible=True, cost=0)
+adapter(id="identity.color_linear_rgb", source="color.linear_rgb", target="color.linear_rgb", policy="safe", lossy=False, reversible=True, cost=0)
+adapter(id="identity.mask_alpha", source="mask.alpha", target="mask.alpha", policy="safe", lossy=False, reversible=True, cost=0)
+adapter(id="normalize.scalar_signed.unit", source="scalar.signed", target="scalar.unit", policy="explicit_only", lossy=True, reversible=False, cost=2, fail_closed_reason="requires explicit signed scalar normalization before unit-domain shaping")
+adapter(id="normalize.sdf_signed_distance.unit", source="scalar.sdf_signed_distance", target="scalar.unit", policy="explicit_only", lossy=True, reversible=False, cost=2, fail_closed_reason="requires explicit signed-distance normalization before unit-domain shaping")
+adapter(id="phase.radians.unit_wrap", source="phase.radians", target="scalar.unit", policy="visible_default", lossy=True, reversible=False, cost=2, fail_closed_reason="phase-to-unit wrapping is a visible projection")
+adapter(id="scalar_unit.phase_radians", source="scalar.unit", target="phase.radians", policy="explicit_only", lossy=False, reversible=False, cost=2, fail_closed_reason="unit scalar to phase requires explicit phase interpretation")
+adapter(id="root_index.palette_discrete_index", source="category.root_index", target="palette.discrete_index", policy="visible_default", lossy=False, reversible=False, cost=1, fail_closed_reason="root category palette mapping requires a root palette")
+adapter(id="field.sdf_signed_distance.boundary_mask", source="field.sdf_signed_distance", target="mask.alpha", policy="explicit_only", lossy=True, reversible=False, cost=3, fail_closed_reason="raw SDF field to boundary mask requires explicit boundary width")
 
 row_applicator(id="none", label="None", target_lane="source", required_signal_kind="any", requires_sdf_field=False, storage_param="signal.sdf_gate", fail_closed_reason="ungated source row contribution")
 row_applicator(id="sdf_boundary_band", label="SDF Boundary Band", target_lane="source", required_signal_kind="any", requires_sdf_field=True, storage_param="signal.sdf_gate", width_param="signal.sdf_gate_width_px", fail_closed_reason="requires an SDF field for boundary-band row masking")

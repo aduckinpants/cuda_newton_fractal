@@ -95,6 +95,17 @@ const MaterializedSignalType* FindSignalType(
     return nullptr;
 }
 
+const MaterializedColorPipelineAdapter* FindAdapter(
+    const MaterializedColorPipelineContract& contract,
+    const char* id) {
+    for (const MaterializedColorPipelineAdapter& adapter : contract.adapters) {
+        if (adapter.id == id) {
+            return &adapter;
+        }
+    }
+    return nullptr;
+}
+
 void CheckMaterializedPort(
     const MaterializedColorPipelineContract& contract,
     const char* laneId,
@@ -947,6 +958,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     Check(contract.recipes.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
     Check(contract.signal_types.size() == 10, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SignalTypeCount");
+    Check(contract.adapters.size() == 11, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_AdapterCount");
     const MaterializedSignalType* scalarSdf = FindSignalType(contract, "scalar.sdf_signed_distance");
     const MaterializedSignalType* fieldSdf = FindSignalType(contract, "field.sdf_signed_distance");
     const MaterializedSignalType* normalPhase = FindSignalType(contract, "phase.radians");
@@ -965,6 +977,27 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_InsideOutsideIsCategory");
     Check(paletteIndex && paletteIndex->kind == "palette" && paletteIndex->domain == "discrete_index",
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_DiscreteIndexIsPaletteDomain");
+
+    const MaterializedColorPipelineAdapter* identityScalar = FindAdapter(contract, "identity.scalar_unit");
+    const MaterializedColorPipelineAdapter* normalizeSdf = FindAdapter(contract, "normalize.sdf_signed_distance.unit");
+    const MaterializedColorPipelineAdapter* rootPalette = FindAdapter(contract, "root_index.palette_discrete_index");
+    const MaterializedColorPipelineAdapter* fieldMask = FindAdapter(contract, "field.sdf_signed_distance.boundary_mask");
+    Check(identityScalar && identityScalar->source == "scalar.unit" && identityScalar->target == "scalar.unit" &&
+            identityScalar->policy == "safe" && !identityScalar->lossy && identityScalar->reversible &&
+            identityScalar->cost == 0,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_IdentityScalarAdapter");
+    Check(normalizeSdf && normalizeSdf->source == "scalar.sdf_signed_distance" &&
+            normalizeSdf->target == "scalar.unit" && normalizeSdf->policy == "explicit_only" &&
+            normalizeSdf->lossy && !normalizeSdf->fail_closed_reason.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfNormalizeAdapter");
+    Check(rootPalette && rootPalette->source == "category.root_index" &&
+            rootPalette->target == "palette.discrete_index" && rootPalette->policy == "visible_default" &&
+            !rootPalette->lossy && !rootPalette->fail_closed_reason.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RootPaletteAdapter");
+    Check(fieldMask && fieldMask->source == "field.sdf_signed_distance" &&
+            fieldMask->target == "mask.alpha" && fieldMask->policy == "explicit_only" &&
+            fieldMask->lossy && !fieldMask->reversible,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FieldMaskAdapter");
 
     CheckMaterializedPort(contract, "source", "smooth_escape_ramp", 0, 1, "output", "signal", "scalar.unit", true, "");
     CheckMaterializedPort(contract, "source", "phase_orbit", 0, 1, "output", "signal", "phase.radians", true, "");
@@ -1501,6 +1534,47 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
 }
 
 void TestMaterializedContractLoaderRejectsTamperedJson() {
+    auto CheckTamperedAdapterJson = [](const char* adapterJson, const char* fileName, const char* expectedError, const char* checkName) {
+        const std::string json = std::string(R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"},
+    {"id": "scalar.signed", "kind": "scalar", "domain": "signed", "topology": "linear", "arity": 1, "default_adapter_policy": "explicit_only"},
+    {"id": "scalar.sdf_signed_distance", "kind": "scalar", "domain": "signed_distance", "topology": "linear", "arity": 1, "default_adapter_policy": "explicit_only"},
+    {"id": "category.root_index", "kind": "category", "domain": "root_index", "topology": "discrete", "arity": 1, "default_adapter_policy": "forbidden"},
+    {"id": "palette.discrete_index", "kind": "palette", "domain": "discrete_index", "topology": "discrete", "arity": 1, "default_adapter_policy": "explicit_only"}
+  ]},
+  "adapter_library_contract": {"adapters": [
+)json") + adapterJson + R"json(
+  ]},
+  "function_library": {
+    "lanes": [
+      {
+        "id": "source",
+        "label": "Source",
+        "default": "smooth_escape_ramp",
+        "functions": [
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "typed_signal": "scalar.unit", "params": []}
+        ]
+      }
+    ]
+  },
+  "composition_recipe_contract": {"compatibility": [], "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}], "recipes": []},
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+        const std::string path = TempContractPath(fileName);
+        Check(WriteTextFile(path, json.c_str()), (std::string(checkName) + "_WriteFixture").c_str());
+        MaterializedColorPipelineContract contract;
+        std::string error;
+        Check(!LoadColorPipelineMaterializedContractJson(path, &contract, &error) &&
+                error.find(expectedError) != std::string::npos,
+            checkName);
+        std::remove(path.c_str());
+    };
+
     const char* duplicateSignalTypeJson = R"json({
   "schema_version": 1,
   "source_path": "tampered.ui.salt",
@@ -1601,6 +1675,32 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
             error.find("port references unknown signal type") != std::string::npos,
         "TestMaterializedContractLoaderRejectsTamperedJson_UnknownPortTypeRejected");
     std::remove(unknownPortTypePath.c_str());
+
+    CheckTamperedAdapterJson(
+        R"json(    {"id": "", "source": "scalar.unit", "target": "scalar.unit", "policy": "safe", "lossy": false, "reversible": true, "cost": 0})json",
+        "ui_salt_contract_empty_adapter_id.json",
+        "Materialized adapter id must be non-empty",
+        "TestMaterializedContractLoaderRejectsTamperedJson_EmptyAdapterIdRejected");
+    CheckTamperedAdapterJson(
+        R"json(    {"id": "bad.unknown", "source": "scalar.missing", "target": "scalar.unit", "policy": "explicit_only", "lossy": false, "reversible": false, "cost": 1, "fail_closed_reason": "missing source"})json",
+        "ui_salt_contract_unknown_adapter_source.json",
+        "references unknown source type",
+        "TestMaterializedContractLoaderRejectsTamperedJson_UnknownAdapterSourceRejected");
+    CheckTamperedAdapterJson(
+        R"json(    {"id": "bad.lossy.safe", "source": "scalar.sdf_signed_distance", "target": "scalar.unit", "policy": "safe", "lossy": true, "reversible": false, "cost": 1})json",
+        "ui_salt_contract_lossy_safe_adapter.json",
+        "lossy adapters cannot use safe policy",
+        "TestMaterializedContractLoaderRejectsTamperedJson_LossySafeAdapterRejected");
+    CheckTamperedAdapterJson(
+        R"json(    {"id": "bad.category.scalar", "source": "category.root_index", "target": "scalar.unit", "policy": "visible_default", "lossy": false, "reversible": false, "cost": 1, "fail_closed_reason": "category projection"})json",
+        "ui_salt_contract_category_scalar_adapter.json",
+        "category-to-scalar adapters cannot be safe or visible_default",
+        "TestMaterializedContractLoaderRejectsTamperedJson_CategoryScalarAdapterRejected");
+    CheckTamperedAdapterJson(
+        R"json(    {"id": "bad.signed.unit", "source": "scalar.signed", "target": "scalar.unit", "policy": "visible_default", "lossy": false, "reversible": false, "cost": 1, "fail_closed_reason": "signed projection"})json",
+        "ui_salt_contract_signed_unit_adapter.json",
+        "signed-to-unit adapters require explicit normalization policy",
+        "TestMaterializedContractLoaderRejectsTamperedJson_SignedUnitAdapterRejected");
 
     const char* anyPortTypeJson = R"json({
   "schema_version": 1,

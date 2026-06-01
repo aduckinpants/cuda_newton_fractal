@@ -21,6 +21,11 @@
       "kind": "signal_type_registry",
       "contract_id": "viewer.signal_type_registry_contract.v1",
       "version": 1
+    },
+    {
+      "kind": "adapter_library",
+      "contract_id": "viewer.adapter_library_contract.v1",
+      "version": 1
     }
   ],
   "signal_type_registry": {
@@ -110,6 +115,120 @@
         "default_adapter_policy": "forbidden",
         "units": "field_pixels",
         "coordinate_space": "sdf_field"
+      }
+    ]
+  },
+  "adapter_library_contract": {
+    "adapters": [
+      {
+        "id": "identity.scalar_unit",
+        "source": "scalar.unit",
+        "target": "scalar.unit",
+        "policy": "safe",
+        "lossy": false,
+        "reversible": true,
+        "cost": 0,
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "identity.scalar_sdf_signed_distance",
+        "source": "scalar.sdf_signed_distance",
+        "target": "scalar.sdf_signed_distance",
+        "policy": "safe",
+        "lossy": false,
+        "reversible": true,
+        "cost": 0,
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "identity.phase_radians",
+        "source": "phase.radians",
+        "target": "phase.radians",
+        "policy": "safe",
+        "lossy": false,
+        "reversible": true,
+        "cost": 0,
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "identity.color_linear_rgb",
+        "source": "color.linear_rgb",
+        "target": "color.linear_rgb",
+        "policy": "safe",
+        "lossy": false,
+        "reversible": true,
+        "cost": 0,
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "identity.mask_alpha",
+        "source": "mask.alpha",
+        "target": "mask.alpha",
+        "policy": "safe",
+        "lossy": false,
+        "reversible": true,
+        "cost": 0,
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "normalize.scalar_signed.unit",
+        "source": "scalar.signed",
+        "target": "scalar.unit",
+        "policy": "explicit_only",
+        "lossy": true,
+        "reversible": false,
+        "cost": 2,
+        "fail_closed_reason": "requires explicit signed scalar normalization before unit-domain shaping"
+      },
+      {
+        "id": "normalize.sdf_signed_distance.unit",
+        "source": "scalar.sdf_signed_distance",
+        "target": "scalar.unit",
+        "policy": "explicit_only",
+        "lossy": true,
+        "reversible": false,
+        "cost": 2,
+        "fail_closed_reason": "requires explicit signed-distance normalization before unit-domain shaping"
+      },
+      {
+        "id": "phase.radians.unit_wrap",
+        "source": "phase.radians",
+        "target": "scalar.unit",
+        "policy": "visible_default",
+        "lossy": true,
+        "reversible": false,
+        "cost": 2,
+        "fail_closed_reason": "phase-to-unit wrapping is a visible projection"
+      },
+      {
+        "id": "scalar_unit.phase_radians",
+        "source": "scalar.unit",
+        "target": "phase.radians",
+        "policy": "explicit_only",
+        "lossy": false,
+        "reversible": false,
+        "cost": 2,
+        "fail_closed_reason": "unit scalar to phase requires explicit phase interpretation"
+      },
+      {
+        "id": "root_index.palette_discrete_index",
+        "source": "category.root_index",
+        "target": "palette.discrete_index",
+        "policy": "visible_default",
+        "lossy": false,
+        "reversible": false,
+        "cost": 1,
+        "fail_closed_reason": "root category palette mapping requires a root palette"
+      },
+      {
+        "id": "field.sdf_signed_distance.boundary_mask",
+        "source": "field.sdf_signed_distance",
+        "target": "mask.alpha",
+        "policy": "explicit_only",
+        "lossy": true,
+        "reversible": false,
+        "cost": 3,
+        "fail_closed_reason": "raw SDF field to boundary mask requires explicit boundary width"
       }
     ]
   },

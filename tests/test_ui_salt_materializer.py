@@ -21,11 +21,21 @@ contract(kind="function_library", contract_id="viewer.function_library_contract.
 contract(kind="composition_recipe", contract_id="viewer.composition_recipe_contract.v1", version=1)
 contract(kind="explaino", contract_id="viewer.explaino_contract.v1", version=1)
 contract(kind="signal_type_registry", contract_id="viewer.signal_type_registry_contract.v1", version=1)
+contract(kind="adapter_library", contract_id="viewer.adapter_library_contract.v1", version=1)
 signal_type(id="scalar.unit", kind="scalar", domain="unit", topology="linear", arity=1, default_adapter_policy="safe")
+signal_type(id="scalar.signed", kind="scalar", domain="signed", topology="linear", arity=1, default_adapter_policy="explicit_only")
 signal_type(id="scalar.sdf_signed_distance", kind="scalar", domain="signed_distance", topology="linear", arity=1, units="field_px", default_adapter_policy="explicit_only")
 signal_type(id="phase.radians", kind="phase", domain="angle", topology="circular", arity=1, units="radians", period=6.283185307179586, default_adapter_policy="explicit_only")
 signal_type(id="category.root_index", kind="category", domain="root_index", topology="discrete", arity=1, default_adapter_policy="forbidden")
 signal_type(id="palette.discrete_index", kind="palette", domain="discrete_index", topology="discrete", arity=1, default_adapter_policy="explicit_only")
+signal_type(id="mask.alpha", kind="mask", domain="alpha", topology="mask", arity=1, default_adapter_policy="explicit_only")
+signal_type(id="color.linear_rgb", kind="color", domain="linear_rgb", topology="color", arity=3, color_space="linear_rgb", default_adapter_policy="forbidden")
+signal_type(id="field.sdf_signed_distance", kind="field", domain="signed_distance", topology="field", arity=1, units="field_px", coordinate_space="sdf_field", default_adapter_policy="forbidden")
+adapter(id="identity.scalar_unit", source="scalar.unit", target="scalar.unit", policy="safe", lossy=False, reversible=True, cost=0)
+adapter(id="normalize.sdf_signed_distance.unit", source="scalar.sdf_signed_distance", target="scalar.unit", policy="explicit_only", lossy=True, reversible=False, cost=2, fail_closed_reason="requires explicit signed-distance normalization")
+adapter(id="phase.radians.unit_wrap", source="phase.radians", target="scalar.unit", policy="visible_default", lossy=True, reversible=False, cost=2, fail_closed_reason="phase-to-unit wrapping is a visible projection")
+adapter(id="root_index.palette_discrete_index", source="category.root_index", target="palette.discrete_index", policy="visible_default", lossy=False, reversible=False, cost=1, fail_closed_reason="root category palette mapping requires a root palette")
+adapter(id="field.sdf_signed_distance.boundary_mask", source="field.sdf_signed_distance", target="mask.alpha", policy="explicit_only", lossy=True, reversible=False, cost=3, fail_closed_reason="raw SDF field to boundary mask requires explicit boundary width")
 row_applicator(id="none", label="None", target_lane="source", required_signal_kind="any", requires_sdf_field=False, storage_param="signal.sdf_gate", fail_closed_reason="ungated source row contribution")
 row_applicator(id="sdf_boundary_band", label="SDF Boundary Band", target_lane="source", required_signal_kind="any", requires_sdf_field=True, storage_param="signal.sdf_gate", width_param="signal.sdf_gate_width_px", fail_closed_reason="requires an SDF field for boundary-band row masking")
 row_applicator(id="sdf_inside", label="SDF Inside", target_lane="source", required_signal_kind="any", requires_sdf_field=True, storage_param="signal.sdf_gate", fail_closed_reason="requires an SDF field for inside row masking")
@@ -68,20 +78,41 @@ def test_materializer_accepts_valid_contract(tmp_path):
         "composition_recipe",
         "explaino",
         "signal_type_registry",
+        "adapter_library",
     ]
     signal_types = {item["id"]: item for item in payload["signal_type_registry"]["types"]}
     assert set(signal_types) == {
         "scalar.unit",
+        "scalar.signed",
         "scalar.sdf_signed_distance",
         "phase.radians",
         "category.root_index",
         "palette.discrete_index",
+        "mask.alpha",
+        "color.linear_rgb",
+        "field.sdf_signed_distance",
     }
     assert signal_types["scalar.unit"]["kind"] == "scalar"
     assert signal_types["scalar.sdf_signed_distance"]["units"] == "field_px"
     assert signal_types["phase.radians"]["topology"] == "circular"
     assert signal_types["phase.radians"]["period"] == 6.283185307179586
     assert signal_types["category.root_index"]["default_adapter_policy"] == "forbidden"
+    adapters = {item["id"]: item for item in payload["adapter_library_contract"]["adapters"]}
+    assert adapters["identity.scalar_unit"] == {
+        "id": "identity.scalar_unit",
+        "source": "scalar.unit",
+        "target": "scalar.unit",
+        "policy": "safe",
+        "lossy": False,
+        "reversible": True,
+        "cost": 0,
+        "fail_closed_reason": "",
+    }
+    assert adapters["normalize.sdf_signed_distance.unit"]["policy"] == "explicit_only"
+    assert adapters["normalize.sdf_signed_distance.unit"]["lossy"] is True
+    assert adapters["phase.radians.unit_wrap"]["policy"] == "visible_default"
+    assert adapters["root_index.palette_discrete_index"]["target"] == "palette.discrete_index"
+    assert adapters["field.sdf_signed_distance.boundary_mask"]["source"] == "field.sdf_signed_distance"
     source_lane = payload["function_library"]["lanes"][0]
     assert source_lane["id"] == "source"
     assert [fn["id"] for fn in source_lane["functions"]] == [
@@ -151,6 +182,66 @@ def test_materializer_rejects_function_typed_signal_unknown_type(tmp_path):
     proc, _ = run_materializer(tmp_path, text)
     assert proc.returncode != 0
     assert "typed_signal references unknown signal type" in proc.stderr
+
+
+def test_materializer_rejects_duplicate_adapter_ids(tmp_path):
+    text = VALID_UI_SALT + 'adapter(id="identity.scalar_unit", source="scalar.unit", target="scalar.unit", policy="safe", lossy=False, reversible=True, cost=0)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "duplicate adapter id" in proc.stderr
+
+
+def test_materializer_rejects_adapter_unknown_source_or_target_type(tmp_path):
+    text = VALID_UI_SALT + 'adapter(id="bad.unknown", source="scalar.missing", target="scalar.unit", policy="explicit_only", lossy=False, reversible=False, cost=1, fail_closed_reason="missing source")\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "adapter bad.unknown references unknown source type" in proc.stderr
+
+    text = VALID_UI_SALT + 'adapter(id="bad.unknown.target", source="scalar.unit", target="scalar.missing", policy="explicit_only", lossy=False, reversible=False, cost=1, fail_closed_reason="missing target")\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "adapter bad.unknown.target references unknown target type" in proc.stderr
+
+
+def test_materializer_rejects_adapter_missing_or_invalid_policy(tmp_path):
+    text = VALID_UI_SALT + 'adapter(id="bad.no_policy", source="scalar.unit", target="scalar.unit", lossy=False, reversible=True, cost=0)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "adapter bad.no_policy requires policy" in proc.stderr
+
+    text = VALID_UI_SALT + 'adapter(id="bad.policy", source="scalar.unit", target="scalar.unit", policy="maybe", lossy=False, reversible=True, cost=0)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "adapter bad.policy has invalid policy" in proc.stderr
+
+
+def test_materializer_rejects_adapter_invalid_cost_and_missing_reason(tmp_path):
+    text = VALID_UI_SALT + 'adapter(id="bad.cost", source="scalar.unit", target="scalar.unit", policy="safe", lossy=False, reversible=True, cost=-1)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "adapter bad.cost requires non-negative integer cost" in proc.stderr
+
+    text = VALID_UI_SALT + 'adapter(id="bad.reason", source="scalar.unit", target="phase.radians", policy="explicit_only", lossy=False, reversible=False, cost=1)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "adapter bad.reason requires fail_closed_reason for non-safe policy" in proc.stderr
+
+
+def test_materializer_rejects_adapter_lossy_safe_and_risky_safe_conversions(tmp_path):
+    text = VALID_UI_SALT + 'adapter(id="bad.lossy.safe", source="phase.radians", target="scalar.unit", policy="safe", lossy=True, reversible=False, cost=1)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "lossy adapters cannot use safe policy" in proc.stderr
+
+    text = VALID_UI_SALT + 'adapter(id="bad.category.scalar", source="category.root_index", target="scalar.unit", policy="visible_default", lossy=False, reversible=False, cost=1, fail_closed_reason="category projection")\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "category-to-scalar adapters cannot be safe or visible_default" in proc.stderr
+
+    text = VALID_UI_SALT + 'adapter(id="bad.signed.unit", source="scalar.signed", target="scalar.unit", policy="safe", lossy=False, reversible=False, cost=1)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "signed-to-unit adapters require explicit normalization policy" in proc.stderr
 
 def test_materializer_rejects_duplicate_row_applicator_ids(tmp_path):
     text = VALID_UI_SALT + 'row_applicator(id="none", label="Duplicate", target_lane="source", required_signal_kind="any", requires_sdf_field=False, storage_param="signal.sdf_gate", fail_closed_reason="duplicate")\n'
@@ -235,7 +326,6 @@ def _ports(payload, lane_id, function_id):
 
 def test_materializer_accepts_pilot_port_signatures(tmp_path):
     text = VALID_UI_SALT + """
-signal_type(id="color.linear_rgb", kind="color", domain="linear_rgb", topology="color", arity=3, color_space="linear_rgb", default_adapter_policy="forbidden")
 lane(id="shape", label="Shape", default="identity")
 lane(id="grading", label="Grading", default="contrast_lift")
 function(lane="shape", id="identity", label="Identity", taxonomy_group="identity", runtime_backed=True)

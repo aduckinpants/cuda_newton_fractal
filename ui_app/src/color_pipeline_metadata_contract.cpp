@@ -137,6 +137,19 @@ bool ReadPositiveInteger(const json_min::Value& object, const char* key, int* ou
     return true;
 }
 
+bool ReadNonNegativeInteger(const json_min::Value& object, const char* key, int* outValue, std::string* outError) {
+    double numericValue = 0.0;
+    if (!ReadNumber(object, key, &numericValue, outError)) {
+        return false;
+    }
+    const double rounded = std::floor(numericValue);
+    if (numericValue != rounded || numericValue < 0.0) {
+        return SetError(outError, std::string("Field '") + key + "' must be a non-negative integer");
+    }
+    *outValue = static_cast<int>(numericValue);
+    return true;
+}
+
 bool ReadDefaultValue(
     const json_min::Value& object,
     MaterializedColorPipelineParam* outParam,
@@ -244,6 +257,28 @@ bool ReadPort(
         return false;
     }
     *outPort = std::move(port);
+    return true;
+}
+
+bool ReadAdapter(
+    const json_min::Value& value,
+    MaterializedColorPipelineAdapter* outAdapter,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Adapter entry must be an object");
+    }
+    MaterializedColorPipelineAdapter adapter;
+    if (!ReadString(value, "id", &adapter.id, outError) ||
+        !ReadString(value, "source", &adapter.source, outError) ||
+        !ReadString(value, "target", &adapter.target, outError) ||
+        !ReadString(value, "policy", &adapter.policy, outError) ||
+        !ReadBool(value, "lossy", &adapter.lossy, outError) ||
+        !ReadBool(value, "reversible", &adapter.reversible, outError) ||
+        !ReadNonNegativeInteger(value, "cost", &adapter.cost, outError) ||
+        !ReadOptionalString(value, "fail_closed_reason", &adapter.fail_closed_reason, outError)) {
+        return false;
+    }
+    *outAdapter = std::move(adapter);
     return true;
 }
 
@@ -542,6 +577,67 @@ bool ValidateMaterializedPorts(
     return true;
 }
 
+bool IsScalarType(const std::string& typeId) {
+    return StartsWith(typeId, "scalar.");
+}
+
+bool IsCategoryType(const std::string& typeId) {
+    return StartsWith(typeId, "category.");
+}
+
+bool ValidateMaterializedAdapters(
+    const std::vector<MaterializedColorPipelineAdapter>& adapters,
+    const std::set<std::string>& signalTypeIds,
+    std::string* outError) {
+    static const char* const kValidPolicies[] = {
+        "safe", "visible_default", "explicit_only", "diagnostic_only", "forbidden"};
+    std::set<std::string> adapterIds;
+    for (const MaterializedColorPipelineAdapter& adapter : adapters) {
+        if (adapter.id.empty()) {
+            return SetError(outError, "Materialized adapter id must be non-empty");
+        }
+        if (!adapterIds.insert(adapter.id).second) {
+            return SetError(outError, std::string("Duplicate materialized adapter id '") + adapter.id + "'");
+        }
+        if (signalTypeIds.find(adapter.source) == signalTypeIds.end()) {
+            return SetError(outError, std::string("Materialized adapter '") + adapter.id +
+                "' references unknown source type");
+        }
+        if (signalTypeIds.find(adapter.target) == signalTypeIds.end()) {
+            return SetError(outError, std::string("Materialized adapter '") + adapter.id +
+                "' references unknown target type");
+        }
+        if (!StringInList(adapter.policy, kValidPolicies, sizeof(kValidPolicies) / sizeof(kValidPolicies[0]))) {
+            return SetError(outError, std::string("Materialized adapter '") + adapter.id + "' has invalid policy");
+        }
+        if (adapter.lossy && adapter.policy == "safe") {
+            return SetError(outError, std::string("Materialized adapter '") + adapter.id +
+                "' lossy adapters cannot use safe policy");
+        }
+        if (adapter.policy != "safe" && adapter.fail_closed_reason.empty()) {
+            return SetError(outError, std::string("Materialized adapter '") + adapter.id +
+                "' requires fail_closed_reason for non-safe policy");
+        }
+        if (IsCategoryType(adapter.source) && IsScalarType(adapter.target) &&
+            (adapter.policy == "safe" || adapter.policy == "visible_default")) {
+            return SetError(outError, std::string("Materialized adapter '") + adapter.id +
+                "' category-to-scalar adapters cannot be safe or visible_default");
+        }
+        if (adapter.source == "color.linear_rgb" && IsScalarType(adapter.target) &&
+            (adapter.policy == "safe" || adapter.policy == "visible_default")) {
+            return SetError(outError, std::string("Materialized adapter '") + adapter.id +
+                "' color-to-scalar adapters cannot be safe or visible_default");
+        }
+        if ((adapter.source == "scalar.signed" || adapter.source == "scalar.sdf_signed_distance") &&
+            adapter.target == "scalar.unit" &&
+            (adapter.policy == "safe" || adapter.policy == "visible_default")) {
+            return SetError(outError, std::string("Materialized adapter '") + adapter.id +
+                "' signed-to-unit adapters require explicit normalization policy");
+        }
+    }
+    return true;
+}
+
 bool ValidateMaterializedParams(
     const MaterializedColorPipelineFunction& function,
     std::string* outError) {
@@ -696,6 +792,7 @@ bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, s
     std::set<std::string> functionIds;
     std::set<std::string> signalTypeIds;
     return ValidateMaterializedSignalTypes(contract.signal_types, &signalTypeIds, outError) &&
+        ValidateMaterializedAdapters(contract.adapters, signalTypeIds, outError) &&
         ValidateMaterializedLanes(contract.lanes, &functionIds, signalTypeIds, outError) &&
         ValidateMaterializedCompatibility(contract.compatibility, functionIds, outError) &&
         ValidateMaterializedRecipes(contract.recipes, functionIds, outError) &&
@@ -741,6 +838,7 @@ bool LoadColorPipelineMaterializedContractJson(
     }
 
     const json_min::Value* signalTypeRegistry = RequiredField(parsed.value, "signal_type_registry", outError);
+    const json_min::Value* adapterLibrary = parsed.value.get("adapter_library_contract");
     const json_min::Value* functionLibrary = RequiredField(parsed.value, "function_library", outError);
     const json_min::Value* compositionContract = RequiredField(parsed.value, "composition_recipe_contract", outError);
     const json_min::Value* explainoContract = RequiredField(parsed.value, "explaino_contract", outError);
@@ -758,6 +856,23 @@ bool LoadColorPipelineMaterializedContractJson(
             return false;
         }
         contract.signal_types.push_back(std::move(signalType));
+    }
+
+    if (adapterLibrary) {
+        if (!adapterLibrary->is_object()) {
+            return SetError(outError, "adapter_library_contract must be an object");
+        }
+        const json_min::Value* adapters = RequiredField(*adapterLibrary, "adapters", outError);
+        if (!adapters || !adapters->is_array()) {
+            return SetError(outError, "adapter_library_contract.adapters must be an array");
+        }
+        for (const json_min::Value& adapterValue : adapters->as_array()) {
+            MaterializedColorPipelineAdapter adapter;
+            if (!ReadAdapter(adapterValue, &adapter, outError)) {
+                return false;
+            }
+            contract.adapters.push_back(std::move(adapter));
+        }
     }
 
     const json_min::Value* lanes = RequiredField(*functionLibrary, "lanes", outError);

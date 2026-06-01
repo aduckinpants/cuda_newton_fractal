@@ -29,6 +29,18 @@ struct MaterializedColorPipelinePort {
     bool canonical = false;
     std::string generic_group;
 };
+
+struct MaterializedColorPipelineAdapter {
+    std::string id;
+    std::string source;
+    std::string target;
+    std::string policy;
+    bool lossy = false;
+    bool reversible = false;
+    int cost = 0;
+    std::string fail_closed_reason;
+};
+
 struct MaterializedSignalType {
     std::string id;
     std::string kind;
@@ -111,6 +123,7 @@ struct MaterializedColorPipelineContract {
     int schema_version = 0;
     std::string source_path;
     std::vector<MaterializedSignalType> signal_types;
+    std::vector<MaterializedColorPipelineAdapter> adapters;
     std::vector<MaterializedColorPipelineLane> lanes;
     std::vector<MaterializedColorPipelineCompatibility> compatibility;
     std::vector<MaterializedColorPipelineRecipe> recipes;

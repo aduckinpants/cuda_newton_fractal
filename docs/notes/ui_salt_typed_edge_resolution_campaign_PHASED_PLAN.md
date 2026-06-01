@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 7 complete - Slice B pilot port-signature shadow metadata is implemented, validated, hostile-audit repaired, checkpointed, and receipt-backed.
+Phase 8 complete - Slice C adapter-library shadow metadata is implemented and validated with current UI and live compatibility behavior frozen. Next work is Slice D edge resolver shadow audit after this branch is merged and a fresh slice is opened.
 
 ## Phase Checklist
 
@@ -14,6 +14,7 @@ Phase 7 complete - Slice B pilot port-signature shadow metadata is implemented, 
 - [x] Phase 5 - implement Slice A shadow signal type registry, focused tests, validation, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 6 - fast-forward Slice A to `master`, push `master`, and branch `codex/ui-salt-port-signatures` for Slice B.
 - [x] Phase 7 - implement Slice B pilot function port signatures, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 8 - fast-forward Slice B to `master`, push `master`, branch `codex/ui-salt-adapter-library-shadow`, implement Slice C adapter-library shadow metadata, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -31,6 +32,9 @@ Phase 7 complete - Slice B pilot port-signature shadow metadata is implemented, 
 - [closed] Preserve current visible Color Pipeline row/function order, labels, controls, and runtime compatibility behavior.
 - [closed] Prove `identity` is generic or explicitly overloaded without introducing unsafe `any`.
 - [closed] Do not implement adapters, resolver routing, graph UI, runtime behavior switches, or new function-library entries under Slice B.
+- [closed] Implement Slice C only: shadow adapter-library metadata, policy validation, materializer/native-reader proof, and checked-in generated JSON.
+- [closed] Preserve current visible Color Pipeline behavior and live compatibility behavior; adapters must not be inserted into runtime routes in this slice.
+- [closed] Prove lossy adapters cannot be marked `safe`, non-safe adapters carry fail-closed reasons, and explicit-only adapters remain metadata until a later explicit resolver/UI consent slice.
 
 ## Current Repo Truth
 
@@ -381,6 +385,19 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Slice B final logged Python proof: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_pytest.json` passed 24 tests.
 - Slice B final logged native proof: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_native.json` passed `test_color_pipeline_core: passed=2961 failed=0`.
 - Slice B final diff check: `artifacts/validation/ui_salt_pilot_port_signatures_shadow_diff_check.json` passed `git diff --check`.
+- Slice C preflight: fast-forwarded `master` from `86aa4a6` to `9edd2d4`, pushed `origin/master`, reran rearward review `ok`, and branched `codex/ui-salt-adapter-library-shadow`.
+- Slice C contract: `docs/contracts/ui_salt_adapter_library_shadow.contract.json`.
+- Slice C RED proof: `py -3.14 -m pytest tests/test_ui_salt_materializer.py -q` initially failed because `adapter_library` contracts and `adapter(...)` statements were unsupported.
+- Slice C native RED proof: `artifacts/validation/ui_salt_adapter_library_shadow_native_red.json` failed because the C++ materialized contract parser had no adapter struct or adapter vector.
+- Slice C implementation: UI-Salt now materializes `viewer.adapter_library_contract.v1`, the generated JSON carries eleven shadow adapters, and C++ parses/validates adapter metadata without any live runtime insertion path.
+- Slice C audit repair: hostile review found the native parser accepted empty adapter ids; `ui_app/tests/test_color_pipeline_core.cpp` now covers that case and C++ validation rejects it.
+- Slice C focused Python proof: `artifacts/validation/ui_salt_adapter_library_shadow_pytest.json` passed `29 passed`.
+- Slice C focused materialization proof: `artifacts/validation/ui_salt_adapter_library_shadow_materialize.json` passed.
+- Slice C focused native proof: `artifacts/validation/ui_salt_adapter_library_shadow_native.json` passed `test_color_pipeline_core: passed=2976 failed=0`.
+- Slice C contract validation: `artifacts/validation/ui_salt_adapter_library_shadow_contract.json` passed.
+- Slice C plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md` passed.
+- Slice C code quality: `artifacts/validation/ui_salt_adapter_library_shadow_code_quality.json` passed baseline with score 93/100.
+- Slice C diff check: `artifacts/validation/ui_salt_adapter_library_shadow_diff_check.json` passed `git diff --check`.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -390,7 +407,7 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 ## Hostile Audit
 
 - Status: complete
-- Required posture: assume this plan accidentally overreaches into UI replacement, skips proof before function expansion, creates unsafe `any` ports, or lets port metadata alter live compatibility behavior.
+- Required posture: assume this plan accidentally overreaches into UI replacement, skips proof before function expansion, creates unsafe `any` ports, lets port metadata alter live compatibility behavior, or lets adapter metadata become live automatic routing before the resolver/audit slices exist.
 
 Required questions:
 
@@ -418,6 +435,9 @@ Required questions:
 - [x] Pass 10 - reviewed Slice B implementation diff for unsafe `any`, missing canonical outputs, pilot subset drift, and accidental runtime behavior changes.
 - [x] Pass 11 - repaired the real Slice B defect where `generic.any` and extra identity ports could pass validation, then revalidated Python and native rails.
 - [x] Pass 12 - clean re-read confirmed zero generated `any`/`generic.any` ports, no live Color Pipeline behavior switch, and no graph UI, adapter, resolver, or function-library expansion changes.
+- [x] Pass 13 - reviewed Slice C implementation diff for unsafe adapter policies, missing fail-closed reasons, source/target type drift, and accidental live runtime adapter insertion.
+- [x] Pass 14 - repaired the real native validation gap where an empty adapter id could pass the C++ materialized-contract loader, then revalidated the focused native rail.
+- [x] Pass 15 - clean re-read confirmed adapter metadata remains shadow-only: no Color Pipeline live compatibility switch, no resolver route insertion, no visible adapter UI, no graph UI, and no function-library expansion.
 
 ## Audit Findings
 
@@ -432,6 +452,19 @@ Required questions:
 - [x] Clean Slice A re-read found no adapters, resolver routing, graph UI, visible workflow changes, or function-library expansion in this implementation.
 - [x] Slice B hostile audit found the first port-validation implementation still allowed `generic.any` and allowed `identity` to carry extra ports beyond the required generic `T -> T` pair. Python and C++ validation now reject both, with focused regressions.
 - [x] Clean Slice B re-read found no adapters, resolver routing, graph UI, visible workflow changes, live compatibility switch, or new function-library entries in this implementation.
+- [x] Slice C hostile audit found that the Python materializer rejected empty adapter ids but the native JSON parser would accept `id=""` if unique. Native validation now rejects empty adapter ids and `test_color_pipeline_core` covers the regression.
+- [x] Clean Slice C re-read found no live runtime adapter insertion, no visible Color Pipeline behavior change, no graph UI, no Salticid runtime dependency, and no function-library expansion beyond shadow adapter metadata.
+
+## Slice C Validation Targets
+
+- `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_adapter_library_shadow.contract.json --out-json artifacts/validation/ui_salt_adapter_library_shadow_contract.json`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_adapter_library_shadow_hostile_audit.json`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_adapter_library_shadow_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_adapter_library_shadow_pytest --log artifacts/logs/ui_salt_adapter_library_shadow_pytest.log --out-json artifacts/validation/ui_salt_adapter_library_shadow_pytest.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_adapter_library_shadow_materialize --log artifacts/logs/ui_salt_adapter_library_shadow_materialize.log --out-json artifacts/validation/ui_salt_adapter_library_shadow_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_adapter_library_shadow_native --log artifacts/logs/ui_salt_adapter_library_shadow_native.log --out-json artifacts/validation/ui_salt_adapter_library_shadow_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_adapter_library_shadow_diff_check --log artifacts/logs/ui_salt_adapter_library_shadow_diff_check.log --out-json artifacts/validation/ui_salt_adapter_library_shadow_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Slice B Validation Targets
 
