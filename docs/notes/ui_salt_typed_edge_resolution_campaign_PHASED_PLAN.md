@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3 - validation, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+Phase 4 - UI-Salt typed edge plan refinement validation and checkpoint.
 
 ## Phase Checklist
 
@@ -10,6 +10,7 @@ Phase 3 - validation, checkpoint, receipts, rearward review, push, and clean-tre
 - [x] Phase 1 - create and lock this planning contract.
 - [x] Phase 2 - document the bounded implementation slices for typed signals, adapters, edge resolution, and function-library expansion.
 - [x] Phase 3 - validate contract, plan sync, hostile audit, code-quality baseline, diff check, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 4 - incorporate typed-edge review refinement, validate, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -17,6 +18,9 @@ Phase 3 - validation, checkpoint, receipts, rearward review, push, and clean-tre
 - [closed] Resolve the worst architectural shortcomings before expanding function libraries.
 - [closed] Keep graph UI replacement as a later/final step.
 - [closed] Preserve the current visible Color Pipeline workflow until metadata proof is strong enough to switch seams.
+- [closed] Incorporate the second review pass before Slice A implementation starts.
+- [closed] Prevent the typed-edge system from recreating coarse `signal_kind` ambiguity under refined names.
+- [closed] Keep this as a planning/doc refinement only; no runtime behavior, UI workflow, or materializer implementation changes belong in this slice.
 
 ## Current Repo Truth
 
@@ -40,6 +44,19 @@ Build the next metadata layer that lets the current linear Color Pipeline remain
 
 The goal is not to replace the UI yet. The goal is to stop growing a brittle `compat(source, shape, palette, grading)` matrix and make future graph UI consume an already-proven typed route contract.
 
+## Type Semantics Lock
+
+These terms are binding for Slice A and all later typed-edge work:
+
+- `field.*` means a raw field or capability surface. It is not palette-ready row signal data and cannot flow through Shape or Palette lanes without an explicit adapter.
+- `scalar.*` means sampled single-channel values that can flow through Shape and Palette lanes when their domain matches the receiving port.
+- `category.*` means discrete semantic classes. Categories cannot be normalized into scalar domains unless an adapter with explicit policy allows that diagnostic or user-consented conversion.
+- `palette.*` means palette-facing discrete/index domains. It is not a synonym for general category values.
+- `identity` is generic or overloaded as `identity<T>: T -> T`. It is never `any -> any`, and it never erases type information.
+- Shape functions are scalar-domain transforms unless a function explicitly declares an overload for another type.
+- A signed scalar remains signed until an explicit signed-to-unit adapter normalizes it. Unit-domain scalar flow must not silently absorb signed values.
+
+
 ## Slice A - Signal Type Registry Shadow Contract
 
 Scope:
@@ -48,20 +65,26 @@ Scope:
 - Add initial signal/surface types only:
   - `scalar.unit`
   - `scalar.signed`
+  - `scalar.sdf_signed_distance`
   - `phase.radians`
   - `category.root_index`
+  - `palette.discrete_index`
   - `mask.alpha`
   - `color.linear_rgb`
   - `field.sdf_signed_distance`
+- Treat `field.sdf_signed_distance` as raw SDF field/capability/applicator authority only.
+- Treat `scalar.sdf_signed_distance` as the sampled Source-row output that can enter scalar Shape/Palette lanes through declared adapters.
 - Track `kind`, `domain`, `topology`, `arity`, optional units/period/color-space/coordinate-space, and `default_adapter_policy`.
 - Preserve existing `signal_kind` in generated function descriptors as compatibility output.
+- Add a coarse-to-typed mapping audit for every legacy `scalar | phase | categorical` pilot function before any runtime switch.
 
 Tests:
 
 - Materializer accepts valid type declarations.
-- Materializer rejects duplicate ids, unknown kinds, invalid topology/domain combinations, invalid periods, and missing default adapter policy.
+- Materializer rejects duplicate ids, unknown kinds, invalid topology/domain combinations, invalid periods, ambiguous palette/category declarations, and missing default adapter policy.
 - Metadata parser validates the generated registry without changing runtime behavior.
-- Parity/audit proves every current coarse `signal_kind` can map to at least one declared type for the planned pilot functions.
+- Coarse-to-typed mapping audit proves every current pilot function maps from legacy `scalar | phase | categorical` into precise type ids.
+- Audit must distinguish raw SDF field authority from sampled SDF signed-distance Source output.
 
 Out of scope:
 
@@ -79,13 +102,17 @@ Scope:
   - palettes: `heatmap`, `phase_wheel_palette`, `root_classic_palette`;
   - grading: `contrast_lift`, `phase_finish`, `basin_default`, `neutral_finish`.
 - Preserve the current lane/function descriptor shape for C++ compatibility.
+- Define `identity<T>: T -> T` or explicit identity overloads for each supported type; no `any` ports are allowed.
+- Require every pilot function to declare one canonical output for the current linear UI projection.
+- Declare `repeat` and `bias_gain_curve` as `scalar.unit -> scalar.unit` transforms.
 - Add a shadow port-signature audit artifact.
 
 Tests:
 
 - Every declared port references a known signal type.
-- Source functions have no input ports and one output port.
-- Shape functions declare signal-to-signal transforms.
+- Source functions have no input ports and one canonical output port for the current linear UI projection.
+- Shape functions declare signal-to-signal transforms and only accept non-scalar inputs when explicitly overloaded.
+- `identity` is proven generic/overloaded without erasing the concrete type.
 - Palettes declare signal-to-color materialization.
 - Grading declares color-to-color transforms.
 - Pilot metadata does not reorder, remove, or relabel current visible rows.
@@ -101,13 +128,17 @@ Scope:
 
 - Add `viewer.adapter_library_contract.v1`.
 - Add first adapters only:
-  - identity for `scalar.unit`, `phase.radians`, `color.linear_rgb`, and `mask.alpha`;
+  - identity for `scalar.unit`, `scalar.sdf_signed_distance`, `phase.radians`, `color.linear_rgb`, and `mask.alpha`;
   - `scalar.signed -> scalar.unit` rescale/bias/clamp;
+  - `scalar.sdf_signed_distance -> scalar.unit` normalization;
   - `phase.radians -> scalar.unit` wrap-normalize;
   - `scalar.unit -> phase.radians`;
-  - `category.root_index -> palette.index` or equivalent discrete palette surface if introduced in Slice A/B;
+  - `category.root_index -> palette.discrete_index`;
   - `field.sdf_signed_distance -> mask.alpha` boundary mask adapter.
-- Record policy fields: `safe`, `visible-default`, `explicit-only`, `diagnostic-only`, `forbidden`, lossiness, reversibility, cost, and fail-closed reason.
+- Record exactly one adapter policy enum value: `safe | visible_default | explicit_only | diagnostic_only | forbidden`.
+- Record lossiness, reversibility, cost, and fail-closed reason.
+- Enforce that `lossy=true` cannot be `safe`.
+- Enforce that `explicit_only` adapters cannot be inserted by the live resolver unless explicit UI/state consent exists.
 
 Tests:
 
@@ -130,7 +161,10 @@ Scope:
   - shape output to palette input;
   - palette output to grading input.
 - Add policy knobs: max adapter hops, allow/disallow lossy adapters, allow/disallow diagnostic adapters, preferred safe low-cost routes, fail-closed default.
+- Add deterministic tie-breaks in this order: exact identity, safe non-lossy, lower cost, fewer hops, stable id/declaration order.
+- The resolver must not revisit a type within one route.
 - Generate a shadow route/audit artifact for pilot combinations without changing runtime behavior.
+- Emit route inputs, candidate adapters, chosen route, rejected routes, policy blockers, costs, hop counts, and stable tie-break evidence so Slice E can mechanically classify current compatibility rows.
 
 Tests:
 
@@ -142,6 +176,9 @@ Tests:
   - `sdf_signed_distance -> bias_gain_curve -> heatmap -> contrast_lift`.
 - Known-bad pilot routes fail closed with specific reasons:
   - `root_index -> repeat -> heatmap`;
+  - `root_index -> heatmap` without `category.root_index -> palette.discrete_index` and a compatible root palette path;
+  - `phase.radians -> root_classic_palette`;
+  - `field.sdf_signed_distance -> phase_wheel_palette` without explicit sampled-signal adapter policy;
   - `color.linear_rgb -> scalar` without explicit adapter;
   - `field.sdf_signed_distance -> palette` without an explicit field-to-signal or mask adapter.
 - Audit reports route counts, fail-closed counts, implicit adapters, explicit-only blockers, and missing runtime owners.
@@ -160,6 +197,7 @@ Scope:
   - true runtime legacy override;
   - obsolete or duplicate.
 - Add `compat_override` metadata only for true runtime seams, especially root-basin dedicated paths.
+- Require every `compat_override` entry to carry a stable id, explicit reason, owner seam, and proof rail.
 - Keep existing runtime behavior unchanged while producing a shadow report that explains which current compat rows can be replaced later.
 
 Tests:
@@ -185,6 +223,7 @@ Tests:
 - SDF applicators require known SDF field capability.
 - Non-SDF sources can be rejected or require explicit masks based on metadata.
 - Existing SDF Normal Angle Diagnostic/Beauty behavior and row-local downsample remain unchanged.
+- Existing SDF gate/downsample state keys round-trip through capture/replay and `fractal-state.json`.
 - Capture/replay and `fractal-state.json` sidecar remain truthful.
 
 Out of scope:
@@ -196,17 +235,21 @@ Out of scope:
 
 Scope:
 
-- After Slices A-F shadow audits are green, switch one live seam:
-  - compatibility/fail-closed explanation lookup uses the typed resolver where available;
-  - legacy overrides remain hardcoded/metadata-backed for special runtime paths;
-  - hardcoded fallback remains available if materialized metadata is missing or invalid.
+- After Slices A-F shadow audits are green, split the live switch into two bounded steps:
+  - G1: diagnostic/explanation lookup uses the typed resolver where available, while legacy behavior remains authoritative;
+  - G2: one pilot behavioral compatibility seam switches to typed resolver authority after G1 proof.
+- Add a temporary typed-resolver fallback/kill switch before any behavioral switch.
+- Legacy overrides remain hardcoded/metadata-backed for special runtime paths.
+- Hardcoded fallback remains available if materialized metadata is missing, invalid, or the fallback/kill switch is active.
 
 Tests:
 
 - Visible function lists and controls remain unchanged.
-- Supported pilot combinations behave unchanged.
+- G1 exposes route/audit explanations without changing behavior.
+- G2 proves one pilot supported combination behaves unchanged under typed resolver authority.
 - Unsupported pilot combinations fail closed with route/audit reason.
-- Published no-mouse runtime proof covers scalar, phase, categorical/root, SDF, and unsupported route cases.
+- Fallback/kill switch restores legacy compatibility behavior.
+- Published no-mouse runtime proof covers scalar, phase, categorical/root, SDF, unsupported route cases, and fallback behavior.
 
 Out of scope:
 
@@ -228,6 +271,7 @@ Scope:
   - `derivative_magnitude` if runtime-backed data is already available
   - `sdf_gradient_magnitude`
   - `sdf_curvature_signed`
+- Before implementation, classify `sdf_curvature_signed` as exactly one of: new function, alias, signed-preserving variant, or diagnostic-only.
 - Candidate shape additions:
   - `log_compress`
   - `signed_log_compress`
@@ -238,6 +282,7 @@ Scope:
   - `diverging_signed_palette`
   - `two_tone_mask_palette`
   - `normal_angle_palette`
+- Before implementation, classify `normal_angle_palette` as semantically distinct from `phase_wheel_palette` or mark it as an alias.
 
 Selection rule:
 
@@ -255,6 +300,8 @@ Scope:
 
 - Add `recipe_v2` metadata with nodes/edges plus `ui_projection="linear_color_stack"`.
 - Materialize current preset recipes into both current recipe shape and graph-ready recipe shape.
+- Keep `recipe_v2` as shadow metadata only.
+- Existing recipe expansion remains live authority until a later explicit switch.
 - Keep UI applying the existing row editor path.
 
 Tests:
@@ -289,6 +336,13 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - External review intake: attached review recommended signal/surface registry, port signatures, first-class adapters, edge resolver, compat override demotion, route audit output, and function-family expansion behind type proof.
 - Repo scan: current UI-Salt surfaces are `docs/ui_salt/color_pipeline_function_library.ui.salt`, `docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json`, `tools/viewer_host_materialize_ui_salt.py`, and `ui_app/src/color_pipeline_metadata_contract.*`.
 - Slice lock: `py -3.14 tools/viewer_host_begin_work_slice.py --intent "UI-Salt typed edge resolution preplanning" --profile catalog --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --contract docs/contracts/ui_salt_typed_edge_resolution_preplanning.contract.json` locked checkpoint token `ck:63046b2a`.
+- Refinement slice lock: `py -3.14 tools/viewer_host_begin_work_slice.py --intent "UI-Salt typed edge plan refinement" --profile catalog --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --contract docs/contracts/ui_salt_typed_edge_resolution_plan_refinement.contract.json` locked checkpoint token `ck:b8dc025d`.
+- External refinement review intake: attached feedback required separating raw fields from sampled signals, categories from palette indices, generic identity from unsafe `any`, and signed scalar normalization from unit-domain scalar flow.
+- Refinement contract validation: `artifacts/validation/ui_salt_typed_edge_plan_refinement_contract.json` passed.
+- Refinement plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
+- Refinement hostile audit validation: `artifacts/validation/ui_salt_typed_edge_plan_refinement_hostile_audit.json` passed with three refinement findings and clean re-read evidence.
+- Refinement code quality: `artifacts/validation/ui_salt_typed_edge_plan_refinement_code_quality.json` passed baseline with score 93/100.
+- Refinement diff check: `artifacts/validation/ui_salt_typed_edge_plan_refinement_diff_check.json` passed `git diff --check`.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -308,18 +362,35 @@ Required questions:
 - Does it put function-library expansion behind typed ports, runtime backing, and runtime sensitivity proof?
 - Does it defer graph UI replacement until the route contract is proven?
 - Does it avoid a Salticid runtime dependency?
+- Does the type system separate raw fields, sampled scalars, categories, and palette domains instead of renaming coarse `signal_kind`?
+- Does identity preserve concrete type information instead of becoming `any`?
+- Does the first live switch start with diagnostics and keep a fallback/kill switch before behavior changes?
 
 ## Audit Passes
 
 - [x] Pass 1 - reviewed the external feedback against current repo metadata surfaces.
 - [x] Pass 2 - split the work into shadow metadata slices before any live runtime switch.
 - [x] Pass 3 - clean re-read found the first library expansion is gated behind typed route proof rather than bundled into the metadata infrastructure.
+- [x] Pass 4 - reviewed the refinement feedback against Slices A-D and found raw SDF fields, sampled SDF signals, palette indices, and categories were still too easy to blur.
+- [x] Pass 5 - reviewed the live-switch plan and found Slice G needed an explanation-only step before any behavioral compatibility switch.
+- [x] Pass 6 - clean re-read found graph UI, runtime behavior changes, and materializer implementation remain deferred out of this refinement slice.
 
 ## Audit Findings
 
 - [x] The initial tempting slice would have mixed typed metadata infrastructure with function-library expansion. This plan now explicitly gates function expansion behind typed port, adapter, resolver, and live compatibility proof.
 - [x] The current SDF applicator metadata could become another duplicated Source-row parameter bundle. The plan includes a dedicated SDF applicator capability cleanup slice that preserves storage authority while extracting reusable metadata.
 - [x] Clean re-read after splitting the slices found no additional scope leak into graph UI replacement, Salticid runtime dependency, or new visible rows.
+- [x] The refined type system could have recreated coarse `signal_kind` with nicer names. The plan now locks `field.*`, `scalar.*`, `category.*`, and `palette.*` semantics and requires a coarse-to-typed mapping audit.
+- [x] The prior adapter language could allow lossy routes to look safe. The plan now uses one policy enum, forbids `lossy=true` with `safe`, and blocks `explicit_only` insertion without explicit consent.
+- [x] The prior Slice G switch was too broad. The plan now splits G1 diagnostics from G2 one-pilot behavior and requires a temporary fallback/kill switch.
+
+## Refinement Validation Targets
+
+- `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_typed_edge_resolution_plan_refinement.contract.json --out-json artifacts/validation/ui_salt_typed_edge_plan_refinement_contract.json`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_typed_edge_plan_refinement_hostile_audit.json`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_typed_edge_plan_refinement_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_typed_edge_plan_refinement_diff_check --log artifacts/logs/ui_salt_typed_edge_plan_refinement_diff_check.log --out-json artifacts/validation/ui_salt_typed_edge_plan_refinement_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Validation Targets
 
