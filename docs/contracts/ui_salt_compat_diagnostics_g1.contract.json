@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "contract_id": "ui_salt_compat_diagnostics_g1",
+  "feature_id": "color_pipeline_ui_salt_metadata_authority",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md",
+    "docs/contracts/ui_salt_compat_diagnostics_g1.contract.json",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "implement Slice G1 only from the UI-Salt typed edge campaign",
+    "expose diagnostic/explanation lookup from active materialized metadata",
+    "keep legacy compatibility behavior authoritative",
+    "do not switch any live Color Pipeline behavior",
+    "keep the temporary fallback behavior unchanged"
+  ],
+  "forbidden_operator_prompts": [
+    "switch the live compatibility builder to the typed resolver",
+    "delete the hardcoded compatibility path",
+    "add visible Color Pipeline UI",
+    "add graph UI",
+    "expand the function library",
+    "import or run Salticid as a viewer runtime dependency",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "diagnostic_lookup_only",
+    "source_head": "937e388",
+    "ui_behavior_frozen": true,
+    "runtime_behavior_change": false,
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "salticid_runtime_dependency": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "live_compatibility_switch": "forbidden",
+    "hardcoded_path_deletion": "forbidden",
+    "visible_color_pipeline_change": "forbidden",
+    "graph_ui_replacement": "forbidden",
+    "function_library_expansion": "forbidden",
+    "runtime_salticid_dependency": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_compat_diagnostics_g1.contract.json --out-json artifacts/validation/ui_salt_compat_diagnostics_g1_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_compat_diagnostics_g1_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_compat_diagnostics_g1_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_diagnostics_g1_native --log artifacts/logs/ui_salt_compat_diagnostics_g1_native.log --out-json artifacts/validation/ui_salt_compat_diagnostics_g1_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_diagnostics_g1_diff_check --log artifacts/logs/ui_salt_compat_diagnostics_g1_diff_check.log --out-json artifacts/validation/ui_salt_compat_diagnostics_g1_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The UI-Salt compatibility diagnostics G1 contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_compat_diagnostics_g1_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The UI-Salt compatibility diagnostics G1 hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_compat_diagnostics_g1_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "native_color_pipeline_core_ok",
+      "description": "The focused native Color Pipeline core rail passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_compat_diagnostics_g1_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    }
+  ]
+}

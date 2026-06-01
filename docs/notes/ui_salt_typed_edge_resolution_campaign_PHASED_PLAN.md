@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 11 complete - Slice F SDF applicator capability cleanup is implemented and validated. Current SDF Source rows now carry shadow capability metadata for field source, applicator support, storage key, storage value, row sample step, and row-local downsample; visible Color Pipeline behavior and live compatibility behavior remain frozen.
+Phase 12 complete - Slice G1 metadata-backed compatibility diagnostics is implemented and validated. The added lookup is diagnostic-only; legacy compatibility behavior remains authoritative.
 
 ## Phase Checklist
 
@@ -18,6 +18,7 @@ Phase 11 complete - Slice F SDF applicator capability cleanup is implemented and
 - [x] Phase 9 - fast-forward Slice C to `master`, push `master`, branch `codex/ui-salt-edge-resolver-shadow`, implement Slice D edge resolver shadow audit, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 10 - fast-forward Slice D to `master`, push `master`, branch `codex/ui-salt-compat-override-demotion`, implement Slice E legacy compat override demotion shadow metadata, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 11 - fast-forward Slice E to `master`, push `master`, branch `codex/ui-salt-sdf-applicator-capability`, implement Slice F SDF applicator capability shadow metadata, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 12 - fast-forward Slice F to `master`, push `master`, branch `codex/ui-salt-compat-diagnostics-g1`, implement Slice G1 diagnostic/explanation lookup, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -47,6 +48,9 @@ Phase 11 complete - Slice F SDF applicator capability cleanup is implemented and
 - [closed] Implement Slice F only: lift current SDF gate/downsample/applicator capability into shadow metadata.
 - [closed] Preserve existing Source-row storage authority: `signal.sdf_gate`, `signal.sdf_gate_width_px`, `signal.sdf_sample_step`, and `signal.sdf_field_downsample`.
 - [closed] Do not add new SDF source functions, field producers, visible controls, graph UI, or live compatibility switching under this slice.
+- [closed] Implement Slice G1 only: expose typed-route/compat-override explanation lookup from installed materialized metadata.
+- [closed] Preserve legacy compatibility behavior as authoritative; do not switch `TryBuildColorPipelineSelectionFromLaneIds(...)` to typed resolver behavior under G1.
+- [closed] Do not add visible UI, graph UI, function-library entries, or runtime Salticid dependency under this slice.
 
 ## Current Repo Truth
 
@@ -442,6 +446,12 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Slice F logged contract regeneration proof: `artifacts/validation/ui_salt_sdf_applicator_capability_materialize.json` passed.
 - Slice F logged native proof: `artifacts/validation/ui_salt_sdf_applicator_capability_native.json` passed `test_color_pipeline_core: passed=3000 failed=0`.
 - Slice F logged diff check: `artifacts/validation/ui_salt_sdf_applicator_capability_diff_check.json` passed.
+- Slice G1 preflight: fast-forwarded `master` to `937e388`, pushed `origin/master`, reran rearward review `ok`, and branched `codex/ui-salt-compat-diagnostics-g1`.
+- Slice G1 contract: `docs/contracts/ui_salt_compat_diagnostics_g1.contract.json`.
+- Slice G1 contract validation: `artifacts/validation/ui_salt_compat_diagnostics_g1_contract.json` passed.
+- Slice G1 code-quality baseline: `artifacts/validation/ui_salt_compat_diagnostics_g1_code_quality.json` passed with score `93/100`.
+- Slice G1 logged native proof: `artifacts/validation/ui_salt_compat_diagnostics_g1_native.json` passed `test_color_pipeline_core: passed=3008 failed=0`.
+- Slice G1 logged diff check: `artifacts/validation/ui_salt_compat_diagnostics_g1_diff_check.json` passed.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -450,7 +460,7 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 
 ## Hostile Audit
 
-- Status: clean
+- Status: complete
 - Required posture: assume this plan accidentally overreaches into UI replacement, skips proof before function expansion, creates unsafe `any` ports, lets port metadata alter live compatibility behavior, or lets adapter metadata become live automatic routing before the resolver/audit slices exist.
 
 Required questions:
@@ -489,6 +499,8 @@ Required questions:
 - [x] Pass 20 - clean re-read confirmed Slice E does not switch live compatibility authority, does not add visible UI, does not add graph UI, does not import Salticid runtime code, and does not expand the function library beyond shadow compat audit metadata.
 - [x] Pass 21 - reviewed Slice F implementation diff and found a real capability metadata gap: applicator ids did not encode the persisted enum value, so `sdf_boundary_band` could have been miswritten as a state value instead of existing `boundary_band`. Row applicators now carry explicit `storage_value`, and Python/native tests assert the current values.
 - [x] Pass 22 - clean re-read confirmed Slice F does not change visible Color Pipeline layout/control ids, does not change SDF state storage keys, does not add SDF functions or field producers, does not switch live compatibility authority, and does not import Salticid runtime code.
+- [x] Pass 23 - reviewed Slice G1 implementation diff and found a real risk: explanation lookup could be mistaken for or accidentally coupled to live compatibility behavior. Added a regression proving an unsupported explained route still stays rejected by `TryBuildColorPipelineSelectionFromLaneIds(...)`.
+- [x] Pass 24 - clean re-read confirmed Slice G1 does not switch live Color Pipeline compatibility, does not delete hardcoded fallback behavior, does not add visible UI, does not add graph UI, does not expand the function library, and does not import Salticid runtime code.
 
 ## Audit Findings
 
@@ -511,6 +523,17 @@ Required questions:
 - [x] Clean Slice E re-read found no live Color Pipeline compatibility switch, no visible UI change, no graph UI, no Salticid runtime dependency, and no function-library expansion beyond shadow compat override metadata.
 - [x] Slice F hostile audit found the first pass did not preserve the distinction between applicator id and persisted enum value. The metadata now records `storage_value` for every row applicator (`none`, `boundary_band`, `sdf_inside`, `sdf_outside`) while preserving `signal.sdf_gate` as the storage key.
 - [x] Clean Slice F re-read found no visible UI change, no SDF storage-key churn, no new SDF source functions, no field-producer changes, no graph UI, no Salticid runtime dependency, and no live compatibility switch.
+- [x] Slice G1 hostile audit found the first pass lacked an explicit guard that diagnostics cannot switch live compatibility behavior. The test now explains unsupported `phase_orbit / heatmap / contrast_lift` metadata while separately proving the live builder still rejects it.
+- [x] Clean Slice G1 re-read found no visible UI change, no graph UI, no function-library expansion, no hardcoded fallback deletion, no Salticid runtime dependency, and no live compatibility behavior switch.
+
+## Slice G1 Validation Targets
+
+- `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_compat_diagnostics_g1.contract.json --out-json artifacts/validation/ui_salt_compat_diagnostics_g1_contract.json`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_compat_diagnostics_g1_hostile_audit.json`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_compat_diagnostics_g1_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_diagnostics_g1_native --log artifacts/logs/ui_salt_compat_diagnostics_g1_native.log --out-json artifacts/validation/ui_salt_compat_diagnostics_g1_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_diagnostics_g1_diff_check --log artifacts/logs/ui_salt_compat_diagnostics_g1_diff_check.log --out-json artifacts/validation/ui_salt_compat_diagnostics_g1_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Slice F Validation Targets
 

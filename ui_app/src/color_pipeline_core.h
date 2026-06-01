@@ -1041,7 +1041,23 @@ struct ColorPipelineMetadataCatalogStorage {
     std::vector<std::string> lane_defaults;
     std::vector<ColorPipelineLaneCatalog> catalogs;
     std::vector<MaterializedColorPipelineCompatibility> compatibility;
+    std::vector<MaterializedColorPipelineCompatOverride> compat_overrides;
+    std::vector<MaterializedColorPipelineCompatibilityAudit> compatibility_audit;
+    std::vector<MaterializedColorPipelineResolutionCase> resolution_cases;
     std::vector<MaterializedColorPipelineRecipe> recipes;
+};
+
+struct ColorPipelineCompatibilityRouteExplanation {
+    bool metadata_active = false;
+    bool supported = false;
+    std::string authority;
+    std::string source;
+    std::string palette;
+    std::string grading;
+    std::string classification;
+    std::string route_case_id;
+    std::string override_id;
+    std::string reason;
 };
 
 inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
@@ -1368,6 +1384,9 @@ inline bool TryInstallColorPipelineMetadataCatalog(
     if (!ValidateMaterializedColorPipelineRecipes(contract.recipes, outError)) {
         return false;
     }
+    candidate.compat_overrides = contract.compat_overrides;
+    candidate.compatibility_audit = contract.compatibility_audit;
+    candidate.resolution_cases = contract.resolution_cases;
     candidate.recipes = contract.recipes;
 
     ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
@@ -1426,6 +1445,61 @@ inline const MaterializedColorPipelineCompatibility* FindActiveColorPipelineComp
         }
     }
     return nullptr;
+}
+
+inline bool IsColorPipelineCompatibilityDiagnosticsActive() {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    return storage.active && !storage.compatibility_audit.empty();
+}
+
+inline std::string ColorPipelineCompatibilityDiagnosticsAuthorityId() {
+    return IsColorPipelineCompatibilityDiagnosticsActive() ? "materialized_json_diagnostic" : "inactive";
+}
+
+inline bool TryExplainColorPipelineCompatibilityRoute(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId,
+    const char* gradingFunctionId,
+    ColorPipelineCompatibilityRouteExplanation* outExplanation) {
+    if (!sourceFunctionId || sourceFunctionId[0] == '\0' ||
+        !paletteFunctionId || paletteFunctionId[0] == '\0' ||
+        !gradingFunctionId || gradingFunctionId[0] == '\0' ||
+        !outExplanation) {
+        return false;
+    }
+    ColorPipelineCompatibilityRouteExplanation explanation;
+    explanation.source = sourceFunctionId;
+    explanation.palette = paletteFunctionId;
+    explanation.grading = gradingFunctionId;
+
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    explanation.metadata_active = IsColorPipelineCompatibilityDiagnosticsActive();
+    explanation.authority = ColorPipelineCompatibilityDiagnosticsAuthorityId();
+    if (!explanation.metadata_active) {
+        explanation.reason = "materialized compatibility diagnostics are not active";
+        *outExplanation = std::move(explanation);
+        return false;
+    }
+
+    for (const MaterializedColorPipelineCompatibilityAudit& audit : storage.compatibility_audit) {
+        if (audit.source == explanation.source &&
+            audit.palette == explanation.palette &&
+            audit.grading == explanation.grading) {
+            explanation.supported = true;
+            explanation.classification = audit.classification;
+            explanation.route_case_id = audit.route_case_id;
+            explanation.override_id = audit.override_id;
+            explanation.reason = audit.reason;
+            *outExplanation = std::move(explanation);
+            return true;
+        }
+    }
+
+    explanation.supported = false;
+    explanation.classification = "unsupported";
+    explanation.reason = "no materialized compatibility audit row for selected route";
+    *outExplanation = std::move(explanation);
+    return true;
 }
 
 inline int CountHardcodedColorPipelineCompatibilityRows() {

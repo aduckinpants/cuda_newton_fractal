@@ -1409,8 +1409,19 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
     Check(!color_pipeline_core::IsColorPipelineMetadataCompatibilityActive(),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_StartsHardcoded");
+    Check(!color_pipeline_core::IsColorPipelineCompatibilityDiagnosticsActive(),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_StartsDiagnosticsInactive");
     Check(color_pipeline_core::ColorPipelineCompatibilityAuthorityId() == std::string("hardcoded"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_StartsHardcodedAuthority");
+    color_pipeline_core::ColorPipelineCompatibilityRouteExplanation inactiveExplanation;
+    Check(!color_pipeline_core::TryExplainColorPipelineCompatibilityRoute(
+            "smooth_escape_ramp",
+            "heatmap",
+            "contrast_lift",
+            &inactiveExplanation) &&
+            !inactiveExplanation.metadata_active &&
+            inactiveExplanation.reason.find("not active") != std::string::npos,
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsInactiveExplains");
     Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == color_pipeline_core::CountHardcodedColorPipelineCompatibilityRows(),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_HardcodedFallbackCountIsTruthful");
 
@@ -1430,8 +1441,56 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_MetadataActive");
     Check(color_pipeline_core::ColorPipelineCompatibilityAuthorityId() == std::string("materialized_json"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Authority");
+    Check(color_pipeline_core::IsColorPipelineCompatibilityDiagnosticsActive() &&
+            color_pipeline_core::ColorPipelineCompatibilityDiagnosticsAuthorityId() == std::string("materialized_json_diagnostic"),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsActive");
     Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 22,
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Count");
+
+    color_pipeline_core::ColorPipelineCompatibilityRouteExplanation smoothExplanation;
+    Check(color_pipeline_core::TryExplainColorPipelineCompatibilityRoute(
+            "smooth_escape_ramp",
+            "heatmap",
+            "contrast_lift",
+            &smoothExplanation) &&
+            smoothExplanation.metadata_active &&
+            smoothExplanation.supported &&
+            smoothExplanation.classification == "typed_resolved" &&
+            smoothExplanation.route_case_id == "smooth_escape_heatmap" &&
+            smoothExplanation.override_id.empty(),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsTypedResolved");
+    color_pipeline_core::ColorPipelineCompatibilityRouteExplanation sdfExplanation;
+    Check(color_pipeline_core::TryExplainColorPipelineCompatibilityRoute(
+            "sdf_signed_distance",
+            "heatmap",
+            "contrast_lift",
+            &sdfExplanation) &&
+            sdfExplanation.metadata_active &&
+            sdfExplanation.supported &&
+            sdfExplanation.classification == "runtime_legacy_override" &&
+            sdfExplanation.override_id == "legacy_sdf_signed_distance_heatmap_contrast_lift" &&
+            sdfExplanation.route_case_id.empty(),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsCompatOverride");
+    color_pipeline_core::ColorPipelineCompatibilityRouteExplanation unsupportedExplanation;
+    Check(color_pipeline_core::TryExplainColorPipelineCompatibilityRoute(
+            "phase_orbit",
+            "heatmap",
+            "contrast_lift",
+            &unsupportedExplanation) &&
+            unsupportedExplanation.metadata_active &&
+            !unsupportedExplanation.supported &&
+            unsupportedExplanation.classification == "unsupported" &&
+            unsupportedExplanation.reason.find("no materialized compatibility audit row") != std::string::npos,
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsUnsupported");
+
+    ColorPipelineSelection unsupportedLiveSelection;
+    ColoringMode unsupportedLiveMode = ColoringMode::smooth_escape;
+    Check(!color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+            "phase_orbit",
+            "heatmap",
+            &unsupportedLiveSelection,
+            &unsupportedLiveMode),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsDoesNotSwitchLiveBehavior");
 
     const ColorPipelineLaneCatalog* sourceLane = color_pipeline_core::FindColorPipelineLaneCatalog("source");
     const ColorPipelineLaneCatalog* paletteLane = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
@@ -1488,6 +1547,8 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
     Check(!color_pipeline_core::IsColorPipelineMetadataCompatibilityActive(),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_ClearRestoresHardcoded");
+    Check(!color_pipeline_core::IsColorPipelineCompatibilityDiagnosticsActive(),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_ClearRestoresDiagnosticsInactive");
 }
 
 
