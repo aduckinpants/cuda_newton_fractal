@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 7 complete - Slice B pilot port-signature shadow metadata is implemented, validated, hostile-audit repaired, and ready for checkpoint/receipt closeout.
+Phase 7 complete - Slice B pilot port-signature shadow metadata is implemented, validated, hostile-audit repaired, checkpointed, and receipt-backed.
 
 ## Phase Checklist
 
