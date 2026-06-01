@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 14 complete - Slice H shipped the minimal runtime-backed Shape-row Batch 1 (`log_compress`, `smoothstep_range`), classified the tempting alias candidates out of scope, and proved metadata/native/runtime no-mouse sensitivity on the published viewer.
+Phase 15 complete - Slice I added shadow `recipe_v2` graph-ready metadata from clean pushed `master` at `947cc06`; current recipe expansion remains live authority and graph UI/runtime graph rendering remain deferred.
 
 ## Phase Checklist
 
@@ -21,6 +21,7 @@ Phase 14 complete - Slice H shipped the minimal runtime-backed Shape-row Batch 1
 - [x] Phase 12 - fast-forward Slice F to `master`, push `master`, branch `codex/ui-salt-compat-diagnostics-g1`, implement Slice G1 diagnostic/explanation lookup, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 13 - fast-forward Slice G1 to `master`, push `master`, branch `codex/ui-salt-compat-switch-g2`, implement one pilot typed-resolver compatibility switch with fallback/kill switch, focused native/runtime tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 14 - branch `codex/ui-salt-function-library-batch1`, classify Slice H candidates, implement the minimal runtime-backed Batch 1 function set, prove typed ports/materialized metadata/native rails/published runtime sensitivity, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 15 - fast-forward Slice H to `master`, push `master`, branch `codex/ui-salt-recipe-v2-shadow`, add shadow `recipe_v2` graph-ready metadata, prove materializer/native/runtime contract preservation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -62,6 +63,11 @@ Phase 14 complete - Slice H shipped the minimal runtime-backed Shape-row Batch 1
 - [closed] Classify `normal_angle_palette` before implementation as distinct function or alias.
 - [closed] Ship only a small function set with real runtime backing, typed ports, parameter metadata, compatibility route proof, no-mouse runtime sensitivity proof, and measured/no-regression evidence.
 - [closed] Preserve the current Color Pipeline layout and row editor workflow; graph UI, new fractal lanes, broad function dump, and Salticid runtime dependency remain out of scope.
+- [closed] Implement Slice I only: shadow `recipe_v2` graph-ready projection metadata.
+- [closed] Materialize current preset recipes into both current recipe metadata and shadow graph-ready recipe metadata.
+- [closed] Keep current recipe expansion as live authority; do not switch live recipe application to `recipe_v2`.
+- [closed] Preserve existing Color Pipeline UI layout, row editor workflow, function library, and staged runtime behavior.
+- [closed] Do not render arbitrary graph recipes, add graph UI, add new functions, or import Salticid runtime code.
 
 ## Current Repo Truth
 
@@ -480,6 +486,12 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Slice H classification result: current `phase_wheel_palette` already owns the available phase-wheel palette behavior, so `normal_angle_palette` would be an alias unless a later slice adds distinct phase-safe behavior; it is not shipped in Batch 1.
 - Slice H shipped functions: `log_compress` and `smoothstep_range` are Shape-row functions with C++ enum/id mapping, runtime math, row-state import/build support, diagnostics/state mirror coverage, UI-Salt typed ports, generated metadata, native catalog/schema/state tests, and published no-mouse pixel sensitivity proof.
 - Slice H validation receipts before checkpoint: contract validation passed at `artifacts/validation/ui_salt_function_library_batch1_contract.json`; materializer pytest passed at `artifacts/validation/ui_salt_function_library_batch1_pytest.json`; materialization passed at `artifacts/validation/ui_salt_function_library_batch1_materialize.json`; code quality baseline passed at `artifacts/validation/ui_salt_function_library_batch1_code_quality.json`; native rail passed at `artifacts/validation/ui_salt_function_library_batch1_native.json`; runtime publish passed at `artifacts/validation/ui_salt_function_library_batch1_runtime_publish.json`; published runtime proof passed at `artifacts/validation/ui_salt_function_library_batch1_runtime_proof.json`; diff check passed at `artifacts/validation/ui_salt_function_library_batch1_diff_check.json`.
+- Slice I branch: `codex/ui-salt-recipe-v2-shadow` from clean pushed `master` at `947cc06`; rearward review for `947cc06` reported `ok`.
+- Slice I contract: `docs/contracts/ui_salt_recipe_v2_shadow.contract.json`.
+- Slice I scope lock: add graph-ready recipe metadata only. Existing recipe expansion remains the live authority until a later explicit switch.
+- Slice I implementation: materializer emits `composition_recipe_contract.recipe_v2` entries with four linear nodes, three typed route edges, route audit fields, `ui_projection="linear_color_stack"`, `shadow_only=true`, and `live_authority="recipe"`; current `recipes` remain the live expansion source.
+- Slice I native reader: `ui_app/src/color_pipeline_metadata_contract.*` parses and validates `recipe_v2` as optional shadow metadata and rejects present-but-partial `recipe_v2` blocks that do not mirror every current recipe.
+- Slice I validation receipts before checkpoint: contract validation passed at `artifacts/validation/ui_salt_recipe_v2_shadow_contract.json`; materializer pytest passed at `artifacts/validation/ui_salt_recipe_v2_shadow_pytest.json`; materialization passed at `artifacts/validation/ui_salt_recipe_v2_shadow_materialize.json`; code quality baseline passed at `artifacts/validation/ui_salt_recipe_v2_shadow_code_quality.json`; native rail passed at `artifacts/validation/ui_salt_recipe_v2_shadow_native.json`; runtime publish passed at `artifacts/validation/ui_salt_recipe_v2_shadow_runtime_publish.json`; published runtime proof passed at `artifacts/validation/ui_salt_recipe_v2_shadow_runtime_proof.json` and `artifacts/pytest/ui_salt_recipe_v2_shadow_runtime.junit.xml`; diff check passed at `artifacts/validation/ui_salt_recipe_v2_shadow_diff_check.json`.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -505,6 +517,9 @@ Required questions:
 - Does Batch 1 prove every shipped new function is runtime-backed and changes pixels through the published viewer?
 - Did `sdf_curvature_signed` and `normal_angle_palette` get classified before any implementation tried to expose them?
 - Did the slice avoid graph UI, new fractal lanes, and broad function-library dumping?
+- Does Slice I keep `recipe_v2` shadow-only and avoid switching live recipe expansion?
+- Does `recipe_v2` reuse typed ports/edge resolver semantics instead of inventing a second compatibility model?
+- Does Slice I preserve current preset behavior, current UI layout, and the function library without new rows?
 
 ## Audit Passes
 
@@ -539,6 +554,9 @@ Required questions:
 - [x] Pass 29 - review Slice H candidate classification for alias traps, diagnostic-only traps, and unsupported runtime seams before implementation.
 - [x] Pass 30 - review Batch 1 implementation for dead rows, missing typed ports, stale generated metadata, state/capture omissions, and UI workflow drift.
 - [x] Pass 31 - clean re-read after repairs confirms Batch 1 shipped only proven runtime-backed entries and left graph UI/new fractal lanes/Salticid runtime out of scope.
+- [x] Pass 32 - reviewed Slice I recipe_v2 schema for live-authority drift, duplicated compatibility logic, and graph-UI scope leak; the materializer reuses the existing typed edge resolver and labels the new graph form as shadow-only.
+- [x] Pass 33 - reviewed implementation for stale generated metadata, parser validation gaps, route audit omissions, and runtime report/count drift; found and repaired the native parser gap where present `recipe_v2` metadata did not have to mirror every current recipe.
+- [x] Pass 34 - clean re-read after repairs confirms `recipe_v2` is shadow-only, current recipe expansion remains live authority, no graph UI or graph recipe renderer was added, no new functions were introduced, and no Salticid runtime dependency was imported.
 
 ## Audit Findings
 
@@ -573,6 +591,24 @@ Required questions:
 - [x] Hostile audit finding: first native rail exposed missing runtime-backed filtering for the new Shape rows; fixed by adding `log_compress` and `smoothstep_range` to `IsColorPipelineFunctionRuntimeBacked(...)` and extending the native parity/count assertions.
 - [x] Hostile audit finding: first runtime proof exposed a nested automation lock bug in the new no-mouse test helper; fixed by removing the nested lock and relying on the existing autouse runtime automation lock.
 - [x] Hostile audit finding: code-quality baseline exposed function growth in `BuildColorPipelineShapeFunctions()` and `MirrorLegacyColorShapeFromStackEntry(...)`; fixed by splitting the Shape catalog builder and sharing legacy window-shape mirror logic.
+- [x] Slice I proves `recipe_v2` is shadow metadata only and does not switch live recipe expansion authority: `live_authority="recipe"` is emitted and validated, while `TryBuildColorPipelineRecipeLanes(...)` still reads current recipe metadata.
+- [x] Slice I proves existing preset recipes still expand through the current row editor path: native recipe-expansion tests still install materialized `recipes`, build the four current lane rows, and the published runtime UI-Salt contract proof remains green.
+- [x] Slice I proves graph-ready recipes resolve through existing typed route/edge semantics and fail closed for unsupported graph routes: materializer tests reject an unsupported `root_index -> repeat -> heatmap` recipe_v2 route, and native tests parse the generated route nodes/edges.
+- [x] Hostile audit finding: the first native reader implementation parsed `recipe_v2` but did not require a present `recipe_v2` block to mirror every current recipe. The reader now tracks `has_recipe_v2`, validates one shadow graph per current recipe, requires `id == source_recipe_id`, and `test_color_pipeline_core` rejects a partial `recipe_v2` fixture.
+- [x] Clean Slice I re-read found no live recipe authority switch, no graph UI, no arbitrary graph recipe renderer, no new function-library entries, no hardcoded fallback removal, no Salticid runtime dependency, and no physical mouse automation.
+
+## Slice I Validation Targets
+
+- `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_recipe_v2_shadow.contract.json --out-json artifacts/validation/ui_salt_recipe_v2_shadow_contract.json`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_recipe_v2_shadow_hostile_audit.json`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_recipe_v2_shadow_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_recipe_v2_shadow_pytest --log artifacts/logs/ui_salt_recipe_v2_shadow_pytest.log --out-json artifacts/validation/ui_salt_recipe_v2_shadow_pytest.json --heartbeat-seconds 30 --timeout-seconds 180 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_recipe_v2_shadow_materialize --log artifacts/logs/ui_salt_recipe_v2_shadow_materialize.log --out-json artifacts/validation/ui_salt_recipe_v2_shadow_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_recipe_v2_shadow_native --log artifacts/logs/ui_salt_recipe_v2_shadow_native.log --out-json artifacts/validation/ui_salt_recipe_v2_shadow_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_recipe_v2_shadow_runtime_publish --log artifacts/logs/ui_salt_recipe_v2_shadow_runtime_publish.log --out-json artifacts/validation/ui_salt_recipe_v2_shadow_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_recipe_v2_shadow_runtime_proof --log artifacts/logs/ui_salt_recipe_v2_shadow_runtime_proof.log --out-json artifacts/validation/ui_salt_recipe_v2_shadow_runtime_proof.json --heartbeat-seconds 30 --timeout-seconds 360 -- py -3.14 -m pytest tests/test_fractal_runtime_ui_salt_contract.py::test_published_runtime_consumes_staged_ui_salt_contract -q --junitxml artifacts/pytest/ui_salt_recipe_v2_shadow_runtime.junit.xml`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_recipe_v2_shadow_diff_check --log artifacts/logs/ui_salt_recipe_v2_shadow_diff_check.log --out-json artifacts/validation/ui_salt_recipe_v2_shadow_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Slice H Validation Targets
 

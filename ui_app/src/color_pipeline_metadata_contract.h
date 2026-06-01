@@ -171,6 +171,44 @@ struct MaterializedColorPipelineRecipe {
     std::string fail_closed_reason;
 };
 
+struct MaterializedColorPipelineRecipeV2Node {
+    std::string id;
+    std::string lane;
+    std::string function;
+};
+
+struct MaterializedColorPipelineRecipeV2Edge {
+    std::string edge_id;
+    std::string from_node;
+    std::string to_node;
+    std::string from_function;
+    std::string to_function;
+    std::string from_type;
+    std::string to_type;
+    std::string output_type;
+    std::string status;
+    std::vector<std::string> adapters;
+    int adapter_hops = 0;
+    int adapter_cost = 0;
+};
+
+struct MaterializedColorPipelineRecipeV2 {
+    std::string id;
+    std::string label;
+    std::string source_recipe_id;
+    std::string ui_projection;
+    bool shadow_only = false;
+    std::string live_authority;
+    std::string status;
+    std::vector<MaterializedColorPipelineRecipeV2Node> nodes;
+    std::vector<MaterializedColorPipelineRecipeV2Edge> edges;
+    std::vector<std::string> chosen_adapters;
+    int adapter_hops = 0;
+    int adapter_cost = 0;
+    std::string tie_break_rule;
+    std::string fail_closed_reason;
+};
+
 struct MaterializedColorPipelineRowApplicator {
     std::string id;
     std::string label;
@@ -221,6 +259,8 @@ struct MaterializedColorPipelineContract {
     std::vector<MaterializedColorPipelineCompatOverride> compat_overrides;
     std::vector<MaterializedColorPipelineCompatibilityAudit> compatibility_audit;
     std::vector<MaterializedColorPipelineRecipe> recipes;
+    bool has_recipe_v2 = false;
+    std::vector<MaterializedColorPipelineRecipeV2> recipe_v2;
     std::vector<MaterializedColorPipelineRowApplicator> row_applicators;
     std::vector<MaterializedColorPipelineSdfSourceCapability> sdf_source_capabilities;
     std::vector<MaterializedExplainoContractEntry> explaino_entries;

@@ -152,6 +152,17 @@ const MaterializedColorPipelineSdfSourceCapability* FindSdfSourceCapability(
     return nullptr;
 }
 
+const MaterializedColorPipelineRecipeV2* FindRecipeV2(
+    const MaterializedColorPipelineContract& contract,
+    const char* recipeId) {
+    for (const MaterializedColorPipelineRecipeV2& recipe : contract.recipe_v2) {
+        if (recipe.id == recipeId) {
+            return &recipe;
+        }
+    }
+    return nullptr;
+}
+
 void CheckMaterializedPort(
     const MaterializedColorPipelineContract& contract,
     const char* laneId,
@@ -1021,6 +1032,8 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     Check(contract.compatibility_audit.size() == 22,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
     Check(contract.recipes.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
+    Check(contract.has_recipe_v2, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Present");
+    Check(contract.recipe_v2.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Count");
     Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
     Check(contract.sdf_source_capabilities.size() == 6,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfSourceCapabilityCount");
@@ -1333,7 +1346,55 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
             "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeShapeBacked");
         Check(gradingLane && FindMaterializedColorPipelineFunction(*gradingLane, recipe.grading),
             "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeGradingBacked");
+        const MaterializedColorPipelineRecipeV2* recipeV2 = FindRecipeV2(contract, recipe.id.c_str());
+        Check(recipeV2 != nullptr,
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2PresentForRecipe");
+        if (recipeV2) {
+            Check(recipeV2->source_recipe_id == recipe.id &&
+                    recipeV2->label == recipe.label &&
+                    recipeV2->ui_projection == "linear_color_stack" &&
+                    recipeV2->shadow_only &&
+                    recipeV2->live_authority == "recipe" &&
+                    recipeV2->status == "resolved" &&
+                    recipeV2->fail_closed_reason.empty(),
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2ShadowMetadata");
+            Check(recipeV2->nodes.size() == 4 && recipeV2->edges.size() == 3,
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2LinearProjectionShape");
+            if (recipeV2->nodes.size() == 4) {
+                Check(recipeV2->nodes[0].id == "source" &&
+                        recipeV2->nodes[0].lane == "source" &&
+                        recipeV2->nodes[0].function == recipe.source &&
+                        recipeV2->nodes[1].id == "shape" &&
+                        recipeV2->nodes[1].lane == "shape" &&
+                        recipeV2->nodes[1].function == recipe.shape &&
+                        recipeV2->nodes[2].id == "palette" &&
+                        recipeV2->nodes[2].lane == "palette" &&
+                        recipeV2->nodes[2].function == recipe.palette &&
+                        recipeV2->nodes[3].id == "grading" &&
+                        recipeV2->nodes[3].lane == "grading" &&
+                        recipeV2->nodes[3].function == recipe.grading,
+                    "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2NodesMatchRecipe");
+            }
+            if (recipeV2->edges.size() == 3) {
+                Check(recipeV2->edges[0].from_node == "source" &&
+                        recipeV2->edges[0].to_node == "shape" &&
+                        recipeV2->edges[1].from_node == "shape" &&
+                        recipeV2->edges[1].to_node == "palette" &&
+                        recipeV2->edges[2].from_node == "palette" &&
+                        recipeV2->edges[2].to_node == "grading",
+                    "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2EdgesAreLinear");
+            }
+        }
     }
+
+    const MaterializedColorPipelineRecipeV2* defaultRecipeV2 = FindRecipeV2(contract, "default_smooth_escape");
+    Check(defaultRecipeV2 && defaultRecipeV2->chosen_adapters.empty() &&
+            defaultRecipeV2->adapter_hops == 0 &&
+            defaultRecipeV2->adapter_cost == 0 &&
+            !defaultRecipeV2->edges.empty() &&
+            defaultRecipeV2->edges[0].status == "direct" &&
+            defaultRecipeV2->edges[0].adapters.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_DefaultRecipeV2DirectRoute");
 
     bool explainoPaletteFound = false;
     bool balanceVoidFound = false;
@@ -1923,6 +1984,41 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
             error.find("typed_signal references unknown signal type") != std::string::npos,
         "TestMaterializedContractLoaderRejectsTamperedJson_UnknownTypedSignalRejected");
     std::remove(unknownTypedSignalPath.c_str());
+
+    const char* partialRecipeV2Json = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"},
+    {"id": "color.linear_rgb", "kind": "color", "domain": "linear_rgb", "topology": "color", "arity": 3, "default_adapter_policy": "forbidden"}
+  ]},
+  "function_library": {
+    "lanes": [
+      {"id": "source", "label": "Source", "default": "smooth_escape_ramp", "functions": [{"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "params": []}]},
+      {"id": "shape", "label": "Shape", "default": "identity", "functions": [{"id": "identity", "label": "Identity", "description": "", "taxonomy_group": "identity", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "params": []}]},
+      {"id": "palette", "label": "Palette", "default": "heatmap", "functions": [{"id": "heatmap", "label": "Heatmap", "description": "", "taxonomy_group": "palette_escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "color", "params": []}]},
+      {"id": "grading", "label": "Grading", "default": "contrast_lift", "functions": [{"id": "contrast_lift", "label": "Contrast Lift", "description": "", "taxonomy_group": "grade_escape", "runtime_backed": true, "input_kind": "color", "output_kind": "color", "params": []}]}
+    ]
+  },
+  "composition_recipe_contract": {
+    "compatibility": [],
+    "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}],
+    "recipes": [{"id": "default_smooth_escape", "label": "Default Smooth Escape", "source": "smooth_escape_ramp", "shape": "identity", "palette": "heatmap", "grading": "contrast_lift"}],
+    "recipe_v2": []
+  },
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string partialRecipeV2Path = TempContractPath("ui_salt_contract_partial_recipe_v2.json");
+    Check(WriteTextFile(partialRecipeV2Path, partialRecipeV2Json),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WritePartialRecipeV2Fixture");
+    error.clear();
+    Check(!LoadColorPipelineMaterializedContractJson(partialRecipeV2Path, &contract, &error) &&
+            error.find("recipe_v2 must mirror every materialized recipe") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_PartialRecipeV2Rejected");
+    std::remove(partialRecipeV2Path.c_str());
 
     const char* duplicateEdgeLinkJson = R"json({
   "schema_version": 1,

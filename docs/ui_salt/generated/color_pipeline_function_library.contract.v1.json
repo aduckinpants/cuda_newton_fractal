@@ -2275,6 +2275,328 @@
         "fail_closed_reason": ""
       }
     ],
+    "recipe_v2": [
+      {
+        "id": "default_smooth_escape",
+        "label": "Default Smooth Escape",
+        "source_recipe_id": "default_smooth_escape",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": true,
+        "live_authority": "recipe",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source",
+            "lane": "source",
+            "function": "smooth_escape_ramp"
+          },
+          {
+            "id": "shape",
+            "lane": "shape",
+            "function": "identity"
+          },
+          {
+            "id": "palette",
+            "lane": "palette",
+            "function": "heatmap"
+          },
+          {
+            "id": "grading",
+            "lane": "grading",
+            "function": "contrast_lift"
+          }
+        ],
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "smooth_escape_ramp",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source",
+            "to_node": "shape"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape",
+            "to_node": "palette"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette",
+            "to_node": "grading"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "phase_orbit_wheel",
+        "label": "Phase Orbit Wheel",
+        "source_recipe_id": "phase_orbit_wheel",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": true,
+        "live_authority": "recipe",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source",
+            "lane": "source",
+            "function": "phase_orbit"
+          },
+          {
+            "id": "shape",
+            "lane": "shape",
+            "function": "identity"
+          },
+          {
+            "id": "palette",
+            "lane": "palette",
+            "function": "phase_wheel_palette"
+          },
+          {
+            "id": "grading",
+            "lane": "grading",
+            "function": "phase_finish"
+          }
+        ],
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "phase_orbit",
+            "to_function": "identity",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "phase.radians",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source",
+            "to_node": "shape"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "phase_wheel_palette",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape",
+            "to_node": "palette"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "phase_wheel_palette",
+            "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette",
+            "to_node": "grading"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_normal_angle_diagnostic",
+        "label": "SDF Normal Angle Diagnostic",
+        "source_recipe_id": "sdf_normal_angle_diagnostic",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": true,
+        "live_authority": "recipe",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source",
+            "lane": "source",
+            "function": "sdf_normal_angle"
+          },
+          {
+            "id": "shape",
+            "lane": "shape",
+            "function": "identity"
+          },
+          {
+            "id": "palette",
+            "lane": "palette",
+            "function": "phase_wheel_palette"
+          },
+          {
+            "id": "grading",
+            "lane": "grading",
+            "function": "phase_finish"
+          }
+        ],
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_normal_angle",
+            "to_function": "identity",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "phase.radians",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source",
+            "to_node": "shape"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "phase_wheel_palette",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape",
+            "to_node": "palette"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "phase_wheel_palette",
+            "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette",
+            "to_node": "grading"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_normal_angle_beauty",
+        "label": "SDF Normal Angle Beauty",
+        "source_recipe_id": "sdf_normal_angle_beauty",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": true,
+        "live_authority": "recipe",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source",
+            "lane": "source",
+            "function": "sdf_normal_angle"
+          },
+          {
+            "id": "shape",
+            "lane": "shape",
+            "function": "identity"
+          },
+          {
+            "id": "palette",
+            "lane": "palette",
+            "function": "phase_wheel_palette"
+          },
+          {
+            "id": "grading",
+            "lane": "grading",
+            "function": "phase_finish"
+          }
+        ],
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_normal_angle",
+            "to_function": "identity",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "phase.radians",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source",
+            "to_node": "shape"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "phase_wheel_palette",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape",
+            "to_node": "palette"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "phase_wheel_palette",
+            "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette",
+            "to_node": "grading"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
+      }
+    ],
     "compat_overrides": [
       {
         "id": "legacy_smooth_escape_ramp_explaino_cmap_contrast_lift",

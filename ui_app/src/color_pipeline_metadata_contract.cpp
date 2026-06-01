@@ -582,6 +582,97 @@ bool ReadRecipe(
     return true;
 }
 
+bool ReadRecipeV2Node(
+    const json_min::Value& value,
+    MaterializedColorPipelineRecipeV2Node* outNode,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Recipe v2 node entry must be an object");
+    }
+    MaterializedColorPipelineRecipeV2Node node;
+    if (!ReadString(value, "id", &node.id, outError) ||
+        !ReadString(value, "lane", &node.lane, outError) ||
+        !ReadString(value, "function", &node.function, outError)) {
+        return false;
+    }
+    *outNode = std::move(node);
+    return true;
+}
+
+bool ReadRecipeV2Edge(
+    const json_min::Value& value,
+    MaterializedColorPipelineRecipeV2Edge* outEdge,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Recipe v2 edge entry must be an object");
+    }
+    MaterializedColorPipelineRecipeV2Edge edge;
+    if (!ReadString(value, "edge_id", &edge.edge_id, outError) ||
+        !ReadString(value, "from_node", &edge.from_node, outError) ||
+        !ReadString(value, "to_node", &edge.to_node, outError) ||
+        !ReadString(value, "from_function", &edge.from_function, outError) ||
+        !ReadString(value, "to_function", &edge.to_function, outError) ||
+        !ReadString(value, "from_type", &edge.from_type, outError) ||
+        !ReadString(value, "to_type", &edge.to_type, outError) ||
+        !ReadString(value, "output_type", &edge.output_type, outError) ||
+        !ReadString(value, "status", &edge.status, outError) ||
+        !ReadStringArray(value, "adapters", &edge.adapters, outError) ||
+        !ReadNonNegativeInteger(value, "adapter_hops", &edge.adapter_hops, outError) ||
+        !ReadNonNegativeInteger(value, "adapter_cost", &edge.adapter_cost, outError)) {
+        return false;
+    }
+    *outEdge = std::move(edge);
+    return true;
+}
+
+bool ReadRecipeV2(
+    const json_min::Value& value,
+    MaterializedColorPipelineRecipeV2* outRecipe,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Recipe v2 entry must be an object");
+    }
+    MaterializedColorPipelineRecipeV2 recipe;
+    if (!ReadString(value, "id", &recipe.id, outError) ||
+        !ReadString(value, "label", &recipe.label, outError) ||
+        !ReadString(value, "source_recipe_id", &recipe.source_recipe_id, outError) ||
+        !ReadString(value, "ui_projection", &recipe.ui_projection, outError) ||
+        !ReadBool(value, "shadow_only", &recipe.shadow_only, outError) ||
+        !ReadString(value, "live_authority", &recipe.live_authority, outError) ||
+        !ReadString(value, "status", &recipe.status, outError) ||
+        !ReadStringArray(value, "chosen_adapters", &recipe.chosen_adapters, outError) ||
+        !ReadNonNegativeInteger(value, "adapter_hops", &recipe.adapter_hops, outError) ||
+        !ReadNonNegativeInteger(value, "adapter_cost", &recipe.adapter_cost, outError) ||
+        !ReadString(value, "tie_break_rule", &recipe.tie_break_rule, outError) ||
+        !ReadOptionalString(value, "fail_closed_reason", &recipe.fail_closed_reason, outError)) {
+        return false;
+    }
+    const json_min::Value* nodes = RequiredField(value, "nodes", outError);
+    if (!nodes || !nodes->is_array()) {
+        return SetError(outError, "recipe_v2.nodes must be an array");
+    }
+    for (const json_min::Value& nodeValue : nodes->as_array()) {
+        MaterializedColorPipelineRecipeV2Node node;
+        if (!ReadRecipeV2Node(nodeValue, &node, outError)) {
+            return false;
+        }
+        recipe.nodes.push_back(std::move(node));
+    }
+    const json_min::Value* edges = RequiredField(value, "edges", outError);
+    if (!edges || !edges->is_array()) {
+        return SetError(outError, "recipe_v2.edges must be an array");
+    }
+    for (const json_min::Value& edgeValue : edges->as_array()) {
+        MaterializedColorPipelineRecipeV2Edge edge;
+        if (!ReadRecipeV2Edge(edgeValue, &edge, outError)) {
+            return false;
+        }
+        recipe.edges.push_back(std::move(edge));
+    }
+    *outRecipe = std::move(recipe);
+    return true;
+}
+
 bool ReadRowApplicator(
     const json_min::Value& value,
     MaterializedColorPipelineRowApplicator* outApplicator,
@@ -1174,6 +1265,106 @@ bool ValidateMaterializedRecipes(
     return true;
 }
 
+bool ValidateMaterializedRecipeV2(
+    const std::vector<MaterializedColorPipelineRecipeV2>& recipeV2,
+    const std::vector<MaterializedColorPipelineRecipe>& recipes,
+    bool hasRecipeV2,
+    const std::set<std::string>& functionIds,
+    std::string* outError) {
+    if (!hasRecipeV2) {
+        return true;
+    }
+    if (recipeV2.size() != recipes.size()) {
+        return SetError(outError, "Materialized recipe_v2 must mirror every materialized recipe");
+    }
+    std::set<std::string> recipeIds;
+    for (const MaterializedColorPipelineRecipe& recipe : recipes) {
+        recipeIds.insert(recipe.id);
+    }
+
+    std::set<std::string> recipeV2Ids;
+    static const char* const kExpectedNodeIds[] = {"source", "shape", "palette", "grading"};
+    for (const MaterializedColorPipelineRecipeV2& recipe : recipeV2) {
+        if (!recipeV2Ids.insert(recipe.id).second) {
+            return SetError(outError, std::string("Duplicate materialized recipe_v2 id '") + recipe.id + "'");
+        }
+        if (recipeIds.find(recipe.source_recipe_id) == recipeIds.end()) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' references a missing source recipe");
+        }
+        if (recipe.id != recipe.source_recipe_id) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' must use the source recipe id");
+        }
+        if (recipe.ui_projection != "linear_color_stack") {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' has unsupported ui_projection");
+        }
+        if (!recipe.shadow_only) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' must be shadow_only");
+        }
+        if (recipe.live_authority != "recipe") {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' must keep recipe live_authority");
+        }
+        if (recipe.status != "resolved" && recipe.status != "fail_closed") {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' has invalid status");
+        }
+        if (recipe.status == "resolved" && !recipe.fail_closed_reason.empty()) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' resolved with a fail_closed_reason");
+        }
+        if (recipe.status == "fail_closed" && recipe.fail_closed_reason.empty()) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' failed closed without a reason");
+        }
+        if (recipe.nodes.size() != 4) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' must declare four linear projection nodes");
+        }
+        for (std::size_t index = 0; index < recipe.nodes.size(); ++index) {
+            const MaterializedColorPipelineRecipeV2Node& node = recipe.nodes[index];
+            if (node.id != kExpectedNodeIds[index] || node.lane != kExpectedNodeIds[index]) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' has invalid linear projection node order");
+            }
+            if (functionIds.find(node.function) == functionIds.end()) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' references a missing node function");
+            }
+        }
+        if (recipe.edges.size() != 3) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' must declare three linear projection edges");
+        }
+        for (std::size_t index = 0; index < recipe.edges.size(); ++index) {
+            const MaterializedColorPipelineRecipeV2Edge& edge = recipe.edges[index];
+            if (edge.from_node != kExpectedNodeIds[index] || edge.to_node != kExpectedNodeIds[index + 1]) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' has invalid linear projection edge order");
+            }
+            if (edge.status != "direct" && edge.status != "adapted") {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' has invalid edge status");
+            }
+            if (functionIds.find(edge.from_function) == functionIds.end() ||
+                functionIds.find(edge.to_function) == functionIds.end()) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' references a missing edge function");
+            }
+        }
+    }
+    for (const std::string& recipeId : recipeIds) {
+        if (recipeV2Ids.find(recipeId) == recipeV2Ids.end()) {
+            return SetError(outError, std::string("Materialized recipe_v2 missing source recipe '") +
+                recipeId + "'");
+        }
+    }
+    return true;
+}
+
 bool ValidateMaterializedRowApplicators(
     const std::vector<MaterializedColorPipelineRowApplicator>& applicators,
     std::string* outError) {
@@ -1315,6 +1506,7 @@ bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, s
         ValidateMaterializedCompatibility(contract.compatibility, functionIds, outError) &&
         ValidateMaterializedCompatibilityAudit(contract, functionIds, outError) &&
         ValidateMaterializedRecipes(contract.recipes, functionIds, outError) &&
+        ValidateMaterializedRecipeV2(contract.recipe_v2, contract.recipes, contract.has_recipe_v2, functionIds, outError) &&
         ValidateMaterializedRowApplicators(contract.row_applicators, outError) &&
         ValidateMaterializedSdfSourceCapabilities(contract, outError) &&
         ValidateMaterializedExplainoEntries(contract.explaino_entries, outError);
@@ -1494,6 +1686,19 @@ bool LoadColorPipelineMaterializedContractJson(
             return false;
         }
         contract.recipes.push_back(std::move(recipe));
+    }
+    if (const json_min::Value* recipeV2 = compositionContract->get("recipe_v2")) {
+        contract.has_recipe_v2 = true;
+        if (!recipeV2->is_array()) {
+            return SetError(outError, "composition_recipe_contract.recipe_v2 must be an array");
+        }
+        for (const json_min::Value& recipeValue : recipeV2->as_array()) {
+            MaterializedColorPipelineRecipeV2 recipe;
+            if (!ReadRecipeV2(recipeValue, &recipe, outError)) {
+                return false;
+            }
+            contract.recipe_v2.push_back(std::move(recipe));
+        }
     }
 
     const json_min::Value* rowApplicators = RequiredField(*compositionContract, "row_applicators", outError);

@@ -553,6 +553,15 @@ def test_materializer_accepts_compat_override_audit(tmp_path):
     assert legacy_row["reason"] == "legacy palette has no typed port signature yet"
 
 
+def test_materializer_rejects_recipe_v2_shadow_route_that_cannot_resolve(tmp_path):
+    text = EDGE_RESOLUTION_FIXTURE + '''
+recipe(id="bad_root_heatmap", label="Bad Root Heatmap", source="root_index", shape="repeat", palette="heatmap", grading="contrast_lift")
+'''
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "recipe_v2 bad_root_heatmap expected resolved" in proc.stderr
+
+
 def test_materializer_rejects_unclassified_compat_row(tmp_path):
     text = COMPAT_OVERRIDE_FIXTURE.replace(
         'compat_override(id="legacy_escape_palette_bridge", source="legacy_escape_shape", palette="legacy_escape_palette", grading="contrast_lift", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="legacy palette has no typed port signature yet", proof="compat_override_audit")\n',
@@ -832,6 +841,51 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert audit_cases["root_repeat_heatmap_bad"]["policy_blockers"]
     assert audit_cases["phase_root_palette_bad"]["status"] == "fail_closed"
     assert audit_cases["sdf_signed_distance_phase_palette_bad"]["status"] == "fail_closed"
+
+    recipe_v2 = actual["composition_recipe_contract"]["recipe_v2"]
+    assert [recipe["id"] for recipe in recipe_v2] == [
+        "default_smooth_escape",
+        "phase_orbit_wheel",
+        "sdf_normal_angle_diagnostic",
+        "sdf_normal_angle_beauty",
+    ]
+    recipe_by_id = {recipe["id"]: recipe for recipe in recipe_v2}
+    for recipe in recipe_v2:
+        assert recipe["ui_projection"] == "linear_color_stack"
+        assert recipe["shadow_only"] is True
+        assert recipe["live_authority"] == "recipe"
+        assert recipe["status"] == "resolved"
+        assert recipe["fail_closed_reason"] == ""
+        assert recipe["source_recipe_id"] == recipe["id"]
+        assert recipe["tie_break_rule"] == "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order"
+        assert len(recipe["nodes"]) == 4
+        assert [node["id"] for node in recipe["nodes"]] == [
+            "source",
+            "shape",
+            "palette",
+            "grading",
+        ]
+        assert [node["lane"] for node in recipe["nodes"]] == [
+            "source",
+            "shape",
+            "palette",
+            "grading",
+        ]
+        assert len(recipe["edges"]) == 3
+        assert [edge["from_node"] for edge in recipe["edges"]] == ["source", "shape", "palette"]
+        assert [edge["to_node"] for edge in recipe["edges"]] == ["shape", "palette", "grading"]
+
+    default_v2 = recipe_by_id["default_smooth_escape"]
+    assert [node["function"] for node in default_v2["nodes"]] == [
+        "smooth_escape_ramp",
+        "identity",
+        "heatmap",
+        "contrast_lift",
+    ]
+    assert default_v2["chosen_adapters"] == []
+    assert default_v2["adapter_hops"] == 0
+    assert default_v2["adapter_cost"] == 0
+    assert all(edge["status"] == "direct" and edge["adapters"] == [] for edge in default_v2["edges"])
 
     assert _ports(actual, "source", "smooth_escape_ramp") == [
         {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True}

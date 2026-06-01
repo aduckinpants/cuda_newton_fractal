@@ -706,6 +706,85 @@ def _resolve_case(
     }
 
 
+def _build_recipe_v2_shadow(
+    recipe: dict[str, Any],
+    functions: dict[str, FunctionRecord],
+    edge_links: list[dict[str, Any]],
+    adapters: list[dict[str, Any]],
+    policy: dict[str, Any],
+) -> dict[str, Any]:
+    recipe_id = recipe["id"]
+    case = {
+        "id": f"recipe_v2.{recipe_id}",
+        "source": recipe["source"],
+        "shape": recipe["shape"],
+        "palette": recipe["palette"],
+        "grading": recipe["grading"],
+        "expected_status": "resolved",
+        "allow_lossy": False,
+        "allow_visible_default": False,
+        "explicit_adapter_consent": False,
+        "diagnostic_adapter_consent": False,
+        "fail_closed_reason": recipe.get("fail_closed_reason", ""),
+    }
+    try:
+        resolved = _resolve_case(case, functions, edge_links, adapters, policy)
+    except MaterializerError as exc:
+        message = str(exc).replace(f"resolution_case recipe_v2.{recipe_id}", f"recipe_v2 {recipe_id}")
+        raise MaterializerError(message) from exc
+
+    node_specs = [
+        ("source", "source", recipe["source"]),
+        ("shape", "shape", recipe["shape"]),
+        ("palette", "palette", recipe["palette"]),
+        ("grading", "grading", recipe["grading"]),
+    ]
+    node_ids = [node_id for node_id, _lane, _function in node_specs]
+    edges: list[dict[str, Any]] = []
+    for edge_index, route_edge in enumerate(resolved["route_edges"]):
+        edge = dict(route_edge)
+        edge["from_node"] = node_ids[edge_index]
+        edge["to_node"] = node_ids[edge_index + 1]
+        edges.append(edge)
+
+    return {
+        "id": recipe_id,
+        "label": recipe["label"],
+        "source_recipe_id": recipe_id,
+        "ui_projection": "linear_color_stack",
+        "shadow_only": True,
+        "live_authority": "recipe",
+        "status": resolved["status"],
+        "nodes": [
+            {"id": node_id, "lane": lane, "function": function_id}
+            for node_id, lane, function_id in node_specs
+        ],
+        "edges": edges,
+        "chosen_adapters": resolved["chosen_adapters"],
+        "adapter_hops": resolved["adapter_hops"],
+        "adapter_cost": resolved["adapter_cost"],
+        "tie_break_rule": resolved["tie_break_rule"],
+        "fail_closed_reason": resolved["fail_closed_reason"],
+    }
+
+
+def _build_recipe_v2_shadows(
+    recipes: list[dict[str, Any]],
+    functions: dict[str, FunctionRecord],
+    edge_links: list[dict[str, Any]],
+    adapters: list[dict[str, Any]],
+    policy: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    if not recipes:
+        return []
+    if policy is None:
+        raise MaterializerError("recipe_v2 shadow metadata requires edge_resolution declarations")
+    return [
+        _build_recipe_v2_shadow(recipe, functions, edge_links, adapters, policy)
+        for recipe in recipes
+    ]
+
+
 def _build_compatibility_audit(
     compatibility: list[dict[str, Any]],
     compat_overrides: list[dict[str, Any]],
@@ -1189,6 +1268,13 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             resolved_cases,
             set(functions.keys()),
         )
+    recipe_v2 = _build_recipe_v2_shadows(
+        recipes,
+        functions,
+        edge_links,
+        adapters,
+        edge_policy,
+    )
 
     payload = {
         "schema_version": 1,
@@ -1201,6 +1287,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             "compatibility": compatibility,
             "row_applicators": row_applicators,
             "recipes": recipes,
+            "recipe_v2": recipe_v2,
         },
         "explaino_contract": {"entries": explaino_entries},
     }
