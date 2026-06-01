@@ -139,6 +139,28 @@ struct MaterializedColorPipelineCompatibility {
     std::string reason;
 };
 
+struct MaterializedColorPipelineCompatOverride {
+    std::string id;
+    std::string source;
+    std::string palette;
+    std::string grading;
+    std::string classification;
+    std::string owner_seam;
+    std::string reason;
+    std::string proof;
+};
+
+struct MaterializedColorPipelineCompatibilityAudit {
+    std::string source;
+    std::string palette;
+    std::string grading;
+    std::string mode;
+    std::string classification;
+    std::string route_case_id;
+    std::string override_id;
+    std::string reason;
+};
+
 struct MaterializedColorPipelineRecipe {
     std::string id;
     std::string label;
@@ -182,6 +204,8 @@ struct MaterializedColorPipelineContract {
     std::vector<MaterializedColorPipelineResolutionCase> resolution_cases;
     std::vector<MaterializedColorPipelineLane> lanes;
     std::vector<MaterializedColorPipelineCompatibility> compatibility;
+    std::vector<MaterializedColorPipelineCompatOverride> compat_overrides;
+    std::vector<MaterializedColorPipelineCompatibilityAudit> compatibility_audit;
     std::vector<MaterializedColorPipelineRecipe> recipes;
     std::vector<MaterializedColorPipelineRowApplicator> row_applicators;
     std::vector<MaterializedExplainoContractEntry> explaino_entries;

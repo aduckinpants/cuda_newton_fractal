@@ -18,6 +18,7 @@ VALID_CONTRACT_KINDS = {
     "adapter_library",
     "edge_resolution",
     "resolution_audit",
+    "compat_override_audit",
 }
 VALID_SIGNAL_KINDS = {"scalar", "phase", "categorical"}
 VALID_SIGNAL_TYPE_KINDS = {"scalar", "phase", "category", "palette", "mask", "color", "field"}
@@ -28,6 +29,7 @@ VALID_APPLICATOR_TARGET_LANES = {"source"}
 VALID_PARAM_TYPES = {"float", "double", "int", "bool", "enum"}
 VALID_PORT_DIRECTIONS = {"input", "output"}
 VALID_RESOLUTION_EXPECTATIONS = {"resolved", "fail_closed"}
+VALID_COMPAT_OVERRIDE_CLASSIFICATIONS = {"runtime_legacy_override"}
 VALID_STATEMENTS = {
     "contract",
     "signal_type",
@@ -42,6 +44,7 @@ VALID_STATEMENTS = {
     "edge_policy",
     "edge_link",
     "resolution_case",
+    "compat_override",
     "explaino_contract",
 }
 
@@ -399,6 +402,23 @@ def _build_resolution_case(kwargs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _build_compat_override(kwargs: dict[str, Any]) -> dict[str, Any]:
+    override_id = _require_string(kwargs, "id", statement="compat_override")
+    classification = _require_string(kwargs, "classification", statement=f"compat_override {override_id}")
+    if classification not in VALID_COMPAT_OVERRIDE_CLASSIFICATIONS:
+        raise MaterializerError(f"compat_override {override_id} invalid classification '{classification}'")
+    return {
+        "id": override_id,
+        "source": _require_string(kwargs, "source", statement=f"compat_override {override_id}"),
+        "palette": _require_string(kwargs, "palette", statement=f"compat_override {override_id}"),
+        "grading": _require_string(kwargs, "grading", statement=f"compat_override {override_id}"),
+        "classification": classification,
+        "owner_seam": _require_string(kwargs, "owner_seam", statement=f"compat_override {override_id}"),
+        "reason": _require_string(kwargs, "reason", statement=f"compat_override {override_id}"),
+        "proof": _require_string(kwargs, "proof", statement=f"compat_override {override_id}"),
+    }
+
+
 def _canonical_output_port(function: dict[str, Any]) -> dict[str, Any] | None:
     for port in function.get("ports", []):
         if port["direction"] == "output" and bool(port.get("canonical", False)):
@@ -624,6 +644,77 @@ def _resolve_case(
     }
 
 
+def _build_compatibility_audit(
+    compatibility: list[dict[str, Any]],
+    compat_overrides: list[dict[str, Any]],
+    resolved_cases: list[dict[str, Any]],
+    function_ids: set[str],
+) -> list[dict[str, Any]]:
+    typed_routes: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for resolution_case in resolved_cases:
+        if (
+            resolution_case["status"] == "resolved"
+            and resolution_case["shape"] == "identity"
+            and not resolution_case["chosen_adapters"]
+        ):
+            typed_routes[(resolution_case["source"], resolution_case["palette"], resolution_case["grading"])] = resolution_case
+
+    override_routes: dict[tuple[str, str, str], dict[str, Any]] = {}
+    override_ids: set[str] = set()
+    for override in compat_overrides:
+        if override["id"] in override_ids:
+            raise MaterializerError(f"duplicate compat_override id '{override['id']}'")
+        override_ids.add(override["id"])
+        for role in ("source", "palette", "grading"):
+            if override[role] not in function_ids:
+                raise MaterializerError(f"compat_override {override['id']} references unknown {role} '{override[role]}'")
+        key = (override["source"], override["palette"], override["grading"])
+        if key in override_routes:
+            raise MaterializerError(
+                f"duplicate compat_override route {override['source']} + {override['palette']} + {override['grading']}"
+            )
+        override_routes[key] = override
+
+    audit: list[dict[str, Any]] = []
+    used_override_keys: set[tuple[str, str, str]] = set()
+    for row in compatibility:
+        key = (row["source"], row["palette"], row["grading"])
+        if key in typed_routes:
+            route = typed_routes[key]
+            audit.append({
+                "source": row["source"],
+                "palette": row["palette"],
+                "grading": row["grading"],
+                "mode": row["mode"],
+                "classification": "typed_resolved",
+                "route_case_id": route["id"],
+                "override_id": "",
+                "reason": "typed resolver route covers this compatibility row",
+            })
+            continue
+        if key in override_routes:
+            override = override_routes[key]
+            used_override_keys.add(key)
+            audit.append({
+                "source": row["source"],
+                "palette": row["palette"],
+                "grading": row["grading"],
+                "mode": row["mode"],
+                "classification": override["classification"],
+                "route_case_id": "",
+                "override_id": override["id"],
+                "reason": override["reason"],
+            })
+            continue
+        raise MaterializerError(
+            f"compat row {row['source']} + {row['palette']} + {row['grading']} is not typed-resolved and has no compat_override"
+        )
+    for key, override in override_routes.items():
+        if key not in used_override_keys:
+            raise MaterializerError(f"compat_override {override['id']} does not map to a compatibility row")
+    return audit
+
+
 def _validate_function_ports(record: FunctionRecord) -> None:
     ports = record.function.get("ports", [])
     if not ports:
@@ -663,6 +754,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     adapter_library_declared = False
     adapters: list[dict[str, Any]] = []
     adapter_ids: set[str] = set()
+    compat_override_audit_declared = False
+    compat_overrides: list[dict[str, Any]] = []
     edge_policy: dict[str, Any] | None = None
     edge_links: list[dict[str, Any]] = []
     edge_link_ids: set[str] = set()
@@ -690,6 +783,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             contracts.append({"kind": kind, "contract_id": contract_id, "version": version})
             if kind == "adapter_library":
                 adapter_library_declared = True
+            if kind == "compat_override_audit":
+                compat_override_audit_declared = True
         elif name == "signal_type":
             _check_known_args(
                 name,
@@ -845,6 +940,9 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 "mode": _require_string(kwargs, "mode", statement=name),
                 "reason": _optional_string(kwargs, "reason", "supported_runtime_bridge"),
             })
+        elif name == "compat_override":
+            _check_known_args(name, kwargs, {"id", "source", "palette", "grading", "classification", "owner_seam", "reason", "proof"})
+            compat_overrides.append(_build_compat_override(kwargs))
         elif name == "recipe":
             _check_known_args(name, kwargs, {"id", "label", "source", "shape", "palette", "grading", "fail_closed_reason"})
             recipes.append({
@@ -993,6 +1091,14 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             _resolve_case(case, functions, edge_links, adapters, edge_policy)
             for case in resolution_cases
         ]
+    compatibility_audit: list[dict[str, Any]] = []
+    if compat_override_audit_declared:
+        compatibility_audit = _build_compatibility_audit(
+            compatibility,
+            compat_overrides,
+            resolved_cases,
+            set(functions.keys()),
+        )
 
     payload = {
         "schema_version": 1,
@@ -1008,6 +1114,9 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         },
         "explaino_contract": {"entries": explaino_entries},
     }
+    if compat_override_audit_declared:
+        payload["composition_recipe_contract"]["compat_overrides"] = compat_overrides
+        payload["composition_recipe_contract"]["compatibility_audit"] = compatibility_audit
     if edge_policy is not None:
         payload["edge_resolution_contract"] = {
             "policy": edge_policy,

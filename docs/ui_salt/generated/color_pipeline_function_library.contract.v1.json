@@ -36,6 +36,11 @@
       "kind": "resolution_audit",
       "contract_id": "viewer.color_pipeline_resolution_audit.v1",
       "version": 1
+    },
+    {
+      "kind": "compat_override_audit",
+      "contract_id": "viewer.compat_override_audit_contract.v1",
+      "version": 1
     }
   ],
   "signal_type_registry": {
@@ -2175,6 +2180,410 @@
         "palette": "phase_wheel_palette",
         "grading": "phase_finish",
         "fail_closed_reason": ""
+      }
+    ],
+    "compat_overrides": [
+      {
+        "id": "legacy_smooth_escape_ramp_explaino_cmap_contrast_lift",
+        "source": "smooth_escape_ramp",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
+        "reason": "explaino palette compatibility is still owned by the legacy runtime bridge",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_banded_signal_banded_heatmap_band_finish",
+        "source": "banded_signal",
+        "palette": "banded_heatmap",
+        "grading": "band_finish",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
+        "reason": "banded source and palette route is not yet declared in the typed resolver pilot set",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_escape_magnitude_heatmap_contrast_lift",
+        "source": "escape_magnitude",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
+        "reason": "escape magnitude source route is not yet declared in the typed resolver pilot set",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_escape_magnitude_explaino_cmap_contrast_lift",
+        "source": "escape_magnitude",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
+        "reason": "escape magnitude Explaino palette route remains a legacy runtime bridge",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_orbit_stripe_phase_wheel_palette_phase_finish",
+        "source": "orbit_stripe",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
+        "reason": "orbit stripe phase route is not yet declared in the typed resolver pilot set",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_root_proximity_heatmap_contrast_lift",
+        "source": "root_proximity",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
+        "reason": "root proximity scalar route is not yet declared in the typed resolver pilot set",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_root_proximity_explaino_cmap_contrast_lift",
+        "source": "root_proximity",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
+        "reason": "root proximity Explaino palette route remains a legacy runtime bridge",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_root_index_joy_root_palette_basin_default",
+        "source": "root_index",
+        "palette": "joy_root_palette",
+        "grading": "basin_default",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
+        "reason": "joy root palette route lacks a dedicated typed palette signature in the pilot resolver set",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_sdf_signed_distance_heatmap_contrast_lift",
+        "source": "sdf_signed_distance",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "signed-distance heatmap support still depends on explicit runtime normalization outside live typed resolver authority",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_sdf_signed_distance_explaino_cmap_contrast_lift",
+        "source": "sdf_signed_distance",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "signed-distance Explaino palette support still depends on runtime SDF postprocess projection",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_sdf_inside_outside_heatmap_contrast_lift",
+        "source": "sdf_inside_outside",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "inside-outside category projection to heatmap remains runtime-owned and not typed-resolver-owned",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_sdf_inside_outside_explaino_cmap_contrast_lift",
+        "source": "sdf_inside_outside",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "inside-outside category projection to Explaino palette remains runtime-owned and not typed-resolver-owned",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_sdf_boundary_band_heatmap_contrast_lift",
+        "source": "sdf_boundary_band",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "boundary-band scalar route is not yet declared in the typed resolver pilot set",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_sdf_boundary_band_explaino_cmap_contrast_lift",
+        "source": "sdf_boundary_band",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "boundary-band Explaino palette support remains runtime-owned and not typed-resolver-owned",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_sdf_curvature_heatmap_contrast_lift",
+        "source": "sdf_curvature",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "curvature signed-scalar normalization is not yet declared as typed live authority",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_sdf_curvature_explaino_cmap_contrast_lift",
+        "source": "sdf_curvature",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "curvature Explaino palette support remains runtime-owned and not typed-resolver-owned",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_lens_field_v2_distance_heatmap_contrast_lift",
+        "source": "lens_field_v2_distance",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "Lens Field v2 distance normalization is not yet declared as typed live authority",
+        "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "legacy_lens_field_v2_distance_explaino_cmap_contrast_lift",
+        "source": "lens_field_v2_distance",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
+        "reason": "Lens Field v2 Explaino palette support remains runtime-owned and not typed-resolver-owned",
+        "proof": "color_pipeline_metadata_parity"
+      }
+    ],
+    "compatibility_audit": [
+      {
+        "source": "smooth_escape_ramp",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "typed_resolved",
+        "route_case_id": "smooth_escape_heatmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "smooth_escape_ramp",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_smooth_escape_ramp_explaino_cmap_contrast_lift",
+        "reason": "explaino palette compatibility is still owned by the legacy runtime bridge"
+      },
+      {
+        "source": "phase_orbit",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "mode": "phase",
+        "classification": "typed_resolved",
+        "route_case_id": "phase_orbit_wheel",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "banded_signal",
+        "palette": "banded_heatmap",
+        "grading": "band_finish",
+        "mode": "iteration_bands",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_banded_signal_banded_heatmap_band_finish",
+        "reason": "banded source and palette route is not yet declared in the typed resolver pilot set"
+      },
+      {
+        "source": "escape_magnitude",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_escape_magnitude_heatmap_contrast_lift",
+        "reason": "escape magnitude source route is not yet declared in the typed resolver pilot set"
+      },
+      {
+        "source": "escape_magnitude",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_escape_magnitude_explaino_cmap_contrast_lift",
+        "reason": "escape magnitude Explaino palette route remains a legacy runtime bridge"
+      },
+      {
+        "source": "orbit_stripe",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "mode": "phase",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_orbit_stripe_phase_wheel_palette_phase_finish",
+        "reason": "orbit stripe phase route is not yet declared in the typed resolver pilot set"
+      },
+      {
+        "source": "root_proximity",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_root_proximity_heatmap_contrast_lift",
+        "reason": "root proximity scalar route is not yet declared in the typed resolver pilot set"
+      },
+      {
+        "source": "root_proximity",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_root_proximity_explaino_cmap_contrast_lift",
+        "reason": "root proximity Explaino palette route remains a legacy runtime bridge"
+      },
+      {
+        "source": "root_index",
+        "palette": "root_classic_palette",
+        "grading": "basin_default",
+        "mode": "root_basin",
+        "classification": "typed_resolved",
+        "route_case_id": "root_classic",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "root_index",
+        "palette": "joy_root_palette",
+        "grading": "basin_default",
+        "mode": "joy_basins",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_root_index_joy_root_palette_basin_default",
+        "reason": "joy root palette route lacks a dedicated typed palette signature in the pilot resolver set"
+      },
+      {
+        "source": "sdf_normal_angle",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "mode": "phase",
+        "classification": "typed_resolved",
+        "route_case_id": "sdf_normal_angle_phase_wheel",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "sdf_signed_distance",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_sdf_signed_distance_heatmap_contrast_lift",
+        "reason": "signed-distance heatmap support still depends on explicit runtime normalization outside live typed resolver authority"
+      },
+      {
+        "source": "sdf_signed_distance",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_sdf_signed_distance_explaino_cmap_contrast_lift",
+        "reason": "signed-distance Explaino palette support still depends on runtime SDF postprocess projection"
+      },
+      {
+        "source": "sdf_inside_outside",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_sdf_inside_outside_heatmap_contrast_lift",
+        "reason": "inside-outside category projection to heatmap remains runtime-owned and not typed-resolver-owned"
+      },
+      {
+        "source": "sdf_inside_outside",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_sdf_inside_outside_explaino_cmap_contrast_lift",
+        "reason": "inside-outside category projection to Explaino palette remains runtime-owned and not typed-resolver-owned"
+      },
+      {
+        "source": "sdf_boundary_band",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_sdf_boundary_band_heatmap_contrast_lift",
+        "reason": "boundary-band scalar route is not yet declared in the typed resolver pilot set"
+      },
+      {
+        "source": "sdf_boundary_band",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_sdf_boundary_band_explaino_cmap_contrast_lift",
+        "reason": "boundary-band Explaino palette support remains runtime-owned and not typed-resolver-owned"
+      },
+      {
+        "source": "sdf_curvature",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_sdf_curvature_heatmap_contrast_lift",
+        "reason": "curvature signed-scalar normalization is not yet declared as typed live authority"
+      },
+      {
+        "source": "sdf_curvature",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_sdf_curvature_explaino_cmap_contrast_lift",
+        "reason": "curvature Explaino palette support remains runtime-owned and not typed-resolver-owned"
+      },
+      {
+        "source": "lens_field_v2_distance",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_lens_field_v2_distance_heatmap_contrast_lift",
+        "reason": "Lens Field v2 distance normalization is not yet declared as typed live authority"
+      },
+      {
+        "source": "lens_field_v2_distance",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "legacy_lens_field_v2_distance_explaino_cmap_contrast_lift",
+        "reason": "Lens Field v2 Explaino palette support remains runtime-owned and not typed-resolver-owned"
       }
     ]
   },

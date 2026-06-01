@@ -117,6 +117,30 @@ const MaterializedColorPipelineResolutionCase* FindResolutionCase(
     return nullptr;
 }
 
+const MaterializedColorPipelineCompatibilityAudit* FindCompatibilityAudit(
+    const MaterializedColorPipelineContract& contract,
+    const char* source,
+    const char* palette,
+    const char* grading) {
+    for (const MaterializedColorPipelineCompatibilityAudit& audit : contract.compatibility_audit) {
+        if (audit.source == source && audit.palette == palette && audit.grading == grading) {
+            return &audit;
+        }
+    }
+    return nullptr;
+}
+
+const MaterializedColorPipelineCompatOverride* FindCompatOverride(
+    const MaterializedColorPipelineContract& contract,
+    const char* id) {
+    for (const MaterializedColorPipelineCompatOverride& compatOverride : contract.compat_overrides) {
+        if (compatOverride.id == id) {
+            return &compatOverride;
+        }
+    }
+    return nullptr;
+}
+
 void CheckMaterializedPort(
     const MaterializedColorPipelineContract& contract,
     const char* laneId,
@@ -966,6 +990,10 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
     Check(contract.compatibility.size() == 22,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
+    Check(contract.compat_overrides.size() == 18,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatOverrideCount");
+    Check(contract.compatibility_audit.size() == 22,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
     Check(contract.recipes.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
     Check(contract.signal_types.size() == 10, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SignalTypeCount");
@@ -987,6 +1015,33 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     }
     Check(contract.resolution_cases.size() == 8,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ResolutionCaseCount");
+    const MaterializedColorPipelineCompatibilityAudit* smoothAudit =
+        FindCompatibilityAudit(contract, "smooth_escape_ramp", "heatmap", "contrast_lift");
+    const MaterializedColorPipelineCompatibilityAudit* rootAudit =
+        FindCompatibilityAudit(contract, "root_index", "root_classic_palette", "basin_default");
+    const MaterializedColorPipelineCompatibilityAudit* sdfAudit =
+        FindCompatibilityAudit(contract, "sdf_signed_distance", "heatmap", "contrast_lift");
+    const MaterializedColorPipelineCompatibilityAudit* explainoAudit =
+        FindCompatibilityAudit(contract, "smooth_escape_ramp", "explaino_cmap", "contrast_lift");
+    Check(smoothAudit && smoothAudit->classification == "typed_resolved" &&
+            smoothAudit->route_case_id == "smooth_escape_heatmap" &&
+            smoothAudit->override_id.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SmoothCompatAuditTypedResolved");
+    Check(rootAudit && rootAudit->classification == "typed_resolved" &&
+            rootAudit->route_case_id == "root_classic",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RootCompatAuditTypedResolved");
+    Check(sdfAudit && sdfAudit->classification == "runtime_legacy_override" &&
+            sdfAudit->override_id == "legacy_sdf_signed_distance_heatmap_contrast_lift",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfCompatAuditOverride");
+    Check(explainoAudit && explainoAudit->classification == "runtime_legacy_override" &&
+            explainoAudit->override_id == "legacy_smooth_escape_ramp_explaino_cmap_contrast_lift",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoCompatAuditOverride");
+    const MaterializedColorPipelineCompatOverride* sdfOverride =
+        FindCompatOverride(contract, "legacy_sdf_signed_distance_heatmap_contrast_lift");
+    Check(sdfOverride && !sdfOverride->owner_seam.empty() &&
+            !sdfOverride->reason.empty() &&
+            !sdfOverride->proof.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfCompatOverrideMetadata");
     const MaterializedColorPipelineResolutionCase* smoothRoute =
         FindResolutionCase(contract, "smooth_escape_heatmap");
     const MaterializedColorPipelineResolutionCase* sdfRoute =
@@ -1960,6 +2015,47 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
             error.find("Compatibility references missing source function") != std::string::npos,
         "TestMaterializedContractLoaderRejectsTamperedJson_DanglingCompatibilityRejected");
     std::remove(danglingPath.c_str());
+
+    const char* duplicateCompatOverrideJson = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"}
+  ]},
+  "function_library": {
+    "lanes": [
+      {"id": "source", "label": "Source", "default": "smooth_escape_ramp", "functions": [{"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "typed_signal": "scalar.unit", "params": []}]},
+      {"id": "palette", "label": "Palette", "default": "heatmap", "functions": [{"id": "heatmap", "label": "Heatmap", "description": "", "taxonomy_group": "palette_escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "color", "params": []}]},
+      {"id": "grading", "label": "Grading", "default": "contrast_lift", "functions": [{"id": "contrast_lift", "label": "Contrast Lift", "description": "", "taxonomy_group": "grade_escape", "runtime_backed": true, "input_kind": "color", "output_kind": "color", "params": []}]}
+    ]
+  },
+  "composition_recipe_contract": {
+    "compatibility": [
+      {"source": "smooth_escape_ramp", "palette": "heatmap", "signal": "smooth_escape_ramp", "palette_runtime": "heatmap", "grading": "contrast_lift", "mode": "smooth_escape", "reason": "tampered"}
+    ],
+    "compat_overrides": [
+      {"id": "duplicate_override", "source": "smooth_escape_ramp", "palette": "heatmap", "grading": "contrast_lift", "classification": "runtime_legacy_override", "owner_seam": "test", "reason": "test", "proof": "test"},
+      {"id": "duplicate_override", "source": "smooth_escape_ramp", "palette": "heatmap", "grading": "contrast_lift", "classification": "runtime_legacy_override", "owner_seam": "test", "reason": "test", "proof": "test"}
+    ],
+    "compatibility_audit": [
+      {"source": "smooth_escape_ramp", "palette": "heatmap", "grading": "contrast_lift", "mode": "smooth_escape", "classification": "runtime_legacy_override", "route_case_id": "", "override_id": "duplicate_override", "reason": "test"}
+    ],
+    "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}],
+    "recipes": []
+  },
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string duplicateCompatOverridePath = TempContractPath("ui_salt_contract_duplicate_compat_override.json");
+    Check(WriteTextFile(duplicateCompatOverridePath, duplicateCompatOverrideJson),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WriteDuplicateCompatOverrideFixture");
+    error.clear();
+    Check(!LoadColorPipelineMaterializedContractJson(duplicateCompatOverridePath, &contract, &error) &&
+            error.find("Duplicate materialized compat override id") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_DuplicateCompatOverrideRejected");
+    std::remove(duplicateCompatOverridePath.c_str());
 }
 
 } // namespace

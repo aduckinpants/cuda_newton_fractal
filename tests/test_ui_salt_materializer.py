@@ -103,6 +103,15 @@ resolution_case(id="raw_sdf_field_phase_palette_bad", source="raw_sdf_field_debu
 '''
 
 
+COMPAT_OVERRIDE_FIXTURE = EDGE_RESOLUTION_FIXTURE + '''
+contract(kind="compat_override_audit", contract_id="viewer.compat_override_audit_contract.v1", version=1)
+function(lane="source", id="legacy_escape_shape", label="Legacy Escape Shape", taxonomy_group="legacy_escape", signal_kind="scalar", typed_signal="scalar.unit", runtime_backed=True)
+function(lane="palette", id="legacy_escape_palette", label="Legacy Escape Palette", taxonomy_group="legacy_palette", runtime_backed=True)
+compat(source="legacy_escape_shape", palette="legacy_escape_palette", signal="legacy_escape_shape", palette_runtime="legacy_escape_palette", grading="contrast_lift", mode="smooth_escape", reason="legacy runtime bridge")
+compat_override(id="legacy_escape_palette_bridge", source="legacy_escape_shape", palette="legacy_escape_palette", grading="contrast_lift", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="legacy palette has no typed port signature yet", proof="compat_override_audit")
+'''
+
+
 def run_materializer(tmp_path: Path, text: str):
     source = tmp_path / "case.ui.salt"
     out = tmp_path / "out.json"
@@ -503,6 +512,54 @@ def test_materializer_rejects_resolution_case_expected_fail_but_resolves(tmp_pat
     assert "resolution_case smooth_escape_heatmap expected fail_closed but resolved" in proc.stderr
 
 
+def test_materializer_accepts_compat_override_audit(tmp_path):
+    proc, out = run_materializer(tmp_path, COMPAT_OVERRIDE_FIXTURE)
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+
+    assert payload["contracts"][-1]["kind"] == "compat_override_audit"
+    overrides = payload["composition_recipe_contract"]["compat_overrides"]
+    assert overrides == [
+        {
+            "id": "legacy_escape_palette_bridge",
+            "source": "legacy_escape_shape",
+            "palette": "legacy_escape_palette",
+            "grading": "contrast_lift",
+            "classification": "runtime_legacy_override",
+            "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
+            "reason": "legacy palette has no typed port signature yet",
+            "proof": "compat_override_audit",
+        }
+    ]
+    audit = {
+        (row["source"], row["palette"], row["grading"]): row
+        for row in payload["composition_recipe_contract"]["compatibility_audit"]
+    }
+    assert audit[("smooth_escape_ramp", "heatmap", "contrast_lift")]["classification"] == "typed_resolved"
+    assert audit[("smooth_escape_ramp", "heatmap", "contrast_lift")]["route_case_id"] == "smooth_escape_heatmap"
+    legacy_row = audit[("legacy_escape_shape", "legacy_escape_palette", "contrast_lift")]
+    assert legacy_row["classification"] == "runtime_legacy_override"
+    assert legacy_row["override_id"] == "legacy_escape_palette_bridge"
+    assert legacy_row["reason"] == "legacy palette has no typed port signature yet"
+
+
+def test_materializer_rejects_unclassified_compat_row(tmp_path):
+    text = COMPAT_OVERRIDE_FIXTURE.replace(
+        'compat_override(id="legacy_escape_palette_bridge", source="legacy_escape_shape", palette="legacy_escape_palette", grading="contrast_lift", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="legacy palette has no typed port signature yet", proof="compat_override_audit")\n',
+        "",
+    )
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "compat row legacy_escape_shape + legacy_escape_palette + contrast_lift is not typed-resolved and has no compat_override" in proc.stderr
+
+
+def test_materializer_rejects_override_for_typed_resolved_row(tmp_path):
+    text = COMPAT_OVERRIDE_FIXTURE + 'compat_override(id="bad_typed_route_override", source="smooth_escape_ramp", palette="heatmap", grading="contrast_lift", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="typed direct route should not need an override", proof="compat_override_audit")\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "compat_override bad_typed_route_override does not map to a compatibility row" in proc.stderr
+
+
 def test_materializer_rejects_unknown_port_signal_type(tmp_path):
     text = VALID_UI_SALT + 'port(function="smooth_escape_ramp", direction="output", id="signal", type="scalar.missing", canonical=True)\n'
     proc, _ = run_materializer(tmp_path, text)
@@ -647,6 +704,24 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert all(item["target_lane"] == "source" for item in row_applicators)
     assert all(item["fail_closed_reason"] for item in row_applicators)
     assert len(actual["composition_recipe_contract"]["compatibility"]) == 22
+    compat_overrides = actual["composition_recipe_contract"]["compat_overrides"]
+    compatibility_audit = actual["composition_recipe_contract"]["compatibility_audit"]
+    assert len(compat_overrides) == 18
+    assert len(compatibility_audit) == 22
+    audit_by_key = {
+        (row["source"], row["palette"], row["grading"]): row
+        for row in compatibility_audit
+    }
+    assert audit_by_key[("smooth_escape_ramp", "heatmap", "contrast_lift")]["classification"] == "typed_resolved"
+    assert audit_by_key[("smooth_escape_ramp", "heatmap", "contrast_lift")]["route_case_id"] == "smooth_escape_heatmap"
+    assert audit_by_key[("phase_orbit", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
+    assert audit_by_key[("root_index", "root_classic_palette", "basin_default")]["classification"] == "typed_resolved"
+    assert audit_by_key[("sdf_normal_angle", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
+    assert audit_by_key[("sdf_signed_distance", "heatmap", "contrast_lift")]["classification"] == "runtime_legacy_override"
+    assert audit_by_key[("sdf_signed_distance", "heatmap", "contrast_lift")]["override_id"] == "legacy_sdf_signed_distance_heatmap_contrast_lift"
+    assert audit_by_key[("smooth_escape_ramp", "explaino_cmap", "contrast_lift")]["classification"] == "runtime_legacy_override"
+    assert all(row["reason"] for row in compatibility_audit)
+    assert all(row["owner_seam"] and row["proof"] for row in compat_overrides)
     assert actual["edge_resolution_contract"]["policy"]["id"] == "current_linear_color_stack"
     assert [edge["id"] for edge in actual["edge_resolution_contract"]["edges"]] == [
         "source_to_shape",

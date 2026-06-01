@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 9 complete - Slice D edge resolver shadow audit is implemented and validated. The generated resolver metadata remains diagnostic-only over current typed ports and adapters; visible UI and live compatibility behavior stay frozen for later slices.
+Phase 10 complete - Slice E legacy compat override demotion is implemented and validated. Current compat rows are shadow-classified as direct typed-resolved rows or explicit runtime legacy overrides; visible UI and live compatibility behavior remain frozen.
 
 ## Phase Checklist
 
@@ -16,6 +16,7 @@ Phase 9 complete - Slice D edge resolver shadow audit is implemented and validat
 - [x] Phase 7 - implement Slice B pilot function port signatures, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 8 - fast-forward Slice B to `master`, push `master`, branch `codex/ui-salt-adapter-library-shadow`, implement Slice C adapter-library shadow metadata, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 9 - fast-forward Slice C to `master`, push `master`, branch `codex/ui-salt-edge-resolver-shadow`, implement Slice D edge resolver shadow audit, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 10 - fast-forward Slice D to `master`, push `master`, branch `codex/ui-salt-compat-override-demotion`, implement Slice E legacy compat override demotion shadow metadata, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -39,6 +40,9 @@ Phase 9 complete - Slice D edge resolver shadow audit is implemented and validat
 - [closed] Implement Slice D only: shadow edge-resolution policy, current linear route audit, materializer/native-reader proof, and checked-in generated JSON.
 - [closed] Preserve current visible Color Pipeline behavior and live compatibility behavior; the resolver must not own live compatibility in this slice.
 - [closed] Prove known-good pilot routes resolve deterministically and known-bad typed routes fail closed with specific reasons.
+- [closed] Implement Slice E only: classify current compatibility rows as typed-resolved, true runtime legacy override, or unsupported/deferred.
+- [closed] Add `compat_override` shadow metadata only for true runtime seams, with stable ids, explicit reasons, owner seams, and proof rails.
+- [closed] Preserve current visible Color Pipeline behavior and live compatibility behavior; do not delete or switch the existing compatibility runtime path.
 
 ## Current Repo Truth
 
@@ -418,6 +422,14 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Slice D final logged materialization proof: `artifacts/validation/ui_salt_edge_resolver_shadow_materialize.json` passed.
 - Slice D final logged native proof: `artifacts/validation/ui_salt_edge_resolver_shadow_native.json` passed `test_color_pipeline_core: passed=2986 failed=0` using the focused native target.
 - Slice D final diff check: `artifacts/validation/ui_salt_edge_resolver_shadow_diff_check.json` passed `git diff --check`.
+- Slice E preflight: fast-forwarded `master` from `cecbb83` to `856ebe9`, pushed `origin/master`, reran rearward review `ok`, and branched `codex/ui-salt-compat-override-demotion`.
+- Slice E contract: `docs/contracts/ui_salt_compat_override_demotion.contract.json`.
+- Slice E contract validation: `artifacts/validation/ui_salt_compat_override_demotion_contract.json` passed.
+- Slice E code-quality baseline: `artifacts/validation/ui_salt_compat_override_demotion_code_quality.json` passed with score `93/100`.
+- Slice E logged materializer proof: `artifacts/validation/ui_salt_compat_override_demotion_pytest.json` passed `35 passed`.
+- Slice E logged contract regeneration proof: `artifacts/validation/ui_salt_compat_override_demotion_materialize.json` passed.
+- Slice E logged native proof: `artifacts/validation/ui_salt_compat_override_demotion_native.json` passed `test_color_pipeline_core: passed=2995 failed=0`.
+- Slice E logged diff check: `artifacts/validation/ui_salt_compat_override_demotion_diff_check.json` passed.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -461,6 +473,8 @@ Required questions:
 - [x] Pass 16 - reviewed Slice D implementation diff and found two real audit gaps: raw SDF field -> phase palette bad route coverage was missing, and route audit output lacked hop/cost/tie-break/blocker detail needed by later compat demotion.
 - [x] Pass 17 - repaired the Slice D audit findings, reran focused Python proof, regenerated the checked-in JSON, and reran the native helper rail.
 - [x] Pass 18 - clean re-read confirmed the repaired state has no live Color Pipeline compatibility switch, no visible UI change, no graph UI, no Salticid runtime dependency, and no function-library expansion beyond shadow resolver metadata.
+- [x] Pass 19 - reviewed Slice E implementation diff and found a real audit gap: compat overrides could be added for rows already covered by direct typed routes, which would blur demotion authority. The materializer now rejects overrides that do not map to an untyped compatibility row, Python tests cover that rejection, and the native reader rejects duplicate override ids.
+- [x] Pass 20 - clean re-read confirmed Slice E does not switch live compatibility authority, does not add visible UI, does not add graph UI, does not import Salticid runtime code, and does not expand the function library beyond shadow compat audit metadata.
 
 ## Audit Findings
 
@@ -479,6 +493,19 @@ Required questions:
 - [x] Clean Slice C re-read found no live runtime adapter insertion, no visible Color Pipeline behavior change, no graph UI, no Salticid runtime dependency, and no function-library expansion beyond shadow adapter metadata.
 - [x] Slice D hostile audit found the first implementation did not prove raw `field.sdf_signed_distance -> phase_wheel_palette` fail-closed behavior and did not emit enough audit detail for later compatibility demotion. The materializer fixture now covers the raw-field bad route, generated cases expose adapter hops/costs/tie-break policy/policy blockers, and the C++ reader validates those totals.
 - [x] Clean Slice D re-read found no live runtime route insertion, no visible Color Pipeline behavior change, no graph UI, no Salticid runtime dependency, and no function-library expansion beyond shadow resolver metadata.
+- [x] Slice E hostile audit found the first pass could have allowed redundant/incorrect compat overrides to sit beside direct typed-resolved routes. The materializer now classifies only direct identity/no-adapter route cases as `typed_resolved`, requires override ids/reasons/owner seams/proof for remaining runtime rows, rejects overrides on already typed rows, and the native contract reader rejects duplicate compat override ids.
+- [x] Clean Slice E re-read found no live Color Pipeline compatibility switch, no visible UI change, no graph UI, no Salticid runtime dependency, and no function-library expansion beyond shadow compat override metadata.
+
+## Slice E Validation Targets
+
+- `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_compat_override_demotion.contract.json --out-json artifacts/validation/ui_salt_compat_override_demotion_contract.json`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_compat_override_demotion_hostile_audit.json`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_compat_override_demotion_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_override_demotion_pytest --log artifacts/logs/ui_salt_compat_override_demotion_pytest.log --out-json artifacts/validation/ui_salt_compat_override_demotion_pytest.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_override_demotion_materialize --log artifacts/logs/ui_salt_compat_override_demotion_materialize.log --out-json artifacts/validation/ui_salt_compat_override_demotion_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_override_demotion_native --log artifacts/logs/ui_salt_compat_override_demotion_native.log --out-json artifacts/validation/ui_salt_compat_override_demotion_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_override_demotion_diff_check --log artifacts/logs/ui_salt_compat_override_demotion_diff_check.log --out-json artifacts/validation/ui_salt_compat_override_demotion_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Slice D Validation Targets
 

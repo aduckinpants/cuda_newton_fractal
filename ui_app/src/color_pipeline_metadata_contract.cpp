@@ -517,6 +517,50 @@ bool ReadCompatibility(
     return true;
 }
 
+bool ReadCompatOverride(
+    const json_min::Value& value,
+    MaterializedColorPipelineCompatOverride* outOverride,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Compat override entry must be an object");
+    }
+    MaterializedColorPipelineCompatOverride compatOverride;
+    if (!ReadString(value, "id", &compatOverride.id, outError) ||
+        !ReadString(value, "source", &compatOverride.source, outError) ||
+        !ReadString(value, "palette", &compatOverride.palette, outError) ||
+        !ReadString(value, "grading", &compatOverride.grading, outError) ||
+        !ReadString(value, "classification", &compatOverride.classification, outError) ||
+        !ReadString(value, "owner_seam", &compatOverride.owner_seam, outError) ||
+        !ReadString(value, "reason", &compatOverride.reason, outError) ||
+        !ReadString(value, "proof", &compatOverride.proof, outError)) {
+        return false;
+    }
+    *outOverride = std::move(compatOverride);
+    return true;
+}
+
+bool ReadCompatibilityAudit(
+    const json_min::Value& value,
+    MaterializedColorPipelineCompatibilityAudit* outAudit,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Compatibility audit entry must be an object");
+    }
+    MaterializedColorPipelineCompatibilityAudit audit;
+    if (!ReadString(value, "source", &audit.source, outError) ||
+        !ReadString(value, "palette", &audit.palette, outError) ||
+        !ReadString(value, "grading", &audit.grading, outError) ||
+        !ReadString(value, "mode", &audit.mode, outError) ||
+        !ReadString(value, "classification", &audit.classification, outError) ||
+        !ReadString(value, "route_case_id", &audit.route_case_id, outError) ||
+        !ReadString(value, "override_id", &audit.override_id, outError) ||
+        !ReadString(value, "reason", &audit.reason, outError)) {
+        return false;
+    }
+    *outAudit = std::move(audit);
+    return true;
+}
+
 bool ReadRecipe(
     const json_min::Value& value,
     MaterializedColorPipelineRecipe* outRecipe,
@@ -958,6 +1002,10 @@ bool RequireKnownFunction(
     return SetError(outError, std::string("Compatibility references missing ") + role + " function '" + functionId + "'");
 }
 
+std::string CompatibilityKey(const std::string& source, const std::string& palette, const std::string& grading) {
+    return source + "\n" + palette + "\n" + grading;
+}
+
 bool ValidateMaterializedCompatibility(
     const std::vector<MaterializedColorPipelineCompatibility>& rows,
     const std::set<std::string>& functionIds,
@@ -974,6 +1022,106 @@ bool ValidateMaterializedCompatibility(
         const std::string pairKey = compatibility.source + "\n" + compatibility.palette;
         if (!compatibilityPairs.insert(pairKey).second) {
             return SetError(outError, std::string("Duplicate compatibility pair '") + compatibility.source + "' + '" + compatibility.palette + "'");
+        }
+    }
+    return true;
+}
+
+bool ValidateMaterializedCompatibilityAudit(
+    const MaterializedColorPipelineContract& contract,
+    const std::set<std::string>& functionIds,
+    std::string* outError) {
+    if (contract.compat_overrides.empty() && contract.compatibility_audit.empty()) {
+        return true;
+    }
+    if (contract.compatibility_audit.size() != contract.compatibility.size()) {
+        return SetError(outError, "Compatibility audit must classify every compatibility row");
+    }
+
+    std::set<std::string> compatibilityKeys;
+    for (const MaterializedColorPipelineCompatibility& compatibility : contract.compatibility) {
+        compatibilityKeys.insert(CompatibilityKey(compatibility.source, compatibility.palette, compatibility.grading));
+    }
+    std::set<std::string> routeCaseIds;
+    for (const MaterializedColorPipelineResolutionCase& resolutionCase : contract.resolution_cases) {
+        routeCaseIds.insert(resolutionCase.id);
+    }
+
+    std::set<std::string> overrideIds;
+    std::set<std::string> overrideKeys;
+    for (const MaterializedColorPipelineCompatOverride& compatOverride : contract.compat_overrides) {
+        if (compatOverride.id.empty()) {
+            return SetError(outError, "Materialized compat override id must be non-empty");
+        }
+        if (!overrideIds.insert(compatOverride.id).second) {
+            return SetError(outError, std::string("Duplicate materialized compat override id '") + compatOverride.id + "'");
+        }
+        const std::string key = CompatibilityKey(compatOverride.source, compatOverride.palette, compatOverride.grading);
+        if (!overrideKeys.insert(key).second) {
+            return SetError(outError, std::string("Duplicate materialized compat override route '") +
+                compatOverride.source + "' + '" + compatOverride.palette + "' + '" + compatOverride.grading + "'");
+        }
+        if (compatibilityKeys.find(key) == compatibilityKeys.end()) {
+            return SetError(outError, std::string("Materialized compat override '") + compatOverride.id +
+                "' does not map to a compatibility row");
+        }
+        if (!RequireKnownFunction(functionIds, compatOverride.source, "source", outError) ||
+            !RequireKnownFunction(functionIds, compatOverride.palette, "palette", outError) ||
+            !RequireKnownFunction(functionIds, compatOverride.grading, "grading", outError)) {
+            return false;
+        }
+        if (compatOverride.classification != "runtime_legacy_override") {
+            return SetError(outError, std::string("Materialized compat override '") + compatOverride.id +
+                "' has invalid classification");
+        }
+        if (compatOverride.owner_seam.empty() || compatOverride.reason.empty() || compatOverride.proof.empty()) {
+            return SetError(outError, std::string("Materialized compat override '") + compatOverride.id +
+                "' requires owner_seam, reason, and proof");
+        }
+    }
+
+    std::set<std::string> auditKeys;
+    std::set<std::string> usedOverrideIds;
+    for (const MaterializedColorPipelineCompatibilityAudit& audit : contract.compatibility_audit) {
+        const std::string key = CompatibilityKey(audit.source, audit.palette, audit.grading);
+        if (!auditKeys.insert(key).second) {
+            return SetError(outError, std::string("Duplicate materialized compatibility audit row '") +
+                audit.source + "' + '" + audit.palette + "' + '" + audit.grading + "'");
+        }
+        if (compatibilityKeys.find(key) == compatibilityKeys.end()) {
+            return SetError(outError, std::string("Materialized compatibility audit row '") +
+                audit.source + "' + '" + audit.palette + "' + '" + audit.grading +
+                "' does not map to a compatibility row");
+        }
+        if (audit.reason.empty()) {
+            return SetError(outError, "Materialized compatibility audit row requires a reason");
+        }
+        if (audit.classification == "typed_resolved") {
+            if (audit.route_case_id.empty() || !audit.override_id.empty()) {
+                return SetError(outError, "Materialized typed_resolved compatibility audit row has invalid route/override fields");
+            }
+            if (routeCaseIds.find(audit.route_case_id) == routeCaseIds.end()) {
+                return SetError(outError, std::string("Materialized compatibility audit references unknown route case '") +
+                    audit.route_case_id + "'");
+            }
+        } else if (audit.classification == "runtime_legacy_override") {
+            if (!audit.route_case_id.empty() || audit.override_id.empty()) {
+                return SetError(outError, "Materialized runtime_legacy_override compatibility audit row has invalid route/override fields");
+            }
+            if (overrideIds.find(audit.override_id) == overrideIds.end()) {
+                return SetError(outError, std::string("Materialized compatibility audit references unknown compat override '") +
+                    audit.override_id + "'");
+            }
+            usedOverrideIds.insert(audit.override_id);
+        } else {
+            return SetError(outError, std::string("Materialized compatibility audit row has invalid classification '") +
+                audit.classification + "'");
+        }
+    }
+    for (const MaterializedColorPipelineCompatOverride& compatOverride : contract.compat_overrides) {
+        if (usedOverrideIds.find(compatOverride.id) == usedOverrideIds.end()) {
+            return SetError(outError, std::string("Materialized compat override '") + compatOverride.id +
+                "' is not referenced by compatibility audit");
         }
     }
     return true;
@@ -1046,6 +1194,7 @@ bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, s
         ValidateMaterializedLanes(contract.lanes, &functionIds, signalTypeIds, outError) &&
         ValidateMaterializedEdgeResolution(contract, functionIds, signalTypeIds, outError) &&
         ValidateMaterializedCompatibility(contract.compatibility, functionIds, outError) &&
+        ValidateMaterializedCompatibilityAudit(contract, functionIds, outError) &&
         ValidateMaterializedRecipes(contract.recipes, functionIds, outError) &&
         ValidateMaterializedRowApplicators(contract.row_applicators, outError) &&
         ValidateMaterializedExplainoEntries(contract.explaino_entries, outError);
@@ -1188,6 +1337,31 @@ bool LoadColorPipelineMaterializedContractJson(
             return false;
         }
         contract.compatibility.push_back(std::move(row));
+    }
+
+    if (const json_min::Value* compatOverrides = compositionContract->get("compat_overrides")) {
+        if (!compatOverrides->is_array()) {
+            return SetError(outError, "composition_recipe_contract.compat_overrides must be an array");
+        }
+        for (const json_min::Value& overrideValue : compatOverrides->as_array()) {
+            MaterializedColorPipelineCompatOverride compatOverride;
+            if (!ReadCompatOverride(overrideValue, &compatOverride, outError)) {
+                return false;
+            }
+            contract.compat_overrides.push_back(std::move(compatOverride));
+        }
+    }
+    if (const json_min::Value* compatibilityAudit = compositionContract->get("compatibility_audit")) {
+        if (!compatibilityAudit->is_array()) {
+            return SetError(outError, "composition_recipe_contract.compatibility_audit must be an array");
+        }
+        for (const json_min::Value& auditValue : compatibilityAudit->as_array()) {
+            MaterializedColorPipelineCompatibilityAudit audit;
+            if (!ReadCompatibilityAudit(auditValue, &audit, outError)) {
+                return false;
+            }
+            contract.compatibility_audit.push_back(std::move(audit));
+        }
     }
 
     const json_min::Value* recipes = RequiredField(*compositionContract, "recipes", outError);
