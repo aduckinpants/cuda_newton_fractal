@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 12 complete - Slice G1 metadata-backed compatibility diagnostics is implemented and validated. The added lookup is diagnostic-only; legacy compatibility behavior remains authoritative.
+Phase 13 complete - Slice G2 switched exactly one pilot route to typed resolver authority, preserved the visible/runtime tuple, and proved the temporary fallback/kill switch restores materialized compatibility behavior.
 
 ## Phase Checklist
 
@@ -19,6 +19,7 @@ Phase 12 complete - Slice G1 metadata-backed compatibility diagnostics is implem
 - [x] Phase 10 - fast-forward Slice D to `master`, push `master`, branch `codex/ui-salt-compat-override-demotion`, implement Slice E legacy compat override demotion shadow metadata, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 11 - fast-forward Slice E to `master`, push `master`, branch `codex/ui-salt-sdf-applicator-capability`, implement Slice F SDF applicator capability shadow metadata, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 12 - fast-forward Slice F to `master`, push `master`, branch `codex/ui-salt-compat-diagnostics-g1`, implement Slice G1 diagnostic/explanation lookup, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 13 - fast-forward Slice G1 to `master`, push `master`, branch `codex/ui-salt-compat-switch-g2`, implement one pilot typed-resolver compatibility switch with fallback/kill switch, focused native/runtime tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -51,6 +52,10 @@ Phase 12 complete - Slice G1 metadata-backed compatibility diagnostics is implem
 - [closed] Implement Slice G1 only: expose typed-route/compat-override explanation lookup from installed materialized metadata.
 - [closed] Preserve legacy compatibility behavior as authoritative; do not switch `TryBuildColorPipelineSelectionFromLaneIds(...)` to typed resolver behavior under G1.
 - [closed] Do not add visible UI, graph UI, function-library entries, or runtime Salticid dependency under this slice.
+- [closed] Implement Slice G2 only: switch exactly one pilot compatibility route, `smooth_escape_ramp / identity / heatmap / contrast_lift`, to typed resolver authority.
+- [closed] Preserve visible Color Pipeline behavior and runtime tuple output; this is an authority switch, not a UI or visual change.
+- [closed] Add and prove a temporary fallback/kill switch that restores legacy materialized compatibility behavior.
+- [closed] Do not expand the function library, add graph UI, remove hardcoded fallback, or import Salticid runtime code.
 
 ## Current Repo Truth
 
@@ -452,6 +457,14 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Slice G1 code-quality baseline: `artifacts/validation/ui_salt_compat_diagnostics_g1_code_quality.json` passed with score `93/100`.
 - Slice G1 logged native proof: `artifacts/validation/ui_salt_compat_diagnostics_g1_native.json` passed `test_color_pipeline_core: passed=3008 failed=0`.
 - Slice G1 logged diff check: `artifacts/validation/ui_salt_compat_diagnostics_g1_diff_check.json` passed.
+- Slice G2 preflight: fast-forwarded `master` to `1dc8fdb`, pushed `origin/master`, reran rearward review `ok`, and branched `codex/ui-salt-compat-switch-g2`.
+- Slice G2 contract: `docs/contracts/ui_salt_compat_switch_g2.contract.json`.
+- Slice G2 contract validation: `artifacts/validation/ui_salt_compat_switch_g2_contract.json` passed.
+- Slice G2 code-quality baseline: `artifacts/validation/ui_salt_compat_switch_g2_code_quality.json` passed with score `93/100`.
+- Slice G2 logged native proof: `artifacts/validation/ui_salt_compat_switch_g2_native.json` passed `test_color_pipeline_core: passed=3013 failed=0`.
+- Slice G2 logged runtime publish: `artifacts/validation/ui_salt_compat_switch_g2_runtime_publish.json` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Slice G2 published-runtime proof: `artifacts/validation/ui_salt_compat_switch_g2_runtime_proof.json` passed `2 passed`.
+- Slice G2 logged diff check: `artifacts/validation/ui_salt_compat_switch_g2_diff_check.json` passed.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -501,6 +514,8 @@ Required questions:
 - [x] Pass 22 - clean re-read confirmed Slice F does not change visible Color Pipeline layout/control ids, does not change SDF state storage keys, does not add SDF functions or field producers, does not switch live compatibility authority, and does not import Salticid runtime code.
 - [x] Pass 23 - reviewed Slice G1 implementation diff and found a real risk: explanation lookup could be mistaken for or accidentally coupled to live compatibility behavior. Added a regression proving an unsupported explained route still stays rejected by `TryBuildColorPipelineSelectionFromLaneIds(...)`.
 - [x] Pass 24 - clean re-read confirmed Slice G1 does not switch live Color Pipeline compatibility, does not delete hardcoded fallback behavior, does not add visible UI, does not add graph UI, does not expand the function library, and does not import Salticid runtime code.
+- [x] Pass 25 - reviewed Slice G2 implementation and found a real risk: a generic typed-resolved lookup could silently switch every typed route instead of the one approved pilot. The implementation now gates the switch through `IsColorPipelineTypedResolverPilotRoute(...)`, and tests prove `phase_orbit / phase_wheel_palette` stays on materialized compatibility.
+- [x] Pass 26 - clean re-read confirmed Slice G2 does not change visible Color Pipeline controls, does not expand the function library, does not add graph UI, does not delete hardcoded/materialized fallback, does not import Salticid runtime code, and does not allow unsupported routes.
 
 ## Audit Findings
 
@@ -525,6 +540,19 @@ Required questions:
 - [x] Clean Slice F re-read found no visible UI change, no SDF storage-key churn, no new SDF source functions, no field-producer changes, no graph UI, no Salticid runtime dependency, and no live compatibility switch.
 - [x] Slice G1 hostile audit found the first pass lacked an explicit guard that diagnostics cannot switch live compatibility behavior. The test now explains unsupported `phase_orbit / heatmap / contrast_lift` metadata while separately proving the live builder still rejects it.
 - [x] Clean Slice G1 re-read found no visible UI change, no graph UI, no function-library expansion, no hardcoded fallback deletion, no Salticid runtime dependency, and no live compatibility behavior switch.
+- [x] Slice G2 hostile audit found the first pass could over-broaden typed resolver authority beyond the pilot route. The final code gates the switch to `smooth_escape_ramp / heatmap`, proves the runtime tuple matches hardcoded output, proves the kill switch falls back to `materialized_json`, and keeps unsupported routes rejected.
+- [x] Clean Slice G2 re-read found no visible UI change, no graph UI, no function-library expansion, no fallback deletion, no Salticid runtime dependency, and no physical mouse automation.
+
+## Slice G2 Validation Targets
+
+- `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_compat_switch_g2.contract.json --out-json artifacts/validation/ui_salt_compat_switch_g2_contract.json`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_compat_switch_g2_hostile_audit.json`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_compat_switch_g2_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_switch_g2_native --log artifacts/logs/ui_salt_compat_switch_g2_native.log --out-json artifacts/validation/ui_salt_compat_switch_g2_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_switch_g2_runtime_publish --log artifacts/logs/ui_salt_compat_switch_g2_runtime_publish.log --out-json artifacts/validation/ui_salt_compat_switch_g2_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_switch_g2_runtime_proof --log artifacts/logs/ui_salt_compat_switch_g2_runtime_proof.log --out-json artifacts/validation/ui_salt_compat_switch_g2_runtime_proof.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_fractal_runtime_ui_salt_contract.py -q --junitxml artifacts/pytest/ui_salt_compat_switch_g2_runtime.junit.xml`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_switch_g2_diff_check --log artifacts/logs/ui_salt_compat_switch_g2_diff_check.log --out-json artifacts/validation/ui_salt_compat_switch_g2_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Slice G1 Validation Targets
 

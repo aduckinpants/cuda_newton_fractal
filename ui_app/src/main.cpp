@@ -2432,6 +2432,9 @@ static int RunValidateUiSaltContractMode(const ViewerCliArgs& cli, const std::st
         color_pipeline_core::GetColorPipelineLaneCatalogs());
     report.compatibility_authority = color_pipeline_core::ColorPipelineCompatibilityAuthorityId();
     report.active_compatibility_count = color_pipeline_core::CountActiveColorPipelineCompatibilityRows();
+    report.typed_compatibility_pilot_enabled = color_pipeline_core::IsColorPipelineTypedCompatibilityPilotEnabled();
+    report.typed_compatibility_pilot_authority =
+        color_pipeline_core::ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds("smooth_escape_ramp", "heatmap");
     report.companion_suggestion_authority = color_pipeline_core::ColorPipelineCompanionSuggestionAuthorityId();
     report.active_companion_suggestion_count = color_pipeline_core::CountActiveColorPipelineCompanionSuggestions();
     report.recipe_expansion_authority = color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId();

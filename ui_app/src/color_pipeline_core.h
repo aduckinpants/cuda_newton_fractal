@@ -1060,6 +1060,19 @@ struct ColorPipelineCompatibilityRouteExplanation {
     std::string reason;
 };
 
+inline bool& MutableColorPipelineTypedCompatibilityPilotEnabledStorage() {
+    static bool enabled = true;
+    return enabled;
+}
+
+inline bool IsColorPipelineTypedCompatibilityPilotEnabled() {
+    return MutableColorPipelineTypedCompatibilityPilotEnabledStorage();
+}
+
+inline void SetColorPipelineTypedCompatibilityPilotEnabledForTests(bool enabled) {
+    MutableColorPipelineTypedCompatibilityPilotEnabledStorage() = enabled;
+}
+
 inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
     const char* sourceFunctionId,
     const char* paletteFunctionId,
@@ -1400,6 +1413,7 @@ inline bool TryInstallColorPipelineMetadataCatalog(
 
 inline void ClearColorPipelineMetadataCatalogForTests() {
     MutableColorPipelineMetadataCatalogStorage() = ColorPipelineMetadataCatalogStorage{};
+    SetColorPipelineTypedCompatibilityPilotEnabledForTests(true);
 }
 
 inline bool IsColorPipelineMetadataCatalogActive() {
@@ -1447,6 +1461,46 @@ inline const MaterializedColorPipelineCompatibility* FindActiveColorPipelineComp
     return nullptr;
 }
 
+inline const MaterializedColorPipelineCompatibilityAudit* FindActiveColorPipelineCompatibilityAudit(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId,
+    const char* gradingFunctionId) {
+    if (!sourceFunctionId || sourceFunctionId[0] == '\0' ||
+        !paletteFunctionId || paletteFunctionId[0] == '\0' ||
+        !gradingFunctionId || gradingFunctionId[0] == '\0') {
+        return nullptr;
+    }
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    if (!storage.active) {
+        return nullptr;
+    }
+    for (const MaterializedColorPipelineCompatibilityAudit& audit : storage.compatibility_audit) {
+        if (audit.source == sourceFunctionId &&
+            audit.palette == paletteFunctionId &&
+            audit.grading == gradingFunctionId) {
+            return &audit;
+        }
+    }
+    return nullptr;
+}
+
+inline const MaterializedColorPipelineResolutionCase* FindActiveColorPipelineResolutionCase(
+    const std::string& routeCaseId) {
+    if (routeCaseId.empty()) {
+        return nullptr;
+    }
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    if (!storage.active) {
+        return nullptr;
+    }
+    for (const MaterializedColorPipelineResolutionCase& resolutionCase : storage.resolution_cases) {
+        if (resolutionCase.id == routeCaseId) {
+            return &resolutionCase;
+        }
+    }
+    return nullptr;
+}
+
 inline bool IsColorPipelineCompatibilityDiagnosticsActive() {
     const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
     return storage.active && !storage.compatibility_audit.empty();
@@ -1472,7 +1526,6 @@ inline bool TryExplainColorPipelineCompatibilityRoute(
     explanation.palette = paletteFunctionId;
     explanation.grading = gradingFunctionId;
 
-    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
     explanation.metadata_active = IsColorPipelineCompatibilityDiagnosticsActive();
     explanation.authority = ColorPipelineCompatibilityDiagnosticsAuthorityId();
     if (!explanation.metadata_active) {
@@ -1481,18 +1534,18 @@ inline bool TryExplainColorPipelineCompatibilityRoute(
         return false;
     }
 
-    for (const MaterializedColorPipelineCompatibilityAudit& audit : storage.compatibility_audit) {
-        if (audit.source == explanation.source &&
-            audit.palette == explanation.palette &&
-            audit.grading == explanation.grading) {
-            explanation.supported = true;
-            explanation.classification = audit.classification;
-            explanation.route_case_id = audit.route_case_id;
-            explanation.override_id = audit.override_id;
-            explanation.reason = audit.reason;
-            *outExplanation = std::move(explanation);
-            return true;
-        }
+    const MaterializedColorPipelineCompatibilityAudit* audit = FindActiveColorPipelineCompatibilityAudit(
+        sourceFunctionId,
+        paletteFunctionId,
+        gradingFunctionId);
+    if (audit) {
+        explanation.supported = true;
+        explanation.classification = audit->classification;
+        explanation.route_case_id = audit->route_case_id;
+        explanation.override_id = audit->override_id;
+        explanation.reason = audit->reason;
+        *outExplanation = std::move(explanation);
+        return true;
     }
 
     explanation.supported = false;
@@ -2405,12 +2458,102 @@ inline bool TryBuildMaterializedColorPipelineSelectionFromLaneIds(
     return true;
 }
 
+inline bool IsColorPipelineTypedResolverPilotRoute(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId) {
+    return sourceFunctionId && paletteFunctionId &&
+        std::strcmp(sourceFunctionId, "smooth_escape_ramp") == 0 &&
+        std::strcmp(paletteFunctionId, "heatmap") == 0;
+}
+
+inline bool TryBuildTypedResolverPilotColorPipelineSelectionFromLaneIds(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId,
+    ColorPipelineSelection* outPipeline,
+    ColoringMode* outMode) {
+    if (!IsColorPipelineTypedCompatibilityPilotEnabled() ||
+        !IsColorPipelineTypedResolverPilotRoute(sourceFunctionId, paletteFunctionId) ||
+        !outPipeline || !outMode) {
+        return false;
+    }
+    const MaterializedColorPipelineCompatibilityAudit* audit = FindActiveColorPipelineCompatibilityAudit(
+        sourceFunctionId,
+        paletteFunctionId,
+        "contrast_lift");
+    if (!audit ||
+        audit->classification != "typed_resolved" ||
+        audit->route_case_id != "smooth_escape_heatmap" ||
+        !audit->override_id.empty()) {
+        return false;
+    }
+    const MaterializedColorPipelineResolutionCase* route = FindActiveColorPipelineResolutionCase(audit->route_case_id);
+    if (!route ||
+        route->status != "resolved" ||
+        route->source != sourceFunctionId ||
+        route->shape != "identity" ||
+        route->palette != paletteFunctionId ||
+        route->grading != audit->grading ||
+        route->adapter_hops != 0 ||
+        !route->chosen_adapters.empty() ||
+        !route->policy_blockers.empty()) {
+        return false;
+    }
+    const MaterializedColorPipelineCompatibility* compatibility =
+        FindActiveColorPipelineCompatibility(sourceFunctionId, paletteFunctionId);
+    if (!compatibility ||
+        compatibility->grading != audit->grading ||
+        compatibility->mode != audit->mode) {
+        return false;
+    }
+    ColorPipelineSelection selection;
+    ColoringMode mode = ColoringMode::smooth_escape;
+    if (!TryParseAdvancedColorSignalFunctionId(compatibility->signal, &selection.signal) ||
+        !TryParseAdvancedColorPaletteFunctionId(compatibility->palette_runtime, &selection.palette) ||
+        !TryParseAdvancedColorGradingFunctionId(compatibility->grading, &selection.grading) ||
+        !TryParseColoringModeId(compatibility->mode, &mode)) {
+        return false;
+    }
+    *outPipeline = selection;
+    *outMode = mode;
+    return true;
+}
+
+inline std::string ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId) {
+    if (!IsColorPipelineMetadataCompatibilityActive()) {
+        return "hardcoded";
+    }
+    ColorPipelineSelection ignoredSelection;
+    ColoringMode ignoredMode = ColoringMode::smooth_escape;
+    if (TryBuildTypedResolverPilotColorPipelineSelectionFromLaneIds(
+            sourceFunctionId,
+            paletteFunctionId,
+            &ignoredSelection,
+            &ignoredMode)) {
+        return "typed_resolver_pilot";
+    }
+    if (FindActiveColorPipelineCompatibility(
+            sourceFunctionId ? sourceFunctionId : "",
+            paletteFunctionId ? paletteFunctionId : "")) {
+        return "materialized_json";
+    }
+    return "unsupported";
+}
+
 inline bool TryBuildColorPipelineSelectionFromLaneIds(
     const char* sourceFunctionId,
     const char* paletteFunctionId,
     ColorPipelineSelection* outPipeline,
     ColoringMode* outMode) {
     if (IsColorPipelineMetadataCompatibilityActive()) {
+        if (TryBuildTypedResolverPilotColorPipelineSelectionFromLaneIds(
+                sourceFunctionId,
+                paletteFunctionId,
+                outPipeline,
+                outMode)) {
+            return true;
+        }
         return TryBuildMaterializedColorPipelineSelectionFromLaneIds(
             sourceFunctionId,
             paletteFunctionId,

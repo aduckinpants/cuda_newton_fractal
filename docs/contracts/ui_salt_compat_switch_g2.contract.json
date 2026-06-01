@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "contract_id": "ui_salt_compat_switch_g2",
+  "feature_id": "color_pipeline_ui_salt_metadata_authority",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md",
+    "docs/contracts/ui_salt_compat_switch_g2.contract.json",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_metadata_parity.h",
+    "ui_app/src/color_pipeline_metadata_parity.cpp",
+    "ui_app/src/main.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "tests/test_fractal_runtime_ui_salt_contract.py",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "implement Slice G2 only from the UI-Salt typed edge campaign",
+    "switch exactly one pilot compatibility route to typed resolver authority",
+    "add a temporary fallback/kill switch that restores legacy materialized compatibility behavior",
+    "preserve visible Color Pipeline behavior, controls, ids, and frame semantics",
+    "publish the runtime and prove the staged runtime reports the G2 authority state"
+  ],
+  "forbidden_operator_prompts": [
+    "delete the hardcoded compatibility path",
+    "switch more than the approved pilot route",
+    "add visible Color Pipeline UI",
+    "add graph UI",
+    "expand the function library",
+    "import or run Salticid as a viewer runtime dependency",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "one_pilot_behavioral_switch",
+    "source_head": "1dc8fdb",
+    "ui_behavior_frozen": true,
+    "runtime_behavior_change": "authority_only_same_pixels",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "pilot_route": "smooth_escape_ramp/identity/heatmap/contrast_lift",
+    "fallback_kill_switch": "required",
+    "salticid_runtime_dependency": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "hardcoded_path_deletion": "forbidden",
+    "visible_color_pipeline_change": "forbidden",
+    "graph_ui_replacement": "forbidden",
+    "function_library_expansion": "forbidden",
+    "runtime_salticid_dependency": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_compat_switch_g2.contract.json --out-json artifacts/validation/ui_salt_compat_switch_g2_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_compat_switch_g2_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_compat_switch_g2_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_switch_g2_native --log artifacts/logs/ui_salt_compat_switch_g2_native.log --out-json artifacts/validation/ui_salt_compat_switch_g2_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_switch_g2_runtime_publish --log artifacts/logs/ui_salt_compat_switch_g2_runtime_publish.log --out-json artifacts/validation/ui_salt_compat_switch_g2_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_switch_g2_runtime_proof --log artifacts/logs/ui_salt_compat_switch_g2_runtime_proof.log --out-json artifacts/validation/ui_salt_compat_switch_g2_runtime_proof.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_fractal_runtime_ui_salt_contract.py -q --junitxml artifacts/pytest/ui_salt_compat_switch_g2_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_compat_switch_g2_diff_check --log artifacts/logs/ui_salt_compat_switch_g2_diff_check.log --out-json artifacts/validation/ui_salt_compat_switch_g2_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The UI-Salt compatibility switch G2 contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_compat_switch_g2_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The UI-Salt compatibility switch G2 hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_compat_switch_g2_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "native_color_pipeline_core_ok",
+      "description": "The focused native Color Pipeline core rail passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_compat_switch_g2_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_publish_ok",
+      "description": "The viewer runtime publishes successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_compat_switch_g2_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "published_runtime_proof_ok",
+      "description": "Published runtime UI-Salt contract proof passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_compat_switch_g2_runtime_proof.json",
+      "json_path": "exit_code",
+      "equals": 0
+    }
+  ]
+}

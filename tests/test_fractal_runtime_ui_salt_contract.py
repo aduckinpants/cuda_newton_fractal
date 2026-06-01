@@ -49,6 +49,8 @@ def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> N
     assert report["compatibility_count"] == 22
     assert report["compatibility_authority"] == "materialized_json"
     assert report["active_compatibility_count"] == 22
+    assert report["typed_compatibility_pilot_enabled"] is True
+    assert report["typed_compatibility_pilot_authority"] == "typed_resolver_pilot"
     assert report["companion_suggestion_authority"] == "materialized_json"
     assert report["active_companion_suggestion_count"] == 19
     assert report["recipe_count"] == 4

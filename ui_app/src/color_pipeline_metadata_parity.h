@@ -20,6 +20,8 @@ struct ColorPipelineMetadataParityReport {
     int compatibility_count = 0;
     std::string compatibility_authority;
     int active_compatibility_count = 0;
+    bool typed_compatibility_pilot_enabled = false;
+    std::string typed_compatibility_pilot_authority;
     std::string companion_suggestion_authority;
     int active_companion_suggestion_count = 0;
     int recipe_count = 0;

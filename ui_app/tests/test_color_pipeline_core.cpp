@@ -1441,6 +1441,10 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_MetadataActive");
     Check(color_pipeline_core::ColorPipelineCompatibilityAuthorityId() == std::string("materialized_json"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Authority");
+    Check(color_pipeline_core::ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds(
+            "smooth_escape_ramp",
+            "heatmap") == std::string("typed_resolver_pilot"),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedPilotAuthority");
     Check(color_pipeline_core::IsColorPipelineCompatibilityDiagnosticsActive() &&
             color_pipeline_core::ColorPipelineCompatibilityDiagnosticsAuthorityId() == std::string("materialized_json_diagnostic"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsActive");
@@ -1459,6 +1463,47 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
             smoothExplanation.route_case_id == "smooth_escape_heatmap" &&
             smoothExplanation.override_id.empty(),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsTypedResolved");
+    ColorPipelineSelection typedPilotSelection;
+    ColoringMode typedPilotMode = ColoringMode::phase;
+    ColorPipelineSelection hardcodedPilotSelection;
+    ColoringMode hardcodedPilotMode = ColoringMode::phase;
+    Check(color_pipeline_core::TryBuildTypedResolverPilotColorPipelineSelectionFromLaneIds(
+            "smooth_escape_ramp",
+            "heatmap",
+            &typedPilotSelection,
+            &typedPilotMode) &&
+            color_pipeline_core::TryBuildHardcodedColorPipelineSelectionFromLaneIds(
+                "smooth_escape_ramp",
+                "heatmap",
+                &hardcodedPilotSelection,
+                &hardcodedPilotMode) &&
+            typedPilotSelection.signal == hardcodedPilotSelection.signal &&
+            typedPilotSelection.palette == hardcodedPilotSelection.palette &&
+            typedPilotSelection.grading == hardcodedPilotSelection.grading &&
+            typedPilotMode == hardcodedPilotMode,
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedPilotPreservesRuntimeTuple");
+    color_pipeline_core::SetColorPipelineTypedCompatibilityPilotEnabledForTests(false);
+    Check(color_pipeline_core::ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds(
+            "smooth_escape_ramp",
+            "heatmap") == std::string("materialized_json"),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedPilotKillSwitchFallsBack");
+    ColorPipelineSelection fallbackPilotSelection;
+    ColoringMode fallbackPilotMode = ColoringMode::phase;
+    Check(color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+            "smooth_escape_ramp",
+            "heatmap",
+            &fallbackPilotSelection,
+            &fallbackPilotMode) &&
+            fallbackPilotSelection.signal == hardcodedPilotSelection.signal &&
+            fallbackPilotSelection.palette == hardcodedPilotSelection.palette &&
+            fallbackPilotSelection.grading == hardcodedPilotSelection.grading &&
+            fallbackPilotMode == hardcodedPilotMode,
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedPilotKillSwitchPreservesRuntimeTuple");
+    color_pipeline_core::SetColorPipelineTypedCompatibilityPilotEnabledForTests(true);
+    Check(color_pipeline_core::ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds(
+            "phase_orbit",
+            "phase_wheel_palette") == std::string("materialized_json"),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_OnlyPilotRouteSwitches");
     color_pipeline_core::ColorPipelineCompatibilityRouteExplanation sdfExplanation;
     Check(color_pipeline_core::TryExplainColorPipelineCompatibilityRoute(
             "sdf_signed_distance",
