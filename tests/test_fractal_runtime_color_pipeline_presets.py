@@ -187,3 +187,79 @@ def test_non_sdf_source_rows_do_not_alias_smooth_escape_no_mouse(tmp_path: Path)
             f"expected shipped non-SDF Source row {source_function_id!r} to render distinctly from "
             f"{previous_owner!r}; both produced {frame_hash}"
         )
+
+
+def _capture_shape_row(
+    *,
+    exe_path: Path,
+    state_path: Path,
+    shape_function_id: str,
+    param_actions: list[str],
+) -> dict[str, object]:
+    args = [
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--color-pipeline-action",
+        f"select_function:shape:0:{shape_function_id}",
+    ]
+    for action in param_actions:
+        args.extend(["--color-pipeline-action", action])
+    args.append("--capture-diagnostic")
+    return run_headless_capture(*args)
+
+
+def test_color_pipeline_function_library_batch1_shapes_are_runtime_backed_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "192",
+        "--height",
+        "144",
+    )
+    state_path = write_state_bundle(
+        tmp_path / "color_pipeline_batch1_shape_seed",
+        json.loads(json.dumps(neutral_capture["state"])),
+    )
+
+    baseline_hash = neutral_capture["frame_hash"]
+    assert isinstance(baseline_hash, str), neutral_capture
+
+    log_capture = _capture_shape_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        shape_function_id="log_compress",
+        param_actions=["set_param:shape:0:shape.scale:number:6.0"],
+    )
+    smoothstep_capture = _capture_shape_row(
+        exe_path=exe_path,
+        state_path=state_path,
+        shape_function_id="smoothstep_range",
+        param_actions=[
+            "set_param:shape:0:shape.center:number:0.35",
+            "set_param:shape:0:shape.width:number:0.35",
+            "set_param:shape:0:shape.softness:number:1.0",
+        ],
+    )
+
+    for capture, expected_shape in (
+        (log_capture, "log_compress"),
+        (smoothstep_capture, "smoothstep_range"),
+    ):
+        params = capture["state"]["params"]
+        assert isinstance(params, dict), capture
+        shape_stack = params.get("color_shape_stack")
+        assert isinstance(shape_stack, list) and shape_stack, capture
+        assert shape_stack[0].get("shape") == expected_shape, capture
+        frame_hash = capture["frame_hash"]
+        assert isinstance(frame_hash, str), capture
+        assert frame_hash != baseline_hash, capture
+
+    assert log_capture["frame_hash"] != smoothstep_capture["frame_hash"]

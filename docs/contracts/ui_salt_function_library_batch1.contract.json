@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "contract_id": "ui_salt_function_library_batch1",
+  "feature_id": "color_pipeline_ui_salt_metadata_authority",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md",
+    "docs/contracts/ui_salt_function_library_batch1.contract.json",
+    "docs/ui_salt/color_pipeline_function_library.ui.salt",
+    "docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "tools/viewer_host_materialize_ui_salt.py",
+    "tests/test_ui_salt_materializer.py",
+    "tests/test_fractal_runtime_color_pipeline_presets.py",
+    "tests/test_fractal_runtime_ui_salt_contract.py",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_metadata_contract.h",
+    "ui_app/src/color_pipeline_metadata_contract.cpp",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_types.h",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_fractal_types.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "implement Slice H only from the UI-Salt typed edge campaign",
+    "classify the planned sdf_curvature_signed and normal_angle_palette candidates before shipping anything",
+    "add only a small Batch 1 function set with real runtime backing, typed ports, parameter metadata, route proof, and runtime sensitivity proof",
+    "preserve the existing visible Color Pipeline layout and row editor workflow",
+    "publish the runtime and prove the staged runtime exposes and applies the new functions without physical mouse automation"
+  ],
+  "forbidden_operator_prompts": [
+    "add graph UI or replace the current Color Pipeline layout",
+    "dump a broad function library without runtime backing",
+    "add new fractal families or SDF field producers",
+    "silently alias normal_angle_palette to phase_wheel_palette without documenting the classification",
+    "silently treat sdf_curvature_signed as a new source without proving whether current sdf_curvature is already signed",
+    "remove hardcoded compatibility fallback paths",
+    "import or run Salticid as a viewer runtime dependency",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "function_library_batch1",
+    "source_head": "2281377",
+    "ui_layout_frozen": true,
+    "runtime_backing_required": true,
+    "typed_ports_required": true,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "salticid_runtime_dependency": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "graph_ui_replacement": "forbidden",
+    "broad_function_dump": "forbidden",
+    "new_fractal_family": "forbidden",
+    "new_sdf_field_producer": "forbidden",
+    "hardcoded_fallback_deletion": "forbidden",
+    "runtime_salticid_dependency": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_function_library_batch1.contract.json --out-json artifacts/validation/ui_salt_function_library_batch1_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_function_library_batch1_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_function_library_batch1_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_pytest --log artifacts/logs/ui_salt_function_library_batch1_pytest.log --out-json artifacts/validation/ui_salt_function_library_batch1_pytest.json --heartbeat-seconds 30 --timeout-seconds 180 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_materialize --log artifacts/logs/ui_salt_function_library_batch1_materialize.log --out-json artifacts/validation/ui_salt_function_library_batch1_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_native --log artifacts/logs/ui_salt_function_library_batch1_native.log --out-json artifacts/validation/ui_salt_function_library_batch1_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core test_schema_binding test_diagnostics_state_io test_fractal_types",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_runtime_publish --log artifacts/logs/ui_salt_function_library_batch1_runtime_publish.log --out-json artifacts/validation/ui_salt_function_library_batch1_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_runtime_proof --log artifacts/logs/ui_salt_function_library_batch1_runtime_proof.log --out-json artifacts/validation/ui_salt_function_library_batch1_runtime_proof.json --heartbeat-seconds 30 --timeout-seconds 360 -- py -3.14 -m pytest tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_function_library_batch1_shapes_are_runtime_backed_no_mouse tests/test_fractal_runtime_ui_salt_contract.py::test_published_runtime_consumes_staged_ui_salt_contract -q --junitxml artifacts/pytest/ui_salt_function_library_batch1_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_diff_check --log artifacts/logs/ui_salt_function_library_batch1_diff_check.log --out-json artifacts/validation/ui_salt_function_library_batch1_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The UI-Salt function-library Batch 1 contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_function_library_batch1_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The UI-Salt function-library Batch 1 hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_function_library_batch1_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "materializer_pytest_ok",
+      "description": "The UI-Salt materializer tests pass with Batch 1 metadata",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_function_library_batch1_pytest.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "native_color_pipeline_rails_ok",
+      "description": "Focused native Color Pipeline and state/schema rails pass",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_function_library_batch1_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_publish_ok",
+      "description": "The viewer runtime publishes successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_function_library_batch1_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "published_runtime_batch1_shape_proof_ok",
+      "description": "Published runtime no-mouse proof applies Batch 1 functions and observes frame changes",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/ui_salt_function_library_batch1_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_function_library_batch1_shapes_are_runtime_backed_no_mouse"
+    }
+  ]
+}

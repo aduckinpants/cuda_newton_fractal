@@ -43,9 +43,9 @@ def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> N
     assert report["contract_path"] == str(STAGED_CONTRACT)
     assert report["schema_version"] == 1
     assert report["lane_count"] == 4
-    assert report["function_count"] == 34
+    assert report["function_count"] == 36
     assert report["catalog_authority"] == "materialized_json"
-    assert report["active_catalog_function_count"] == 34
+    assert report["active_catalog_function_count"] == 36
     assert report["compatibility_count"] == 22
     assert report["compatibility_authority"] == "materialized_json"
     assert report["active_compatibility_count"] == 22

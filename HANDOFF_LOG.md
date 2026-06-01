@@ -208,3 +208,5 @@
 - `ck:3945baec` 2026-06-01 10:06 UTC — session-start | branch=codex/ui-salt-compat-switch-g2 | head=1dc8fdb | status=dirty | profile=runtime | intent=UI-Salt compatibility switch G2
 - `ck:3945baec` 2026-06-01 10:23 UTC | score 93 — Slice G2 switched exactly one Color Pipeline pilot route to typed resolver authority, kept runtime tuple output unchanged, proved fallback kill switch behavior, and passed native plus published-runtime UI-Salt contract proof.
 - `ck:3945baec` 2026-06-01 10:29 UTC | score 93 — Slice G2 contract-proof repair: receipt preflight caught the published-runtime proof assertion pointing at logged JSON instead of the pytest JUnit evidence; contract and audit plan now bind to the runtime testcase evidence.
+- `ck:f20cda31` 2026-06-01 13:59 UTC — session-start | branch=codex/ui-salt-function-library-batch1 | head=2281377 | status=dirty | profile=runtime | intent=UI-Salt function library Batch 1
+- `ck:f20cda31` 2026-06-01 14:38 UTC | score 93 — Slice H shipped UI-Salt function-library Batch 1 with runtime-backed Shape rows log_compress and smoothstep_range, classified alias candidates out of scope, and passed materializer/native/runtime proof.

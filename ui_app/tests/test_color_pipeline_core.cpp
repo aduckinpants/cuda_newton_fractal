@@ -334,6 +334,10 @@ void TestFunctionIdMappingsRoundTrip() {
 
     Check(std::string(color_pipeline_core::AdvancedColorShapeFunctionId(ColorPipelineShape::smooth_window)) == "smooth_window",
         "TestFunctionIdMappingsRoundTrip_ShapeId");
+    Check(std::string(color_pipeline_core::AdvancedColorShapeFunctionId(ColorPipelineShape::log_compress)) == "log_compress",
+        "TestFunctionIdMappingsRoundTrip_LogCompressShapeId");
+    Check(std::string(color_pipeline_core::AdvancedColorShapeFunctionId(ColorPipelineShape::smoothstep_range)) == "smoothstep_range",
+        "TestFunctionIdMappingsRoundTrip_SmoothstepRangeShapeId");
 }
 
 void TestLaneCatalogFiltersRuntimeBackedRows() {
@@ -363,8 +367,10 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*source, "sdf_curvature") &&
             HasFunction(*source, "lens_field_v2_distance"),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctions");
-    Check(shape->default_function_id == std::string("identity") && shape->functions.size() == 7 &&
-            HasFunction(*shape, "smooth_window"),
+    Check(shape->default_function_id == std::string("identity") && shape->functions.size() == 9 &&
+            HasFunction(*shape, "smooth_window") &&
+            HasFunction(*shape, "log_compress") &&
+            HasFunction(*shape, "smoothstep_range"),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctions");
     Check(palette->default_function_id == std::string("heatmap") && palette->functions.size() == 6 &&
             HasFunction(*palette, "explaino_cmap") && HasFunction(*palette, "root_classic_palette") &&
@@ -388,7 +394,16 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             "sdf_curvature",
             "lens_field_v2_distance"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctionOrder");
-    Check(CatalogIdsEqual(*shape, {"identity", "offset_scale", "repeat", "posterize", "mirror_repeat", "bias_gain_curve", "smooth_window"}),
+    Check(CatalogIdsEqual(*shape, {
+            "identity",
+            "offset_scale",
+            "repeat",
+            "posterize",
+            "mirror_repeat",
+            "bias_gain_curve",
+            "smooth_window",
+            "log_compress",
+            "smoothstep_range"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
     Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctionOrder");
@@ -1026,7 +1041,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                 contract.edge_links[2].id == "palette_to_grading",
             "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_EdgeLinkOrder");
     }
-    Check(contract.resolution_cases.size() == 8,
+    Check(contract.resolution_cases.size() == 10,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ResolutionCaseCount");
     const MaterializedColorPipelineCompatibilityAudit* smoothAudit =
         FindCompatibilityAudit(contract, "smooth_escape_ramp", "heatmap", "contrast_lift");
@@ -1143,6 +1158,10 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     CheckMaterializedPort(contract, "shape", "repeat", 1, 2, "output", "signal", "scalar.unit", true, "");
     CheckMaterializedPort(contract, "shape", "bias_gain_curve", 0, 2, "input", "signal", "scalar.unit", false, "");
     CheckMaterializedPort(contract, "shape", "bias_gain_curve", 1, 2, "output", "signal", "scalar.unit", true, "");
+    CheckMaterializedPort(contract, "shape", "log_compress", 0, 2, "input", "signal", "scalar.unit", false, "");
+    CheckMaterializedPort(contract, "shape", "log_compress", 1, 2, "output", "signal", "scalar.unit", true, "");
+    CheckMaterializedPort(contract, "shape", "smoothstep_range", 0, 2, "input", "signal", "scalar.unit", false, "");
+    CheckMaterializedPort(contract, "shape", "smoothstep_range", 1, 2, "output", "signal", "scalar.unit", true, "");
     CheckMaterializedPort(contract, "palette", "heatmap", 0, 2, "input", "signal", "scalar.unit", false, "");
     CheckMaterializedPort(contract, "palette", "heatmap", 1, 2, "output", "color", "color.linear_rgb", true, "");
     CheckMaterializedPort(contract, "palette", "phase_wheel_palette", 0, 2, "input", "signal", "phase.radians", false, "");
@@ -1211,7 +1230,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     const ColorPipelineMetadataParityReport parity = ValidateColorPipelineMetadataParity(contract);
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
-    Check(parity.lane_count == 4 && parity.function_count == 34 &&
+    Check(parity.lane_count == 4 && parity.function_count == 36 &&
             parity.compatibility_count == 22 && parity.recipe_count == 4 &&
             parity.taxonomy_group_count == 24 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");

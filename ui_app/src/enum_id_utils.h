@@ -131,6 +131,8 @@ inline constexpr EnumIdPair<ColorPipelineShape> kColorPipelineShapeIds[] = {
     {ColorPipelineShape::mirror_repeat, "mirror_repeat"},
     {ColorPipelineShape::bias_gain_curve, "bias_gain_curve"},
     {ColorPipelineShape::smooth_window, "smooth_window"},
+    {ColorPipelineShape::log_compress, "log_compress"},
+    {ColorPipelineShape::smoothstep_range, "smoothstep_range"},
 };
 
 inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {

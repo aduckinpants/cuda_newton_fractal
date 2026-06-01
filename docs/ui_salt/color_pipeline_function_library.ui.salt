@@ -73,6 +73,8 @@ function(lane="shape", id="posterize", label="Posterize", description="Quantize 
 function(lane="shape", id="mirror_repeat", label="Mirror Repeat", description="Tile the incoming signal into a mirrored triangle-wave pattern.", taxonomy_group="repeat", runtime_backed=True, params=[["shape.frequency", "float", "Frequency", 0.25, 24.0, 0.01, 8.0], ["shape.phase", "float", "Phase", -1.0, 1.0, 0.01, 0.0]])
 function(lane="shape", id="bias_gain_curve", label="Bias + Gain Curve", description="Remap the incoming signal through a bias/gain curve while preserving neutral defaults.", taxonomy_group="remap", runtime_backed=True, params=[["shape.bias", "float", "Bias", 0.0, 1.0, 0.01, 0.5], ["shape.gain", "float", "Gain", 0.0, 1.0, 0.01, 0.5]])
 function(lane="shape", id="smooth_window", label="Smooth Window", description="Gate the incoming signal through a smoothstep window over the current wrap domain.", taxonomy_group="gate", runtime_backed=True, params=[["shape.center", "float", "Center", 0.0, 1.0, 0.01, 0.5], ["shape.width", "float", "Width", 0.0, 1.0, 0.01, 1.0], ["shape.softness", "float", "Softness", 0.0, 1.0, 0.01, 0.0]])
+function(lane="shape", id="log_compress", label="Log Compress", description="Compress high signal values with a logarithmic curve while preserving sign.", taxonomy_group="remap", runtime_backed=True, params=[["shape.scale", "float", "Strength", 0.0, 16.0, 0.01, 2.0]])
+function(lane="shape", id="smoothstep_range", label="Smoothstep Range", description="Remap a chosen signal range into a smooth 0..1 ramp.", taxonomy_group="gate", runtime_backed=True, params=[["shape.center", "float", "Center", 0.0, 1.0, 0.01, 0.5], ["shape.width", "float", "Width", 0.01, 1.0, 0.01, 1.0], ["shape.softness", "float", "Softness", 0.0, 1.0, 0.01, 1.0]])
 
 function(lane="palette", id="heatmap", label="Heatmap", description="Wrap escape signals through the cyclic escape palette.", taxonomy_group="palette_escape", runtime_backed=True, params=[["palette.cycle_scale", "float", "Cycle Scale", 0.25, 4.0, 0.01, 1.0], ["palette.saturation", "float", "Saturation", 0.0, 2.0, 0.01, 1.0], ["palette.blend_weight", "float", "Blend Weight", 0.0, 1.0, 0.01, 1.0], ["palette.blend_mode", "enum", "Blend Mode", None, None, None, "normal", ["normal"]]])
 function(lane="palette", id="phase_wheel_palette", label="Phase Wheel", description="Wrap signal values around a phase wheel palette.", taxonomy_group="palette_phase", runtime_backed=True, params=[["palette.phase_offset", "float", "Phase Offset", -3.141592653589793, 3.141592653589793, 0.01, 0.0], ["palette.saturation", "float", "Saturation", 0.0, 2.0, 0.01, 1.15], ["palette.blend_weight", "float", "Blend Weight", 0.0, 1.0, 0.01, 1.0], ["palette.blend_mode", "enum", "Blend Mode", None, None, None, "normal", ["normal"]]])
@@ -104,6 +106,10 @@ port(function="repeat", direction="input", id="signal", type="scalar.unit")
 port(function="repeat", direction="output", id="signal", type="scalar.unit", canonical=True)
 port(function="bias_gain_curve", direction="input", id="signal", type="scalar.unit")
 port(function="bias_gain_curve", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="log_compress", direction="input", id="signal", type="scalar.unit")
+port(function="log_compress", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="smoothstep_range", direction="input", id="signal", type="scalar.unit")
+port(function="smoothstep_range", direction="output", id="signal", type="scalar.unit", canonical=True)
 
 port(function="heatmap", direction="input", id="signal", type="scalar.unit")
 port(function="heatmap", direction="output", id="color", type="color.linear_rgb", canonical=True)
@@ -128,6 +134,8 @@ edge_link(id="shape_to_palette", from_lane="shape", to_lane="palette", from_port
 edge_link(id="palette_to_grading", from_lane="palette", to_lane="grading", from_port="color", to_port="color", fail_closed_reason="palette output cannot feed selected grading")
 
 resolution_case(id="smooth_escape_heatmap", source="smooth_escape_ramp", shape="identity", palette="heatmap", grading="contrast_lift", expect="resolved")
+resolution_case(id="smooth_escape_log_compress_heatmap", source="smooth_escape_ramp", shape="log_compress", palette="heatmap", grading="contrast_lift", expect="resolved")
+resolution_case(id="smooth_escape_smoothstep_range_heatmap", source="smooth_escape_ramp", shape="smoothstep_range", palette="heatmap", grading="contrast_lift", expect="resolved")
 resolution_case(id="phase_orbit_wheel", source="phase_orbit", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="resolved")
 resolution_case(id="root_classic", source="root_index", shape="identity", palette="root_classic_palette", grading="basin_default", expect="resolved")
 resolution_case(id="sdf_normal_angle_phase_wheel", source="sdf_normal_angle", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="resolved")

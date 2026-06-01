@@ -740,6 +740,35 @@ ESCAPE_TIME_COLOR_HD inline float ApplySmoothWindowShapeValue(
     return ApplySmoothWindowMask(distance, halfWidth, softness) * safeWrap;
 }
 
+ESCAPE_TIME_COLOR_HD inline float ApplyLogCompressShapeValue(
+    float value,
+    const ColorPipelineShapeRuntimeParams& params,
+    float repeatWrap) {
+    const float strength = EscapeTimeColorClamp(params.scale, 0.0f, 16.0f);
+    if (strength <= 0.000001f) {
+        return value;
+    }
+    const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
+    const float normalized = value / safeWrap;
+    const float compressedMagnitude = log1pf(fabsf(normalized) * strength) / log1pf(strength);
+    return (normalized < 0.0f ? -compressedMagnitude : compressedMagnitude) * safeWrap;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ApplySmoothstepRangeShapeValue(
+    float value,
+    const ColorPipelineShapeRuntimeParams& params,
+    float repeatWrap) {
+    const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
+    const float center = EscapeTimeColorClamp(params.window_center, 0.0f, 1.0f);
+    const float width = EscapeTimeColorClamp(params.window_width, 0.01f, 1.0f);
+    const float softness = EscapeTimeColorClamp(params.window_softness, 0.0f, 1.0f);
+    const float low = center - 0.5f * width;
+    const float normalized = value / safeWrap;
+    const float t = EscapeTimeColorClamp((normalized - low) / width, 0.0f, 1.0f);
+    const float smooth = t * t * (3.0f - 2.0f * t);
+    return EscapeTimeColorLerp(t, smooth, softness) * safeWrap;
+}
+
 ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeRowValue(
     float value,
     ColorPipelineShape shape,
@@ -758,6 +787,10 @@ ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeRowValue(
         value = ApplyBiasGainShapeValue(value, params, repeatWrap);
     } else if (shape == ColorPipelineShape::smooth_window) {
         value = ApplySmoothWindowShapeValue(value, params, repeatWrap);
+    } else if (shape == ColorPipelineShape::log_compress) {
+        value = ApplyLogCompressShapeValue(value, params, repeatWrap);
+    } else if (shape == ColorPipelineShape::smoothstep_range) {
+        value = ApplySmoothstepRangeShapeValue(value, params, repeatWrap);
     }
     return value;
 }

@@ -593,6 +593,10 @@ inline const char* AdvancedColorShapeFunctionId(ColorPipelineShape value) {
         return "bias_gain_curve";
     case ColorPipelineShape::smooth_window:
         return "smooth_window";
+    case ColorPipelineShape::log_compress:
+        return "log_compress";
+    case ColorPipelineShape::smoothstep_range:
+        return "smoothstep_range";
     }
     return nullptr;
 }
@@ -816,7 +820,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
     };
 }
 
-inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
+inline std::vector<FunctionDescriptor> BuildColorPipelineBaseShapeFunctions() {
     return {
         MakeColorPipelineFunction(
             "identity",
@@ -880,6 +884,36 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
                 MakeColorPipelineFloatParam("shape.softness", "Softness", "Feather the window edges with a smoothstep blend instead of a hard cutoff.", 0.0, 1.0, 0.01, 0.0),
             }),
     };
+}
+
+inline std::vector<FunctionDescriptor> BuildColorPipelineBatch1ShapeFunctions() {
+    return {
+        MakeColorPipelineFunction(
+            "log_compress",
+            "Log Compress",
+            "Compress high signal values with a logarithmic curve while preserving sign.",
+            "remap",
+            {
+                MakeColorPipelineFloatParam("shape.scale", "Strength", "Control how strongly large signal values are compressed.", 0.0, 16.0, 0.01, 2.0),
+            }),
+        MakeColorPipelineFunction(
+            "smoothstep_range",
+            "Smoothstep Range",
+            "Remap a chosen signal range into a smooth 0..1 ramp.",
+            "gate",
+            {
+                MakeColorPipelineFloatParam("shape.center", "Center", "Choose the center of the remapped range.", 0.0, 1.0, 0.01, 0.5),
+                MakeColorPipelineFloatParam("shape.width", "Width", "Control the width of the remapped range.", 0.01, 1.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("shape.softness", "Softness", "Blend between a linear ramp and smoothstep easing.", 0.0, 1.0, 0.01, 1.0),
+            }),
+    };
+}
+
+inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
+    std::vector<FunctionDescriptor> functions = BuildColorPipelineBaseShapeFunctions();
+    std::vector<FunctionDescriptor> batch1 = BuildColorPipelineBatch1ShapeFunctions();
+    functions.insert(functions.end(), batch1.begin(), batch1.end());
+    return functions;
 }
 
 inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
@@ -988,7 +1022,9 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "posterize" ||
             functionId == "mirror_repeat" ||
             functionId == "bias_gain_curve" ||
-            functionId == "smooth_window";
+            functionId == "smooth_window" ||
+            functionId == "log_compress" ||
+            functionId == "smoothstep_range";
     }
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||

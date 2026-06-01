@@ -571,6 +571,14 @@ void ResetLegacyColorShapeMirror(KernelParams* ioParams) {
     ioParams->color_shape_window_softness = 0.0f;
 }
 
+void MirrorLegacyColorWindowShapeParams(
+    const ColorPipelineShapeRuntimeParams& shapeParams,
+    KernelParams* ioParams) {
+    ioParams->color_shape_window_center = shapeParams.window_center;
+    ioParams->color_shape_window_width = shapeParams.window_width;
+    ioParams->color_shape_window_softness = shapeParams.window_softness;
+}
+
 void MirrorLegacyColorShapeFromStackEntry(const ColorPipelineShapeStackEntry& shapeEntry, KernelParams* ioParams) {
     if (!ioParams) return;
     ResetLegacyColorShapeMirror(ioParams);
@@ -593,10 +601,11 @@ void MirrorLegacyColorShapeFromStackEntry(const ColorPipelineShapeStackEntry& sh
         ioParams->color_shape_bias = shapeEntry.params.bias;
         ioParams->color_shape_gain = shapeEntry.params.gain;
         break;
-    case ColorPipelineShape::smooth_window:
-        ioParams->color_shape_window_center = shapeEntry.params.window_center;
-        ioParams->color_shape_window_width = shapeEntry.params.window_width;
-        ioParams->color_shape_window_softness = shapeEntry.params.window_softness;
+    case ColorPipelineShape::smooth_window: case ColorPipelineShape::smoothstep_range:
+        MirrorLegacyColorWindowShapeParams(shapeEntry.params, ioParams);
+        break;
+    case ColorPipelineShape::log_compress:
+        ioParams->color_shape_scale = shapeEntry.params.scale;
         break;
     case ColorPipelineShape::identity:
     default:

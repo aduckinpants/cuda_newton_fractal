@@ -2379,15 +2379,17 @@ int main() {
         const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
         if (!coreShapeCatalog ||
             coreShapeCatalog->default_function_id != std::string("identity") ||
-            coreShapeCatalog->functions.size() != 7 ||
+            coreShapeCatalog->functions.size() != 9 ||
             coreShapeCatalog->functions[0].id != "identity" ||
             coreShapeCatalog->functions[1].id != "offset_scale" ||
             coreShapeCatalog->functions[2].id != "repeat" ||
             coreShapeCatalog->functions[3].id != "posterize" ||
             coreShapeCatalog->functions[4].id != "mirror_repeat" ||
             coreShapeCatalog->functions[5].id != "bias_gain_curve" ||
-            coreShapeCatalog->functions[6].id != "smooth_window") {
-            std::cerr << "Expected the extracted advanced color core to widen the shipped Shape catalog with smooth_window as the final runtime-real row\n";
+            coreShapeCatalog->functions[6].id != "smooth_window" ||
+            coreShapeCatalog->functions[7].id != "log_compress" ||
+            coreShapeCatalog->functions[8].id != "smoothstep_range") {
+            std::cerr << "Expected the extracted advanced color core to widen the shipped Shape catalog with Batch 1 runtime-real rows\n";
             return 1;
         }
         const FunctionDescriptor* coreRepeatDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "repeat");
@@ -2429,6 +2431,22 @@ int main() {
             coreSmoothWindowDescriptor->parameters[1].path != "shape.width" ||
             coreSmoothWindowDescriptor->parameters[2].path != "shape.softness") {
             std::cerr << "Expected smooth_window to expose stable center, width, and softness parameter paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreLogCompressDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "log_compress");
+        if (!coreLogCompressDescriptor ||
+            coreLogCompressDescriptor->parameters.size() != 1 ||
+            coreLogCompressDescriptor->parameters[0].path != "shape.scale") {
+            std::cerr << "Expected log_compress to expose stable strength through shape.scale\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreSmoothstepRangeDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "smoothstep_range");
+        if (!coreSmoothstepRangeDescriptor ||
+            coreSmoothstepRangeDescriptor->parameters.size() != 3 ||
+            coreSmoothstepRangeDescriptor->parameters[0].path != "shape.center" ||
+            coreSmoothstepRangeDescriptor->parameters[1].path != "shape.width" ||
+            coreSmoothstepRangeDescriptor->parameters[2].path != "shape.softness") {
+            std::cerr << "Expected smoothstep_range to expose stable center, width, and softness parameter paths\n";
             return 1;
         }
         const ColorPipelineLaneCatalog* coreGradingCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
@@ -2728,15 +2746,17 @@ int main() {
         }
         const ColorPipelineLaneCatalog* shapeCatalog = FindColorPipelineLaneCatalog("shape");
         if (!shapeCatalog ||
-            shapeCatalog->functions.size() != 7 ||
+            shapeCatalog->functions.size() != 9 ||
             shapeCatalog->functions[0].id != "identity" ||
             shapeCatalog->functions[1].id != "offset_scale" ||
             shapeCatalog->functions[2].id != "repeat" ||
             shapeCatalog->functions[3].id != "posterize" ||
             shapeCatalog->functions[4].id != "mirror_repeat" ||
             shapeCatalog->functions[5].id != "bias_gain_curve" ||
-            shapeCatalog->functions[6].id != "smooth_window") {
-            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the real offset_scale, repeat, posterize, mirror_repeat, bias_gain_curve, and smooth_window rows\n";
+            shapeCatalog->functions[6].id != "smooth_window" ||
+            shapeCatalog->functions[7].id != "log_compress" ||
+            shapeCatalog->functions[8].id != "smoothstep_range") {
+            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the real runtime-backed Shape rows including Batch 1\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||

@@ -53,6 +53,10 @@ void TestEnumOrdinalContracts() {
     Check(static_cast<int>(ColorGradingPreset::bands_default) == 3, "ColorGradingPreset bands_default ordinal is stable");
     Check(static_cast<int>(ColorPipelineShape::identity) == 0, "ColorPipelineShape identity ordinal is stable");
     Check(static_cast<int>(ColorPipelineShape::smooth_window) == 6, "ColorPipelineShape smooth_window ordinal is stable");
+    Check(static_cast<int>(ColorPipelineShape::log_compress) == 7,
+        "ColorPipelineShape log_compress ordinal is append-only stable");
+    Check(static_cast<int>(ColorPipelineShape::smoothstep_range) == 8,
+        "ColorPipelineShape smoothstep_range ordinal is append-only stable");
     Check(static_cast<int>(TranscendentalFunc::f_sin) == 0, "TranscendentalFunc f_sin ordinal is stable");
     Check(static_cast<int>(TranscendentalFunc::f_cosh) == 2, "TranscendentalFunc f_cosh ordinal is stable");
     Check(static_cast<int>(McMullenPreset::z3_z3) == 0, "McMullenPreset z3_z3 ordinal is stable");

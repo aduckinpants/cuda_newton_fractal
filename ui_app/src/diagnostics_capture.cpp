@@ -115,6 +115,8 @@ const char* CaptureColorPipelineShapeId(ColorPipelineShape shape) {
     case ColorPipelineShape::mirror_repeat: return "mirror_repeat";
     case ColorPipelineShape::bias_gain_curve: return "bias_gain_curve";
     case ColorPipelineShape::smooth_window: return "smooth_window";
+    case ColorPipelineShape::log_compress: return "log_compress";
+    case ColorPipelineShape::smoothstep_range: return "smoothstep_range";
     }
     return "unknown";
 }

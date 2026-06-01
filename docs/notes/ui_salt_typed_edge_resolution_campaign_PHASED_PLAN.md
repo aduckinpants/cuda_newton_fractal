@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 13 complete - Slice G2 switched exactly one pilot route to typed resolver authority, preserved the visible/runtime tuple, and proved the temporary fallback/kill switch restores materialized compatibility behavior.
+Phase 14 complete - Slice H shipped the minimal runtime-backed Shape-row Batch 1 (`log_compress`, `smoothstep_range`), classified the tempting alias candidates out of scope, and proved metadata/native/runtime no-mouse sensitivity on the published viewer.
 
 ## Phase Checklist
 
@@ -20,6 +20,7 @@ Phase 13 complete - Slice G2 switched exactly one pilot route to typed resolver 
 - [x] Phase 11 - fast-forward Slice E to `master`, push `master`, branch `codex/ui-salt-sdf-applicator-capability`, implement Slice F SDF applicator capability shadow metadata, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 12 - fast-forward Slice F to `master`, push `master`, branch `codex/ui-salt-compat-diagnostics-g1`, implement Slice G1 diagnostic/explanation lookup, focused tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 13 - fast-forward Slice G1 to `master`, push `master`, branch `codex/ui-salt-compat-switch-g2`, implement one pilot typed-resolver compatibility switch with fallback/kill switch, focused native/runtime tests, validation, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 14 - branch `codex/ui-salt-function-library-batch1`, classify Slice H candidates, implement the minimal runtime-backed Batch 1 function set, prove typed ports/materialized metadata/native rails/published runtime sensitivity, hostile audit, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -56,6 +57,11 @@ Phase 13 complete - Slice G2 switched exactly one pilot route to typed resolver 
 - [closed] Preserve visible Color Pipeline behavior and runtime tuple output; this is an authority switch, not a UI or visual change.
 - [closed] Add and prove a temporary fallback/kill switch that restores legacy materialized compatibility behavior.
 - [closed] Do not expand the function library, add graph UI, remove hardcoded fallback, or import Salticid runtime code.
+- [closed] Implement Slice H only: function-library Batch 1.
+- [closed] Classify `sdf_curvature_signed` before implementation as new function, alias, signed-preserving variant, or diagnostic-only.
+- [closed] Classify `normal_angle_palette` before implementation as distinct function or alias.
+- [closed] Ship only a small function set with real runtime backing, typed ports, parameter metadata, compatibility route proof, no-mouse runtime sensitivity proof, and measured/no-regression evidence.
+- [closed] Preserve the current Color Pipeline layout and row editor workflow; graph UI, new fractal lanes, broad function dump, and Salticid runtime dependency remain out of scope.
 
 ## Current Repo Truth
 
@@ -466,6 +472,14 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Slice G2 published-runtime proof: `artifacts/validation/ui_salt_compat_switch_g2_runtime_proof.json` passed `2 passed`.
 - Slice G2 logged diff check: `artifacts/validation/ui_salt_compat_switch_g2_diff_check.json` passed.
 - Slice G2 receipt preflight found a contract-proof assertion mismatch: the published-runtime proof evidence was the pytest JUnit artifact, not the logged-command JSON. The contract now asserts the concrete runtime JUnit testcase.
+- Slice H branch: `codex/ui-salt-function-library-batch1` from clean `master` at `2281377`; rearward review for `2281377` reported `ok`.
+- Slice H contract: `docs/contracts/ui_salt_function_library_batch1.contract.json`.
+- Slice H classification gate: `sdf_curvature_signed` and `normal_angle_palette` are not allowed to ship as new entries until current runtime semantics prove they are not just aliases or diagnostic-only labels.
+- Slice H initial selection bias: prefer a small Shape-row batch first if repo inspection confirms those functions can use existing row stack/runtime/state paths without new field producers or source-signal sidecars.
+- Slice H classification result: current `sdf_curvature` already computes signed curvature through the SDF postprocess path, so `sdf_curvature_signed` is not a new runtime-backed function in this batch; it remains a future label/alias/diagnostic naming decision.
+- Slice H classification result: current `phase_wheel_palette` already owns the available phase-wheel palette behavior, so `normal_angle_palette` would be an alias unless a later slice adds distinct phase-safe behavior; it is not shipped in Batch 1.
+- Slice H shipped functions: `log_compress` and `smoothstep_range` are Shape-row functions with C++ enum/id mapping, runtime math, row-state import/build support, diagnostics/state mirror coverage, UI-Salt typed ports, generated metadata, native catalog/schema/state tests, and published no-mouse pixel sensitivity proof.
+- Slice H validation receipts before checkpoint: contract validation passed at `artifacts/validation/ui_salt_function_library_batch1_contract.json`; materializer pytest passed at `artifacts/validation/ui_salt_function_library_batch1_pytest.json`; materialization passed at `artifacts/validation/ui_salt_function_library_batch1_materialize.json`; code quality baseline passed at `artifacts/validation/ui_salt_function_library_batch1_code_quality.json`; native rail passed at `artifacts/validation/ui_salt_function_library_batch1_native.json`; runtime publish passed at `artifacts/validation/ui_salt_function_library_batch1_runtime_publish.json`; published runtime proof passed at `artifacts/validation/ui_salt_function_library_batch1_runtime_proof.json`; diff check passed at `artifacts/validation/ui_salt_function_library_batch1_diff_check.json`.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -475,7 +489,7 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 ## Hostile Audit
 
 - Status: complete
-- Required posture: assume this plan accidentally overreaches into UI replacement, skips proof before function expansion, creates unsafe `any` ports, lets port metadata alter live compatibility behavior, or lets adapter metadata become live automatic routing before the resolver/audit slices exist.
+- Required posture: assume this plan accidentally overreaches into UI replacement, ships dead function rows, skips proof before function expansion, creates unsafe aliases, lets port metadata alter live compatibility behavior, or lets Batch 1 bypass no-mouse runtime sensitivity proof.
 
 Required questions:
 
@@ -488,6 +502,9 @@ Required questions:
 - Does the type system separate raw fields, sampled scalars, categories, and palette domains instead of renaming coarse `signal_kind`?
 - Does identity preserve concrete type information instead of becoming `any`?
 - Does the first live switch start with diagnostics and keep a fallback/kill switch before behavior changes?
+- Does Batch 1 prove every shipped new function is runtime-backed and changes pixels through the published viewer?
+- Did `sdf_curvature_signed` and `normal_angle_palette` get classified before any implementation tried to expose them?
+- Did the slice avoid graph UI, new fractal lanes, and broad function-library dumping?
 
 ## Audit Passes
 
@@ -519,6 +536,9 @@ Required questions:
 - [x] Pass 26 - clean re-read confirmed Slice G2 does not change visible Color Pipeline controls, does not expand the function library, does not add graph UI, does not delete hardcoded/materialized fallback, does not import Salticid runtime code, and does not allow unsupported routes.
 - [x] Pass 27 - receipt preflight exposed a real workflow defect: the contract assertion for published runtime proof pointed at logged-command JSON while validation evidence recorded the pytest JUnit testcase. The contract assertion now uses `runtime_junit_case` for the published runtime UI-Salt contract test.
 - [x] Pass 28 - clean re-read confirmed the repaired contract remains scoped to G2, preserves the same required validation commands, and now matches the machine-written validation receipt evidence.
+- [x] Pass 29 - review Slice H candidate classification for alias traps, diagnostic-only traps, and unsupported runtime seams before implementation.
+- [x] Pass 30 - review Batch 1 implementation for dead rows, missing typed ports, stale generated metadata, state/capture omissions, and UI workflow drift.
+- [x] Pass 31 - clean re-read after repairs confirms Batch 1 shipped only proven runtime-backed entries and left graph UI/new fractal lanes/Salticid runtime out of scope.
 
 ## Audit Findings
 
@@ -547,6 +567,25 @@ Required questions:
 - [x] Clean Slice G2 re-read found no visible UI change, no graph UI, no function-library expansion, no fallback deletion, no Salticid runtime dependency, and no physical mouse automation.
 - [x] Slice G2 receipt audit found the first contract assertion for published runtime proof used the wrong evidence artifact. The contract now binds the acceptance assertion to `artifacts/pytest/ui_salt_compat_switch_g2_runtime.junit.xml` and testcase `tests/test_fractal_runtime_ui_salt_contract.py::test_published_runtime_consumes_staged_ui_salt_contract`.
 - [x] Clean Slice G2 contract re-read found no validation command removal, no weaker runtime proof, and no change to product scope.
+- [x] Slice H classification found `sdf_curvature_signed` would be an alias/label decision because current `sdf_curvature` already computes a signed SDF curvature value in CPU/CUDA postprocess; Batch 1 did not ship it as a fake new row.
+- [x] Slice H classification found `normal_angle_palette` would be an alias of `phase_wheel_palette` without new phase-safe behavior; Batch 1 did not ship it as a fake new row.
+- [x] Slice H implementation proves new rows are not catalog-only: `log_compress` and `smoothstep_range` have C++ runtime backing, typed ports, regenerated metadata, native catalog/schema/state proof, and published no-mouse frame-hash sensitivity proof.
+- [x] Hostile audit finding: first native rail exposed missing runtime-backed filtering for the new Shape rows; fixed by adding `log_compress` and `smoothstep_range` to `IsColorPipelineFunctionRuntimeBacked(...)` and extending the native parity/count assertions.
+- [x] Hostile audit finding: first runtime proof exposed a nested automation lock bug in the new no-mouse test helper; fixed by removing the nested lock and relying on the existing autouse runtime automation lock.
+- [x] Hostile audit finding: code-quality baseline exposed function growth in `BuildColorPipelineShapeFunctions()` and `MirrorLegacyColorShapeFromStackEntry(...)`; fixed by splitting the Shape catalog builder and sharing legacy window-shape mirror logic.
+
+## Slice H Validation Targets
+
+- `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_function_library_batch1.contract.json --out-json artifacts/validation/ui_salt_function_library_batch1_contract.json`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_function_library_batch1_hostile_audit.json`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_function_library_batch1_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_pytest --log artifacts/logs/ui_salt_function_library_batch1_pytest.log --out-json artifacts/validation/ui_salt_function_library_batch1_pytest.json --heartbeat-seconds 30 --timeout-seconds 180 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_materialize --log artifacts/logs/ui_salt_function_library_batch1_materialize.log --out-json artifacts/validation/ui_salt_function_library_batch1_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_native --log artifacts/logs/ui_salt_function_library_batch1_native.log --out-json artifacts/validation/ui_salt_function_library_batch1_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core test_schema_binding test_diagnostics_state_io test_fractal_types`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_runtime_publish --log artifacts/logs/ui_salt_function_library_batch1_runtime_publish.log --out-json artifacts/validation/ui_salt_function_library_batch1_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_runtime_proof --log artifacts/logs/ui_salt_function_library_batch1_runtime_proof.log --out-json artifacts/validation/ui_salt_function_library_batch1_runtime_proof.json --heartbeat-seconds 30 --timeout-seconds 360 -- py -3.14 -m pytest tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_function_library_batch1_shapes_are_runtime_backed_no_mouse tests/test_fractal_runtime_ui_salt_contract.py::test_published_runtime_consumes_staged_ui_salt_contract -q --junitxml artifacts/pytest/ui_salt_function_library_batch1_runtime.junit.xml`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_function_library_batch1_diff_check --log artifacts/logs/ui_salt_function_library_batch1_diff_check.log --out-json artifacts/validation/ui_salt_function_library_batch1_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Slice G2 Validation Targets
 

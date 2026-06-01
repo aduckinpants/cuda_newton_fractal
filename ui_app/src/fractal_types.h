@@ -97,6 +97,8 @@ enum class ColorPipelineShape : int {
     mirror_repeat = 4,
     bias_gain_curve = 5,
     smooth_window = 6,
+    log_compress = 7,
+    smoothstep_range = 8,
 };
 
 constexpr int kColorPipelineMaxSourceStackCount = 8;

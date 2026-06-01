@@ -1321,6 +1321,90 @@
                 "default": 0.0
               }
             ]
+          },
+          {
+            "id": "log_compress",
+            "label": "Log Compress",
+            "description": "Compress high signal values with a logarithmic curve while preserving sign.",
+            "taxonomy_group": "remap",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "shape.scale",
+                "type": "float",
+                "label": "Strength",
+                "min": 0.0,
+                "max": 16.0,
+                "step": 0.01,
+                "default": 2.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.unit"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.unit",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "smoothstep_range",
+            "label": "Smoothstep Range",
+            "description": "Remap a chosen signal range into a smooth 0..1 ramp.",
+            "taxonomy_group": "gate",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "shape.center",
+                "type": "float",
+                "label": "Center",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.5
+              },
+              {
+                "path": "shape.width",
+                "type": "float",
+                "label": "Width",
+                "min": 0.01,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "shape.softness",
+                "type": "float",
+                "label": "Softness",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.unit"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.unit",
+                "canonical": true
+              }
+            ]
           }
         ]
       },
@@ -2798,6 +2882,120 @@
           {
             "edge_id": "shape_to_palette",
             "from_function": "identity",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "smooth_escape_log_compress_heatmap",
+        "source": "smooth_escape_ramp",
+        "shape": "log_compress",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "smooth_escape_ramp",
+            "to_function": "log_compress",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "log_compress",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "smooth_escape_smoothstep_range_heatmap",
+        "source": "smooth_escape_ramp",
+        "shape": "smoothstep_range",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "smooth_escape_ramp",
+            "to_function": "smoothstep_range",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "smoothstep_range",
             "to_function": "heatmap",
             "from_type": "scalar.unit",
             "to_type": "scalar.unit",

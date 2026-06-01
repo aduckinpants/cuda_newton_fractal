@@ -1415,6 +1415,12 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "smooth_window") {
         return path == "shape.center" || path == "shape.width" || path == "shape.softness";
     }
+    if (functionId == "log_compress") {
+        return path == "shape.scale";
+    }
+    if (functionId == "smoothstep_range") {
+        return path == "shape.center" || path == "shape.width" || path == "shape.softness";
+    }
     if (functionId == "banded_signal") {
         return path == "signal.band_count" || path == "signal.softness" || path == "signal.blend_weight";
     }
@@ -1563,6 +1569,14 @@ inline bool ImportSupportedColorPipelineParamsFromShapeStackEntry(
             SetColorPipelineParamNumber(ioRow, "shape.width", shapeEntry.params.window_width, outError) &&
             SetColorPipelineParamNumber(ioRow, "shape.softness", shapeEntry.params.window_softness, outError);
     }
+    if (ioRow->function_id == "log_compress") {
+        return SetColorPipelineParamNumber(ioRow, "shape.scale", shapeEntry.params.scale, outError);
+    }
+    if (ioRow->function_id == "smoothstep_range") {
+        return SetColorPipelineParamNumber(ioRow, "shape.center", shapeEntry.params.window_center, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.width", shapeEntry.params.window_width, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.softness", shapeEntry.params.window_softness, outError);
+    }
     return true;
 }
 
@@ -1673,7 +1687,9 @@ inline bool IsSupportedColorPipelineShapeFunctionId(const std::string& functionI
         functionId == "posterize" ||
         functionId == "mirror_repeat" ||
         functionId == "bias_gain_curve" ||
-        functionId == "smooth_window";
+        functionId == "smooth_window" ||
+        functionId == "log_compress" ||
+        functionId == "smoothstep_range";
 }
 
 inline bool IsSupportedColorPipelineSourceStackFunctionId(const std::string& functionId) {
@@ -2759,6 +2775,28 @@ inline bool TryBuildColorPipelineShapeStackEntryFromRow(
             !TryGetColorPipelineParamNumber(row, "shape.softness", &softness, outError) ||
             !ValidateColorPipelineParamRange("shape.center", center, 0.0, 1.0, outError) ||
             !ValidateColorPipelineParamRange("shape.width", width, 0.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("shape.softness", softness, 0.0, 1.0, outError)) {
+            return false;
+        }
+        entry.params.window_center = static_cast<float>(center);
+        entry.params.window_width = static_cast<float>(width);
+        entry.params.window_softness = static_cast<float>(softness);
+    } else if (row.function_id == "log_compress") {
+        double scale = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "shape.scale", &scale, outError) ||
+            !ValidateColorPipelineParamRange("shape.scale", scale, 0.0, 16.0, outError)) {
+            return false;
+        }
+        entry.params.scale = static_cast<float>(scale);
+    } else if (row.function_id == "smoothstep_range") {
+        double center = 0.0;
+        double width = 0.0;
+        double softness = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "shape.center", &center, outError) ||
+            !TryGetColorPipelineParamNumber(row, "shape.width", &width, outError) ||
+            !TryGetColorPipelineParamNumber(row, "shape.softness", &softness, outError) ||
+            !ValidateColorPipelineParamRange("shape.center", center, 0.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("shape.width", width, 0.01, 1.0, outError) ||
             !ValidateColorPipelineParamRange("shape.softness", softness, 0.0, 1.0, outError)) {
             return false;
         }

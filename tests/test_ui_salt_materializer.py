@@ -697,7 +697,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "grading",
     ]
     assert len(lanes["source"]["functions"]) == 13
-    assert len(lanes["shape"]["functions"]) == 7
+    assert len(lanes["shape"]["functions"]) == 9
     assert len(lanes["palette"]["functions"]) == 6
     assert len(lanes["grading"]["functions"]) == 8
     signal_kinds = {fn["id"]: fn.get("signal_kind") for fn in lanes["source"]["functions"]}
@@ -806,6 +806,8 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     audit_cases = {case["id"]: case for case in actual["color_pipeline_resolution_audit"]["cases"]}
     assert set(audit_cases) == {
         "smooth_escape_heatmap",
+        "smooth_escape_log_compress_heatmap",
+        "smooth_escape_smoothstep_range_heatmap",
         "phase_orbit_wheel",
         "root_classic",
         "sdf_normal_angle_phase_wheel",
@@ -816,6 +818,8 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     }
     assert audit_cases["smooth_escape_heatmap"]["status"] == "resolved"
     assert audit_cases["smooth_escape_heatmap"]["chosen_adapters"] == []
+    assert audit_cases["smooth_escape_log_compress_heatmap"]["status"] == "resolved"
+    assert audit_cases["smooth_escape_smoothstep_range_heatmap"]["status"] == "resolved"
     assert audit_cases["sdf_signed_distance_normalized_heatmap"]["chosen_adapters"] == [
         "normalize.sdf_signed_distance.unit"
     ]
@@ -850,6 +854,14 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
     ]
     assert _ports(actual, "shape", "bias_gain_curve") == [
+        {"direction": "input", "id": "signal", "type": "scalar.unit"},
+        {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+    ]
+    assert _ports(actual, "shape", "log_compress") == [
+        {"direction": "input", "id": "signal", "type": "scalar.unit"},
+        {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+    ]
+    assert _ports(actual, "shape", "smoothstep_range") == [
         {"direction": "input", "id": "signal", "type": "scalar.unit"},
         {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
     ]
