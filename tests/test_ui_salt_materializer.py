@@ -20,14 +20,22 @@ VALID_UI_SALT = '''
 contract(kind="function_library", contract_id="viewer.function_library_contract.v1", version=1)
 contract(kind="composition_recipe", contract_id="viewer.composition_recipe_contract.v1", version=1)
 contract(kind="explaino", contract_id="viewer.explaino_contract.v1", version=1)
+contract(kind="signal_type_registry", contract_id="viewer.signal_type_registry_contract.v1", version=1)
+signal_type(id="scalar.unit", kind="scalar", domain="unit", topology="linear", arity=1, default_adapter_policy="safe")
+signal_type(id="scalar.sdf_signed_distance", kind="scalar", domain="signed_distance", topology="linear", arity=1, units="field_px", default_adapter_policy="explicit_only")
+signal_type(id="phase.radians", kind="phase", domain="angle", topology="circular", arity=1, units="radians", period=6.283185307179586, default_adapter_policy="explicit_only")
+signal_type(id="category.root_index", kind="category", domain="root_index", topology="discrete", arity=1, default_adapter_policy="forbidden")
+signal_type(id="palette.discrete_index", kind="palette", domain="discrete_index", topology="discrete", arity=1, default_adapter_policy="explicit_only")
 row_applicator(id="none", label="None", target_lane="source", required_signal_kind="any", requires_sdf_field=False, storage_param="signal.sdf_gate", fail_closed_reason="ungated source row contribution")
 row_applicator(id="sdf_boundary_band", label="SDF Boundary Band", target_lane="source", required_signal_kind="any", requires_sdf_field=True, storage_param="signal.sdf_gate", width_param="signal.sdf_gate_width_px", fail_closed_reason="requires an SDF field for boundary-band row masking")
 row_applicator(id="sdf_inside", label="SDF Inside", target_lane="source", required_signal_kind="any", requires_sdf_field=True, storage_param="signal.sdf_gate", fail_closed_reason="requires an SDF field for inside row masking")
 row_applicator(id="sdf_outside", label="SDF Outside", target_lane="source", required_signal_kind="any", requires_sdf_field=True, storage_param="signal.sdf_gate", fail_closed_reason="requires an SDF field for outside row masking")
 lane(id="source", label="Source", default="smooth_escape_ramp")
 lane(id="palette", label="Palette", default="heatmap")
-function(lane="source", id="smooth_escape_ramp", label="Smooth Escape Ramp", taxonomy_group="escape", signal_kind="scalar", runtime_backed=True, params=[["signal.scale", "float", "Scale", 0.25, 4.0, 0.01, 1.0], ["signal.bias", "float", "Bias", -1.0, 1.0, 0.01, 0.0]])
-function(lane="source", id="sdf_normal_angle", label="SDF Normal Angle", taxonomy_group="sdf_phase", signal_kind="phase", runtime_backed=True, params=[["signal.scale", "float", "Angle Scale", -2.0, 2.0, 0.01, 1.0]])
+function(lane="source", id="smooth_escape_ramp", label="Smooth Escape Ramp", taxonomy_group="escape", signal_kind="scalar", typed_signal="scalar.unit", runtime_backed=True, params=[["signal.scale", "float", "Scale", 0.25, 4.0, 0.01, 1.0], ["signal.bias", "float", "Bias", -1.0, 1.0, 0.01, 0.0]])
+function(lane="source", id="sdf_signed_distance", label="SDF Signed Distance", taxonomy_group="sdf", signal_kind="scalar", typed_signal="scalar.sdf_signed_distance", runtime_backed=True, params=[["signal.scale", "float", "Distance Scale", -2.0, 2.0, 0.01, 0.05]])
+function(lane="source", id="sdf_normal_angle", label="SDF Normal Angle", taxonomy_group="sdf_phase", signal_kind="phase", typed_signal="phase.radians", runtime_backed=True, params=[["signal.scale", "float", "Angle Scale", -2.0, 2.0, 0.01, 1.0]])
+function(lane="source", id="root_index", label="Root Index", taxonomy_group="basin", signal_kind="categorical", typed_signal="category.root_index", runtime_backed=True)
 function(lane="palette", id="heatmap", label="Heatmap", taxonomy_group="palette_escape", runtime_backed=True, params=[["palette.cycle_scale", "float", "Cycle Scale", 0.25, 4.0, 0.01, 1.0]])
 compat(source="smooth_escape_ramp", palette="heatmap", signal="smooth_escape_ramp", palette_runtime="heatmap", grading="contrast_lift", mode="smooth_escape")
 explaino_contract(id="color_pipeline.explaino_cmap", hypothesis_space="color_pipeline_source_signal", authority="palette_row", lens="source_signal_to_explaino_cmap", invariant="fail_closed_runtime_backing", proof="color_pipeline_metadata_parity", fallback="fail_closed", product_facing=False, diagnostic=True)
@@ -59,16 +67,39 @@ def test_materializer_accepts_valid_contract(tmp_path):
         "function_library",
         "composition_recipe",
         "explaino",
+        "signal_type_registry",
     ]
+    signal_types = {item["id"]: item for item in payload["signal_type_registry"]["types"]}
+    assert set(signal_types) == {
+        "scalar.unit",
+        "scalar.sdf_signed_distance",
+        "phase.radians",
+        "category.root_index",
+        "palette.discrete_index",
+    }
+    assert signal_types["scalar.unit"]["kind"] == "scalar"
+    assert signal_types["scalar.sdf_signed_distance"]["units"] == "field_px"
+    assert signal_types["phase.radians"]["topology"] == "circular"
+    assert signal_types["phase.radians"]["period"] == 6.283185307179586
+    assert signal_types["category.root_index"]["default_adapter_policy"] == "forbidden"
     source_lane = payload["function_library"]["lanes"][0]
     assert source_lane["id"] == "source"
     assert [fn["id"] for fn in source_lane["functions"]] == [
         "smooth_escape_ramp",
+        "sdf_signed_distance",
         "sdf_normal_angle",
+        "root_index",
     ]
-    assert source_lane["functions"][1]["signal_kind"] == "phase"
+    typed_signals = {fn["id"]: fn.get("typed_signal") for fn in source_lane["functions"]}
+    assert typed_signals == {
+        "smooth_escape_ramp": "scalar.unit",
+        "sdf_signed_distance": "scalar.sdf_signed_distance",
+        "sdf_normal_angle": "phase.radians",
+        "root_index": "category.root_index",
+    }
+    assert source_lane["functions"][2]["signal_kind"] == "phase"
     assert source_lane["functions"][0]["taxonomy_group"] == "escape"
-    assert source_lane["functions"][1]["taxonomy_group"] == "sdf_phase"
+    assert source_lane["functions"][2]["taxonomy_group"] == "sdf_phase"
     assert payload["composition_recipe_contract"]["compatibility"][0]["mode"] == "smooth_escape"
     assert payload["explaino_contract"]["entries"][0]["proof"] == "color_pipeline_metadata_parity"
 
@@ -85,6 +116,41 @@ def test_materializer_accepts_valid_contract(tmp_path):
     assert applicators[1]["width_param"] == "signal.sdf_gate_width_px"
     assert all(item["storage_param"] == "signal.sdf_gate" for item in applicators)
 
+
+
+def test_materializer_rejects_duplicate_signal_type_ids(tmp_path):
+    text = VALID_UI_SALT + 'signal_type(id="scalar.unit", kind="scalar", domain="unit", topology="linear", arity=1, default_adapter_policy="safe")\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "duplicate signal_type id" in proc.stderr
+
+
+def test_materializer_rejects_unknown_signal_type_kind(tmp_path):
+    text = VALID_UI_SALT.replace('kind="phase"', 'kind="vector"', 1)
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "invalid signal_type kind" in proc.stderr
+
+
+def test_materializer_rejects_ambiguous_palette_category_domain(tmp_path):
+    text = VALID_UI_SALT.replace('kind="category", domain="root_index"', 'kind="category", domain="discrete_index"', 1)
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "palette discrete_index must use kind palette" in proc.stderr
+
+
+def test_materializer_rejects_missing_signal_type_policy(tmp_path):
+    text = VALID_UI_SALT.replace(', default_adapter_policy="safe"', '', 1)
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "signal_type scalar.unit requires default_adapter_policy" in proc.stderr
+
+
+def test_materializer_rejects_function_typed_signal_unknown_type(tmp_path):
+    text = VALID_UI_SALT.replace('typed_signal="scalar.unit"', 'typed_signal="scalar.missing"', 1)
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "typed_signal references unknown signal type" in proc.stderr
 
 def test_materializer_rejects_duplicate_row_applicator_ids(tmp_path):
     text = VALID_UI_SALT + 'row_applicator(id="none", label="Duplicate", target_lane="source", required_signal_kind="any", requires_sdf_field=False, storage_param="signal.sdf_gate", fail_closed_reason="duplicate")\n'
@@ -192,6 +258,27 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert signal_kinds["sdf_normal_angle"] == "phase"
     assert signal_kinds["sdf_inside_outside"] == "categorical"
     assert signal_kinds["lens_field_v2_distance"] == "scalar"
+    signal_types = {item["id"]: item for item in actual["signal_type_registry"]["types"]}
+    assert {
+        "scalar.unit",
+        "scalar.signed",
+        "scalar.sdf_signed_distance",
+        "phase.radians",
+        "category.root_index",
+        "category.inside_outside",
+        "palette.discrete_index",
+        "mask.alpha",
+        "color.linear_rgb",
+        "field.sdf_signed_distance",
+    }.issubset(signal_types)
+    assert signal_types["field.sdf_signed_distance"]["kind"] == "field"
+    assert signal_types["scalar.sdf_signed_distance"]["kind"] == "scalar"
+    typed_signals = {fn["id"]: fn.get("typed_signal") for fn in lanes["source"]["functions"]}
+    assert typed_signals["smooth_escape_ramp"] == "scalar.unit"
+    assert typed_signals["sdf_signed_distance"] == "scalar.sdf_signed_distance"
+    assert typed_signals["sdf_normal_angle"] == "phase.radians"
+    assert typed_signals["root_index"] == "category.root_index"
+    assert typed_signals["sdf_inside_outside"] == "category.inside_outside"
     taxonomy_groups = {
         fn["id"]: fn.get("taxonomy_group")
         for lane in actual["function_library"]["lanes"]

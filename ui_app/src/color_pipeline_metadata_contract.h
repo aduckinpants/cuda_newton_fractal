@@ -21,6 +21,20 @@ struct MaterializedColorPipelineParam {
     std::vector<std::string> enum_options;
 };
 
+struct MaterializedSignalType {
+    std::string id;
+    std::string kind;
+    std::string domain;
+    std::string topology;
+    int arity = 0;
+    std::string default_adapter_policy;
+    std::string units;
+    bool has_period = false;
+    double period = 0.0;
+    std::string color_space;
+    std::string coordinate_space;
+};
+
 struct MaterializedColorPipelineFunction {
     std::string id;
     std::string label;
@@ -30,6 +44,7 @@ struct MaterializedColorPipelineFunction {
     std::string input_kind;
     std::string output_kind;
     std::string signal_kind;
+    std::string typed_signal;
     std::vector<MaterializedColorPipelineParam> params;
 };
 
@@ -86,6 +101,7 @@ struct MaterializedExplainoContractEntry {
 struct MaterializedColorPipelineContract {
     int schema_version = 0;
     std::string source_path;
+    std::vector<MaterializedSignalType> signal_types;
     std::vector<MaterializedColorPipelineLane> lanes;
     std::vector<MaterializedColorPipelineCompatibility> compatibility;
     std::vector<MaterializedColorPipelineRecipe> recipes;

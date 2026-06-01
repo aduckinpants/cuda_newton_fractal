@@ -10,12 +10,15 @@ from pathlib import Path
 from typing import Any
 
 
-VALID_CONTRACT_KINDS = {"function_library", "composition_recipe", "explaino"}
+VALID_CONTRACT_KINDS = {"function_library", "composition_recipe", "explaino", "signal_type_registry"}
 VALID_SIGNAL_KINDS = {"scalar", "phase", "categorical"}
+VALID_SIGNAL_TYPE_KINDS = {"scalar", "phase", "category", "palette", "mask", "color", "field"}
+VALID_SIGNAL_TYPE_TOPOLOGIES = {"linear", "circular", "discrete", "mask", "color", "field"}
+VALID_ADAPTER_POLICIES = {"safe", "visible_default", "explicit_only", "diagnostic_only", "forbidden"}
 VALID_APPLICATOR_SIGNAL_KINDS = VALID_SIGNAL_KINDS | {"any"}
 VALID_APPLICATOR_TARGET_LANES = {"source"}
 VALID_PARAM_TYPES = {"float", "double", "int", "bool", "enum"}
-VALID_STATEMENTS = {"contract", "lane", "function", "param", "compat", "recipe", "row_applicator", "explaino_contract"}
+VALID_STATEMENTS = {"contract", "signal_type", "lane", "function", "param", "compat", "recipe", "row_applicator", "explaino_contract"}
 
 
 class MaterializerError(ValueError):
@@ -210,6 +213,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     row_applicator_ids: set[str] = set()
     lane_ids: set[str] = set()
     contract_keys: set[tuple[str, str]] = set()
+    signal_types: list[dict[str, Any]] = []
+    signal_type_ids: set[str] = set()
 
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
         parsed = _parse_statement(raw_line, line_number)
@@ -230,6 +235,63 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 raise MaterializerError(f"duplicate contract '{contract_id}'")
             contract_keys.add(key)
             contracts.append({"kind": kind, "contract_id": contract_id, "version": version})
+        elif name == "signal_type":
+            _check_known_args(
+                name,
+                kwargs,
+                {
+                    "id",
+                    "kind",
+                    "domain",
+                    "topology",
+                    "arity",
+                    "default_adapter_policy",
+                    "units",
+                    "period",
+                    "color_space",
+                    "coordinate_space",
+                },
+            )
+            type_id = _require_string(kwargs, "id", statement=name)
+            if type_id in signal_type_ids:
+                raise MaterializerError(f"duplicate signal_type id '{type_id}'")
+            signal_type_ids.add(type_id)
+            kind = _require_string(kwargs, "kind", statement=f"signal_type {type_id}")
+            if kind not in VALID_SIGNAL_TYPE_KINDS:
+                raise MaterializerError(f"signal_type {type_id} invalid signal_type kind '{kind}'")
+            domain = _require_string(kwargs, "domain", statement=f"signal_type {type_id}")
+            topology = _require_string(kwargs, "topology", statement=f"signal_type {type_id}")
+            if topology not in VALID_SIGNAL_TYPE_TOPOLOGIES:
+                raise MaterializerError(f"signal_type {type_id} invalid topology '{topology}'")
+            if kind == "category" and domain == "discrete_index":
+                raise MaterializerError("palette discrete_index must use kind palette")
+            if kind == "palette" and domain != "discrete_index":
+                raise MaterializerError(f"signal_type {type_id} palette kind requires discrete_index domain")
+            arity = kwargs.get("arity")
+            if not isinstance(arity, int) or isinstance(arity, bool) or arity <= 0:
+                raise MaterializerError(f"signal_type {type_id} requires positive integer arity")
+            adapter_policy = _require_string(kwargs, "default_adapter_policy", statement=f"signal_type {type_id}")
+            if adapter_policy not in VALID_ADAPTER_POLICIES:
+                raise MaterializerError(f"signal_type {type_id} invalid default_adapter_policy '{adapter_policy}'")
+            signal_type = {
+                "id": type_id,
+                "kind": kind,
+                "domain": domain,
+                "topology": topology,
+                "arity": arity,
+                "default_adapter_policy": adapter_policy,
+            }
+            for optional_key in ("units", "color_space", "coordinate_space"):
+                if optional_key in kwargs:
+                    signal_type[optional_key] = _optional_string(kwargs, optional_key, "")
+            if "period" in kwargs:
+                _check_finite(kwargs["period"], f"signal_type {type_id} period")
+                if not isinstance(kwargs["period"], (int, float)) or isinstance(kwargs["period"], bool) or float(kwargs["period"]) <= 0.0:
+                    raise MaterializerError(f"signal_type {type_id} period must be positive")
+                signal_type["period"] = kwargs["period"]
+            if kind == "phase" and topology != "circular":
+                raise MaterializerError(f"signal_type {type_id} phase kind requires circular topology")
+            signal_types.append(signal_type)
         elif name == "lane":
             _check_known_args(name, kwargs, {"id", "label", "default"})
             lane_id = _require_string(kwargs, "id", statement=name)
@@ -243,7 +305,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 "functions": [],
             })
         elif name == "function":
-            _check_known_args(name, kwargs, {"lane", "id", "label", "description", "taxonomy_group", "signal_kind", "runtime_backed", "input_kind", "output_kind", "cost_hint", "params"})
+            _check_known_args(name, kwargs, {"lane", "id", "label", "description", "taxonomy_group", "signal_kind", "typed_signal", "runtime_backed", "input_kind", "output_kind", "cost_hint", "params"})
             lane_id = _require_string(kwargs, "lane", statement=name)
             function_id = _require_string(kwargs, "id", statement=name)
             if function_id in functions:
@@ -265,6 +327,9 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             }
             if signal_kind:
                 function["signal_kind"] = signal_kind
+            typed_signal = _optional_string(kwargs, "typed_signal", "")
+            if typed_signal:
+                function["typed_signal"] = typed_signal
             if "cost_hint" in kwargs:
                 _check_finite(kwargs["cost_hint"], f"function {function_id} cost_hint")
                 function["cost_hint"] = kwargs["cost_hint"]
@@ -354,9 +419,16 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             entry["diagnostic"] = _optional_bool(kwargs, "diagnostic", True)
             explaino_entries.append(entry)
 
+    if not signal_types:
+        raise MaterializerError("at least one signal_type is required")
     for record in functions.values():
         if record.lane not in lane_ids:
             raise MaterializerError(f"function '{record.function['id']}' references unknown lane '{record.lane}'")
+        typed_signal = record.function.get("typed_signal", "")
+        if typed_signal and typed_signal not in signal_type_ids:
+            raise MaterializerError(
+                f"function {record.function['id']} typed_signal references unknown signal type '{typed_signal}'"
+            )
     lane_by_id = {lane["id"]: lane for lane in lanes}
     for function_id, record in functions.items():
         lane_by_id[record.lane]["functions"].append(record.function)
@@ -377,6 +449,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         "schema_version": 1,
         "source_path": source_path,
         "contracts": contracts,
+        "signal_type_registry": {"types": signal_types},
         "function_library": {"lanes": lanes},
         "composition_recipe_contract": {
             "compatibility": compatibility,

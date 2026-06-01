@@ -84,6 +84,35 @@ bool FileExists(const char* path) {
     return input.good();
 }
 
+const MaterializedSignalType* FindSignalType(
+    const MaterializedColorPipelineContract& contract,
+    const char* id) {
+    for (const MaterializedSignalType& type : contract.signal_types) {
+        if (type.id == id) {
+            return &type;
+        }
+    }
+    return nullptr;
+}
+
+const char* ExpectedTypedSignalForFunction(const char* functionId) {
+    if (!functionId) return "";
+    if (std::strcmp(functionId, "smooth_escape_ramp") == 0) return "scalar.unit";
+    if (std::strcmp(functionId, "phase_orbit") == 0) return "phase.radians";
+    if (std::strcmp(functionId, "banded_signal") == 0) return "scalar.unit";
+    if (std::strcmp(functionId, "escape_magnitude") == 0) return "scalar.unit";
+    if (std::strcmp(functionId, "orbit_stripe") == 0) return "phase.radians";
+    if (std::strcmp(functionId, "root_proximity") == 0) return "scalar.unit";
+    if (std::strcmp(functionId, "root_index") == 0) return "category.root_index";
+    if (std::strcmp(functionId, "sdf_signed_distance") == 0) return "scalar.sdf_signed_distance";
+    if (std::strcmp(functionId, "sdf_inside_outside") == 0) return "category.inside_outside";
+    if (std::strcmp(functionId, "sdf_boundary_band") == 0) return "scalar.unit";
+    if (std::strcmp(functionId, "sdf_normal_angle") == 0) return "phase.radians";
+    if (std::strcmp(functionId, "sdf_curvature") == 0) return "scalar.signed";
+    if (std::strcmp(functionId, "lens_field_v2_distance") == 0) return "scalar.sdf_signed_distance";
+    return "";
+}
+
 std::string ResolveMaterializedContractPath() {
     const char* candidates[] = {
         "..\\docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
@@ -884,6 +913,25 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
     Check(contract.recipes.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
+    Check(contract.signal_types.size() == 10, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SignalTypeCount");
+    const MaterializedSignalType* scalarSdf = FindSignalType(contract, "scalar.sdf_signed_distance");
+    const MaterializedSignalType* fieldSdf = FindSignalType(contract, "field.sdf_signed_distance");
+    const MaterializedSignalType* normalPhase = FindSignalType(contract, "phase.radians");
+    const MaterializedSignalType* rootCategory = FindSignalType(contract, "category.root_index");
+    const MaterializedSignalType* insideOutsideCategory = FindSignalType(contract, "category.inside_outside");
+    const MaterializedSignalType* paletteIndex = FindSignalType(contract, "palette.discrete_index");
+    Check(scalarSdf && scalarSdf->kind == "scalar" && scalarSdf->domain == "signed_distance",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SampledSdfIsScalar");
+    Check(fieldSdf && fieldSdf->kind == "field" && fieldSdf->topology == "field",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RawSdfIsField");
+    Check(normalPhase && normalPhase->kind == "phase" && normalPhase->topology == "circular" && normalPhase->has_period,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_NormalAngleIsPhase");
+    Check(rootCategory && rootCategory->kind == "category" && rootCategory->domain == "root_index",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RootIndexIsCategory");
+    Check(insideOutsideCategory && insideOutsideCategory->kind == "category" && insideOutsideCategory->domain == "inside_outside",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_InsideOutsideIsCategory");
+    Check(paletteIndex && paletteIndex->kind == "palette" && paletteIndex->domain == "discrete_index",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_DiscreteIndexIsPaletteDomain");
     const std::vector<std::string> expectedApplicatorIds = {
         "none",
         "sdf_boundary_band",
@@ -962,9 +1010,13 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                         color_pipeline_core::ColorPipelineSourceSignalKindId(
                             color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId(expectedFunction.id.c_str())),
                     "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SourceSignalKind");
+                Check(actualFunction.typed_signal == ExpectedTypedSignalForFunction(expectedFunction.id.c_str()),
+                    "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SourceTypedSignal");
             } else {
                 Check(actualFunction.signal_kind.empty(),
                     "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_NonSourceHasNoSignalKind");
+                Check(actualFunction.typed_signal.empty(),
+                    "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_NonSourceHasNoTypedSignal");
             }
         }
     }
@@ -1388,9 +1440,13 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
 }
 
 void TestMaterializedContractLoaderRejectsTamperedJson() {
-    const char* duplicateFunctionJson = R"json({
+    const char* duplicateSignalTypeJson = R"json({
   "schema_version": 1,
   "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"},
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"}
+  ]},
   "function_library": {
     "lanes": [
       {
@@ -1398,8 +1454,75 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
         "label": "Source",
         "default": "smooth_escape_ramp",
         "functions": [
-          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []},
-          {"id": "smooth_escape_ramp", "label": "Duplicate", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []}
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "typed_signal": "scalar.unit", "params": []}
+        ]
+      }
+    ]
+  },
+  "composition_recipe_contract": {"compatibility": [], "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}], "recipes": []},
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string duplicateSignalTypePath = TempContractPath("ui_salt_contract_duplicate_signal_type.json");
+    Check(WriteTextFile(duplicateSignalTypePath, duplicateSignalTypeJson),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WriteDuplicateSignalTypeFixture");
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    Check(!LoadColorPipelineMaterializedContractJson(duplicateSignalTypePath, &contract, &error) &&
+            error.find("Duplicate materialized signal type id") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_DuplicateSignalTypeRejected");
+    std::remove(duplicateSignalTypePath.c_str());
+
+    const char* unknownTypedSignalJson = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"}
+  ]},
+  "function_library": {
+    "lanes": [
+      {
+        "id": "source",
+        "label": "Source",
+        "default": "smooth_escape_ramp",
+        "functions": [
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "typed_signal": "scalar.missing", "params": []}
+        ]
+      }
+    ]
+  },
+  "composition_recipe_contract": {"compatibility": [], "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}], "recipes": []},
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string unknownTypedSignalPath = TempContractPath("ui_salt_contract_unknown_typed_signal.json");
+    Check(WriteTextFile(unknownTypedSignalPath, unknownTypedSignalJson),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WriteUnknownTypedSignalFixture");
+    error.clear();
+    Check(!LoadColorPipelineMaterializedContractJson(unknownTypedSignalPath, &contract, &error) &&
+            error.find("typed_signal references unknown signal type") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_UnknownTypedSignalRejected");
+    std::remove(unknownTypedSignalPath.c_str());
+
+    const char* duplicateFunctionJson = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"}
+  ]},
+  "function_library": {
+    "lanes": [
+      {
+        "id": "source",
+        "label": "Source",
+        "default": "smooth_escape_ramp",
+        "functions": [
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "typed_signal": "scalar.unit", "params": []},
+          {"id": "smooth_escape_ramp", "label": "Duplicate", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "typed_signal": "scalar.unit", "params": []}
         ]
       }
     ]
@@ -1413,8 +1536,7 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
     const std::string duplicatePath = TempContractPath("ui_salt_contract_duplicate_function.json");
     Check(WriteTextFile(duplicatePath, duplicateFunctionJson),
         "TestMaterializedContractLoaderRejectsTamperedJson_WriteDuplicateFixture");
-    MaterializedColorPipelineContract contract;
-    std::string error;
+    error.clear();
     Check(!LoadColorPipelineMaterializedContractJson(duplicatePath, &contract, &error) &&
             error.find("Duplicate materialized function id") != std::string::npos,
         "TestMaterializedContractLoaderRejectsTamperedJson_DuplicateFunctionRejected");
@@ -1423,6 +1545,9 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
     const char* danglingCompatibilityJson = R"json({
   "schema_version": 1,
   "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"}
+  ]},
   "function_library": {
     "lanes": [
       {
@@ -1430,7 +1555,7 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
         "label": "Source",
         "default": "smooth_escape_ramp",
         "functions": [
-          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "params": []}
+          {"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "signal_kind": "scalar", "typed_signal": "scalar.unit", "params": []}
         ]
       },
       {

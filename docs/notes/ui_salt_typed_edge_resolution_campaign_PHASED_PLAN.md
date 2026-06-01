@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 - UI-Salt typed edge plan refinement validation and checkpoint.
+Phase 5 complete - Slice A signal type registry shadow contract is ready for checkpoint; next implementation phase is Slice B port signatures after merge/replan.
 
 ## Phase Checklist
 
@@ -11,6 +11,7 @@ Phase 4 - UI-Salt typed edge plan refinement validation and checkpoint.
 - [x] Phase 2 - document the bounded implementation slices for typed signals, adapters, edge resolution, and function-library expansion.
 - [x] Phase 3 - validate contract, plan sync, hostile audit, code-quality baseline, diff check, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 - [x] Phase 4 - incorporate typed-edge review refinement, validate, checkpoint, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 5 - implement Slice A shadow signal type registry, focused tests, validation, checkpoint, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
@@ -21,6 +22,9 @@ Phase 4 - UI-Salt typed edge plan refinement validation and checkpoint.
 - [closed] Incorporate the second review pass before Slice A implementation starts.
 - [closed] Prevent the typed-edge system from recreating coarse `signal_kind` ambiguity under refined names.
 - [closed] Keep this as a planning/doc refinement only; no runtime behavior, UI workflow, or materializer implementation changes belong in this slice.
+- [closed] Implement Slice A only: materialized shadow signal type registry and coarse-to-typed mapping audit.
+- [closed] Preserve all current visible Color Pipeline behavior and live compatibility behavior.
+- [closed] Do not implement adapters, resolver routing, graph UI, or function-library expansion under Slice A.
 
 ## Current Repo Truth
 
@@ -343,6 +347,20 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Refinement hostile audit validation: `artifacts/validation/ui_salt_typed_edge_plan_refinement_hostile_audit.json` passed with three refinement findings and clean re-read evidence.
 - Refinement code quality: `artifacts/validation/ui_salt_typed_edge_plan_refinement_code_quality.json` passed baseline with score 93/100.
 - Refinement diff check: `artifacts/validation/ui_salt_typed_edge_plan_refinement_diff_check.json` passed `git diff --check`.
+- Slice A branch: `codex/ui-salt-signal-type-registry` from `22966f2`.
+- Slice A contract: `docs/contracts/ui_salt_signal_type_registry_shadow.contract.json`.
+- Slice A implementation: materializer accepts `signal_type_registry`, emits typed Source-row signals, regenerates `docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json`, and C++ parses/validates the shadow registry without changing live runtime behavior.
+- Slice A RED: `py -3.14 -m pytest tests/test_ui_salt_materializer.py -q` failed before implementation with `contract has invalid kind 'signal_type_registry'` and generated-contract freshness missing `signal_type_registry`.
+- Slice A focused Python proof: `py -3.14 -m pytest tests/test_ui_salt_materializer.py -q` passed `17 passed`.
+- Slice A focused native proof: `ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core` passed `test_color_pipeline_core: passed=2747 failed=0`.
+- Slice A contract validation: `artifacts/validation/ui_salt_signal_type_registry_shadow_contract.json` passed.
+- Slice A plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
+- Slice A hostile audit validation: `artifacts/validation/ui_salt_signal_type_registry_shadow_hostile_audit.json` passed with real findings recorded.
+- Slice A code quality: `artifacts/validation/ui_salt_signal_type_registry_shadow_code_quality.json` passed baseline with score 93/100.
+- Slice A logged Python proof: `artifacts/validation/ui_salt_signal_type_registry_shadow_pytest.json` passed.
+- Slice A logged materialization proof: `artifacts/validation/ui_salt_signal_type_registry_shadow_materialize.json` passed.
+- Slice A logged native proof: `artifacts/validation/ui_salt_signal_type_registry_shadow_native.json` passed.
+- Slice A diff check: `artifacts/validation/ui_salt_signal_type_registry_shadow_diff_check.json` passed `git diff --check`.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -374,6 +392,9 @@ Required questions:
 - [x] Pass 4 - reviewed the refinement feedback against Slices A-D and found raw SDF fields, sampled SDF signals, palette indices, and categories were still too easy to blur.
 - [x] Pass 5 - reviewed the live-switch plan and found Slice G needed an explanation-only step before any behavioral compatibility switch.
 - [x] Pass 6 - clean re-read found graph UI, runtime behavior changes, and materializer implementation remain deferred out of this refinement slice.
+- [x] Pass 7 - reviewed Slice A implementation diff for schema drift, accidental runtime behavior changes, and missing typed mapping checks.
+- [x] Pass 8 - repaired Slice A audit findings and re-ran focused Python and native validations.
+- [x] Pass 9 - clean re-read after repair confirms no Slice A scope leak into adapters, resolver routing, graph UI, or visible workflow changes.
 
 ## Audit Findings
 
@@ -383,6 +404,20 @@ Required questions:
 - [x] The refined type system could have recreated coarse `signal_kind` with nicer names. The plan now locks `field.*`, `scalar.*`, `category.*`, and `palette.*` semantics and requires a coarse-to-typed mapping audit.
 - [x] The prior adapter language could allow lossy routes to look safe. The plan now uses one policy enum, forbids `lossy=true` with `safe`, and blocks `explicit_only` insertion without explicit consent.
 - [x] The prior Slice G switch was too broad. The plan now splits G1 diagnostics from G2 one-pilot behavior and requires a temporary fallback/kill switch.
+- [x] Slice A first implementation missed an existing categorical SDF Source-row domain: `sdf_inside_outside` needed `category.inside_outside` in addition to the originally listed `category.root_index`. The registry now includes that current shipped category without adding new behavior.
+- [x] Slice A native rail caught a malformed C++ error string and a tampered-fixture redeclaration after adding parser tests. Both were repaired before closeout, and the native rail now passes.
+- [x] Clean Slice A re-read found no adapters, resolver routing, graph UI, visible workflow changes, or function-library expansion in this implementation.
+
+## Slice A Validation Targets
+
+- `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_signal_type_registry_shadow.contract.json --out-json artifacts/validation/ui_salt_signal_type_registry_shadow_contract.json`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_signal_type_registry_shadow_hostile_audit.json`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_signal_type_registry_shadow_code_quality.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_signal_type_registry_shadow_pytest --log artifacts/logs/ui_salt_signal_type_registry_shadow_pytest.log --out-json artifacts/validation/ui_salt_signal_type_registry_shadow_pytest.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_signal_type_registry_shadow_materialize --log artifacts/logs/ui_salt_signal_type_registry_shadow_materialize.log --out-json artifacts/validation/ui_salt_signal_type_registry_shadow_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_signal_type_registry_shadow_native --log artifacts/logs/ui_salt_signal_type_registry_shadow_native.log --out-json artifacts/validation/ui_salt_signal_type_registry_shadow_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core`
+- `py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_signal_type_registry_shadow_diff_check --log artifacts/logs/ui_salt_signal_type_registry_shadow_diff_check.log --out-json artifacts/validation/ui_salt_signal_type_registry_shadow_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`
 
 ## Refinement Validation Targets
 

@@ -16,8 +16,103 @@
       "kind": "explaino",
       "contract_id": "viewer.explaino_contract.v1",
       "version": 1
+    },
+    {
+      "kind": "signal_type_registry",
+      "contract_id": "viewer.signal_type_registry_contract.v1",
+      "version": 1
     }
   ],
+  "signal_type_registry": {
+    "types": [
+      {
+        "id": "scalar.unit",
+        "kind": "scalar",
+        "domain": "unit",
+        "topology": "linear",
+        "arity": 1,
+        "default_adapter_policy": "safe"
+      },
+      {
+        "id": "scalar.signed",
+        "kind": "scalar",
+        "domain": "signed",
+        "topology": "linear",
+        "arity": 1,
+        "default_adapter_policy": "explicit_only"
+      },
+      {
+        "id": "scalar.sdf_signed_distance",
+        "kind": "scalar",
+        "domain": "signed_distance",
+        "topology": "linear",
+        "arity": 1,
+        "default_adapter_policy": "explicit_only",
+        "units": "field_pixels"
+      },
+      {
+        "id": "phase.radians",
+        "kind": "phase",
+        "domain": "angle",
+        "topology": "circular",
+        "arity": 1,
+        "default_adapter_policy": "visible_default",
+        "units": "radians",
+        "period": 6.283185307179586
+      },
+      {
+        "id": "category.root_index",
+        "kind": "category",
+        "domain": "root_index",
+        "topology": "discrete",
+        "arity": 1,
+        "default_adapter_policy": "forbidden"
+      },
+      {
+        "id": "category.inside_outside",
+        "kind": "category",
+        "domain": "inside_outside",
+        "topology": "discrete",
+        "arity": 1,
+        "default_adapter_policy": "explicit_only"
+      },
+      {
+        "id": "palette.discrete_index",
+        "kind": "palette",
+        "domain": "discrete_index",
+        "topology": "discrete",
+        "arity": 1,
+        "default_adapter_policy": "explicit_only"
+      },
+      {
+        "id": "mask.alpha",
+        "kind": "mask",
+        "domain": "alpha",
+        "topology": "mask",
+        "arity": 1,
+        "default_adapter_policy": "explicit_only"
+      },
+      {
+        "id": "color.linear_rgb",
+        "kind": "color",
+        "domain": "linear_rgb",
+        "topology": "color",
+        "arity": 3,
+        "default_adapter_policy": "forbidden",
+        "color_space": "linear_rgb"
+      },
+      {
+        "id": "field.sdf_signed_distance",
+        "kind": "field",
+        "domain": "signed_distance",
+        "topology": "field",
+        "arity": 1,
+        "default_adapter_policy": "forbidden",
+        "units": "field_pixels",
+        "coordinate_space": "sdf_field"
+      }
+    ]
+  },
   "function_library": {
     "lanes": [
       {
@@ -62,7 +157,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "scalar"
+            "signal_kind": "scalar",
+            "typed_signal": "scalar.unit"
           },
           {
             "id": "phase_orbit",
@@ -101,7 +197,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "phase"
+            "signal_kind": "phase",
+            "typed_signal": "phase.radians"
           },
           {
             "id": "banded_signal",
@@ -140,7 +237,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "scalar"
+            "signal_kind": "scalar",
+            "typed_signal": "scalar.unit"
           },
           {
             "id": "escape_magnitude",
@@ -179,7 +277,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "scalar"
+            "signal_kind": "scalar",
+            "typed_signal": "scalar.unit"
           },
           {
             "id": "orbit_stripe",
@@ -218,7 +317,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "phase"
+            "signal_kind": "phase",
+            "typed_signal": "phase.radians"
           },
           {
             "id": "root_proximity",
@@ -257,7 +357,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "scalar"
+            "signal_kind": "scalar",
+            "typed_signal": "scalar.unit"
           },
           {
             "id": "root_index",
@@ -268,7 +369,8 @@
             "input_kind": "scalar",
             "output_kind": "scalar",
             "params": [],
-            "signal_kind": "categorical"
+            "signal_kind": "categorical",
+            "typed_signal": "category.root_index"
           },
           {
             "id": "sdf_signed_distance",
@@ -351,7 +453,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "scalar"
+            "signal_kind": "scalar",
+            "typed_signal": "scalar.sdf_signed_distance"
           },
           {
             "id": "sdf_inside_outside",
@@ -434,7 +537,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "categorical"
+            "signal_kind": "categorical",
+            "typed_signal": "category.inside_outside"
           },
           {
             "id": "sdf_boundary_band",
@@ -526,7 +630,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "scalar"
+            "signal_kind": "scalar",
+            "typed_signal": "scalar.unit"
           },
           {
             "id": "sdf_normal_angle",
@@ -609,7 +714,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "phase"
+            "signal_kind": "phase",
+            "typed_signal": "phase.radians"
           },
           {
             "id": "sdf_curvature",
@@ -692,7 +798,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "scalar"
+            "signal_kind": "scalar",
+            "typed_signal": "scalar.signed"
           },
           {
             "id": "lens_field_v2_distance",
@@ -784,7 +891,8 @@
                 "default": 1.0
               }
             ],
-            "signal_kind": "scalar"
+            "signal_kind": "scalar",
+            "typed_signal": "scalar.sdf_signed_distance"
           }
         ]
       },

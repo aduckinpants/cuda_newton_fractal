@@ -93,6 +93,28 @@ bool ReadOptionalNumber(
     return true;
 }
 
+bool StringInList(const std::string& value, const char* const* items, std::size_t count) {
+    for (std::size_t index = 0; index < count; ++index) {
+        if (value == items[index]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ReadPositiveInteger(const json_min::Value& object, const char* key, int* outValue, std::string* outError) {
+    double numericValue = 0.0;
+    if (!ReadNumber(object, key, &numericValue, outError)) {
+        return false;
+    }
+    const double rounded = std::floor(numericValue);
+    if (numericValue != rounded || numericValue < 1.0) {
+        return SetError(outError, std::string("Field '") + key + "' must be a positive integer");
+    }
+    *outValue = static_cast<int>(numericValue);
+    return true;
+}
+
 bool ReadDefaultValue(
     const json_min::Value& object,
     MaterializedColorPipelineParam* outParam,
@@ -123,6 +145,30 @@ bool ReadDefaultValue(
         return true;
     }
     return SetError(outError, "Param default must be number, bool, string, or null");
+}
+
+bool ReadSignalType(
+    const json_min::Value& value,
+    MaterializedSignalType* outType,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Signal type entry must be an object");
+    }
+    MaterializedSignalType type;
+    if (!ReadString(value, "id", &type.id, outError) ||
+        !ReadString(value, "kind", &type.kind, outError) ||
+        !ReadString(value, "domain", &type.domain, outError) ||
+        !ReadString(value, "topology", &type.topology, outError) ||
+        !ReadPositiveInteger(value, "arity", &type.arity, outError) ||
+        !ReadString(value, "default_adapter_policy", &type.default_adapter_policy, outError) ||
+        !ReadOptionalString(value, "units", &type.units, outError) ||
+        !ReadOptionalNumber(value, "period", &type.has_period, &type.period, outError) ||
+        !ReadOptionalString(value, "color_space", &type.color_space, outError) ||
+        !ReadOptionalString(value, "coordinate_space", &type.coordinate_space, outError)) {
+        return false;
+    }
+    *outType = std::move(type);
+    return true;
 }
 
 bool ReadParam(
@@ -177,7 +223,8 @@ bool ReadFunction(
         !ReadString(value, "output_kind", &function.output_kind, outError)) {
         return false;
     }
-    if (!ReadOptionalString(value, "signal_kind", &function.signal_kind, outError)) {
+    if (!ReadOptionalString(value, "signal_kind", &function.signal_kind, outError) ||
+        !ReadOptionalString(value, "typed_signal", &function.typed_signal, outError)) {
         return false;
     }
 
@@ -322,6 +369,46 @@ bool ReadExplainoEntry(
     return true;
 }
 
+bool ValidateMaterializedSignalTypes(
+    const std::vector<MaterializedSignalType>& types,
+    std::set<std::string>* outTypeIds,
+    std::string* outError) {
+    static const char* const kValidKinds[] = {"scalar", "phase", "category", "palette", "mask", "color", "field"};
+    static const char* const kValidTopologies[] = {"linear", "circular", "discrete", "mask", "color", "field"};
+    static const char* const kValidPolicies[] = {"safe", "visible_default", "explicit_only", "diagnostic_only", "forbidden"};
+
+    for (const MaterializedSignalType& type : types) {
+        if (type.id.empty()) {
+            return SetError(outError, "Materialized signal type contains an empty id");
+        }
+        if (!outTypeIds->insert(type.id).second) {
+            return SetError(outError, std::string("Duplicate materialized signal type id '") + type.id + "'");
+        }
+        if (!StringInList(type.kind, kValidKinds, sizeof(kValidKinds) / sizeof(kValidKinds[0]))) {
+            return SetError(outError, std::string("Materialized signal type '") + type.id + "' has invalid kind");
+        }
+        if (!StringInList(type.topology, kValidTopologies, sizeof(kValidTopologies) / sizeof(kValidTopologies[0]))) {
+            return SetError(outError, std::string("Materialized signal type '") + type.id + "' has invalid topology");
+        }
+        if (!StringInList(type.default_adapter_policy, kValidPolicies, sizeof(kValidPolicies) / sizeof(kValidPolicies[0]))) {
+            return SetError(outError, std::string("Materialized signal type '") + type.id + "' has invalid default_adapter_policy");
+        }
+        if (type.kind == "category" && type.domain == "discrete_index") {
+            return SetError(outError, "palette discrete_index must use kind palette");
+        }
+        if (type.kind == "palette" && type.domain != "discrete_index") {
+            return SetError(outError, std::string("Materialized signal type '") + type.id + "' palette kind requires discrete_index domain");
+        }
+        if (type.kind == "phase" && type.topology != "circular") {
+            return SetError(outError, std::string("Materialized signal type '") + type.id + "' phase kind requires circular topology");
+        }
+        if (type.kind == "phase" && (!type.has_period || type.period <= 0.0)) {
+            return SetError(outError, std::string("Materialized signal type '") + type.id + "' phase kind requires positive period");
+        }
+    }
+    return !types.empty() || SetError(outError, "Materialized contract must contain at least one signal type");
+}
+
 bool ValidateMaterializedParams(
     const MaterializedColorPipelineFunction& function,
     std::string* outError) {
@@ -343,6 +430,7 @@ bool ValidateMaterializedParams(
 bool ValidateMaterializedLanes(
     const std::vector<MaterializedColorPipelineLane>& lanes,
     std::set<std::string>* outFunctionIds,
+    const std::set<std::string>& signalTypeIds,
     std::string* outError) {
     std::set<std::string> laneIds;
     for (const MaterializedColorPipelineLane& lane : lanes) {
@@ -363,6 +451,9 @@ bool ValidateMaterializedLanes(
             }
             if (!laneFunctionIds.insert(function.id).second || !outFunctionIds->insert(function.id).second) {
                 return SetError(outError, std::string("Duplicate materialized function id '") + function.id + "'");
+            }
+            if (!function.typed_signal.empty() && signalTypeIds.find(function.typed_signal) == signalTypeIds.end()) {
+                return SetError(outError, std::string("Materialized function '") + function.id + "' typed_signal references unknown signal type '" + function.typed_signal + "'");
             }
             defaultFound = defaultFound || function.id == lane.default_function_id;
             if (!ValidateMaterializedParams(function, outError)) {
@@ -469,7 +560,9 @@ bool ValidateMaterializedExplainoEntries(
 
 bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, std::string* outError) {
     std::set<std::string> functionIds;
-    return ValidateMaterializedLanes(contract.lanes, &functionIds, outError) &&
+    std::set<std::string> signalTypeIds;
+    return ValidateMaterializedSignalTypes(contract.signal_types, &signalTypeIds, outError) &&
+        ValidateMaterializedLanes(contract.lanes, &functionIds, signalTypeIds, outError) &&
         ValidateMaterializedCompatibility(contract.compatibility, functionIds, outError) &&
         ValidateMaterializedRecipes(contract.recipes, functionIds, outError) &&
         ValidateMaterializedRowApplicators(contract.row_applicators, outError) &&
@@ -513,11 +606,24 @@ bool LoadColorPipelineMaterializedContractJson(
         return false;
     }
 
+    const json_min::Value* signalTypeRegistry = RequiredField(parsed.value, "signal_type_registry", outError);
     const json_min::Value* functionLibrary = RequiredField(parsed.value, "function_library", outError);
     const json_min::Value* compositionContract = RequiredField(parsed.value, "composition_recipe_contract", outError);
     const json_min::Value* explainoContract = RequiredField(parsed.value, "explaino_contract", outError);
-    if (!functionLibrary || !compositionContract || !explainoContract) {
+    if (!signalTypeRegistry || !functionLibrary || !compositionContract || !explainoContract) {
         return false;
+    }
+
+    const json_min::Value* signalTypes = RequiredField(*signalTypeRegistry, "types", outError);
+    if (!signalTypes || !signalTypes->is_array()) {
+        return SetError(outError, "signal_type_registry.types must be an array");
+    }
+    for (const json_min::Value& signalTypeValue : signalTypes->as_array()) {
+        MaterializedSignalType signalType;
+        if (!ReadSignalType(signalTypeValue, &signalType, outError)) {
+            return false;
+        }
+        contract.signal_types.push_back(std::move(signalType));
     }
 
     const json_min::Value* lanes = RequiredField(*functionLibrary, "lanes", outError);
