@@ -465,6 +465,7 @@ No graph UI work should begin until typed routes, adapters, audit receipts, comp
 - Slice G2 logged runtime publish: `artifacts/validation/ui_salt_compat_switch_g2_runtime_publish.json` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
 - Slice G2 published-runtime proof: `artifacts/validation/ui_salt_compat_switch_g2_runtime_proof.json` passed `2 passed`.
 - Slice G2 logged diff check: `artifacts/validation/ui_salt_compat_switch_g2_diff_check.json` passed.
+- Slice G2 receipt preflight found a contract-proof assertion mismatch: the published-runtime proof evidence was the pytest JUnit artifact, not the logged-command JSON. The contract now asserts the concrete runtime JUnit testcase.
 - Contract validation: `artifacts/validation/ui_salt_typed_edge_preplanning_contract.json` passed.
 - Plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
 - Hostile audit validation: `artifacts/validation/ui_salt_typed_edge_preplanning_hostile_audit.json` passed with two real planning findings and clean re-read evidence.
@@ -516,6 +517,8 @@ Required questions:
 - [x] Pass 24 - clean re-read confirmed Slice G1 does not switch live Color Pipeline compatibility, does not delete hardcoded fallback behavior, does not add visible UI, does not add graph UI, does not expand the function library, and does not import Salticid runtime code.
 - [x] Pass 25 - reviewed Slice G2 implementation and found a real risk: a generic typed-resolved lookup could silently switch every typed route instead of the one approved pilot. The implementation now gates the switch through `IsColorPipelineTypedResolverPilotRoute(...)`, and tests prove `phase_orbit / phase_wheel_palette` stays on materialized compatibility.
 - [x] Pass 26 - clean re-read confirmed Slice G2 does not change visible Color Pipeline controls, does not expand the function library, does not add graph UI, does not delete hardcoded/materialized fallback, does not import Salticid runtime code, and does not allow unsupported routes.
+- [x] Pass 27 - receipt preflight exposed a real workflow defect: the contract assertion for published runtime proof pointed at logged-command JSON while validation evidence recorded the pytest JUnit testcase. The contract assertion now uses `runtime_junit_case` for the published runtime UI-Salt contract test.
+- [x] Pass 28 - clean re-read confirmed the repaired contract remains scoped to G2, preserves the same required validation commands, and now matches the machine-written validation receipt evidence.
 
 ## Audit Findings
 
@@ -542,6 +545,8 @@ Required questions:
 - [x] Clean Slice G1 re-read found no visible UI change, no graph UI, no function-library expansion, no hardcoded fallback deletion, no Salticid runtime dependency, and no live compatibility behavior switch.
 - [x] Slice G2 hostile audit found the first pass could over-broaden typed resolver authority beyond the pilot route. The final code gates the switch to `smooth_escape_ramp / heatmap`, proves the runtime tuple matches hardcoded output, proves the kill switch falls back to `materialized_json`, and keeps unsupported routes rejected.
 - [x] Clean Slice G2 re-read found no visible UI change, no graph UI, no function-library expansion, no fallback deletion, no Salticid runtime dependency, and no physical mouse automation.
+- [x] Slice G2 receipt audit found the first contract assertion for published runtime proof used the wrong evidence artifact. The contract now binds the acceptance assertion to `artifacts/pytest/ui_salt_compat_switch_g2_runtime.junit.xml` and testcase `tests/test_fractal_runtime_ui_salt_contract.py::test_published_runtime_consumes_staged_ui_salt_contract`.
+- [x] Clean Slice G2 contract re-read found no validation command removal, no weaker runtime proof, and no change to product scope.
 
 ## Slice G2 Validation Targets
 

@@ -98,10 +98,9 @@
     {
       "assertion_id": "published_runtime_proof_ok",
       "description": "Published runtime UI-Salt contract proof passes",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/ui_salt_compat_switch_g2_runtime_proof.json",
-      "json_path": "exit_code",
-      "equals": 0
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/ui_salt_compat_switch_g2_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_ui_salt_contract.py::test_published_runtime_consumes_staged_ui_salt_contract"
     }
   ]
 }

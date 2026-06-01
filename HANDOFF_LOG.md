@@ -207,3 +207,4 @@
 - `ck:e79372e8` 2026-06-01 09:53 UTC | score 93 — Slice G1 added metadata-backed Color Pipeline compatibility diagnostics without switching live behavior; hostile audit added a guard that explained unsupported routes remain live-rejected.
 - `ck:3945baec` 2026-06-01 10:06 UTC — session-start | branch=codex/ui-salt-compat-switch-g2 | head=1dc8fdb | status=dirty | profile=runtime | intent=UI-Salt compatibility switch G2
 - `ck:3945baec` 2026-06-01 10:23 UTC | score 93 — Slice G2 switched exactly one Color Pipeline pilot route to typed resolver authority, kept runtime tuple output unchanged, proved fallback kill switch behavior, and passed native plus published-runtime UI-Salt contract proof.
+- `ck:3945baec` 2026-06-01 10:29 UTC | score 93 — Slice G2 contract-proof repair: receipt preflight caught the published-runtime proof assertion pointing at logged JSON instead of the pytest JUnit evidence; contract and audit plan now bind to the runtime testcase evidence.
