@@ -178,7 +178,21 @@ struct MaterializedColorPipelineRowApplicator {
     std::string required_signal_kind;
     bool requires_sdf_field = false;
     std::string storage_param;
+    std::string storage_value;
     std::string width_param;
+    std::string fail_closed_reason;
+};
+
+struct MaterializedColorPipelineSdfSourceCapability {
+    std::string function;
+    std::string field_source;
+    bool requires_sdf_field = false;
+    bool supports_applicators = false;
+    std::vector<std::string> supported_applicators;
+    std::string gate_param;
+    std::string gate_width_param;
+    std::string sample_step_param;
+    std::string field_downsample_param;
     std::string fail_closed_reason;
 };
 
@@ -208,6 +222,7 @@ struct MaterializedColorPipelineContract {
     std::vector<MaterializedColorPipelineCompatibilityAudit> compatibility_audit;
     std::vector<MaterializedColorPipelineRecipe> recipes;
     std::vector<MaterializedColorPipelineRowApplicator> row_applicators;
+    std::vector<MaterializedColorPipelineSdfSourceCapability> sdf_source_capabilities;
     std::vector<MaterializedExplainoContractEntry> explaino_entries;
 };
 

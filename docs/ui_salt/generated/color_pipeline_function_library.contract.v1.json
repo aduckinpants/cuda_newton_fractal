@@ -41,6 +41,11 @@
       "kind": "compat_override_audit",
       "contract_id": "viewer.compat_override_audit_contract.v1",
       "version": 1
+    },
+    {
+      "kind": "sdf_applicator_capability",
+      "contract_id": "viewer.sdf_applicator_capability_contract.v1",
+      "version": 1
     }
   ],
   "signal_type_registry": {
@@ -2110,6 +2115,7 @@
         "required_signal_kind": "any",
         "requires_sdf_field": false,
         "storage_param": "signal.sdf_gate",
+        "storage_value": "none",
         "width_param": "",
         "fail_closed_reason": "ungated source row contribution"
       },
@@ -2120,6 +2126,7 @@
         "required_signal_kind": "any",
         "requires_sdf_field": true,
         "storage_param": "signal.sdf_gate",
+        "storage_value": "boundary_band",
         "width_param": "signal.sdf_gate_width_px",
         "fail_closed_reason": "requires an SDF field for boundary-band row masking"
       },
@@ -2130,6 +2137,7 @@
         "required_signal_kind": "any",
         "requires_sdf_field": true,
         "storage_param": "signal.sdf_gate",
+        "storage_value": "sdf_inside",
         "width_param": "",
         "fail_closed_reason": "requires an SDF field for inside row masking"
       },
@@ -2140,6 +2148,7 @@
         "required_signal_kind": "any",
         "requires_sdf_field": true,
         "storage_param": "signal.sdf_gate",
+        "storage_value": "sdf_outside",
         "width_param": "",
         "fail_closed_reason": "requires an SDF field for outside row masking"
       }
@@ -2584,6 +2593,110 @@
         "route_case_id": "",
         "override_id": "legacy_lens_field_v2_distance_explaino_cmap_contrast_lift",
         "reason": "Lens Field v2 Explaino palette support remains runtime-owned and not typed-resolver-owned"
+      }
+    ],
+    "sdf_source_capabilities": [
+      {
+        "function": "sdf_signed_distance",
+        "field_source": "lens_sdf",
+        "requires_sdf_field": true,
+        "supports_applicators": true,
+        "supported_applicators": [
+          "none",
+          "sdf_boundary_band",
+          "sdf_inside",
+          "sdf_outside"
+        ],
+        "gate_param": "signal.sdf_gate",
+        "gate_width_param": "signal.sdf_gate_width_px",
+        "sample_step_param": "signal.sdf_sample_step",
+        "field_downsample_param": "signal.sdf_field_downsample",
+        "fail_closed_reason": "requires a Lens SDF field for SDF signed-distance source rows"
+      },
+      {
+        "function": "sdf_inside_outside",
+        "field_source": "lens_sdf",
+        "requires_sdf_field": true,
+        "supports_applicators": true,
+        "supported_applicators": [
+          "none",
+          "sdf_boundary_band",
+          "sdf_inside",
+          "sdf_outside"
+        ],
+        "gate_param": "signal.sdf_gate",
+        "gate_width_param": "signal.sdf_gate_width_px",
+        "sample_step_param": "signal.sdf_sample_step",
+        "field_downsample_param": "signal.sdf_field_downsample",
+        "fail_closed_reason": "requires a Lens SDF field for inside/outside source rows"
+      },
+      {
+        "function": "sdf_boundary_band",
+        "field_source": "lens_sdf",
+        "requires_sdf_field": true,
+        "supports_applicators": true,
+        "supported_applicators": [
+          "none",
+          "sdf_boundary_band",
+          "sdf_inside",
+          "sdf_outside"
+        ],
+        "gate_param": "signal.sdf_gate",
+        "gate_width_param": "signal.sdf_gate_width_px",
+        "sample_step_param": "signal.sdf_sample_step",
+        "field_downsample_param": "signal.sdf_field_downsample",
+        "fail_closed_reason": "requires a Lens SDF field for boundary-band source rows"
+      },
+      {
+        "function": "sdf_normal_angle",
+        "field_source": "lens_sdf",
+        "requires_sdf_field": true,
+        "supports_applicators": true,
+        "supported_applicators": [
+          "none",
+          "sdf_boundary_band",
+          "sdf_inside",
+          "sdf_outside"
+        ],
+        "gate_param": "signal.sdf_gate",
+        "gate_width_param": "signal.sdf_gate_width_px",
+        "sample_step_param": "signal.sdf_sample_step",
+        "field_downsample_param": "signal.sdf_field_downsample",
+        "fail_closed_reason": "requires a Lens SDF field for normal-angle source rows"
+      },
+      {
+        "function": "sdf_curvature",
+        "field_source": "lens_sdf",
+        "requires_sdf_field": true,
+        "supports_applicators": true,
+        "supported_applicators": [
+          "none",
+          "sdf_boundary_band",
+          "sdf_inside",
+          "sdf_outside"
+        ],
+        "gate_param": "signal.sdf_gate",
+        "gate_width_param": "signal.sdf_gate_width_px",
+        "sample_step_param": "signal.sdf_sample_step",
+        "field_downsample_param": "signal.sdf_field_downsample",
+        "fail_closed_reason": "requires a Lens SDF field for curvature source rows"
+      },
+      {
+        "function": "lens_field_v2_distance",
+        "field_source": "lens_field_v2",
+        "requires_sdf_field": true,
+        "supports_applicators": true,
+        "supported_applicators": [
+          "none",
+          "sdf_boundary_band",
+          "sdf_inside",
+          "sdf_outside"
+        ],
+        "gate_param": "signal.sdf_gate",
+        "gate_width_param": "signal.sdf_gate_width_px",
+        "sample_step_param": "signal.sdf_sample_step",
+        "field_downsample_param": "signal.sdf_field_downsample",
+        "fail_closed_reason": "requires a Lens Field v2 SDF field for Lens Field v2 source rows"
       }
     ]
   },

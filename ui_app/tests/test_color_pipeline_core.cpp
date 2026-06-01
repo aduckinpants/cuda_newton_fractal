@@ -141,6 +141,17 @@ const MaterializedColorPipelineCompatOverride* FindCompatOverride(
     return nullptr;
 }
 
+const MaterializedColorPipelineSdfSourceCapability* FindSdfSourceCapability(
+    const MaterializedColorPipelineContract& contract,
+    const char* functionId) {
+    for (const MaterializedColorPipelineSdfSourceCapability& capability : contract.sdf_source_capabilities) {
+        if (capability.function == functionId) {
+            return &capability;
+        }
+    }
+    return nullptr;
+}
+
 void CheckMaterializedPort(
     const MaterializedColorPipelineContract& contract,
     const char* laneId,
@@ -996,6 +1007,8 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
     Check(contract.recipes.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
+    Check(contract.sdf_source_capabilities.size() == 6,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfSourceCapabilityCount");
     Check(contract.signal_types.size() == 10, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SignalTypeCount");
     Check(contract.adapters.size() == 11, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_AdapterCount");
     Check(contract.edge_policy.id == "current_linear_color_stack" &&
@@ -1166,9 +1179,33 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         Check(!applicator.fail_closed_reason.empty(),
             "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorFailClosedReason");
     }
+    if (contract.row_applicators.size() == 4) {
+        Check(contract.row_applicators[0].storage_value == "none" &&
+                contract.row_applicators[1].storage_value == "boundary_band" &&
+                contract.row_applicators[2].storage_value == "sdf_inside" &&
+                contract.row_applicators[3].storage_value == "sdf_outside",
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorStorageValues");
+    }
     Check(contract.row_applicators.size() < 2 ||
             contract.row_applicators[1].width_param == "signal.sdf_gate_width_px",
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_BoundaryApplicatorWidthParam");
+    const MaterializedColorPipelineSdfSourceCapability* sdfSignedCapability =
+        FindSdfSourceCapability(contract, "sdf_signed_distance");
+    const MaterializedColorPipelineSdfSourceCapability* lensV2Capability =
+        FindSdfSourceCapability(contract, "lens_field_v2_distance");
+    Check(sdfSignedCapability && sdfSignedCapability->field_source == "lens_sdf" &&
+            sdfSignedCapability->requires_sdf_field &&
+            sdfSignedCapability->supports_applicators &&
+            sdfSignedCapability->supported_applicators.size() == 4 &&
+            sdfSignedCapability->gate_param == "signal.sdf_gate" &&
+            sdfSignedCapability->gate_width_param == "signal.sdf_gate_width_px" &&
+            sdfSignedCapability->sample_step_param == "signal.sdf_sample_step" &&
+            sdfSignedCapability->field_downsample_param == "signal.sdf_field_downsample",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfCapabilityStorageKeys");
+    Check(lensV2Capability && lensV2Capability->field_source == "lens_field_v2",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LensV2CapabilityFieldSource");
+    Check(FindSdfSourceCapability(contract, "smooth_escape_ramp") == nullptr,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_NonSdfSourceHasNoSdfCapability");
     Check(!contract.explaino_entries.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoEntriesPresent");
 
     const ColorPipelineMetadataParityReport parity = ValidateColorPipelineMetadataParity(contract);

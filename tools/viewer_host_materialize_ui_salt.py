@@ -19,6 +19,7 @@ VALID_CONTRACT_KINDS = {
     "edge_resolution",
     "resolution_audit",
     "compat_override_audit",
+    "sdf_applicator_capability",
 }
 VALID_SIGNAL_KINDS = {"scalar", "phase", "categorical"}
 VALID_SIGNAL_TYPE_KINDS = {"scalar", "phase", "category", "palette", "mask", "color", "field"}
@@ -30,6 +31,7 @@ VALID_PARAM_TYPES = {"float", "double", "int", "bool", "enum"}
 VALID_PORT_DIRECTIONS = {"input", "output"}
 VALID_RESOLUTION_EXPECTATIONS = {"resolved", "fail_closed"}
 VALID_COMPAT_OVERRIDE_CLASSIFICATIONS = {"runtime_legacy_override"}
+VALID_SDF_FIELD_SOURCES = {"lens_sdf", "lens_field_v2"}
 VALID_STATEMENTS = {
     "contract",
     "signal_type",
@@ -45,6 +47,7 @@ VALID_STATEMENTS = {
     "edge_link",
     "resolution_case",
     "compat_override",
+    "sdf_source_capability",
     "explaino_contract",
 }
 
@@ -166,6 +169,15 @@ def _require_bool(kwargs: dict[str, Any], key: str, *, statement: str) -> bool:
     if not isinstance(value, bool):
         raise MaterializerError(f"{statement} {key} must be a bool")
     return value
+
+
+def _require_string_list(kwargs: dict[str, Any], key: str, *, statement: str) -> list[str]:
+    value = kwargs.get(key)
+    if not isinstance(value, list) or not value:
+        raise MaterializerError(f"{statement} requires non-empty {key}")
+    if not all(isinstance(item, str) and item.strip() for item in value):
+        raise MaterializerError(f"{statement} {key} must be a list of strings")
+    return list(value)
 
 
 def _check_known_args(statement: str, kwargs: dict[str, Any], allowed: set[str]) -> None:
@@ -417,6 +429,56 @@ def _build_compat_override(kwargs: dict[str, Any]) -> dict[str, Any]:
         "reason": _require_string(kwargs, "reason", statement=f"compat_override {override_id}"),
         "proof": _require_string(kwargs, "proof", statement=f"compat_override {override_id}"),
     }
+
+
+def _build_sdf_source_capability(kwargs: dict[str, Any]) -> dict[str, Any]:
+    function_id = _require_string(kwargs, "function", statement="sdf_source_capability")
+    field_source = _require_string(kwargs, "field_source", statement=f"sdf_source_capability {function_id}")
+    if field_source not in VALID_SDF_FIELD_SOURCES:
+        raise MaterializerError(f"sdf_source_capability {function_id} invalid field_source '{field_source}'")
+    return {
+        "function": function_id,
+        "field_source": field_source,
+        "requires_sdf_field": _require_bool(kwargs, "requires_sdf_field", statement=f"sdf_source_capability {function_id}"),
+        "supports_applicators": _require_bool(kwargs, "supports_applicators", statement=f"sdf_source_capability {function_id}"),
+        "supported_applicators": _require_string_list(kwargs, "supported_applicators", statement=f"sdf_source_capability {function_id}"),
+        "gate_param": _require_string(kwargs, "gate_param", statement=f"sdf_source_capability {function_id}"),
+        "gate_width_param": _require_string(kwargs, "gate_width_param", statement=f"sdf_source_capability {function_id}"),
+        "sample_step_param": _require_string(kwargs, "sample_step_param", statement=f"sdf_source_capability {function_id}"),
+        "field_downsample_param": _require_string(kwargs, "field_downsample_param", statement=f"sdf_source_capability {function_id}"),
+        "fail_closed_reason": _require_string(kwargs, "fail_closed_reason", statement=f"sdf_source_capability {function_id}"),
+    }
+
+
+def _validate_sdf_source_capabilities(
+    capabilities: list[dict[str, Any]],
+    functions: dict[str, FunctionRecord],
+    row_applicator_ids: set[str],
+) -> None:
+    capability_functions: set[str] = set()
+    for capability in capabilities:
+        function_id = capability["function"]
+        if function_id in capability_functions:
+            raise MaterializerError(f"duplicate sdf_source_capability for function '{function_id}'")
+        capability_functions.add(function_id)
+        record = functions.get(function_id)
+        if record is None:
+            raise MaterializerError(f"sdf_source_capability references unknown function '{function_id}'")
+        if record.lane != "source":
+            raise MaterializerError(f"sdf_source_capability {function_id} must reference a source function")
+        if capability["supports_applicators"] and "none" not in capability["supported_applicators"]:
+            raise MaterializerError(f"sdf_source_capability {function_id} must include none applicator")
+        for applicator_id in capability["supported_applicators"]:
+            if applicator_id not in row_applicator_ids:
+                raise MaterializerError(
+                    f"sdf_source_capability {function_id} references unknown row_applicator '{applicator_id}'"
+                )
+        param_paths = {param["path"] for param in record.function.get("params", [])}
+        for key in ("gate_param", "gate_width_param", "sample_step_param", "field_downsample_param"):
+            if capability[key] not in param_paths:
+                raise MaterializerError(
+                    f"sdf_source_capability {function_id} references missing param '{capability[key]}'"
+                )
 
 
 def _canonical_output_port(function: dict[str, Any]) -> dict[str, Any] | None:
@@ -747,6 +809,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     explaino_entries: list[dict[str, Any]] = []
     row_applicators: list[dict[str, Any]] = []
     row_applicator_ids: set[str] = set()
+    sdf_applicator_capability_declared = False
+    sdf_source_capabilities: list[dict[str, Any]] = []
     lane_ids: set[str] = set()
     contract_keys: set[tuple[str, str]] = set()
     signal_types: list[dict[str, Any]] = []
@@ -785,6 +849,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 adapter_library_declared = True
             if kind == "compat_override_audit":
                 compat_override_audit_declared = True
+            if kind == "sdf_applicator_capability":
+                sdf_applicator_capability_declared = True
         elif name == "signal_type":
             _check_known_args(
                 name,
@@ -965,6 +1031,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                     "required_signal_kind",
                     "requires_sdf_field",
                     "storage_param",
+                    "storage_value",
                     "width_param",
                     "fail_closed_reason",
                 },
@@ -988,9 +1055,28 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 "required_signal_kind": required_signal_kind,
                 "requires_sdf_field": _optional_bool(kwargs, "requires_sdf_field", False),
                 "storage_param": _require_string(kwargs, "storage_param", statement=f"row_applicator {applicator_id}"),
+                "storage_value": _optional_string(kwargs, "storage_value", applicator_id),
                 "width_param": _optional_string(kwargs, "width_param", ""),
                 "fail_closed_reason": _require_string(kwargs, "fail_closed_reason", statement=f"row_applicator {applicator_id}"),
             })
+        elif name == "sdf_source_capability":
+            _check_known_args(
+                name,
+                kwargs,
+                {
+                    "function",
+                    "field_source",
+                    "requires_sdf_field",
+                    "supports_applicators",
+                    "supported_applicators",
+                    "gate_param",
+                    "gate_width_param",
+                    "sample_step_param",
+                    "field_downsample_param",
+                    "fail_closed_reason",
+                },
+            )
+            sdf_source_capabilities.append(_build_sdf_source_capability(kwargs))
         elif name == "edge_policy":
             _check_known_args(
                 name,
@@ -1076,6 +1162,10 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         raise MaterializerError("at least one explaino_contract is required")
     if not row_applicators:
         raise MaterializerError("at least one row_applicator is required")
+    if sdf_applicator_capability_declared:
+        if not sdf_source_capabilities:
+            raise MaterializerError("sdf_applicator_capability contract requires at least one sdf_source_capability")
+        _validate_sdf_source_capabilities(sdf_source_capabilities, functions, row_applicator_ids)
     if adapter_library_declared and not adapters:
         raise MaterializerError("adapter_library contract requires at least one adapter")
     if (edge_policy is None) != (not edge_links and not resolution_cases):
@@ -1117,6 +1207,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     if compat_override_audit_declared:
         payload["composition_recipe_contract"]["compat_overrides"] = compat_overrides
         payload["composition_recipe_contract"]["compatibility_audit"] = compatibility_audit
+    if sdf_applicator_capability_declared:
+        payload["composition_recipe_contract"]["sdf_source_capabilities"] = sdf_source_capabilities
     if edge_policy is not None:
         payload["edge_resolution_contract"] = {
             "policy": edge_policy,

@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "contract_id": "ui_salt_sdf_applicator_capability",
+  "feature_id": "color_pipeline_ui_salt_metadata_authority",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md",
+    "docs/contracts/ui_salt_sdf_applicator_capability.contract.json",
+    "docs/ui_salt/color_pipeline_function_library.ui.salt",
+    "docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "tools/viewer_host_materialize_ui_salt.py",
+    "tests/test_ui_salt_materializer.py",
+    "ui_app/src/color_pipeline_metadata_contract.h",
+    "ui_app/src/color_pipeline_metadata_contract.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "implement Slice F of the UI-Salt typed edge campaign",
+    "lift current SDF applicator and row-local field controls into shadow capability metadata",
+    "preserve current Source-row storage authority and serialized keys",
+    "declare which current Source rows support SDF field applicators",
+    "preserve current visible Color Pipeline behavior and live compatibility behavior",
+    "keep the capability output diagnostic/shadow-only in this slice"
+  ],
+  "forbidden_operator_prompts": [
+    "change SDF gate or row-local downsample storage keys",
+    "change visible Color Pipeline layout or control IDs",
+    "add new SDF source functions or field producers",
+    "switch live compatibility behavior to typed resolver authority",
+    "add graph UI",
+    "import or run Salticid as a viewer runtime dependency",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "shadow_metadata_only",
+    "source_head": "9fafabb",
+    "ui_behavior_frozen": true,
+    "runtime_behavior_change": false,
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "salticid_runtime_dependency": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "storage_key_churn": "forbidden",
+    "visible_color_pipeline_change": "forbidden",
+    "new_sdf_function": "forbidden",
+    "live_compatibility_switch": "forbidden",
+    "graph_ui_replacement": "forbidden",
+    "runtime_salticid_dependency": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_salt_sdf_applicator_capability.contract.json --out-json artifacts/validation/ui_salt_sdf_applicator_capability_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_salt_typed_edge_resolution_campaign_PHASED_PLAN.md --out-json artifacts/validation/ui_salt_sdf_applicator_capability_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ui_salt_sdf_applicator_capability_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_sdf_applicator_capability_pytest --log artifacts/logs/ui_salt_sdf_applicator_capability_pytest.log --out-json artifacts/validation/ui_salt_sdf_applicator_capability_pytest.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_ui_salt_materializer.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_sdf_applicator_capability_materialize --log artifacts/logs/ui_salt_sdf_applicator_capability_materialize.log --out-json artifacts/validation/ui_salt_sdf_applicator_capability_materialize.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_materialize_ui_salt.py --ui-salt docs/ui_salt/color_pipeline_function_library.ui.salt --out docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_sdf_applicator_capability_native --log artifacts/logs/ui_salt_sdf_applicator_capability_native.log --out-json artifacts/validation/ui_salt_sdf_applicator_capability_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ui_salt_sdf_applicator_capability_diff_check --log artifacts/logs/ui_salt_sdf_applicator_capability_diff_check.log --out-json artifacts/validation/ui_salt_sdf_applicator_capability_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The UI-Salt SDF applicator capability contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_sdf_applicator_capability_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The UI-Salt SDF applicator capability hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_sdf_applicator_capability_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "materializer_pytest_ok",
+      "description": "The focused UI-Salt materializer pytest passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_sdf_applicator_capability_pytest.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "native_color_pipeline_core_ok",
+      "description": "The focused native Color Pipeline core rail passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_salt_sdf_applicator_capability_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    }
+  ]
+}

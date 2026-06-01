@@ -112,6 +112,16 @@ compat_override(id="legacy_escape_palette_bridge", source="legacy_escape_shape",
 '''
 
 
+SDF_CAPABILITY_FIXTURE = VALID_UI_SALT + '''
+contract(kind="sdf_applicator_capability", contract_id="viewer.sdf_applicator_capability_contract.v1", version=1)
+param(function="sdf_signed_distance", path="signal.sdf_gate", type="enum", label="SDF Gate", default="none", options=["none", "boundary_band", "sdf_inside", "sdf_outside"])
+param(function="sdf_signed_distance", path="signal.sdf_gate_width_px", type="float", label="Gate Width", min=0.25, max=16.0, step=0.25, default=2.0)
+param(function="sdf_signed_distance", path="signal.sdf_sample_step", type="int", label="SDF Row Step", min=1, max=8, step=1, default=1)
+param(function="sdf_signed_distance", path="signal.sdf_field_downsample", type="enum", label="Field Downsample", default="0", options=["0", "1", "2", "4", "8", "16"])
+sdf_source_capability(function="sdf_signed_distance", field_source="lens_sdf", requires_sdf_field=True, supports_applicators=True, supported_applicators=["none", "sdf_boundary_band", "sdf_inside", "sdf_outside"], gate_param="signal.sdf_gate", gate_width_param="signal.sdf_gate_width_px", sample_step_param="signal.sdf_sample_step", field_downsample_param="signal.sdf_field_downsample", fail_closed_reason="requires Lens SDF field")
+'''
+
+
 def run_materializer(tmp_path: Path, text: str):
     source = tmp_path / "case.ui.salt"
     out = tmp_path / "out.json"
@@ -560,6 +570,48 @@ def test_materializer_rejects_override_for_typed_resolved_row(tmp_path):
     assert "compat_override bad_typed_route_override does not map to a compatibility row" in proc.stderr
 
 
+def test_materializer_accepts_sdf_source_capability(tmp_path):
+    proc, out = run_materializer(tmp_path, SDF_CAPABILITY_FIXTURE)
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+
+    capabilities = payload["composition_recipe_contract"]["sdf_source_capabilities"]
+    assert capabilities == [
+        {
+            "function": "sdf_signed_distance",
+            "field_source": "lens_sdf",
+            "requires_sdf_field": True,
+            "supports_applicators": True,
+            "supported_applicators": ["none", "sdf_boundary_band", "sdf_inside", "sdf_outside"],
+            "gate_param": "signal.sdf_gate",
+            "gate_width_param": "signal.sdf_gate_width_px",
+            "sample_step_param": "signal.sdf_sample_step",
+            "field_downsample_param": "signal.sdf_field_downsample",
+            "fail_closed_reason": "requires Lens SDF field",
+        }
+    ]
+
+
+def test_materializer_rejects_sdf_capability_missing_storage_param(tmp_path):
+    text = SDF_CAPABILITY_FIXTURE.replace(
+        'param(function="sdf_signed_distance", path="signal.sdf_field_downsample", type="enum", label="Field Downsample", default="0", options=["0", "1", "2", "4", "8", "16"])\n',
+        "",
+    )
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "sdf_source_capability sdf_signed_distance references missing param 'signal.sdf_field_downsample'" in proc.stderr
+
+
+def test_materializer_rejects_sdf_capability_unknown_applicator(tmp_path):
+    text = SDF_CAPABILITY_FIXTURE.replace(
+        'supported_applicators=["none", "sdf_boundary_band", "sdf_inside", "sdf_outside"]',
+        'supported_applicators=["none", "sdf_boundary_band", "sdf_inside", "sdf_missing"]',
+    )
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "sdf_source_capability sdf_signed_distance references unknown row_applicator 'sdf_missing'" in proc.stderr
+
+
 def test_materializer_rejects_unknown_port_signal_type(tmp_path):
     text = VALID_UI_SALT + 'port(function="smooth_escape_ramp", direction="output", id="signal", type="scalar.missing", canonical=True)\n'
     proc, _ = run_materializer(tmp_path, text)
@@ -701,8 +753,31 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert row_applicators[1]["requires_sdf_field"] is True
     assert row_applicators[1]["required_signal_kind"] == "any"
     assert row_applicators[1]["width_param"] == "signal.sdf_gate_width_px"
+    assert [item["storage_value"] for item in row_applicators] == [
+        "none",
+        "boundary_band",
+        "sdf_inside",
+        "sdf_outside",
+    ]
     assert all(item["target_lane"] == "source" for item in row_applicators)
     assert all(item["fail_closed_reason"] for item in row_applicators)
+    sdf_capabilities = actual["composition_recipe_contract"]["sdf_source_capabilities"]
+    assert [item["function"] for item in sdf_capabilities] == [
+        "sdf_signed_distance",
+        "sdf_inside_outside",
+        "sdf_boundary_band",
+        "sdf_normal_angle",
+        "sdf_curvature",
+        "lens_field_v2_distance",
+    ]
+    assert {item["field_source"] for item in sdf_capabilities} == {"lens_sdf", "lens_field_v2"}
+    assert all(item["requires_sdf_field"] is True for item in sdf_capabilities)
+    assert all(item["supports_applicators"] is True for item in sdf_capabilities)
+    assert all(item["gate_param"] == "signal.sdf_gate" for item in sdf_capabilities)
+    assert all(item["gate_width_param"] == "signal.sdf_gate_width_px" for item in sdf_capabilities)
+    assert all(item["sample_step_param"] == "signal.sdf_sample_step" for item in sdf_capabilities)
+    assert all(item["field_downsample_param"] == "signal.sdf_field_downsample" for item in sdf_capabilities)
+    assert all(item["supported_applicators"] == ["none", "sdf_boundary_band", "sdf_inside", "sdf_outside"] for item in sdf_capabilities)
     assert len(actual["composition_recipe_contract"]["compatibility"]) == 22
     compat_overrides = actual["composition_recipe_contract"]["compat_overrides"]
     compatibility_audit = actual["composition_recipe_contract"]["compatibility_audit"]

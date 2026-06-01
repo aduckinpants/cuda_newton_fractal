@@ -596,11 +596,39 @@ bool ReadRowApplicator(
         !ReadString(value, "required_signal_kind", &applicator.required_signal_kind, outError) ||
         !ReadBool(value, "requires_sdf_field", &applicator.requires_sdf_field, outError) ||
         !ReadString(value, "storage_param", &applicator.storage_param, outError) ||
+        !ReadOptionalString(value, "storage_value", &applicator.storage_value, outError) ||
         !ReadOptionalString(value, "width_param", &applicator.width_param, outError) ||
         !ReadString(value, "fail_closed_reason", &applicator.fail_closed_reason, outError)) {
         return false;
     }
+    if (applicator.storage_value.empty()) {
+        applicator.storage_value = applicator.id;
+    }
     *outApplicator = std::move(applicator);
+    return true;
+}
+
+bool ReadSdfSourceCapability(
+    const json_min::Value& value,
+    MaterializedColorPipelineSdfSourceCapability* outCapability,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "SDF source capability entry must be an object");
+    }
+    MaterializedColorPipelineSdfSourceCapability capability;
+    if (!ReadString(value, "function", &capability.function, outError) ||
+        !ReadString(value, "field_source", &capability.field_source, outError) ||
+        !ReadBool(value, "requires_sdf_field", &capability.requires_sdf_field, outError) ||
+        !ReadBool(value, "supports_applicators", &capability.supports_applicators, outError) ||
+        !ReadStringArray(value, "supported_applicators", &capability.supported_applicators, outError) ||
+        !ReadString(value, "gate_param", &capability.gate_param, outError) ||
+        !ReadString(value, "gate_width_param", &capability.gate_width_param, outError) ||
+        !ReadString(value, "sample_step_param", &capability.sample_step_param, outError) ||
+        !ReadString(value, "field_downsample_param", &capability.field_downsample_param, outError) ||
+        !ReadString(value, "fail_closed_reason", &capability.fail_closed_reason, outError)) {
+        return false;
+    }
+    *outCapability = std::move(capability);
     return true;
 }
 
@@ -1173,6 +1201,97 @@ bool ValidateMaterializedRowApplicators(
     return !applicators.empty() || SetError(outError, "Materialized contract must contain at least one row applicator");
 }
 
+bool FindMaterializedFunctionWithLane(
+    const MaterializedColorPipelineContract& contract,
+    const std::string& functionId,
+    const MaterializedColorPipelineFunction** outFunction,
+    std::string* outLaneId) {
+    for (const MaterializedColorPipelineLane& lane : contract.lanes) {
+        for (const MaterializedColorPipelineFunction& function : lane.functions) {
+            if (function.id == functionId) {
+                if (outFunction) {
+                    *outFunction = &function;
+                }
+                if (outLaneId) {
+                    *outLaneId = lane.id;
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool FunctionHasParam(const MaterializedColorPipelineFunction& function, const std::string& paramPath) {
+    for (const MaterializedColorPipelineParam& param : function.params) {
+        if (param.path == paramPath) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ValidateMaterializedSdfSourceCapabilities(
+    const MaterializedColorPipelineContract& contract,
+    std::string* outError) {
+    if (contract.sdf_source_capabilities.empty()) {
+        return true;
+    }
+    std::set<std::string> applicatorIds;
+    for (const MaterializedColorPipelineRowApplicator& applicator : contract.row_applicators) {
+        applicatorIds.insert(applicator.id);
+    }
+    std::set<std::string> capabilityFunctions;
+    for (const MaterializedColorPipelineSdfSourceCapability& capability : contract.sdf_source_capabilities) {
+        if (!capabilityFunctions.insert(capability.function).second) {
+            return SetError(outError, std::string("Duplicate materialized SDF source capability for function '") +
+                capability.function + "'");
+        }
+        const MaterializedColorPipelineFunction* function = nullptr;
+        std::string laneId;
+        if (!FindMaterializedFunctionWithLane(contract, capability.function, &function, &laneId)) {
+            return SetError(outError, std::string("Materialized SDF source capability references missing function '") +
+                capability.function + "'");
+        }
+        if (laneId != "source") {
+            return SetError(outError, std::string("Materialized SDF source capability '") +
+                capability.function + "' must reference a source function");
+        }
+        if (capability.field_source != "lens_sdf" && capability.field_source != "lens_field_v2") {
+            return SetError(outError, std::string("Materialized SDF source capability '") +
+                capability.function + "' has invalid field_source");
+        }
+        if (capability.fail_closed_reason.empty()) {
+            return SetError(outError, std::string("Materialized SDF source capability '") +
+                capability.function + "' requires fail_closed_reason");
+        }
+        if (capability.supported_applicators.empty()) {
+            return SetError(outError, std::string("Materialized SDF source capability '") +
+                capability.function + "' requires supported_applicators");
+        }
+        bool hasNoneApplicator = false;
+        for (const std::string& applicatorId : capability.supported_applicators) {
+            hasNoneApplicator = hasNoneApplicator || applicatorId == "none";
+            if (applicatorIds.find(applicatorId) == applicatorIds.end()) {
+                return SetError(outError, std::string("Materialized SDF source capability '") +
+                    capability.function + "' references unknown row applicator");
+            }
+        }
+        if (capability.supports_applicators && !hasNoneApplicator) {
+            return SetError(outError, std::string("Materialized SDF source capability '") +
+                capability.function + "' must include none applicator");
+        }
+        if (!FunctionHasParam(*function, capability.gate_param) ||
+            !FunctionHasParam(*function, capability.gate_width_param) ||
+            !FunctionHasParam(*function, capability.sample_step_param) ||
+            !FunctionHasParam(*function, capability.field_downsample_param)) {
+            return SetError(outError, std::string("Materialized SDF source capability '") +
+                capability.function + "' references a missing storage param");
+        }
+    }
+    return true;
+}
+
 
 bool ValidateMaterializedExplainoEntries(
     const std::vector<MaterializedExplainoContractEntry>& entries,
@@ -1197,6 +1316,7 @@ bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, s
         ValidateMaterializedCompatibilityAudit(contract, functionIds, outError) &&
         ValidateMaterializedRecipes(contract.recipes, functionIds, outError) &&
         ValidateMaterializedRowApplicators(contract.row_applicators, outError) &&
+        ValidateMaterializedSdfSourceCapabilities(contract, outError) &&
         ValidateMaterializedExplainoEntries(contract.explaino_entries, outError);
 }
 
@@ -1386,6 +1506,19 @@ bool LoadColorPipelineMaterializedContractJson(
             return false;
         }
         contract.row_applicators.push_back(std::move(applicator));
+    }
+
+    if (const json_min::Value* sdfCapabilities = compositionContract->get("sdf_source_capabilities")) {
+        if (!sdfCapabilities->is_array()) {
+            return SetError(outError, "composition_recipe_contract.sdf_source_capabilities must be an array");
+        }
+        for (const json_min::Value& capabilityValue : sdfCapabilities->as_array()) {
+            MaterializedColorPipelineSdfSourceCapability capability;
+            if (!ReadSdfSourceCapability(capabilityValue, &capability, outError)) {
+                return false;
+            }
+            contract.sdf_source_capabilities.push_back(std::move(capability));
+        }
     }
 
     const json_min::Value* entries = RequiredField(*explainoContract, "entries", outError);
