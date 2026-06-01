@@ -106,6 +106,17 @@ const MaterializedColorPipelineAdapter* FindAdapter(
     return nullptr;
 }
 
+const MaterializedColorPipelineResolutionCase* FindResolutionCase(
+    const MaterializedColorPipelineContract& contract,
+    const char* id) {
+    for (const MaterializedColorPipelineResolutionCase& resolutionCase : contract.resolution_cases) {
+        if (resolutionCase.id == id) {
+            return &resolutionCase;
+        }
+    }
+    return nullptr;
+}
+
 void CheckMaterializedPort(
     const MaterializedColorPipelineContract& contract,
     const char* laneId,
@@ -959,6 +970,59 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
     Check(contract.signal_types.size() == 10, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SignalTypeCount");
     Check(contract.adapters.size() == 11, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_AdapterCount");
+    Check(contract.edge_policy.id == "current_linear_color_stack" &&
+            contract.edge_policy.max_adapter_hops == 2 &&
+            !contract.edge_policy.allow_lossy &&
+            contract.edge_policy.allow_visible_default &&
+            !contract.edge_policy.allow_explicit &&
+            !contract.edge_policy.allow_diagnostic &&
+            contract.edge_policy.fail_closed_default,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_EdgePolicy");
+    Check(contract.edge_links.size() == 3, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_EdgeLinkCount");
+    if (contract.edge_links.size() == 3) {
+        Check(contract.edge_links[0].id == "source_to_shape" &&
+                contract.edge_links[1].id == "shape_to_palette" &&
+                contract.edge_links[2].id == "palette_to_grading",
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_EdgeLinkOrder");
+    }
+    Check(contract.resolution_cases.size() == 8,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ResolutionCaseCount");
+    const MaterializedColorPipelineResolutionCase* smoothRoute =
+        FindResolutionCase(contract, "smooth_escape_heatmap");
+    const MaterializedColorPipelineResolutionCase* sdfRoute =
+        FindResolutionCase(contract, "sdf_signed_distance_normalized_heatmap");
+    const MaterializedColorPipelineResolutionCase* rootBad =
+        FindResolutionCase(contract, "root_repeat_heatmap_bad");
+    const MaterializedColorPipelineResolutionCase* phaseBad =
+        FindResolutionCase(contract, "phase_root_palette_bad");
+    Check(smoothRoute && smoothRoute->status == "resolved" &&
+            smoothRoute->route_edges.size() == 3 &&
+            smoothRoute->chosen_adapters.empty() &&
+            smoothRoute->adapter_hops == 0 &&
+            smoothRoute->adapter_cost == 0 &&
+            smoothRoute->policy_blockers.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SmoothRouteResolvedDirect");
+    Check(sdfRoute && sdfRoute->status == "resolved" &&
+            sdfRoute->allow_lossy &&
+            sdfRoute->explicit_adapter_consent &&
+            sdfRoute->chosen_adapters.size() == 1 &&
+            sdfRoute->chosen_adapters[0] == "normalize.sdf_signed_distance.unit" &&
+            sdfRoute->adapter_hops == 1 &&
+            sdfRoute->adapter_cost == 2 &&
+            sdfRoute->tie_break_rule == "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order" &&
+            !sdfRoute->route_edges.empty() &&
+            !sdfRoute->route_edges[0].adapters.empty() &&
+            sdfRoute->route_edges[0].adapter_hops == 1 &&
+            sdfRoute->route_edges[0].adapter_cost == 2,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfRouteRequiresExplicitAdapter");
+    Check(rootBad && rootBad->status == "fail_closed" &&
+            rootBad->fail_closed_reason.find("root category") != std::string::npos &&
+            !rootBad->policy_blockers.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RootBadRouteFailsClosed");
+    Check(phaseBad && phaseBad->status == "fail_closed" &&
+            phaseBad->fail_closed_reason.find("phase") != std::string::npos &&
+            !phaseBad->policy_blockers.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_PhaseBadRouteFailsClosed");
     const MaterializedSignalType* scalarSdf = FindSignalType(contract, "scalar.sdf_signed_distance");
     const MaterializedSignalType* fieldSdf = FindSignalType(contract, "field.sdf_signed_distance");
     const MaterializedSignalType* normalPhase = FindSignalType(contract, "phase.radians");
@@ -1642,6 +1706,46 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
             error.find("typed_signal references unknown signal type") != std::string::npos,
         "TestMaterializedContractLoaderRejectsTamperedJson_UnknownTypedSignalRejected");
     std::remove(unknownTypedSignalPath.c_str());
+
+    const char* duplicateEdgeLinkJson = R"json({
+  "schema_version": 1,
+  "source_path": "tampered.ui.salt",
+  "signal_type_registry": {"types": [
+    {"id": "scalar.unit", "kind": "scalar", "domain": "unit", "topology": "linear", "arity": 1, "default_adapter_policy": "safe"},
+    {"id": "color.linear_rgb", "kind": "color", "domain": "linear_rgb", "topology": "color", "arity": 3, "default_adapter_policy": "forbidden"}
+  ]},
+  "edge_resolution_contract": {
+    "policy": {"id": "current_linear_color_stack", "max_adapter_hops": 2, "allow_lossy": false, "allow_visible_default": true, "allow_explicit": false, "allow_diagnostic": false, "fail_closed_default": true},
+    "edges": [
+      {"id": "source_to_shape", "from_lane": "source", "to_lane": "shape", "from_port": "signal", "to_port": "signal", "fail_closed_reason": "source output cannot feed selected shape"},
+      {"id": "source_to_shape", "from_lane": "shape", "to_lane": "palette", "from_port": "signal", "to_port": "signal", "fail_closed_reason": "shape output cannot feed selected palette"}
+    ]
+  },
+  "color_pipeline_resolution_audit": {"cases": [
+    {"id": "known_bad", "source": "smooth_escape_ramp", "shape": "identity", "palette": "heatmap", "grading": "contrast_lift", "expected_status": "fail_closed", "status": "fail_closed", "allow_lossy": false, "allow_visible_default": false, "explicit_adapter_consent": false, "diagnostic_adapter_consent": false, "chosen_adapters": [], "adapter_hops": 0, "adapter_cost": 0, "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order", "policy_blockers": ["expected failure"], "route_edges": [], "fail_closed_reason": "expected failure"}
+  ]},
+  "function_library": {
+    "lanes": [
+      {"id": "source", "label": "Source", "default": "smooth_escape_ramp", "functions": [{"id": "smooth_escape_ramp", "label": "Smooth Escape Ramp", "description": "", "taxonomy_group": "escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "params": []}]},
+      {"id": "shape", "label": "Shape", "default": "identity", "functions": [{"id": "identity", "label": "Identity", "description": "", "taxonomy_group": "identity", "runtime_backed": true, "input_kind": "scalar", "output_kind": "scalar", "params": []}]},
+      {"id": "palette", "label": "Palette", "default": "heatmap", "functions": [{"id": "heatmap", "label": "Heatmap", "description": "", "taxonomy_group": "palette_escape", "runtime_backed": true, "input_kind": "scalar", "output_kind": "color", "params": []}]},
+      {"id": "grading", "label": "Grading", "default": "contrast_lift", "functions": [{"id": "contrast_lift", "label": "Contrast Lift", "description": "", "taxonomy_group": "grade_escape", "runtime_backed": true, "input_kind": "color", "output_kind": "color", "params": []}]}
+    ]
+  },
+  "composition_recipe_contract": {"compatibility": [], "row_applicators": [{"id": "none", "label": "None", "target_lane": "source", "required_signal_kind": "any", "requires_sdf_field": false, "storage_param": "signal.sdf_gate", "width_param": "", "fail_closed_reason": "ungated"}], "recipes": []},
+  "explaino_contract": {"entries": [
+    {"id": "x", "hypothesis_space": "space", "authority": "owner", "lens": "lens", "invariant": "invariant", "proof": "proof", "fallback": "fail_closed", "product_facing": false, "diagnostic": true}
+  ]}
+})json";
+
+    const std::string duplicateEdgeLinkPath = TempContractPath("ui_salt_contract_duplicate_edge_link.json");
+    Check(WriteTextFile(duplicateEdgeLinkPath, duplicateEdgeLinkJson),
+        "TestMaterializedContractLoaderRejectsTamperedJson_WriteDuplicateEdgeLinkFixture");
+    error.clear();
+    Check(!LoadColorPipelineMaterializedContractJson(duplicateEdgeLinkPath, &contract, &error) &&
+            error.find("Duplicate materialized edge link id") != std::string::npos,
+        "TestMaterializedContractLoaderRejectsTamperedJson_DuplicateEdgeLinkRejected");
+    std::remove(duplicateEdgeLinkPath.c_str());
 
     const char* unknownPortTypeJson = R"json({
   "schema_version": 1,

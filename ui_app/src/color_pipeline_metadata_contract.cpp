@@ -106,6 +106,28 @@ bool ReadOptionalNumber(
     return true;
 }
 
+bool ReadStringArray(
+    const json_min::Value& object,
+    const char* key,
+    std::vector<std::string>* outValues,
+    std::string* outError) {
+    const json_min::Value* value = RequiredField(object, key, outError);
+    if (!value) {
+        return false;
+    }
+    if (!value->is_array()) {
+        return SetError(outError, std::string("Field '") + key + "' must be an array");
+    }
+    outValues->clear();
+    for (const json_min::Value& item : value->as_array()) {
+        if (!item.is_string()) {
+            return SetError(outError, std::string("Field '") + key + "' entries must be strings");
+        }
+        outValues->push_back(item.as_string());
+    }
+    return true;
+}
+
 bool StringInList(const std::string& value, const char* const* items, std::size_t count) {
     for (std::size_t index = 0; index < count; ++index) {
         if (value == items[index]) {
@@ -279,6 +301,113 @@ bool ReadAdapter(
         return false;
     }
     *outAdapter = std::move(adapter);
+    return true;
+}
+
+bool ReadEdgePolicy(
+    const json_min::Value& value,
+    MaterializedColorPipelineEdgePolicy* outPolicy,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Edge policy entry must be an object");
+    }
+    MaterializedColorPipelineEdgePolicy policy;
+    if (!ReadString(value, "id", &policy.id, outError) ||
+        !ReadNonNegativeInteger(value, "max_adapter_hops", &policy.max_adapter_hops, outError) ||
+        !ReadBool(value, "allow_lossy", &policy.allow_lossy, outError) ||
+        !ReadBool(value, "allow_visible_default", &policy.allow_visible_default, outError) ||
+        !ReadBool(value, "allow_explicit", &policy.allow_explicit, outError) ||
+        !ReadBool(value, "allow_diagnostic", &policy.allow_diagnostic, outError) ||
+        !ReadBool(value, "fail_closed_default", &policy.fail_closed_default, outError)) {
+        return false;
+    }
+    *outPolicy = std::move(policy);
+    return true;
+}
+
+bool ReadEdgeLink(
+    const json_min::Value& value,
+    MaterializedColorPipelineEdgeLink* outEdge,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Edge link entry must be an object");
+    }
+    MaterializedColorPipelineEdgeLink edge;
+    if (!ReadString(value, "id", &edge.id, outError) ||
+        !ReadString(value, "from_lane", &edge.from_lane, outError) ||
+        !ReadString(value, "to_lane", &edge.to_lane, outError) ||
+        !ReadString(value, "from_port", &edge.from_port, outError) ||
+        !ReadString(value, "to_port", &edge.to_port, outError) ||
+        !ReadString(value, "fail_closed_reason", &edge.fail_closed_reason, outError)) {
+        return false;
+    }
+    *outEdge = std::move(edge);
+    return true;
+}
+
+bool ReadRouteEdge(
+    const json_min::Value& value,
+    MaterializedColorPipelineRouteEdge* outRouteEdge,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Resolution route edge entry must be an object");
+    }
+    MaterializedColorPipelineRouteEdge routeEdge;
+    if (!ReadString(value, "edge_id", &routeEdge.edge_id, outError) ||
+        !ReadString(value, "from_function", &routeEdge.from_function, outError) ||
+        !ReadString(value, "to_function", &routeEdge.to_function, outError) ||
+        !ReadString(value, "from_type", &routeEdge.from_type, outError) ||
+        !ReadString(value, "to_type", &routeEdge.to_type, outError) ||
+        !ReadString(value, "output_type", &routeEdge.output_type, outError) ||
+        !ReadString(value, "status", &routeEdge.status, outError) ||
+        !ReadStringArray(value, "adapters", &routeEdge.adapters, outError) ||
+        !ReadNonNegativeInteger(value, "adapter_hops", &routeEdge.adapter_hops, outError) ||
+        !ReadNonNegativeInteger(value, "adapter_cost", &routeEdge.adapter_cost, outError)) {
+        return false;
+    }
+    *outRouteEdge = std::move(routeEdge);
+    return true;
+}
+
+bool ReadResolutionCase(
+    const json_min::Value& value,
+    MaterializedColorPipelineResolutionCase* outCase,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Resolution case entry must be an object");
+    }
+    MaterializedColorPipelineResolutionCase resolutionCase;
+    if (!ReadString(value, "id", &resolutionCase.id, outError) ||
+        !ReadString(value, "source", &resolutionCase.source, outError) ||
+        !ReadString(value, "shape", &resolutionCase.shape, outError) ||
+        !ReadString(value, "palette", &resolutionCase.palette, outError) ||
+        !ReadString(value, "grading", &resolutionCase.grading, outError) ||
+        !ReadString(value, "expected_status", &resolutionCase.expected_status, outError) ||
+        !ReadString(value, "status", &resolutionCase.status, outError) ||
+        !ReadBool(value, "allow_lossy", &resolutionCase.allow_lossy, outError) ||
+        !ReadBool(value, "allow_visible_default", &resolutionCase.allow_visible_default, outError) ||
+        !ReadBool(value, "explicit_adapter_consent", &resolutionCase.explicit_adapter_consent, outError) ||
+        !ReadBool(value, "diagnostic_adapter_consent", &resolutionCase.diagnostic_adapter_consent, outError) ||
+        !ReadStringArray(value, "chosen_adapters", &resolutionCase.chosen_adapters, outError) ||
+        !ReadNonNegativeInteger(value, "adapter_hops", &resolutionCase.adapter_hops, outError) ||
+        !ReadNonNegativeInteger(value, "adapter_cost", &resolutionCase.adapter_cost, outError) ||
+        !ReadString(value, "tie_break_rule", &resolutionCase.tie_break_rule, outError) ||
+        !ReadStringArray(value, "policy_blockers", &resolutionCase.policy_blockers, outError) ||
+        !ReadOptionalString(value, "fail_closed_reason", &resolutionCase.fail_closed_reason, outError)) {
+        return false;
+    }
+    const json_min::Value* routeEdges = RequiredField(value, "route_edges", outError);
+    if (!routeEdges || !routeEdges->is_array()) {
+        return SetError(outError, "resolution_case.route_edges must be an array");
+    }
+    for (const json_min::Value& routeValue : routeEdges->as_array()) {
+        MaterializedColorPipelineRouteEdge routeEdge;
+        if (!ReadRouteEdge(routeValue, &routeEdge, outError)) {
+            return false;
+        }
+        resolutionCase.route_edges.push_back(std::move(routeEdge));
+    }
+    *outCase = std::move(resolutionCase);
     return true;
 }
 
@@ -638,6 +767,127 @@ bool ValidateMaterializedAdapters(
     return true;
 }
 
+bool ValidateMaterializedEdgeResolution(
+    const MaterializedColorPipelineContract& contract,
+    const std::set<std::string>& functionIds,
+    const std::set<std::string>& signalTypeIds,
+    std::string* outError) {
+    const bool hasPolicy = !contract.edge_policy.id.empty();
+    const bool hasEdges = !contract.edge_links.empty();
+    const bool hasCases = !contract.resolution_cases.empty();
+    if (!hasPolicy && !hasEdges && !hasCases) {
+        return true;
+    }
+    if (!hasPolicy || !hasEdges || !hasCases) {
+        return SetError(outError, "Materialized edge resolution requires policy, edges, and audit cases together");
+    }
+
+    std::set<std::string> laneIds;
+    for (const MaterializedColorPipelineLane& lane : contract.lanes) {
+        laneIds.insert(lane.id);
+    }
+    std::set<std::string> edgeIds;
+    for (const MaterializedColorPipelineEdgeLink& edge : contract.edge_links) {
+        if (edge.id.empty()) {
+            return SetError(outError, "Materialized edge link id must be non-empty");
+        }
+        if (!edgeIds.insert(edge.id).second) {
+            return SetError(outError, std::string("Duplicate materialized edge link id '") + edge.id + "'");
+        }
+        if (laneIds.find(edge.from_lane) == laneIds.end() || laneIds.find(edge.to_lane) == laneIds.end()) {
+            return SetError(outError, std::string("Materialized edge link '") + edge.id + "' references unknown lane");
+        }
+        if (edge.from_port.empty() || edge.to_port.empty()) {
+            return SetError(outError, std::string("Materialized edge link '") + edge.id + "' has an empty port id");
+        }
+        if (edge.fail_closed_reason.empty()) {
+            return SetError(outError, std::string("Materialized edge link '") + edge.id + "' is missing fail_closed_reason");
+        }
+    }
+
+    std::set<std::string> adapterIds;
+    for (const MaterializedColorPipelineAdapter& adapter : contract.adapters) {
+        adapterIds.insert(adapter.id);
+    }
+    static const char* const kValidCaseStatuses[] = {"resolved", "fail_closed"};
+    static const char* const kValidRouteStatuses[] = {"direct", "adapted"};
+    std::set<std::string> caseIds;
+    for (const MaterializedColorPipelineResolutionCase& resolutionCase : contract.resolution_cases) {
+        if (!caseIds.insert(resolutionCase.id).second) {
+            return SetError(outError, std::string("Duplicate materialized resolution case id '") + resolutionCase.id + "'");
+        }
+        if (!StringInList(resolutionCase.expected_status, kValidCaseStatuses, 2) ||
+            !StringInList(resolutionCase.status, kValidCaseStatuses, 2)) {
+            return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' has invalid status");
+        }
+        if (resolutionCase.expected_status != resolutionCase.status) {
+            return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' status does not match expected_status");
+        }
+        if (functionIds.find(resolutionCase.source) == functionIds.end() ||
+            functionIds.find(resolutionCase.shape) == functionIds.end() ||
+            functionIds.find(resolutionCase.palette) == functionIds.end() ||
+            functionIds.find(resolutionCase.grading) == functionIds.end()) {
+            return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' references a missing function");
+        }
+        if (resolutionCase.status == "resolved" && resolutionCase.route_edges.empty()) {
+            return SetError(outError, std::string("Materialized resolved case '") + resolutionCase.id + "' requires route_edges");
+        }
+        if (resolutionCase.status == "resolved" && !resolutionCase.fail_closed_reason.empty()) {
+            return SetError(outError, std::string("Materialized resolved case '") + resolutionCase.id + "' must not include fail_closed_reason");
+        }
+        if (resolutionCase.status == "fail_closed" && resolutionCase.fail_closed_reason.empty()) {
+            return SetError(outError, std::string("Materialized fail_closed case '") + resolutionCase.id + "' requires fail_closed_reason");
+        }
+        if (resolutionCase.tie_break_rule.empty()) {
+            return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' requires tie_break_rule");
+        }
+        if (resolutionCase.status == "resolved" && !resolutionCase.policy_blockers.empty()) {
+            return SetError(outError, std::string("Materialized resolved case '") + resolutionCase.id + "' must not include policy_blockers");
+        }
+        if (resolutionCase.status == "fail_closed" && resolutionCase.policy_blockers.empty()) {
+            return SetError(outError, std::string("Materialized fail_closed case '") + resolutionCase.id + "' requires policy_blockers");
+        }
+        for (const std::string& adapterId : resolutionCase.chosen_adapters) {
+            if (adapterIds.find(adapterId) == adapterIds.end()) {
+                return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' references unknown adapter");
+            }
+        }
+        int routeAdapterHops = 0;
+        int routeAdapterCost = 0;
+        for (const MaterializedColorPipelineRouteEdge& routeEdge : resolutionCase.route_edges) {
+            if (edgeIds.find(routeEdge.edge_id) == edgeIds.end()) {
+                return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' route references unknown edge");
+            }
+            if (functionIds.find(routeEdge.from_function) == functionIds.end() ||
+                functionIds.find(routeEdge.to_function) == functionIds.end()) {
+                return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' route references missing function");
+            }
+            if (signalTypeIds.find(routeEdge.from_type) == signalTypeIds.end() ||
+                signalTypeIds.find(routeEdge.to_type) == signalTypeIds.end() ||
+                signalTypeIds.find(routeEdge.output_type) == signalTypeIds.end()) {
+                return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' route references unknown signal type");
+            }
+            if (!StringInList(routeEdge.status, kValidRouteStatuses, 2)) {
+                return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' route has invalid status");
+            }
+            if (routeEdge.adapter_hops != static_cast<int>(routeEdge.adapters.size())) {
+                return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' route adapter_hops does not match adapters");
+            }
+            for (const std::string& adapterId : routeEdge.adapters) {
+                if (adapterIds.find(adapterId) == adapterIds.end()) {
+                    return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' route references unknown adapter");
+                }
+            }
+            routeAdapterHops += routeEdge.adapter_hops;
+            routeAdapterCost += routeEdge.adapter_cost;
+        }
+        if (resolutionCase.adapter_hops != routeAdapterHops || resolutionCase.adapter_cost != routeAdapterCost) {
+            return SetError(outError, std::string("Materialized resolution case '") + resolutionCase.id + "' route totals do not match route_edges");
+        }
+    }
+    return true;
+}
+
 bool ValidateMaterializedParams(
     const MaterializedColorPipelineFunction& function,
     std::string* outError) {
@@ -794,6 +1044,7 @@ bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, s
     return ValidateMaterializedSignalTypes(contract.signal_types, &signalTypeIds, outError) &&
         ValidateMaterializedAdapters(contract.adapters, signalTypeIds, outError) &&
         ValidateMaterializedLanes(contract.lanes, &functionIds, signalTypeIds, outError) &&
+        ValidateMaterializedEdgeResolution(contract, functionIds, signalTypeIds, outError) &&
         ValidateMaterializedCompatibility(contract.compatibility, functionIds, outError) &&
         ValidateMaterializedRecipes(contract.recipes, functionIds, outError) &&
         ValidateMaterializedRowApplicators(contract.row_applicators, outError) &&
@@ -839,6 +1090,8 @@ bool LoadColorPipelineMaterializedContractJson(
 
     const json_min::Value* signalTypeRegistry = RequiredField(parsed.value, "signal_type_registry", outError);
     const json_min::Value* adapterLibrary = parsed.value.get("adapter_library_contract");
+    const json_min::Value* edgeResolutionContract = parsed.value.get("edge_resolution_contract");
+    const json_min::Value* resolutionAudit = parsed.value.get("color_pipeline_resolution_audit");
     const json_min::Value* functionLibrary = RequiredField(parsed.value, "function_library", outError);
     const json_min::Value* compositionContract = RequiredField(parsed.value, "composition_recipe_contract", outError);
     const json_min::Value* explainoContract = RequiredField(parsed.value, "explaino_contract", outError);
@@ -872,6 +1125,44 @@ bool LoadColorPipelineMaterializedContractJson(
                 return false;
             }
             contract.adapters.push_back(std::move(adapter));
+        }
+    }
+
+    if ((edgeResolutionContract == nullptr) != (resolutionAudit == nullptr)) {
+        return SetError(outError, "edge_resolution_contract and color_pipeline_resolution_audit must be present together");
+    }
+    if (edgeResolutionContract) {
+        if (!edgeResolutionContract->is_object()) {
+            return SetError(outError, "edge_resolution_contract must be an object");
+        }
+        if (!resolutionAudit->is_object()) {
+            return SetError(outError, "color_pipeline_resolution_audit must be an object");
+        }
+        const json_min::Value* policy = RequiredField(*edgeResolutionContract, "policy", outError);
+        if (!policy || !ReadEdgePolicy(*policy, &contract.edge_policy, outError)) {
+            return false;
+        }
+        const json_min::Value* edges = RequiredField(*edgeResolutionContract, "edges", outError);
+        if (!edges || !edges->is_array()) {
+            return SetError(outError, "edge_resolution_contract.edges must be an array");
+        }
+        for (const json_min::Value& edgeValue : edges->as_array()) {
+            MaterializedColorPipelineEdgeLink edge;
+            if (!ReadEdgeLink(edgeValue, &edge, outError)) {
+                return false;
+            }
+            contract.edge_links.push_back(std::move(edge));
+        }
+        const json_min::Value* cases = RequiredField(*resolutionAudit, "cases", outError);
+        if (!cases || !cases->is_array()) {
+            return SetError(outError, "color_pipeline_resolution_audit.cases must be an array");
+        }
+        for (const json_min::Value& caseValue : cases->as_array()) {
+            MaterializedColorPipelineResolutionCase resolutionCase;
+            if (!ReadResolutionCase(caseValue, &resolutionCase, outError)) {
+                return false;
+            }
+            contract.resolution_cases.push_back(std::move(resolutionCase));
         }
     }
 

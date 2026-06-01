@@ -26,6 +26,16 @@
       "kind": "adapter_library",
       "contract_id": "viewer.adapter_library_contract.v1",
       "version": 1
+    },
+    {
+      "kind": "edge_resolution",
+      "contract_id": "viewer.edge_resolution_contract.v1",
+      "version": 1
+    },
+    {
+      "kind": "resolution_audit",
+      "contract_id": "viewer.color_pipeline_resolution_audit.v1",
+      "version": 1
     }
   ],
   "signal_type_registry": {
@@ -2191,6 +2201,428 @@
         "fallback": "fail_closed",
         "product_facing": false,
         "diagnostic": true
+      }
+    ]
+  },
+  "edge_resolution_contract": {
+    "policy": {
+      "id": "current_linear_color_stack",
+      "max_adapter_hops": 2,
+      "allow_lossy": false,
+      "allow_visible_default": true,
+      "allow_explicit": false,
+      "allow_diagnostic": false,
+      "fail_closed_default": true
+    },
+    "edges": [
+      {
+        "id": "source_to_shape",
+        "from_lane": "source",
+        "to_lane": "shape",
+        "from_port": "signal",
+        "to_port": "signal",
+        "fail_closed_reason": "source output cannot feed selected shape"
+      },
+      {
+        "id": "shape_to_palette",
+        "from_lane": "shape",
+        "to_lane": "palette",
+        "from_port": "signal",
+        "to_port": "signal",
+        "fail_closed_reason": "shape output cannot feed selected palette"
+      },
+      {
+        "id": "palette_to_grading",
+        "from_lane": "palette",
+        "to_lane": "grading",
+        "from_port": "color",
+        "to_port": "color",
+        "fail_closed_reason": "palette output cannot feed selected grading"
+      }
+    ]
+  },
+  "color_pipeline_resolution_audit": {
+    "cases": [
+      {
+        "id": "smooth_escape_heatmap",
+        "source": "smooth_escape_ramp",
+        "shape": "identity",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "smooth_escape_ramp",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "phase_orbit_wheel",
+        "source": "phase_orbit",
+        "shape": "identity",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "phase_orbit",
+            "to_function": "identity",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "phase.radians",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "phase_wheel_palette",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "phase_wheel_palette",
+            "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_classic",
+        "source": "root_index",
+        "shape": "identity",
+        "palette": "root_classic_palette",
+        "grading": "basin_default",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_index",
+            "to_function": "identity",
+            "from_type": "category.root_index",
+            "to_type": "category.root_index",
+            "output_type": "category.root_index",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "root_classic_palette",
+            "from_type": "category.root_index",
+            "to_type": "category.root_index",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "root_classic_palette",
+            "to_function": "basin_default",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_normal_angle_phase_wheel",
+        "source": "sdf_normal_angle",
+        "shape": "identity",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_normal_angle",
+            "to_function": "identity",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "phase.radians",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "phase_wheel_palette",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "phase_wheel_palette",
+            "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_signed_distance_normalized_heatmap",
+        "source": "sdf_signed_distance",
+        "shape": "bias_gain_curve",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": true,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": true,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [
+          "normalize.sdf_signed_distance.unit"
+        ],
+        "adapter_hops": 1,
+        "adapter_cost": 2,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_signed_distance",
+            "to_function": "bias_gain_curve",
+            "from_type": "scalar.sdf_signed_distance",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "adapted",
+            "adapters": [
+              "normalize.sdf_signed_distance.unit"
+            ],
+            "adapter_hops": 1,
+            "adapter_cost": 2
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "bias_gain_curve",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_repeat_heatmap_bad",
+        "source": "root_index",
+        "shape": "repeat",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "expected_status": "fail_closed",
+        "status": "fail_closed",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [
+          "root category cannot enter scalar repeat/heatmap route"
+        ],
+        "route_edges": [],
+        "fail_closed_reason": "root category cannot enter scalar repeat/heatmap route"
+      },
+      {
+        "id": "phase_root_palette_bad",
+        "source": "phase_orbit",
+        "shape": "identity",
+        "palette": "root_classic_palette",
+        "grading": "basin_default",
+        "expected_status": "fail_closed",
+        "status": "fail_closed",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [
+          "phase cannot enter root palette route"
+        ],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "phase_orbit",
+            "to_function": "identity",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "phase.radians",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": "phase cannot enter root palette route"
+      },
+      {
+        "id": "sdf_signed_distance_phase_palette_bad",
+        "source": "sdf_signed_distance",
+        "shape": "identity",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "expected_status": "fail_closed",
+        "status": "fail_closed",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [
+          "signed SDF distance cannot enter phase palette without an explicit phase adapter"
+        ],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_signed_distance",
+            "to_function": "identity",
+            "from_type": "scalar.sdf_signed_distance",
+            "to_type": "scalar.sdf_signed_distance",
+            "output_type": "scalar.sdf_signed_distance",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": "signed SDF distance cannot enter phase palette without an explicit phase adapter"
       }
     ]
   }

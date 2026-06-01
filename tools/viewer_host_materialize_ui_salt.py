@@ -16,6 +16,8 @@ VALID_CONTRACT_KINDS = {
     "explaino",
     "signal_type_registry",
     "adapter_library",
+    "edge_resolution",
+    "resolution_audit",
 }
 VALID_SIGNAL_KINDS = {"scalar", "phase", "categorical"}
 VALID_SIGNAL_TYPE_KINDS = {"scalar", "phase", "category", "palette", "mask", "color", "field"}
@@ -25,6 +27,7 @@ VALID_APPLICATOR_SIGNAL_KINDS = VALID_SIGNAL_KINDS | {"any"}
 VALID_APPLICATOR_TARGET_LANES = {"source"}
 VALID_PARAM_TYPES = {"float", "double", "int", "bool", "enum"}
 VALID_PORT_DIRECTIONS = {"input", "output"}
+VALID_RESOLUTION_EXPECTATIONS = {"resolved", "fail_closed"}
 VALID_STATEMENTS = {
     "contract",
     "signal_type",
@@ -36,6 +39,9 @@ VALID_STATEMENTS = {
     "compat",
     "recipe",
     "row_applicator",
+    "edge_policy",
+    "edge_link",
+    "resolution_case",
     "explaino_contract",
 }
 
@@ -50,6 +56,12 @@ class FunctionRecord:
     function: dict[str, Any]
     seen_params: set[str] = field(default_factory=set)
     seen_ports: set[tuple[str, str]] = field(default_factory=set)
+
+
+@dataclass
+class AdapterRoute:
+    adapters: list[dict[str, Any]]
+    sort_key: tuple[Any, ...]
 
 
 def _strip_comment(line: str) -> str:
@@ -336,6 +348,282 @@ def _build_adapter(kwargs: dict[str, Any], signal_type_ids: set[str]) -> dict[st
     return adapter
 
 
+def _build_edge_policy(kwargs: dict[str, Any]) -> dict[str, Any]:
+    policy_id = _require_string(kwargs, "id", statement="edge_policy")
+    return {
+        "id": policy_id,
+        "max_adapter_hops": _require_non_negative_int(kwargs, "max_adapter_hops", statement=f"edge_policy {policy_id}"),
+        "allow_lossy": _require_bool(kwargs, "allow_lossy", statement=f"edge_policy {policy_id}"),
+        "allow_visible_default": _require_bool(kwargs, "allow_visible_default", statement=f"edge_policy {policy_id}"),
+        "allow_explicit": _require_bool(kwargs, "allow_explicit", statement=f"edge_policy {policy_id}"),
+        "allow_diagnostic": _require_bool(kwargs, "allow_diagnostic", statement=f"edge_policy {policy_id}"),
+        "fail_closed_default": _require_bool(kwargs, "fail_closed_default", statement=f"edge_policy {policy_id}"),
+    }
+
+
+def _build_edge_link(kwargs: dict[str, Any], lane_ids: set[str]) -> dict[str, Any]:
+    edge_id = _require_string(kwargs, "id", statement="edge_link")
+    from_lane = _require_string(kwargs, "from_lane", statement=f"edge_link {edge_id}")
+    to_lane = _require_string(kwargs, "to_lane", statement=f"edge_link {edge_id}")
+    if from_lane not in lane_ids:
+        raise MaterializerError(f"edge_link {edge_id} references unknown from_lane '{from_lane}'")
+    if to_lane not in lane_ids:
+        raise MaterializerError(f"edge_link {edge_id} references unknown to_lane '{to_lane}'")
+    return {
+        "id": edge_id,
+        "from_lane": from_lane,
+        "to_lane": to_lane,
+        "from_port": _require_string(kwargs, "from_port", statement=f"edge_link {edge_id}"),
+        "to_port": _require_string(kwargs, "to_port", statement=f"edge_link {edge_id}"),
+        "fail_closed_reason": _require_string(kwargs, "fail_closed_reason", statement=f"edge_link {edge_id}"),
+    }
+
+
+def _build_resolution_case(kwargs: dict[str, Any]) -> dict[str, Any]:
+    case_id = _require_string(kwargs, "id", statement="resolution_case")
+    expectation = _require_string(kwargs, "expect", statement=f"resolution_case {case_id}")
+    if expectation not in VALID_RESOLUTION_EXPECTATIONS:
+        raise MaterializerError(f"resolution_case {case_id} invalid expect '{expectation}'")
+    return {
+        "id": case_id,
+        "source": _require_string(kwargs, "source", statement=f"resolution_case {case_id}"),
+        "shape": _require_string(kwargs, "shape", statement=f"resolution_case {case_id}"),
+        "palette": _require_string(kwargs, "palette", statement=f"resolution_case {case_id}"),
+        "grading": _require_string(kwargs, "grading", statement=f"resolution_case {case_id}"),
+        "expected_status": expectation,
+        "allow_lossy": _optional_bool(kwargs, "allow_lossy", False),
+        "allow_visible_default": _optional_bool(kwargs, "allow_visible_default", False),
+        "explicit_adapter_consent": _optional_bool(kwargs, "explicit_adapter_consent", False),
+        "diagnostic_adapter_consent": _optional_bool(kwargs, "diagnostic_adapter_consent", False),
+        "fail_closed_reason": _optional_string(kwargs, "fail_closed_reason", ""),
+    }
+
+
+def _canonical_output_port(function: dict[str, Any]) -> dict[str, Any] | None:
+    for port in function.get("ports", []):
+        if port["direction"] == "output" and bool(port.get("canonical", False)):
+            return port
+    return None
+
+
+def _first_input_port(function: dict[str, Any], port_id: str) -> dict[str, Any] | None:
+    for port in function.get("ports", []):
+        if port["direction"] == "input" and port["id"] == port_id:
+            return port
+    return None
+
+
+def _adapter_block_reason(adapter: dict[str, Any], policy: dict[str, Any], case: dict[str, Any]) -> str:
+    if adapter["policy"] == "forbidden":
+        return f"adapter {adapter['id']} is forbidden"
+    if adapter["lossy"] and not case["allow_lossy"] and not policy["allow_lossy"]:
+        return f"adapter {adapter['id']} is lossy and allow_lossy is false"
+    if adapter["policy"] == "visible_default" and not (case["allow_visible_default"] or policy["allow_visible_default"]):
+        return f"adapter {adapter['id']} requires visible_default adapter permission"
+    if adapter["policy"] == "explicit_only" and not (case["explicit_adapter_consent"] or policy["allow_explicit"]):
+        return f"adapter {adapter['id']} requires explicit adapter consent"
+    if adapter["policy"] == "diagnostic_only" and not (case["diagnostic_adapter_consent"] or policy["allow_diagnostic"]):
+        return f"adapter {adapter['id']} requires diagnostic adapter consent"
+    return ""
+
+
+def _adapter_policy_rank(adapter: dict[str, Any]) -> int:
+    return {
+        "safe": 0,
+        "visible_default": 1,
+        "explicit_only": 2,
+        "diagnostic_only": 3,
+        "forbidden": 4,
+    }.get(adapter["policy"], 99)
+
+
+def _find_adapter_route(
+    source_type: str,
+    target_type: str,
+    adapters: list[dict[str, Any]],
+    policy: dict[str, Any],
+    case: dict[str, Any],
+) -> tuple[AdapterRoute | None, str]:
+    if source_type == target_type:
+        return AdapterRoute(adapters=[], sort_key=(0, 0, 0, 0, ())), ""
+
+    max_hops = policy["max_adapter_hops"]
+    adapter_order = {adapter["id"]: index for index, adapter in enumerate(adapters)}
+    candidates: list[AdapterRoute] = []
+    blocked_reasons: list[str] = []
+    frontier: list[tuple[str, list[dict[str, Any]], set[str]]] = [(source_type, [], {source_type})]
+
+    while frontier:
+        current_type, path, visited_types = frontier.pop(0)
+        if len(path) >= max_hops:
+            continue
+        for adapter in adapters:
+            if adapter["source"] != current_type:
+                continue
+            reason = _adapter_block_reason(adapter, policy, case)
+            if reason:
+                blocked_reasons.append(reason)
+                continue
+            next_type = adapter["target"]
+            if next_type in visited_types:
+                continue
+            next_path = path + [adapter]
+            if next_type == target_type:
+                worst_policy = max(_adapter_policy_rank(item) for item in next_path)
+                any_lossy = int(any(bool(item["lossy"]) for item in next_path))
+                total_cost = sum(int(item["cost"]) for item in next_path)
+                route_order = tuple(adapter_order[item["id"]] for item in next_path)
+                candidates.append(
+                    AdapterRoute(
+                        adapters=next_path,
+                        sort_key=(1, worst_policy, any_lossy, total_cost, len(next_path), route_order),
+                    )
+                )
+                continue
+            frontier.append((next_type, next_path, visited_types | {next_type}))
+
+    if candidates:
+        candidates.sort(key=lambda item: item.sort_key)
+        return candidates[0], ""
+    if blocked_reasons:
+        return None, blocked_reasons[0]
+    return None, f"no adapter route from {source_type} to {target_type}"
+
+
+def _resolve_edge(
+    edge: dict[str, Any],
+    from_function: dict[str, Any],
+    to_function: dict[str, Any],
+    current_type: str,
+    adapters: list[dict[str, Any]],
+    policy: dict[str, Any],
+    case: dict[str, Any],
+) -> tuple[dict[str, Any] | None, str, str]:
+    input_port = _first_input_port(to_function, edge["to_port"])
+    if input_port is None:
+        return None, "", f"function {to_function['id']} lacks input port '{edge['to_port']}'"
+
+    target_type = input_port["type"]
+    chosen_adapters: list[dict[str, Any]] = []
+    if _is_generic_type(target_type):
+        resolved_input_type = current_type
+        route_status = "direct"
+    else:
+        route, reason = _find_adapter_route(current_type, target_type, adapters, policy, case)
+        if route is None:
+            return None, "", reason or edge["fail_closed_reason"]
+        chosen_adapters = route.adapters
+        resolved_input_type = target_type
+        route_status = "direct" if not chosen_adapters else "adapted"
+
+    output_port = _canonical_output_port(to_function)
+    if output_port is None:
+        return None, "", f"function {to_function['id']} lacks canonical output port"
+    output_type = output_port["type"]
+    if _is_generic_type(output_type):
+        output_type = resolved_input_type
+
+    route_edge = {
+        "edge_id": edge["id"],
+        "from_function": from_function["id"],
+        "to_function": to_function["id"],
+        "from_type": current_type,
+        "to_type": resolved_input_type,
+        "output_type": output_type,
+        "status": route_status,
+        "adapters": [adapter["id"] for adapter in chosen_adapters],
+        "adapter_hops": len(chosen_adapters),
+        "adapter_cost": sum(int(adapter["cost"]) for adapter in chosen_adapters),
+    }
+    return route_edge, output_type, ""
+
+
+def _resolve_case(
+    case: dict[str, Any],
+    functions: dict[str, FunctionRecord],
+    edge_links: list[dict[str, Any]],
+    adapters: list[dict[str, Any]],
+    policy: dict[str, Any],
+) -> dict[str, Any]:
+    function_ids = [case["source"], case["shape"], case["palette"], case["grading"]]
+    for function_id in function_ids:
+        if function_id not in functions:
+            raise MaterializerError(f"resolution_case {case['id']} references unknown function '{function_id}'")
+
+    if len(edge_links) != 3:
+        raise MaterializerError("resolution_audit requires exactly three linear edge_link statements")
+
+    source_function = functions[case["source"]].function
+    output_port = _canonical_output_port(source_function)
+    if output_port is None:
+        raise MaterializerError(f"resolution_case {case['id']} source lacks canonical output port")
+    current_type = output_port["type"]
+
+    route_edges: list[dict[str, Any]] = []
+    chosen_adapters: list[str] = []
+    ordered_functions = [
+        source_function,
+        functions[case["shape"]].function,
+        functions[case["palette"]].function,
+        functions[case["grading"]].function,
+    ]
+
+    fail_reason = ""
+    for index, edge in enumerate(edge_links):
+        route_edge, next_type, reason = _resolve_edge(
+            edge,
+            ordered_functions[index],
+            ordered_functions[index + 1],
+            current_type,
+            adapters,
+            policy,
+            case,
+        )
+        if route_edge is None:
+            fail_reason = case["fail_closed_reason"] or reason or edge["fail_closed_reason"]
+            break
+        route_edges.append(route_edge)
+        chosen_adapters.extend(route_edge["adapters"])
+        current_type = next_type
+
+    status = "fail_closed" if fail_reason else "resolved"
+    if status == "fail_closed" and not fail_reason:
+        fail_reason = case["fail_closed_reason"] or "typed resolver failed closed"
+
+    if case["expected_status"] == "resolved" and status != "resolved":
+        raise MaterializerError(
+            f"resolution_case {case['id']} expected resolved but got fail_closed: {fail_reason}"
+        )
+    if case["expected_status"] == "fail_closed" and status == "resolved":
+        raise MaterializerError(f"resolution_case {case['id']} expected fail_closed but resolved")
+    if case["expected_status"] == "fail_closed" and not case["fail_closed_reason"]:
+        raise MaterializerError(f"resolution_case {case['id']} expected fail_closed requires fail_closed_reason")
+
+    adapter_hops = sum(int(edge["adapter_hops"]) for edge in route_edges)
+    adapter_cost = sum(int(edge["adapter_cost"]) for edge in route_edges)
+
+    return {
+        "id": case["id"],
+        "source": case["source"],
+        "shape": case["shape"],
+        "palette": case["palette"],
+        "grading": case["grading"],
+        "expected_status": case["expected_status"],
+        "status": status,
+        "allow_lossy": case["allow_lossy"],
+        "allow_visible_default": case["allow_visible_default"],
+        "explicit_adapter_consent": case["explicit_adapter_consent"],
+        "diagnostic_adapter_consent": case["diagnostic_adapter_consent"],
+        "chosen_adapters": chosen_adapters,
+        "adapter_hops": adapter_hops,
+        "adapter_cost": adapter_cost,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [] if status == "resolved" else [fail_reason],
+        "route_edges": route_edges,
+        "fail_closed_reason": "" if status == "resolved" else fail_reason,
+    }
+
+
 def _validate_function_ports(record: FunctionRecord) -> None:
     ports = record.function.get("ports", [])
     if not ports:
@@ -375,6 +663,11 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     adapter_library_declared = False
     adapters: list[dict[str, Any]] = []
     adapter_ids: set[str] = set()
+    edge_policy: dict[str, Any] | None = None
+    edge_links: list[dict[str, Any]] = []
+    edge_link_ids: set[str] = set()
+    resolution_cases: list[dict[str, Any]] = []
+    resolution_case_ids: set[str] = set()
 
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
         parsed = _parse_statement(raw_line, line_number)
@@ -600,6 +893,57 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 "width_param": _optional_string(kwargs, "width_param", ""),
                 "fail_closed_reason": _require_string(kwargs, "fail_closed_reason", statement=f"row_applicator {applicator_id}"),
             })
+        elif name == "edge_policy":
+            _check_known_args(
+                name,
+                kwargs,
+                {
+                    "id",
+                    "max_adapter_hops",
+                    "allow_lossy",
+                    "allow_visible_default",
+                    "allow_explicit",
+                    "allow_diagnostic",
+                    "fail_closed_default",
+                },
+            )
+            if edge_policy is not None:
+                raise MaterializerError("duplicate edge_policy")
+            edge_policy = _build_edge_policy(kwargs)
+        elif name == "edge_link":
+            _check_known_args(
+                name,
+                kwargs,
+                {"id", "from_lane", "to_lane", "from_port", "to_port", "fail_closed_reason"},
+            )
+            edge_link = _build_edge_link(kwargs, lane_ids)
+            if edge_link["id"] in edge_link_ids:
+                raise MaterializerError(f"duplicate edge_link id '{edge_link['id']}'")
+            edge_link_ids.add(edge_link["id"])
+            edge_links.append(edge_link)
+        elif name == "resolution_case":
+            _check_known_args(
+                name,
+                kwargs,
+                {
+                    "id",
+                    "source",
+                    "shape",
+                    "palette",
+                    "grading",
+                    "expect",
+                    "allow_lossy",
+                    "allow_visible_default",
+                    "explicit_adapter_consent",
+                    "diagnostic_adapter_consent",
+                    "fail_closed_reason",
+                },
+            )
+            resolution_case = _build_resolution_case(kwargs)
+            if resolution_case["id"] in resolution_case_ids:
+                raise MaterializerError(f"duplicate resolution_case id '{resolution_case['id']}'")
+            resolution_case_ids.add(resolution_case["id"])
+            resolution_cases.append(resolution_case)
         elif name == "explaino_contract":
             required = ("id", "hypothesis_space", "authority", "lens", "invariant", "proof", "fallback")
             _check_known_args(name, kwargs, set(required) | {"product_facing", "diagnostic"})
@@ -636,8 +980,21 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         raise MaterializerError("at least one row_applicator is required")
     if adapter_library_declared and not adapters:
         raise MaterializerError("adapter_library contract requires at least one adapter")
+    if (edge_policy is None) != (not edge_links and not resolution_cases):
+        raise MaterializerError("edge_resolution requires edge_policy, edge_link, and resolution_case statements together")
 
-    return {
+    resolved_cases: list[dict[str, Any]] = []
+    if edge_policy is not None:
+        if not edge_links:
+            raise MaterializerError("edge_resolution requires at least one edge_link")
+        if not resolution_cases:
+            raise MaterializerError("resolution_audit requires at least one resolution_case")
+        resolved_cases = [
+            _resolve_case(case, functions, edge_links, adapters, edge_policy)
+            for case in resolution_cases
+        ]
+
+    payload = {
         "schema_version": 1,
         "source_path": source_path,
         "contracts": contracts,
@@ -651,6 +1008,15 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         },
         "explaino_contract": {"entries": explaino_entries},
     }
+    if edge_policy is not None:
+        payload["edge_resolution_contract"] = {
+            "policy": edge_policy,
+            "edges": edge_links,
+        }
+        payload["color_pipeline_resolution_audit"] = {
+            "cases": resolved_cases,
+        }
+    return payload
 
 
 def stable_source_path(path: Path) -> str:

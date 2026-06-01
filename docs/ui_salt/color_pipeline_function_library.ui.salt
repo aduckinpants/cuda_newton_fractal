@@ -6,6 +6,8 @@ contract(kind="composition_recipe", contract_id="viewer.composition_recipe_contr
 contract(kind="explaino", contract_id="viewer.explaino_contract.v1", version=1)
 contract(kind="signal_type_registry", contract_id="viewer.signal_type_registry_contract.v1", version=1)
 contract(kind="adapter_library", contract_id="viewer.adapter_library_contract.v1", version=1)
+contract(kind="edge_resolution", contract_id="viewer.edge_resolution_contract.v1", version=1)
+contract(kind="resolution_audit", contract_id="viewer.color_pipeline_resolution_audit.v1", version=1)
 
 signal_type(id="scalar.unit", kind="scalar", domain="unit", topology="linear", arity=1, default_adapter_policy="safe")
 signal_type(id="scalar.signed", kind="scalar", domain="signed", topology="linear", arity=1, default_adapter_policy="explicit_only")
@@ -109,6 +111,21 @@ port(function="basin_default", direction="input", id="color", type="color.linear
 port(function="basin_default", direction="output", id="color", type="color.linear_rgb", canonical=True)
 port(function="neutral_finish", direction="input", id="color", type="color.linear_rgb")
 port(function="neutral_finish", direction="output", id="color", type="color.linear_rgb", canonical=True)
+
+# Slice D typed edge resolution remains shadow metadata only. It audits the current linear Source -> Shape -> Palette -> Grading projection without changing live compatibility behavior.
+edge_policy(id="current_linear_color_stack", max_adapter_hops=2, allow_lossy=False, allow_visible_default=True, allow_explicit=False, allow_diagnostic=False, fail_closed_default=True)
+edge_link(id="source_to_shape", from_lane="source", to_lane="shape", from_port="signal", to_port="signal", fail_closed_reason="source output cannot feed selected shape")
+edge_link(id="shape_to_palette", from_lane="shape", to_lane="palette", from_port="signal", to_port="signal", fail_closed_reason="shape output cannot feed selected palette")
+edge_link(id="palette_to_grading", from_lane="palette", to_lane="grading", from_port="color", to_port="color", fail_closed_reason="palette output cannot feed selected grading")
+
+resolution_case(id="smooth_escape_heatmap", source="smooth_escape_ramp", shape="identity", palette="heatmap", grading="contrast_lift", expect="resolved")
+resolution_case(id="phase_orbit_wheel", source="phase_orbit", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="resolved")
+resolution_case(id="root_classic", source="root_index", shape="identity", palette="root_classic_palette", grading="basin_default", expect="resolved")
+resolution_case(id="sdf_normal_angle_phase_wheel", source="sdf_normal_angle", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="resolved")
+resolution_case(id="sdf_signed_distance_normalized_heatmap", source="sdf_signed_distance", shape="bias_gain_curve", palette="heatmap", grading="contrast_lift", expect="resolved", allow_lossy=True, explicit_adapter_consent=True)
+resolution_case(id="root_repeat_heatmap_bad", source="root_index", shape="repeat", palette="heatmap", grading="contrast_lift", expect="fail_closed", fail_closed_reason="root category cannot enter scalar repeat/heatmap route")
+resolution_case(id="phase_root_palette_bad", source="phase_orbit", shape="identity", palette="root_classic_palette", grading="basin_default", expect="fail_closed", fail_closed_reason="phase cannot enter root palette route")
+resolution_case(id="sdf_signed_distance_phase_palette_bad", source="sdf_signed_distance", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="fail_closed", fail_closed_reason="signed SDF distance cannot enter phase palette without an explicit phase adapter")
 
 compat(source="smooth_escape_ramp", palette="heatmap", signal="smooth_escape_ramp", palette_runtime="heatmap", grading="contrast_lift", mode="smooth_escape")
 compat(source="smooth_escape_ramp", palette="explaino_cmap", signal="smooth_escape_ramp", palette_runtime="explaino_cmap", grading="contrast_lift", mode="smooth_escape")

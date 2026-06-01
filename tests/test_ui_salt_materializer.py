@@ -52,6 +52,57 @@ explaino_contract(id="color_pipeline.explaino_cmap", hypothesis_space="color_pip
 '''
 
 
+EDGE_RESOLUTION_FIXTURE = VALID_UI_SALT + '''
+contract(kind="edge_resolution", contract_id="viewer.edge_resolution_contract.v1", version=1)
+contract(kind="resolution_audit", contract_id="viewer.color_pipeline_resolution_audit.v1", version=1)
+lane(id="shape", label="Shape", default="identity")
+lane(id="grading", label="Grading", default="contrast_lift")
+function(lane="shape", id="identity", label="Identity", taxonomy_group="identity", runtime_backed=True)
+function(lane="shape", id="repeat", label="Repeat", taxonomy_group="repeat", runtime_backed=True)
+function(lane="shape", id="bias_gain_curve", label="Bias + Gain Curve", taxonomy_group="remap", runtime_backed=True)
+function(lane="palette", id="phase_wheel_palette", label="Phase Wheel", taxonomy_group="palette_phase", runtime_backed=True)
+function(lane="palette", id="root_classic_palette", label="Root Classic Palette", taxonomy_group="palette_basin", runtime_backed=True)
+function(lane="grading", id="contrast_lift", label="Contrast Lift", taxonomy_group="grade_escape", runtime_backed=True)
+function(lane="grading", id="phase_finish", label="Phase Finish", taxonomy_group="grade_phase", runtime_backed=True)
+function(lane="grading", id="basin_default", label="Basin Default", taxonomy_group="grade_basin", runtime_backed=True)
+function(lane="source", id="raw_sdf_field_debug", label="Raw SDF Field Debug", taxonomy_group="sdf_debug", typed_signal="field.sdf_signed_distance", runtime_backed=False)
+port(function="smooth_escape_ramp", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="sdf_signed_distance", direction="output", id="signal", type="scalar.sdf_signed_distance", canonical=True)
+port(function="sdf_normal_angle", direction="output", id="signal", type="phase.radians", canonical=True)
+port(function="root_index", direction="output", id="signal", type="category.root_index", canonical=True)
+port(function="raw_sdf_field_debug", direction="output", id="signal", type="field.sdf_signed_distance", canonical=True)
+port(function="identity", direction="input", id="signal", type="generic.T", generic_group="T")
+port(function="identity", direction="output", id="signal", type="generic.T", generic_group="T", canonical=True)
+port(function="repeat", direction="input", id="signal", type="scalar.unit")
+port(function="repeat", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="bias_gain_curve", direction="input", id="signal", type="scalar.unit")
+port(function="bias_gain_curve", direction="output", id="signal", type="scalar.unit", canonical=True)
+port(function="heatmap", direction="input", id="signal", type="scalar.unit")
+port(function="heatmap", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="phase_wheel_palette", direction="input", id="signal", type="phase.radians")
+port(function="phase_wheel_palette", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="root_classic_palette", direction="input", id="signal", type="category.root_index")
+port(function="root_classic_palette", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="contrast_lift", direction="input", id="color", type="color.linear_rgb")
+port(function="contrast_lift", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="phase_finish", direction="input", id="color", type="color.linear_rgb")
+port(function="phase_finish", direction="output", id="color", type="color.linear_rgb", canonical=True)
+port(function="basin_default", direction="input", id="color", type="color.linear_rgb")
+port(function="basin_default", direction="output", id="color", type="color.linear_rgb", canonical=True)
+edge_policy(id="current_linear_color_stack", max_adapter_hops=2, allow_lossy=False, allow_visible_default=True, allow_explicit=False, allow_diagnostic=False, fail_closed_default=True)
+edge_link(id="source_to_shape", from_lane="source", to_lane="shape", from_port="signal", to_port="signal", fail_closed_reason="source output cannot feed selected shape")
+edge_link(id="shape_to_palette", from_lane="shape", to_lane="palette", from_port="signal", to_port="signal", fail_closed_reason="shape output cannot feed selected palette")
+edge_link(id="palette_to_grading", from_lane="palette", to_lane="grading", from_port="color", to_port="color", fail_closed_reason="palette output cannot feed selected grading")
+resolution_case(id="smooth_escape_heatmap", source="smooth_escape_ramp", shape="identity", palette="heatmap", grading="contrast_lift", expect="resolved")
+resolution_case(id="phase_orbit_wheel", source="sdf_normal_angle", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="resolved")
+resolution_case(id="root_classic", source="root_index", shape="identity", palette="root_classic_palette", grading="basin_default", expect="resolved")
+resolution_case(id="sdf_signed_normalized_heatmap", source="sdf_signed_distance", shape="bias_gain_curve", palette="heatmap", grading="contrast_lift", expect="resolved", allow_lossy=True, explicit_adapter_consent=True)
+resolution_case(id="root_repeat_heatmap_bad", source="root_index", shape="repeat", palette="heatmap", grading="contrast_lift", expect="fail_closed", fail_closed_reason="root category cannot enter scalar repeat/heatmap route")
+resolution_case(id="phase_root_palette_bad", source="sdf_normal_angle", shape="identity", palette="root_classic_palette", grading="basin_default", expect="fail_closed", fail_closed_reason="phase cannot enter root palette route")
+resolution_case(id="raw_sdf_field_phase_palette_bad", source="raw_sdf_field_debug", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="fail_closed", fail_closed_reason="raw SDF field cannot enter phase palette route")
+'''
+
+
 def run_materializer(tmp_path: Path, text: str):
     source = tmp_path / "case.ui.salt"
     out = tmp_path / "out.json"
@@ -372,6 +423,86 @@ port(function="contrast_lift", direction="output", id="color", type="color.linea
     assert _ports(payload, "grading", "contrast_lift")[-1]["type"] == "color.linear_rgb"
 
 
+def test_materializer_accepts_edge_resolution_shadow_audit(tmp_path):
+    proc, out = run_materializer(tmp_path, EDGE_RESOLUTION_FIXTURE)
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+
+    assert [item["kind"] for item in payload["contracts"]][-2:] == [
+        "edge_resolution",
+        "resolution_audit",
+    ]
+    policy = payload["edge_resolution_contract"]["policy"]
+    assert policy == {
+        "id": "current_linear_color_stack",
+        "max_adapter_hops": 2,
+        "allow_lossy": False,
+        "allow_visible_default": True,
+        "allow_explicit": False,
+        "allow_diagnostic": False,
+        "fail_closed_default": True,
+    }
+    assert [edge["id"] for edge in payload["edge_resolution_contract"]["edges"]] == [
+        "source_to_shape",
+        "shape_to_palette",
+        "palette_to_grading",
+    ]
+
+    cases = {case["id"]: case for case in payload["color_pipeline_resolution_audit"]["cases"]}
+    assert cases["smooth_escape_heatmap"]["status"] == "resolved"
+    assert cases["smooth_escape_heatmap"]["chosen_adapters"] == []
+    assert cases["smooth_escape_heatmap"]["adapter_hops"] == 0
+    assert cases["smooth_escape_heatmap"]["adapter_cost"] == 0
+    assert cases["smooth_escape_heatmap"]["policy_blockers"] == []
+    assert [edge["status"] for edge in cases["smooth_escape_heatmap"]["route_edges"]] == [
+        "direct",
+        "direct",
+        "direct",
+    ]
+    assert cases["sdf_signed_normalized_heatmap"]["status"] == "resolved"
+    assert cases["sdf_signed_normalized_heatmap"]["chosen_adapters"] == [
+        "normalize.sdf_signed_distance.unit"
+    ]
+    assert cases["sdf_signed_normalized_heatmap"]["adapter_hops"] == 1
+    assert cases["sdf_signed_normalized_heatmap"]["adapter_cost"] == 2
+    assert cases["sdf_signed_normalized_heatmap"]["tie_break_rule"] == (
+        "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order"
+    )
+    assert cases["sdf_signed_normalized_heatmap"]["route_edges"][0]["adapters"] == [
+        "normalize.sdf_signed_distance.unit"
+    ]
+    assert cases["sdf_signed_normalized_heatmap"]["route_edges"][0]["adapter_hops"] == 1
+    assert cases["sdf_signed_normalized_heatmap"]["route_edges"][0]["adapter_cost"] == 2
+    assert cases["root_repeat_heatmap_bad"]["status"] == "fail_closed"
+    assert "root category" in cases["root_repeat_heatmap_bad"]["fail_closed_reason"]
+    assert cases["root_repeat_heatmap_bad"]["policy_blockers"]
+    assert cases["phase_root_palette_bad"]["status"] == "fail_closed"
+    assert cases["raw_sdf_field_phase_palette_bad"]["status"] == "fail_closed"
+    assert "raw SDF field" in cases["raw_sdf_field_phase_palette_bad"]["fail_closed_reason"]
+
+
+def test_materializer_rejects_resolution_case_without_explicit_consent_for_explicit_adapter(tmp_path):
+    text = EDGE_RESOLUTION_FIXTURE.replace(
+        ', allow_lossy=True, explicit_adapter_consent=True)',
+        ', allow_lossy=True)',
+        1,
+    )
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "resolution_case sdf_signed_normalized_heatmap expected resolved but got fail_closed" in proc.stderr
+    assert "explicit adapter consent" in proc.stderr
+
+
+def test_materializer_rejects_resolution_case_expected_fail_but_resolves(tmp_path):
+    text = EDGE_RESOLUTION_FIXTURE.replace(
+        'resolution_case(id="smooth_escape_heatmap", source="smooth_escape_ramp", shape="identity", palette="heatmap", grading="contrast_lift", expect="resolved")',
+        'resolution_case(id="smooth_escape_heatmap", source="smooth_escape_ramp", shape="identity", palette="heatmap", grading="contrast_lift", expect="fail_closed", fail_closed_reason="should not resolve")',
+    )
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "resolution_case smooth_escape_heatmap expected fail_closed but resolved" in proc.stderr
+
+
 def test_materializer_rejects_unknown_port_signal_type(tmp_path):
     text = VALID_UI_SALT + 'port(function="smooth_escape_ramp", direction="output", id="signal", type="scalar.missing", canonical=True)\n'
     proc, _ = run_materializer(tmp_path, text)
@@ -516,6 +647,37 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert all(item["target_lane"] == "source" for item in row_applicators)
     assert all(item["fail_closed_reason"] for item in row_applicators)
     assert len(actual["composition_recipe_contract"]["compatibility"]) == 22
+    assert actual["edge_resolution_contract"]["policy"]["id"] == "current_linear_color_stack"
+    assert [edge["id"] for edge in actual["edge_resolution_contract"]["edges"]] == [
+        "source_to_shape",
+        "shape_to_palette",
+        "palette_to_grading",
+    ]
+    audit_cases = {case["id"]: case for case in actual["color_pipeline_resolution_audit"]["cases"]}
+    assert set(audit_cases) == {
+        "smooth_escape_heatmap",
+        "phase_orbit_wheel",
+        "root_classic",
+        "sdf_normal_angle_phase_wheel",
+        "sdf_signed_distance_normalized_heatmap",
+        "root_repeat_heatmap_bad",
+        "phase_root_palette_bad",
+        "sdf_signed_distance_phase_palette_bad",
+    }
+    assert audit_cases["smooth_escape_heatmap"]["status"] == "resolved"
+    assert audit_cases["smooth_escape_heatmap"]["chosen_adapters"] == []
+    assert audit_cases["sdf_signed_distance_normalized_heatmap"]["chosen_adapters"] == [
+        "normalize.sdf_signed_distance.unit"
+    ]
+    assert audit_cases["sdf_signed_distance_normalized_heatmap"]["explicit_adapter_consent"] is True
+    assert audit_cases["sdf_signed_distance_normalized_heatmap"]["adapter_hops"] == 1
+    assert audit_cases["sdf_signed_distance_normalized_heatmap"]["adapter_cost"] == 2
+    assert audit_cases["sdf_signed_distance_normalized_heatmap"]["policy_blockers"] == []
+    assert audit_cases["root_repeat_heatmap_bad"]["status"] == "fail_closed"
+    assert "root category" in audit_cases["root_repeat_heatmap_bad"]["fail_closed_reason"]
+    assert audit_cases["root_repeat_heatmap_bad"]["policy_blockers"]
+    assert audit_cases["phase_root_palette_bad"]["status"] == "fail_closed"
+    assert audit_cases["sdf_signed_distance_phase_palette_bad"]["status"] == "fail_closed"
 
     assert _ports(actual, "source", "smooth_escape_ramp") == [
         {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True}
