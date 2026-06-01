@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 complete - Slice A signal type registry shadow contract is ready for checkpoint; next implementation phase is Slice B port signatures after merge/replan.
+Phase 5 complete - Slice A signal type registry shadow contract is checkpointed and validated; next implementation phase is Slice B port signatures after merge/replan.
 
 ## Phase Checklist
 
