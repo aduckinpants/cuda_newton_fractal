@@ -216,3 +216,5 @@
 - `ck:1dbcf329` 2026-06-10 17:43 UTC | score 93 — Deferred research intake documented slime policy GA/stopping, capture-only AA versus color tuning, and SDF pack packaging plus hybrid substrate follow-ups as separate parked notes with blockers and proof gates.
 - `ck:86a1f06f` 2026-06-10 17:45 UTC — session-start | branch=codex/deferred-research-intake-20260610 | head=e2cc237 | status=clean | profile=native | intent=rearward repair stale checkpoint wording for deferred research intake | rearward_repair_for=e2cc2371778d5b2164be5365f8fe83ee5e18af6a
 - `ck:86a1f06f` 2026-06-10 17:46 UTC | score 93 — Rearward repair removed stale checkpoint wording from the deferred research intake plan and reran docs-only validation.
+- `ck:b230e95d` 2026-06-10 18:00 UTC — session-start | branch=codex/deferred-research-intake-20260610 | head=7d34a82 | status=dirty | profile=native | intent=defer adaptive viewport presentation throttling for fast slime runs
+- `ck:b230e95d` 2026-06-10 18:06 UTC | score 93 — Deferred adaptive viewport presentation throttling for fast slime/autonomous runs as a nice-to-have note with capture/replay authority boundaries and future proof gates.

@@ -40,6 +40,9 @@ Three separate notes were added so later sessions do not conflate unrelated idea
 - `docs/notes/sdf_pack_packaging_and_hybrid_substrate_DEFERRED_NOTE.md`
   - Published-runtime built-in SDF pack staging/recovery, and later IFS/Flame + SDF hybrid readiness.
   - Main blocker: `sdf_pack_scene` built-ins must be staged/recoverable before broader SDF catalog growth; IFS and Flame still need separate non-SDF substrate contracts.
+- `docs/notes/slime_adaptive_viewport_presentation_DEFERRED_NOTE.md`
+  - Adaptive viewport presentation throttling for fastest slime/autonomous runs when render cost dominates the per-tick budget.
+  - Main blocker: viewport presentation can temporarily lag authoritative state, so future implementation needs explicit stale-state reporting and forced latest-state renders on stop/pause/capture.
 
 Short-term intent: when SDF work resumes, prioritize the SDF packaging/recovery hardening before new SDF math or hybrid substrate work.
 
