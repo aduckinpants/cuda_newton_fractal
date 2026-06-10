@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - deferred notes are written, indexed, validated, and ready for checkpoint.
+Complete - deferred notes are written, indexed, validated, and checkpointed.
 
 ## Phase Checklist
 
