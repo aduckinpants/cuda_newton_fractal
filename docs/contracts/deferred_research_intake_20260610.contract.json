@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contract_id": "deferred_research_intake_20260610",
+  "feature_id": "deferred_research_intake",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/deferred_research_intake_20260610_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/deferred_research_intake_20260610_PHASED_PLAN.md",
+    "docs/contracts/deferred_research_intake_20260610.contract.json",
+    "docs/notes/slime_policy_ga_and_vein_stopping_DEFERRED_NOTE.md",
+    "docs/notes/capture_only_supersampling_and_color_tuning_DEFERRED_NOTE.md",
+    "docs/notes/sdf_pack_packaging_and_hybrid_substrate_DEFERRED_NOTE.md",
+    "DEFERRED_THREADS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "document the genetic-algorithm-over-slime-policy idea for later follow-up",
+    "document the slime stopping/switching feedback separately from the GA idea while noting their relationship",
+    "document the capture-only anti-aliasing versus color-tuning feasibility review",
+    "document the SDF pack packaging, UI recovery, and IFS/Flame hybrid substrate review",
+    "surface contradictions, show-stoppers, and future proof gates",
+    "do not implement product behavior in this slice"
+  ],
+  "forbidden_operator_prompts": [
+    "do not add runtime GA behavior",
+    "do not change sidecar/slime controller code",
+    "do not add capture anti-aliasing behavior",
+    "do not change renderer sampling",
+    "do not change SDF pack loading or published runtime packaging",
+    "do not add IFS, Flame, attractor-density, or hybrid renderers",
+    "do not start the next SDF product slice under this contract"
+  ],
+  "required_defaults": {
+    "slice_kind": "deferred_docs_only",
+    "source_head": "4dfed13",
+    "runtime_publish_required": false,
+    "published_runtime_proof_required": false,
+    "product_behavior_changes_allowed": false
+  },
+  "forbidden_defaults": {
+    "runtime_mutation": "forbidden",
+    "renderer_changes": "forbidden",
+    "sdf_pack_loader_changes": "forbidden",
+    "live_viewer_changes": "forbidden",
+    "new_fractal_substrate": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/deferred_research_intake_20260610.contract.json --out-json artifacts/validation/deferred_research_intake_20260610_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/deferred_research_intake_20260610_PHASED_PLAN.md --out-json artifacts/validation/deferred_research_intake_20260610_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/deferred_research_intake_20260610_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label deferred_research_intake_20260610_diff_check --log artifacts/logs/deferred_research_intake_20260610_diff_check.log --out-json artifacts/validation/deferred_research_intake_20260610_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The deferred research intake contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/deferred_research_intake_20260610_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The deferred research intake hostile audit is complete.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/deferred_research_intake_20260610_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "diff_check_ok",
+      "description": "The documentation diff has no whitespace/path issues.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/deferred_research_intake_20260610_diff_check.json",
+      "json_path": "exit_code",
+      "equals": 0
+    }
+  ]
+}
+

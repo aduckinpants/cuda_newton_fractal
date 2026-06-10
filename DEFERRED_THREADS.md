@@ -25,6 +25,24 @@ The recent bounded mini-campaign pattern was useful: a small sprint-like plan gr
 
 Acceptance direction: document the intended operator/agent workflow first, then add tooling only if the existing plan/contract/checkpoint surfaces cannot cover it simply. Do not loosen closure proof or checkpoint requirements.
 
+## Deferred Research Intake - 2026-06-10
+
+Status: deferred research/design parking only; none of these items are active implementation work.
+
+Three separate notes were added so later sessions do not conflate unrelated ideas:
+
+- `docs/notes/slime_policy_ga_and_vein_stopping_DEFERRED_NOTE.md`
+  - Genetic algorithm over sidecar/slime policy, plus the related but distinct vein stopping/switching problem.
+  - Main blocker: current mutation trail receipts are not strong enough for rigorous golden-thread replay/backward proof.
+- `docs/notes/capture_only_supersampling_and_color_tuning_DEFERRED_NOTE.md`
+  - Capture-only supersampling feasibility versus per-family color/smooth-escape tuning.
+  - Main blocker: AA will not fix Color Pipeline banding/repeat harshness, and live AA conflicts with realtime exploration.
+- `docs/notes/sdf_pack_packaging_and_hybrid_substrate_DEFERRED_NOTE.md`
+  - Published-runtime built-in SDF pack staging/recovery, and later IFS/Flame + SDF hybrid readiness.
+  - Main blocker: `sdf_pack_scene` built-ins must be staged/recoverable before broader SDF catalog growth; IFS and Flame still need separate non-SDF substrate contracts.
+
+Short-term intent: when SDF work resumes, prioritize the SDF packaging/recovery hardening before new SDF math or hybrid substrate work.
+
 ## Current Difficulty / Reward Priority
 
 This table is the current backlog order after reconciling the older deferred notes, the parameter functionality campaign, the capture/pacing repairs, the generic equation-pack pause README, and the modular Magnet/toolkit plan. It is planning guidance, not permission to skip a new plan/contract for implementation.
