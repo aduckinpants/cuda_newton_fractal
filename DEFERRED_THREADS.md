@@ -65,6 +65,27 @@ Parked items:
 
 Short-term intent: resume SDF work first. Return to this when resyncing Salticid's operator surface with the viewer's more complete callable API.
 
+## Deferred ExplainO Root And Slime Trace Planning Intake - 2026-06-11
+
+Status: deferred planning/grooming only; the near-term implementation candidate is the captured-root analyzer authority repair.
+
+Review note:
+
+- `docs/notes/explaino_root_slime_trace_deferred_ideas_20260611.md`
+
+Parked items:
+
+- captured ExplainO roots as analyzer truth;
+- ExplainO capability atlas;
+- root-aware interesting seed hunter;
+- root-history charts;
+- seed-continuity witness;
+- runtime-walk preset pack;
+- RTK v3 trace-first analyzer;
+- FITS/flashlight corpus and trace visualization reuse.
+
+Short-term intent: if this thread preempts SDF, do only the root-authority analyzer repair first, then trace receipt hardening. Do not start seed hunting, GA, charts, or FITS/flashlight integration until root authority and trace receipts are boringly true.
+
 ## Current Difficulty / Reward Priority
 
 This table is the current backlog order after reconciling the older deferred notes, the parameter functionality campaign, the capture/pacing repairs, the generic equation-pack pause README, and the modular Magnet/toolkit plan. It is planning guidance, not permission to skip a new plan/contract for implementation.

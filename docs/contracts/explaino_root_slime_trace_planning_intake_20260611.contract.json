@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "explaino_root_slime_trace_planning_intake_20260611",
+  "feature_id": "explaino_root_slime_trace_deferred_docs",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/explaino_root_slime_trace_planning_intake_20260611_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/explaino_root_slime_trace_planning_intake_20260611_PHASED_PLAN.md",
+    "docs/contracts/explaino_root_slime_trace_planning_intake_20260611.contract.json",
+    "docs/notes/explaino_root_slime_trace_deferred_ideas_20260611.md",
+    "DEFERRED_THREADS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "review and defer external ExplainO root/slime ideas before final campaign planning",
+    "include rough effort-to-benefit grooming",
+    "call out contradictions and show-stoppers",
+    "do not implement the deferred ideas in this slice"
+  ],
+  "forbidden_operator_prompts": [
+    "do not change runtime behavior",
+    "do not change SDF behavior",
+    "do not edit salticid-cuda",
+    "do not implement analyzer or trace tooling under this docs-only slice"
+  ],
+  "required_defaults": {
+    "slice_kind": "docs_only_deferred_planning_intake",
+    "product_behavior_changes_allowed": false,
+    "runtime_publish_required": false,
+    "salticid_repo_edits": false
+  },
+  "forbidden_defaults": {
+    "runtime_mutation": "forbidden",
+    "sdf_mutation": "forbidden",
+    "salticid_repo_mutation": "forbidden",
+    "analyzer_implementation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_slime_trace_planning_intake_20260611.contract.json --out-json artifacts/validation/explaino_root_slime_trace_planning_intake_20260611_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_root_slime_trace_planning_intake_20260611_PHASED_PLAN.md --out-json artifacts/validation/explaino_root_slime_trace_planning_intake_20260611_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_slime_trace_planning_intake_20260611_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_slime_trace_planning_intake_20260611_diff_check --log artifacts/logs/explaino_root_slime_trace_planning_intake_20260611_diff_check.log --out-json artifacts/validation/explaino_root_slime_trace_planning_intake_20260611_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The ExplainO root/slime planning intake contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_slime_trace_planning_intake_20260611_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The docs-only hostile audit is complete.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_slime_trace_planning_intake_20260611_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "diff_check_ok",
+      "description": "The documentation diff has no whitespace/check errors.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_slime_trace_planning_intake_20260611_diff_check.json",
+      "json_path": "exit_code",
+      "equals": 0
+    }
+  ]
+}
