@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "callable_engine_api_compatibility_followups",
+  "feature_id": "callable_engine_api_deferred_docs",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/callable_engine_api_compatibility_followups_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/callable_engine_api_compatibility_followups_PHASED_PLAN.md",
+    "docs/contracts/callable_engine_api_compatibility_followups.contract.json",
+    "docs/notes/callable_engine_api_compatibility_followups.md",
+    "DEFERRED_THREADS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "document viewer-side callable/sample API follow-ups",
+    "include Salticid operator-surface contract recommendations",
+    "defer all implementation behind SDF"
+  ],
+  "forbidden_operator_prompts": [
+    "do not change runtime behavior",
+    "do not change SDF behavior",
+    "do not edit salticid-cuda",
+    "do not add tests or code under this docs-only slice"
+  ],
+  "required_defaults": {
+    "slice_kind": "docs_only_deferred_followup",
+    "product_behavior_changes_allowed": false,
+    "runtime_publish_required": false,
+    "salticid_repo_edits": false
+  },
+  "forbidden_defaults": {
+    "runtime_mutation": "forbidden",
+    "sdf_mutation": "forbidden",
+    "salticid_repo_mutation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/callable_engine_api_compatibility_followups.contract.json --out-json artifacts/validation/callable_engine_api_compatibility_followups_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/callable_engine_api_compatibility_followups_PHASED_PLAN.md --out-json artifacts/validation/callable_engine_api_compatibility_followups_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/callable_engine_api_compatibility_followups_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label callable_engine_api_compatibility_followups_diff_check --log artifacts/logs/callable_engine_api_compatibility_followups_diff_check.log --out-json artifacts/validation/callable_engine_api_compatibility_followups_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The callable engine API compatibility follow-up contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/callable_engine_api_compatibility_followups_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The docs-only hostile audit is complete.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/callable_engine_api_compatibility_followups_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "diff_check_ok",
+      "description": "The documentation diff has no whitespace/check errors.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/callable_engine_api_compatibility_followups_diff_check.json",
+      "json_path": "exit_code",
+      "equals": 0
+    }
+  ]
+}

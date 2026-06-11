@@ -46,6 +46,25 @@ Three separate notes were added so later sessions do not conflate unrelated idea
 
 Short-term intent: when SDF work resumes, prioritize the SDF packaging/recovery hardening before new SDF math or hybrid substrate work.
 
+## Deferred Callable Engine API Compatibility Follow-Ups - 2026-06-11
+
+Status: deferred API/docs/test hardening only; do not interrupt the active SDF work unless the Salticid `sample_fn` crash is proven to require a viewer-side change.
+
+Review note:
+
+- `docs/notes/callable_engine_api_compatibility_followups.md`
+
+Parked items:
+
+- align or explicitly document callable descriptor/runtime defaults for absent `fractal.view.fractal_type`;
+- add request-shape discovery metadata for `generic.sample`;
+- add an exact Salticid-shaped viewer runtime compatibility fixture;
+- decide whether `operator_context` remains strict all-or-nothing;
+- refresh older spec/docs around explicit external-provider request construction;
+- update Salticid `sample_fn` operator-surface contracts so `fractal.sample` requests carry explicit fractal type and `generic.sample` requests carry a real `function` block.
+
+Short-term intent: resume SDF work first. Return to this when resyncing Salticid's operator surface with the viewer's more complete callable API.
+
 ## Current Difficulty / Reward Priority
 
 This table is the current backlog order after reconciling the older deferred notes, the parameter functionality campaign, the capture/pacing repairs, the generic equation-pack pause README, and the modular Magnet/toolkit plan. It is planning guidance, not permission to skip a new plan/contract for implementation.

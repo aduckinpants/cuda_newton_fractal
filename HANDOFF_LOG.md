@@ -220,3 +220,6 @@
 - `ck:b230e95d` 2026-06-10 18:06 UTC | score 93 — Deferred adaptive viewport presentation throttling for fast slime/autonomous runs as a nice-to-have note with capture/replay authority boundaries and future proof gates.
 - `ck:c1801db3` 2026-06-11 15:22 UTC — session-start | branch=codex/sdf-measurement-replan-20260611 | head=53c766e | status=dirty | profile=runtime | intent=SDF measurement replan before next implementation
 - `ck:c1801db3` 2026-06-11 15:32 UTC | score 92 — Closed SDF measurement replan: published current runtime, reran compact SDF witness, and stopped at mixed/inconclusive decision point without product mutation.
+- `ck:15f26bfe` 2026-06-11 16:38 UTC — session-start | branch=codex/sdf-measurement-replan-20260611 | head=322ff14 | status=dirty | profile=native | intent=defer callable engine API compatibility follow-ups
+- `ck:15f26bfe` 2026-06-11 16:40 UTC | score 94 — Documented deferred callable/sample API compatibility follow-ups, including Salticid sample_fn resync recommendations, with no runtime or SDF behavior changes.
+- `ck:15f26bfe` 2026-06-11 16:41 UTC | score 94 — Checkpoint docs-only callable API compatibility follow-up note for later Salticid resync.
