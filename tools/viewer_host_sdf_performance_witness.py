@@ -572,6 +572,20 @@ def _wait_for_report_predicate(
     raise RuntimeError(f"SDF witness report predicate was not satisfied; last_payload={last_payload!r}")
 
 
+def _is_settled_full_quality_report(payload: dict[str, object], *, command_sequence: object) -> bool:
+    if payload.get("ui_automation_command_sequence") != command_sequence:
+        return False
+    if payload.get("rendered_frame_ready") is not True:
+        return False
+    if payload.get("render_pacing_preview_active") is True:
+        return False
+    if float(payload.get("render_pacing_preview_scale", 0.0)) != 1.0:
+        return False
+    if int(payload.get("lens_sdf_postprocess_pixel_step", 0)) != 1:
+        return False
+    return int(payload.get("rendered_frame_width", 0)) > 0 and int(payload.get("rendered_frame_height", 0)) > 0
+
+
 def collect_runtime_measurements(
     *,
     runtime_exe: Path,
@@ -668,12 +682,7 @@ def collect_runtime_measurements(
                 )
                 settled_payload = _wait_for_report_predicate(
                     viewer,
-                    lambda payload: payload.get("ui_automation_command_sequence") == viewer.sequence
-                    and payload.get("render_pacing_preview_active") is False
-                    and float(payload.get("render_pacing_preview_scale", 0.0)) == 1.0
-                    and int(payload.get("rendered_frame_width", 0)) >= int(payload.get("target_render_width", 1))
-                    and int(payload.get("rendered_frame_height", 0)) >= int(payload.get("target_render_height", 1))
-                    and int(payload.get("lens_sdf_postprocess_pixel_step", 0)) == 1,
+                    lambda payload: _is_settled_full_quality_report(payload, command_sequence=viewer.sequence),
                     timeout_seconds=timeout_seconds,
                 )
                 measurements.append(

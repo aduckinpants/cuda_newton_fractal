@@ -223,3 +223,6 @@
 - `ck:15f26bfe` 2026-06-11 16:38 UTC — session-start | branch=codex/sdf-measurement-replan-20260611 | head=322ff14 | status=dirty | profile=native | intent=defer callable engine API compatibility follow-ups
 - `ck:15f26bfe` 2026-06-11 16:40 UTC | score 94 — Documented deferred callable/sample API compatibility follow-ups, including Salticid sample_fn resync recommendations, with no runtime or SDF behavior changes.
 - `ck:15f26bfe` 2026-06-11 16:41 UTC | score 94 — Checkpoint docs-only callable API compatibility follow-up note for later Salticid resync.
+- `ck:57466de9` 2026-06-11 18:12 UTC — session-start | branch=codex/sdf-measurement-replan-20260611 | head=4bd434a | status=dirty | profile=runtime | intent=SDF targeted repeated measurement matrix before optimization
+- `ck:57466de9` 2026-06-11 18:32 UTC | score 94 — Ran targeted repeated SDF measurement matrix at 1024x768 and 2048x1536, repaired the witness full-quality settle predicate for viewport-clamped live renders, and recorded the split-seam result: cached SDF rows are postprocess-heavy while sdf_pack_scene/cache-miss settle remain field-heavy.
+- `ck:57466de9` 2026-06-11 18:33 UTC | score 94 — Checkpoint targeted repeated SDF matrix and witness settle predicate repair.

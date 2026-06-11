@@ -201,3 +201,28 @@ def test_sdf_measurement_report_aggregates_repeated_rows_by_median() -> None:
     assert row["lens_sdf_pack_direct_grid_evaluation"] is True
     assert row["lens_sdf_postprocess_backend_buffer_reused_samples"] == [False, True, True]
     assert [sample["lens_sdf_postprocess_ms"] for sample in row["timing_samples"]] == [9.0, 1.0, 3.0]
+
+
+def test_settled_full_quality_report_accepts_viewport_clamped_render_size() -> None:
+    payload = _payload(name="settled", field_ms=7.0, postprocess_ms=3.0)
+    payload.update(
+        {
+            "ui_automation_command_sequence": 25,
+            "target_render_width": 2048,
+            "target_render_height": 1536,
+            "rendered_frame_width": 1779,
+            "rendered_frame_height": 1334,
+            "render_pacing_preview_active": False,
+            "render_pacing_preview_scale": 1.0,
+            "lens_sdf_postprocess_pixel_step": 1,
+        }
+    )
+
+    assert witness._is_settled_full_quality_report(payload, command_sequence=25)
+
+
+def test_settled_full_quality_report_rejects_preview_sample() -> None:
+    payload = _payload(name="preview", field_ms=7.0, postprocess_ms=3.0, preview=True, pixel_step=3)
+    payload["ui_automation_command_sequence"] = 25
+
+    assert not witness._is_settled_full_quality_report(payload, command_sequence=25)
