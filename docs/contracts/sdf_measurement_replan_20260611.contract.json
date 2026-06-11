@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "contract_id": "sdf_measurement_replan_20260611",
+  "feature_id": "sdf_performance_replan",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_measurement_replan_20260611_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/sdf_measurement_replan_20260611_PHASED_PLAN.md",
+    "docs/contracts/sdf_measurement_replan_20260611.contract.json",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "publish current runtime",
+    "rerun compact SDF performance witness",
+    "stop at the measured decision point",
+    "do not implement SDF behavior changes in this slice"
+  ],
+  "forbidden_operator_prompts": [
+    "do not change SDF runtime behavior",
+    "do not change Color Pipeline behavior",
+    "do not add SDF ops",
+    "do not change UI controls",
+    "do not use physical mouse automation",
+    "do not claim a performance fix without new witness data"
+  ],
+  "required_defaults": {
+    "slice_kind": "runtime_measurement_replan",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "product_behavior_changes_allowed": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "runtime_mutation": "forbidden",
+    "new_sdf_ops": "forbidden",
+    "ui_changes": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_measurement_replan_runtime_publish --log artifacts/logs/sdf_measurement_replan_runtime_publish.log --out-json artifacts/validation/sdf_measurement_replan_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_measurement_replan_witness --log artifacts/logs/sdf_measurement_replan_witness.log --out-json artifacts/validation/sdf_measurement_replan_witness.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_sdf_performance_witness.py --runtime-exe D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe --out-json artifacts/sdf_measurement_replan_20260611/sdf_performance_witness.json --out-md artifacts/sdf_measurement_replan_20260611/sdf_performance_witness.md --work-dir artifacts/sdf_measurement_replan_20260611/work --width 640 --height 480 --include-preview-sample",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_measurement_replan_20260611.contract.json --out-json artifacts/validation/sdf_measurement_replan_20260611_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_measurement_replan_20260611_PHASED_PLAN.md --out-json artifacts/validation/sdf_measurement_replan_20260611_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_measurement_replan_20260611_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label sdf_measurement_replan_20260611_diff_check --log artifacts/logs/sdf_measurement_replan_20260611_diff_check.log --out-json artifacts/validation/sdf_measurement_replan_20260611_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF measurement replan contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_measurement_replan_20260611_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_publish_ok",
+      "description": "The current runtime published successfully before witness measurement.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_measurement_replan_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "sdf_witness_ok",
+      "description": "The compact SDF performance witness completed against the published runtime.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_measurement_replan_witness.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The SDF measurement replan hostile audit is complete.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_measurement_replan_20260611_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
+
