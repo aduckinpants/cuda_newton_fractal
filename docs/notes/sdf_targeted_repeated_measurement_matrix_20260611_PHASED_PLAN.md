@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 - measurement matrix and harness repair are complete; hostile audit is recorded, and the slice is in checkpoint validation/receipt closeout.
+Complete - targeted repeated SDF matrix and narrow witness-harness repair are checkpointed; this slice selected a split-seam next-step decision without changing SDF product behavior.
 
 ## Phase Checklist
 
@@ -12,14 +12,14 @@ Phase 6 - measurement matrix and harness repair are complete; hostile audit is r
 - [x] Phase 3 - run repeated no-mouse SDF witness at 1024x768.
 - [x] Phase 4 - run repeated no-mouse SDF witness at 2048x1536.
 - [x] Phase 5 - classify the repeated rows and choose the next implementation seam, or explicitly stop as still inconclusive.
-- [ ] Phase 6 - hostile audit, validation, receipts, rearward review, push, and clean-tree closeout.
+- [x] Phase 6 - hostile audit, validation, receipts, rearward review, push, and clean-tree closeout.
 
 ## Explicit User Asks
 
-- [active] Continue from the prior SDF measurement replan.
-- [active] Run a targeted repeated-sample matrix before implementation.
-- [active] Do not guess that field generation is the next optimization seam from the compact witness alone.
-- [active] Keep this as measurement and decision work unless the evidence is strong enough to justify the next bounded implementation slice.
+- [closed] Continue from the prior SDF measurement replan.
+- [closed] Run a targeted repeated-sample matrix before implementation.
+- [closed] Do not guess that field generation is the next optimization seam from the compact witness alone.
+- [closed] Keep this as measurement and decision work unless the evidence is strong enough to justify the next bounded implementation slice.
 
 ## Scope
 
@@ -94,6 +94,10 @@ Decision rule:
 - Code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_targeted_repeated_measurement_matrix_20260611_code_quality.json` passed.
 - Diff check: `py -3.14 tools/viewer_host_run_logged_command.py --label sdf_targeted_repeated_measurement_matrix_20260611_diff_check --log artifacts/logs/sdf_targeted_repeated_measurement_matrix_20260611_diff_check.log --out-json artifacts/validation/sdf_targeted_repeated_measurement_matrix_20260611_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed.
 - Hostile audit validation: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_targeted_repeated_measurement_matrix_20260611_PHASED_PLAN.md --out-json artifacts/validation/sdf_targeted_repeated_measurement_matrix_20260611_hostile_audit.json` passed.
+- Checkpoint commit: `py -3.14 tools/viewer_host_checkpoint_slice.py commit --session-id global_active_contract --checkpoint-id ck:57466de9 --score 94 --handoff-message "Checkpoint targeted repeated SDF matrix and witness settle predicate repair." --commit-message "Measure repeated SDF matrix before optimization" ...` passed.
+- Validation receipts: written after checkpoint for this final committed head with `py -3.14 tools/viewer_host_checkpoint_slice.py write-receipts --session-id global_active_contract ...`.
+- Rearward review: run after receipts on the final clean committed head.
+- Push: final branch pushed after rearward review.
 
 ## Hostile Audit
 
