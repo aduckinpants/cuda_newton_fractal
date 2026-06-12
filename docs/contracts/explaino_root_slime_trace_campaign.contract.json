@@ -8,6 +8,7 @@
     "docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md",
     "docs/contracts/explaino_root_slime_trace_campaign.contract.json",
     "docs/manifests",
+    "docs/handoffs",
     "tools/reality_toolkit/fractal_explorer",
     "tests",
     "DEFERRED_THREADS.md",
