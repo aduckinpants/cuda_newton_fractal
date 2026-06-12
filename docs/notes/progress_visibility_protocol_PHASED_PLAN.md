@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed - workflow rule update implemented and ready for checkpoint validation.
+Closed - workflow rule update implemented and validated; this plan now describes the committed state.
 
 ## Phase Checklist
 
@@ -45,6 +45,7 @@ Out of scope:
 - Code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/progress_visibility_protocol_code_quality.json` passed with baseline score 93/100.
 - Rule-text proof: `py -3.14 tools/viewer_host_run_logged_command.py --label progress_visibility_protocol_rule_text --log artifacts/logs/progress_visibility_protocol_rule_text.log --out-json artifacts/validation/progress_visibility_protocol_rule_text.json --heartbeat-seconds 30 --timeout-seconds 120 -- rg -n "Progress Visibility Rule|Preplanned Work Exhaustion" AGENTS.md AGENT_WORKING_PROTOCOL.md` passed with exit code 0.
 - Diff check: `py -3.14 tools/viewer_host_run_logged_command.py --label progress_visibility_protocol_diff_check --log artifacts/logs/progress_visibility_protocol_diff_check.log --out-json artifacts/validation/progress_visibility_protocol_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed with exit code 0.
+- Rearward repair: first rearward review on `ce4ab60` found stale phrase `ready for checkpoint`; the current-phase wording was corrected before final receipts/rearward review.
 
 ## Hostile Audit
 
