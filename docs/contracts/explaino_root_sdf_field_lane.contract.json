@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "contract_id": "explaino_root_sdf_field_lane",
+  "feature_id": "explaino_root_sdf_field_lane",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_root_sdf_field_lane_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/manifests",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "tools/reality_toolkit/fractal_explorer",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "add a new selectable field-primary lane explaino_root_sdf",
+    "render ExplainO roots as root circles plus explicit index-pair bridge capsules",
+    "preserve existing generated/custom ExplainO root authority and never overwrite base roots with effective roots",
+    "include removable deterministic phase_sine h-mode modulation with default none",
+    "route through SDF field producer and existing SDF Color Pipeline, not RenderFractalCUDA",
+    "make unsupported non-SDF Source rows fail closed with structured diagnostics",
+    "make the lane discoverable, mutable, measurable, and replayable through the ExplainO slime/explorer contract",
+    "record non-v1 ideas as deferred and resume deferred SDF optimization after this slice"
+  ],
+  "forbidden_operator_prompts": [
+    "route explaino_root_sdf through RenderFractalCUDA",
+    "silently substitute or disable unsupported Color Pipeline sources while presenting them as active",
+    "auto-pair, sort, nearest-neighbor match, or infer conjugate bridge topology in v1",
+    "overwrite params.explaino_roots or custom root coordinates with h-mode effective roots",
+    "generalize SDF downsample or field-generation optimization inside this slice",
+    "add ExplainO SDF orbit trap, root-homotopy Newton, slime-trace live rendering, root-metric Color Pipeline sources, or SDF gradient-force iteration",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_explaino_root_sdf_field_lane",
+    "source_head": "571dba4",
+    "branch": "codex/explaino-root-sdf-field-lane",
+    "fractal_type_id": "explaino_root_sdf",
+    "expected_next_enum_id": 47,
+    "producer_kind": "explaino_root_sdf",
+    "field_primary": true,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "h_source_default": "none",
+    "bridge_topology": "index_pairs"
+  },
+  "forbidden_defaults": {
+    "normal_escape_iteration_lane": "forbidden",
+    "renderer_monolith": "forbidden",
+    "silent_color_pipeline_fallback": "forbidden",
+    "new_sdf_ops": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_sdf_field_lane.contract.json --out-json artifacts/validation/explaino_root_sdf_field_lane_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "cmd /c ui_app\\build_tests_vsdevcmd.cmd > artifacts/explaino_root_sdf_field_lane/build_tests_full.log 2>&1",
+    "cmd /c ui_app\\build_vsdevcmd.cmd > artifacts/explaino_root_sdf_field_lane/build_vsdevcmd_final.log 2>&1",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_sdf_runtime --log artifacts/logs/explaino_root_sdf_runtime.log --out-json artifacts/validation/explaino_root_sdf_runtime.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_root_sdf.py tests/test_fractal_runtime_sdf_performance_witness.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_sdf_perf_1024 --log artifacts/logs/explaino_root_sdf_perf_1024.log --out-json artifacts/validation/explaino_root_sdf_perf_1024.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/viewer_host_sdf_performance_witness.py --runtime-exe D:\\salt-fractal\\cuda_newton_fractal_clone\\runtime\\fractal_ui.exe --out-json artifacts/explaino_root_sdf_field_lane/sdf_performance_witness_1024.json --out-md artifacts/explaino_root_sdf_field_lane/sdf_performance_witness_1024.md --work-dir artifacts/explaino_root_sdf_field_lane/sdf_performance_witness_1024_work --width 1024 --height 768 --include-preview-sample",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_sdf_perf_2048 --log artifacts/logs/explaino_root_sdf_perf_2048.log --out-json artifacts/validation/explaino_root_sdf_perf_2048.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/viewer_host_sdf_performance_witness.py --runtime-exe D:\\salt-fractal\\cuda_newton_fractal_clone\\runtime\\fractal_ui.exe --out-json artifacts/explaino_root_sdf_field_lane/sdf_performance_witness_2048.json --out-md artifacts/explaino_root_sdf_field_lane/sdf_performance_witness_2048.md --work-dir artifacts/explaino_root_sdf_field_lane/sdf_performance_witness_2048_work --width 2048 --height 1536 --include-preview-sample",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_root_sdf_field_lane_PHASED_PLAN.md --out-json artifacts/validation/explaino_root_sdf_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_sdf_code_quality.json",
+    "git diff --check > artifacts/explaino_root_sdf_field_lane/diff_check_final.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The ExplainO Root SDF field lane contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_field_lane_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The ExplainO Root SDF hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_proof_passed",
+      "description": "Published no-mouse runtime proof validates selector identity, field producer reports, control sensitivity/inertness, capture/replay, and fail-closed mixed Source rows.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_runtime.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

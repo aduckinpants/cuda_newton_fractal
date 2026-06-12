@@ -131,6 +131,13 @@ int main() {
             std::cerr << "SDF Pack Scene Lens semantics should explicitly name field-primary SDF authority and fail closed for legacy masks\n";
             return 1;
         }
+        const LensMaskSemanticsDescriptor* rootSdfLens = FindLensMaskSemanticsDescriptor(FractalType::explaino_root_sdf);
+        if (!rootSdfLens || rootSdfLens->partition != LensMaskPartition::sdf_field_membership ||
+            std::string_view(rootSdfLens->semantic_id) != "sdf_field_membership" ||
+            LensMaskInsideForFractal(FractalType::explaino_root_sdf, true, false)) {
+            std::cerr << "ExplainO Root SDF Lens semantics should explicitly name field-primary SDF authority and fail closed for legacy masks\n";
+            return 1;
+        }
         if (FindLensMaskSemanticsDescriptor(static_cast<FractalType>(999)) ||
             LensMaskInsideForFractal(static_cast<FractalType>(999), true, false) ||
             LensMaskInsideForBasinRootIndex(static_cast<FractalType>(999), 0)) {
@@ -367,6 +374,15 @@ int main() {
             const bool isExplainoSelector = fractalTypeId == "explaino" ||
                 fractalTypeId.compare(0, 9, "explaino_") == 0;
             if (!isExplainoSelector) {
+                continue;
+            }
+            if (pair.value == FractalType::explaino_root_sdf) {
+                if (FindExplainoSelectorDescriptor(pair.value) != nullptr ||
+                    IsExplainoFamily(pair.value) ||
+                    !UsesExplainoRootLayoutAuthority(pair.value)) {
+                    std::cerr << "ExplainO Root SDF should use root-layout authority without joining the legacy Explaino selector registry\n";
+                    return 1;
+                }
                 continue;
             }
 

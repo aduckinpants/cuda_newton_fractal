@@ -615,6 +615,52 @@ void TestFindingFractalStateSidecarIncludesExplainoActiveControls() {
         "finding fractal-state sidecar still omits unrelated Magnet controls for Explaino captures");
 }
 
+void TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+
+    view.fractal_type = FractalType::explaino_root_sdf;
+    view.explaino_phase = 0.125f;
+    params.explaino_root_authority = ExplainoRootAuthority::custom;
+    params.explaino_root_count = 4;
+    params.explaino_roots[0] = {0.0f, 0.0f};
+    params.explaino_roots[1] = {0.8f, 0.0f};
+    params.explaino_roots[2] = {0.0f, 0.8f};
+    params.explaino_roots[3] = {0.8f, 0.8f};
+    params.explaino_root_sdf_radius = 0.22f;
+    params.explaino_root_sdf_bridge_width = 0.09f;
+    params.explaino_root_sdf_smooth_blend = 0.04f;
+    params.explaino_root_sdf_h_source = ExplainoRootSdfHSource::phase_sine;
+    params.explaino_root_sdf_h_amplitude = 0.18f;
+    params.explaino_root_sdf_h_frequency = 2.0f;
+    params.magnet_seed_real = 9.0f;
+
+    const std::string json = BuildFindingFractalStateJson(view, params, render, stats, nullptr, nullptr);
+    Check(json.find("\"fractal_type\": \"explaino_root_sdf\"") != std::string::npos,
+        "finding fractal-state sidecar records ExplainO Root SDF selector identity");
+    Check(json.find("\"explaino_root_sdf_radius\"") != std::string::npos &&
+          json.find("\"explaino_root_sdf_bridge_width\"") != std::string::npos &&
+          json.find("\"explaino_root_sdf_smooth_blend\"") != std::string::npos &&
+          json.find("\"explaino_root_sdf_h_source\": \"phase_sine\"") != std::string::npos &&
+          json.find("\"explaino_root_sdf_h_amplitude\"") != std::string::npos &&
+          json.find("\"explaino_root_sdf_h_frequency\"") != std::string::npos,
+        "finding fractal-state sidecar records active ExplainO Root SDF controls");
+    Check(json.find("\"producer_kind\": \"explaino_root_sdf\"") != std::string::npos &&
+          json.find("\"root_authority\": \"custom\"") != std::string::npos &&
+          json.find("\"root_count\": 4") != std::string::npos &&
+          json.find("\"bridge_count\": 2") != std::string::npos &&
+          json.find("\"base_root_hash\": \"fnv1a64:") != std::string::npos &&
+          json.find("\"effective_root_hash\": \"fnv1a64:") != std::string::npos &&
+          json.find("\"base_roots\"") != std::string::npos &&
+          json.find("\"effective_roots\"") != std::string::npos,
+        "finding fractal-state sidecar records derived ExplainO Root SDF review metadata");
+    Check(json.find("\"magnet_seed_real\"") == std::string::npos,
+        "finding fractal-state sidecar omits unrelated Magnet controls for ExplainO Root SDF captures");
+}
+
 } // namespace
 
 int main() {
@@ -629,6 +675,7 @@ int main() {
     TestLastBundleAndSidecarOverloads();
     TestFindingFractalStateSidecarSummarizesActiveValuesOnly();
     TestFindingFractalStateSidecarIncludesExplainoActiveControls();
+    TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority();
 
     if (g_failed != 0) {
         std::cerr << "test_diagnostics_capture: " << g_failed << " failed\n";

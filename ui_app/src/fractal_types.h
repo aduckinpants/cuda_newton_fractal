@@ -226,6 +226,11 @@ enum class ExplainoRootAuthority : int {
     custom = 1,
 };
 
+enum class ExplainoRootSdfHSource : int {
+    none = 0,
+    phase_sine = 1,
+};
+
 enum class FractalType : int {
     newton = 0,
     nova = 1,
@@ -274,6 +279,7 @@ enum class FractalType : int {
     generic_equation_pack = 44,
     explaino_collatz_direct = 45,
     sdf_pack_scene = 46,
+    explaino_root_sdf = 47,
 };
 
 enum class CounterfactualPairRootFamily : int {
@@ -492,6 +498,12 @@ struct KernelParams {
     float explaino_cluster_radius{0.0f};
     int explaino_root_count{0};
     Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
+    float explaino_root_sdf_radius{0.14f};
+    float explaino_root_sdf_bridge_width{0.06f};
+    float explaino_root_sdf_smooth_blend{0.10f};
+    ExplainoRootSdfHSource explaino_root_sdf_h_source{ExplainoRootSdfHSource::none};
+    float explaino_root_sdf_h_amplitude{0.0f};
+    float explaino_root_sdf_h_frequency{1.0f};
     TranscendentalFunc transcendental_func{TranscendentalFunc::f_sin};
     float momentum_beta{0.0f};
     float joy_coupling{0.0f};

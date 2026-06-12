@@ -693,6 +693,94 @@ int main() {
     }
 
     {
+        auto makeRootSdfParams = []() {
+            KernelParams params{};
+            params.coloring_mode = ColoringMode::smooth_escape;
+            params.explaino_root_authority = ExplainoRootAuthority::custom;
+            params.explaino_root_count = 4;
+            params.explaino_roots[0] = {1.0f, 0.0f};
+            params.explaino_roots[1] = {0.0f, 1.0f};
+            params.explaino_roots[2] = {-1.0f, 0.0f};
+            params.explaino_roots[3] = {0.0f, -1.0f};
+            return params;
+        };
+        auto expectRootSdfError = [](const KernelParams& params, const char* expectedError) {
+            ViewState view{};
+            view.fractal_type = FractalType::explaino_root_sdf;
+            std::string error;
+            if (ValidateFractalRuntimeState(view, params, &error) || error != expectedError) {
+                std::cerr << "Expected ExplainO Root SDF validation error '" << expectedError
+                          << "', got '" << error << "'\n";
+                return false;
+            }
+            return true;
+        };
+
+        KernelParams params = makeRootSdfParams();
+        if (!expectRootSdfError(params, "explaino_root_sdf requires the ExplainO Root SDF field producer live render path")) {
+            return 1;
+        }
+        params.explaino_root_sdf_radius = 0.001f;
+        if (!expectRootSdfError(params, "explaino_root_sdf requires the ExplainO Root SDF field producer live render path")) {
+            return 1;
+        }
+        params.explaino_root_sdf_radius = 2.0f;
+        if (!expectRootSdfError(params, "explaino_root_sdf requires the ExplainO Root SDF field producer live render path")) {
+            return 1;
+        }
+        params.explaino_root_sdf_bridge_width = 0.0f;
+        params.explaino_root_sdf_smooth_blend = 0.0f;
+        params.explaino_root_sdf_h_source = ExplainoRootSdfHSource::phase_sine;
+        params.explaino_root_sdf_h_amplitude = 1.0f;
+        params.explaino_root_sdf_h_frequency = 16.0f;
+        if (!expectRootSdfError(params, "explaino_root_sdf requires the ExplainO Root SDF field producer live render path")) {
+            return 1;
+        }
+
+        params = makeRootSdfParams();
+        params.explaino_root_sdf_radius = 0.0f;
+        if (!expectRootSdfError(params, "explaino_root_sdf_radius must be finite and in [0.001,2]")) {
+            return 1;
+        }
+        params = makeRootSdfParams();
+        params.explaino_root_sdf_bridge_width = -0.01f;
+        if (!expectRootSdfError(params, "explaino_root_sdf_bridge_width must be finite and in [0,2]")) {
+            return 1;
+        }
+        params = makeRootSdfParams();
+        params.explaino_root_sdf_smooth_blend = 2.01f;
+        if (!expectRootSdfError(params, "explaino_root_sdf_smooth_blend must be finite and in [0,2]")) {
+            return 1;
+        }
+        params = makeRootSdfParams();
+        params.explaino_root_sdf_h_source = static_cast<ExplainoRootSdfHSource>(99);
+        if (!expectRootSdfError(params, "explaino_root_sdf_h_source must be none or phase_sine")) {
+            return 1;
+        }
+        params = makeRootSdfParams();
+        params.explaino_root_sdf_h_amplitude = 1.01f;
+        if (!expectRootSdfError(params, "explaino_root_sdf_h_amplitude must be finite and in [0,1]")) {
+            return 1;
+        }
+        params = makeRootSdfParams();
+        params.explaino_root_sdf_h_frequency = 0.09f;
+        if (!expectRootSdfError(params, "explaino_root_sdf_h_frequency must be finite and in [0.1,16]")) {
+            return 1;
+        }
+
+        params = makeRootSdfParams();
+        params.explaino_root_count = 2;
+        if (!expectRootSdfError(params, "custom Explaino root authority requires explaino_root_count 3 or 4")) {
+            return 1;
+        }
+        params = makeRootSdfParams();
+        params.explaino_roots[2].y = std::numeric_limits<float>::quiet_NaN();
+        if (!expectRootSdfError(params, "custom Explaino roots must be finite")) {
+            return 1;
+        }
+    }
+
+    {
         ViewState view{};
         KernelParams params{};
         std::string error;

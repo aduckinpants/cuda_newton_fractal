@@ -5939,6 +5939,88 @@ int main() {
         }
       }
 
+      {
+        ViewState rootSdfView{};
+        KernelParams rootSdfParams{};
+        RenderSettings rootSdfRender{};
+        RenderStats rootSdfStats{};
+        rootSdfView.fractal_type = FractalType::explaino_root_sdf;
+        rootSdfView.explaino_phase = 0.25f;
+        rootSdfParams.explaino_root_authority = ExplainoRootAuthority::custom;
+        rootSdfParams.explaino_root_count = 4;
+        rootSdfParams.explaino_roots[0] = {0.0f, 0.0f};
+        rootSdfParams.explaino_roots[1] = {0.75f, 0.0f};
+        rootSdfParams.explaino_roots[2] = {0.0f, 0.75f};
+        rootSdfParams.explaino_roots[3] = {0.75f, 0.75f};
+        rootSdfParams.explaino_root_sdf_radius = 0.23f;
+        rootSdfParams.explaino_root_sdf_bridge_width = 0.07f;
+        rootSdfParams.explaino_root_sdf_smooth_blend = 0.03f;
+        rootSdfParams.explaino_root_sdf_h_source = ExplainoRootSdfHSource::phase_sine;
+        rootSdfParams.explaino_root_sdf_h_amplitude = 0.21f;
+        rootSdfParams.explaino_root_sdf_h_frequency = 2.5f;
+        rootSdfParams.color_pipeline.signal = ColorSignal::sdf_signed_distance;
+        rootSdfParams.color_pipeline.palette = ColorPalette::cyclic_escape;
+        rootSdfParams.color_pipeline.grading = ColorGradingPreset::escape_default;
+        rootSdfParams.color_source_stack_count = 1;
+        rootSdfParams.color_source_stack[0].signal = ColorSignal::sdf_signed_distance;
+        rootSdfParams.color_source_stack[0].params.blend_weight = 1.0f;
+        rootSdfRender.resolution = {4, 4};
+        std::vector<uint32_t> rootSdfRgba(16, 0xff102030u);
+        DiagnosticsCaptureResult capture{};
+        std::string rootSdfError;
+        if (!CaptureDiagnosticsBundleToDir(
+                (tempRoot / "explaino_root_sdf_state_roundtrip").string(),
+                rootSdfView,
+                rootSdfParams,
+                rootSdfRender,
+                rootSdfStats,
+                rootSdfRgba.data(),
+                rootSdfRgba.size(),
+                &capture,
+                &rootSdfError)) {
+          std::cerr << "Expected ExplainO Root SDF diagnostics capture to serialize: " << rootSdfError << "\n";
+          return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson) ||
+            stateJson.find("\"fractal_type\": \"explaino_root_sdf\"") == std::string::npos ||
+            stateJson.find("\"explaino_root_sdf_h_source\": \"phase_sine\"") == std::string::npos) {
+          std::cerr << "Expected diagnostics state.json to serialize ExplainO Root SDF authoritative inputs\n";
+          return 1;
+        }
+
+        ViewState loadedRootSdfView{};
+        KernelParams loadedRootSdfParams{};
+        RenderSettings loadedRootSdfRender{};
+        ColorPipelineWindowState loadedRootSdfDraft{};
+        rootSdfError.clear();
+        if (!LoadDiagnosticsStateJson(
+                stateJson,
+                &loadedRootSdfView,
+                &loadedRootSdfParams,
+                &loadedRootSdfRender,
+                &loadedRootSdfDraft,
+                nullptr,
+                &rootSdfError)) {
+          std::cerr << "Expected ExplainO Root SDF diagnostics state to reload: " << rootSdfError << "\n";
+          return 1;
+        }
+        if (loadedRootSdfView.fractal_type != FractalType::explaino_root_sdf ||
+            loadedRootSdfParams.explaino_root_authority != ExplainoRootAuthority::custom ||
+            loadedRootSdfParams.explaino_root_count != 4 ||
+            !NearlyEqual(loadedRootSdfParams.explaino_roots[1].x, 0.75f, 1.0e-6) ||
+            !NearlyEqual(loadedRootSdfParams.explaino_root_sdf_radius, 0.23f, 1.0e-6) ||
+            !NearlyEqual(loadedRootSdfParams.explaino_root_sdf_bridge_width, 0.07f, 1.0e-6) ||
+            !NearlyEqual(loadedRootSdfParams.explaino_root_sdf_smooth_blend, 0.03f, 1.0e-6) ||
+            loadedRootSdfParams.explaino_root_sdf_h_source != ExplainoRootSdfHSource::phase_sine ||
+            !NearlyEqual(loadedRootSdfParams.explaino_root_sdf_h_amplitude, 0.21f, 1.0e-6) ||
+            !NearlyEqual(loadedRootSdfParams.explaino_root_sdf_h_frequency, 2.5f, 1.0e-6)) {
+          std::cerr << "Expected diagnostics state reload to preserve ExplainO Root SDF authoritative inputs\n";
+          return 1;
+        }
+      }
+
     std::cout << "test_diagnostics_state_io: all passed\n";
     return 0;
 }

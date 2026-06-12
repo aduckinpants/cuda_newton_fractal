@@ -40,6 +40,9 @@ bool IsMcMullenDirectParamPath(const std::string& path) {
 
 
 bool IsExplainoRootEditorFractalType(FractalType fractalType) {
+    if (fractalType == FractalType::explaino_root_sdf) {
+        return true;
+    }
     switch (fractalType) {
     case FractalType::explaino_julia:
     case FractalType::explaino_lambda:
@@ -105,6 +108,29 @@ bool BindColorPanelFloat(KernelParams& params, const std::string& path, float** 
     if (path == "fractal.params.color_tint_g") { *outPtr = &params.color_tint_g; return true; }
     if (path == "fractal.params.color_tint_b") { *outPtr = &params.color_tint_b; return true; }
     if (path == "fractal.params.color_smooth_escape_interior_strength") { *outPtr = &params.color_smooth_escape_interior_strength; return true; }
+    return false;
+}
+
+bool BindExplainoRootSdfFloat(KernelParams& params, const std::string& path, float** outPtr) {
+    if (path == "fractal.params.explaino_root_sdf_radius") { *outPtr = &params.explaino_root_sdf_radius; return true; }
+    if (path == "fractal.params.explaino_root_sdf_bridge_width") { *outPtr = &params.explaino_root_sdf_bridge_width; return true; }
+    if (path == "fractal.params.explaino_root_sdf_smooth_blend") { *outPtr = &params.explaino_root_sdf_smooth_blend; return true; }
+    if (path == "fractal.params.explaino_root_sdf_h_amplitude") { *outPtr = &params.explaino_root_sdf_h_amplitude; return true; }
+    if (path == "fractal.params.explaino_root_sdf_h_frequency") { *outPtr = &params.explaino_root_sdf_h_frequency; return true; }
+    return false;
+}
+
+bool BindViewFloat(ViewState& view, const std::string& path, float** outPtr) {
+    if (path == "fractal.view.center.x") { *outPtr = &view.center.x; return true; }
+    if (path == "fractal.view.center.y") { *outPtr = &view.center.y; return true; }
+    if (path == "fractal.view.zoom") { *outPtr = &view.zoom; return true; }
+    if (path == "fractal.view.rotation") { *outPtr = &view.rotation_degrees; return true; }
+    if (path == "fractal.view.dive_speed") { *outPtr = &view.dive_speed; return true; }
+    if (path == "fractal.view.explaino_phase") { *outPtr = &view.explaino_phase; return true; }
+    if (path == "fractal.view.explaino_seed_drift") { *outPtr = &view.explaino_seed_drift; return true; }
+    if (path == "fractal.view.explaino_seed_rate") { *outPtr = &view.explaino_seed_rate; return true; }
+    if (path == "fractal.view.explaino_phase_strength") { *outPtr = &view.explaino_phase_strength; return true; }
+    if (path == "fractal.view.param_anim_rate") { *outPtr = &view.param_anim_rate; return true; }
     return false;
 }
 
@@ -904,6 +930,9 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.explaino_root_authority") {
         return EnumIdOrEmpty(ExplainoRootAuthorityId(params->explaino_root_authority));
     }
+    if (params && path == "fractal.params.explaino_root_sdf_h_source") {
+        return EnumIdOrEmpty(ExplainoRootSdfHSourceId(params->explaino_root_sdf_h_source));
+    }
     if (params && path == "fractal.params.coloring_mode") {
         return EnumIdOrEmpty(ColoringModeId(params->coloring_mode));
     }
@@ -969,6 +998,9 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     }
     if (params && path == "fractal.params.explaino_root_authority") {
         return SetExplainoRootAuthority(this, id);
+    }
+    if (params && path == "fractal.params.explaino_root_sdf_h_source") {
+        return ParseAndAssignEnumId(id, &params->explaino_root_sdf_h_source, TryParseExplainoRootSdfHSourceId);
     }
     if (params && path == "fractal.params.coloring_mode") {
         return SetColoringMode(this, id);
@@ -1158,16 +1190,7 @@ bool BindingContext::EvalVisibleIf(const UISchemaPredicate& pred) const {
 
 bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
     if (view) {
-        if (path == "fractal.view.center.x") { *outPtr = &view->center.x; return true; }
-        if (path == "fractal.view.center.y") { *outPtr = &view->center.y; return true; }
-        if (path == "fractal.view.zoom") { *outPtr = &view->zoom; return true; }
-        if (path == "fractal.view.rotation") { *outPtr = &view->rotation_degrees; return true; }
-        if (path == "fractal.view.dive_speed") { *outPtr = &view->dive_speed; return true; }
-        if (path == "fractal.view.explaino_phase") { *outPtr = &view->explaino_phase; return true; }
-        if (path == "fractal.view.explaino_seed_drift") { *outPtr = &view->explaino_seed_drift; return true; }
-        if (path == "fractal.view.explaino_seed_rate") { *outPtr = &view->explaino_seed_rate; return true; }
-        if (path == "fractal.view.explaino_phase_strength") { *outPtr = &view->explaino_phase_strength; return true; }
-        if (path == "fractal.view.param_anim_rate") { *outPtr = &view->param_anim_rate; return true; }
+        if (BindViewFloat(*view, path, outPtr)) return true;
     }
     if (params) {
         if (path == "fractal.params.epsilon") { *outPtr = &params->epsilon; return true; }
@@ -1205,6 +1228,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.explaino_root_spread") { *outPtr = &params->explaino_root_spread; return true; }
         if (path == "fractal.params.explaino_damping") { *outPtr = &params->explaino_damping; return true; }
         if (path == "fractal.params.explaino_cluster_radius") { *outPtr = &params->explaino_cluster_radius; return true; }
+        if (BindExplainoRootSdfFloat(*params, path, outPtr)) return true;
         if (path == "fractal.params.momentum_beta") { *outPtr = &params->momentum_beta; return true; }
         if (path == "fractal.params.joy_coupling") { *outPtr = &params->joy_coupling; return true; }
         if (path == "fractal.params.fold_coupling") { *outPtr = &params->fold_coupling; return true; }

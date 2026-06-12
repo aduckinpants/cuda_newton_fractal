@@ -743,6 +743,10 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool UsesExplainoCustomPolynomialAuthor
     return IsExplainoFamily(fractalType);
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr bool UsesExplainoRootLayoutAuthority(FractalType fractalType) {
+    return IsExplainoFamily(fractalType) || fractalType == FractalType::explaino_root_sdf;
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsProjectionAndFlowCarrier(FractalType fractalType) {
     return fractalType == FractalType::projection_and_flow ||
         fractalType == FractalType::explaino_projection_and_flow;
@@ -843,7 +847,8 @@ struct LensMaskSemanticsDescriptor {
     X(explaino_projection_and_flow, FractalType::explaino_projection_and_flow, LensMaskPartition::synthetic_basin_root_parity, "synthetic_basin_root_parity", "Synthetic Basin Root-Parity") \
     X(magnet, FractalType::magnet, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
     X(generic_equation_pack, FractalType::generic_equation_pack, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
-    X(sdf_pack_scene, FractalType::sdf_pack_scene, LensMaskPartition::sdf_field_membership, "sdf_field_membership", "SDF Field Membership")
+    X(sdf_pack_scene, FractalType::sdf_pack_scene, LensMaskPartition::sdf_field_membership, "sdf_field_membership", "SDF Field Membership") \
+    X(explaino_root_sdf, FractalType::explaino_root_sdf, LensMaskPartition::sdf_field_membership, "sdf_field_membership", "SDF Field Membership")
 
 #define LENS_MASK_SEMANTICS_DESCRIPTOR_ENTRY(name, fractalType, partitionKind, semanticId, labelText) \
     {fractalType, partitionKind, semanticId, labelText},
@@ -939,7 +944,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr ColorPipelineSelection ColorPipelineFor
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr ColorPipelineSelection DefaultColorPipelineForFractal(FractalType fractalType) {
-    if (fractalType == FractalType::sdf_pack_scene) {
+    if (fractalType == FractalType::sdf_pack_scene ||
+        fractalType == FractalType::explaino_root_sdf) {
         return {ColorSignal::sdf_signed_distance, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
     }
     return ColorPipelineForLegacyMode(DefaultColoringModeForFractal(fractalType));

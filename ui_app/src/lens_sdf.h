@@ -7,6 +7,7 @@
 enum class SdfFieldSourceKind {
     mask_derived,
     authored_sdf_pack,
+    explaino_root_sdf,
 };
 
 enum class SdfSignConvention {

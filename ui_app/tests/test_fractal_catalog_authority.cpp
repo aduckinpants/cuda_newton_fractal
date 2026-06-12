@@ -106,6 +106,9 @@ int main() {
         Check(HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::sdf_pack_scene) ==
                 (pair.value == FractalType::sdf_pack_scene),
             "Only the SDF pack scene row should carry the SDF-pack-scene capability flag");
+        Check(HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::field_primary_sdf) ==
+                (pair.value == FractalType::explaino_root_sdf),
+            "Only the ExplainO Root SDF row should carry the field-primary-SDF capability flag");
 
         if (IsExplainoFamily(pair.value)) {
             Check(entry->category == FractalCatalogCategory::explaino,
@@ -126,6 +129,19 @@ int main() {
             "SDF pack scene should keep its SDF-pack formula growth surface");
     }
 
+    const FractalCatalogEntry* explainoRootSdf = FindFractalCatalogEntry(FractalType::explaino_root_sdf);
+    Check(explainoRootSdf != nullptr, "ExplainO Root SDF must have a catalog row");
+    if (explainoRootSdf) {
+        Check(explainoRootSdf->category == FractalCatalogCategory::sdf,
+            "ExplainO Root SDF should stay in the SDF category");
+        Check(explainoRootSdf->family == FractalCatalogFamily::explaino_root_sdf,
+            "ExplainO Root SDF should have a distinct catalog family");
+        Check(explainoRootSdf->formula_growth_surface == FractalCatalogFormulaGrowthSurface::field_primary_sdf,
+            "ExplainO Root SDF should use the field-primary SDF formula growth surface");
+        Check(HasFractalCatalogCapabilityFlag(*explainoRootSdf, FractalCatalogCapabilityFlag::field_primary_sdf),
+            "ExplainO Root SDF should carry field-primary SDF capability");
+    }
+
     const FractalCatalogEntry* generic = FindFractalCatalogEntry(FractalType::generic_equation_pack);
     Check(generic != nullptr, "Generic equation pack must have a catalog row");
     if (generic) {
@@ -143,6 +159,7 @@ int main() {
             FractalType::projection_and_flow,
             FractalType::generic_equation_pack,
             FractalType::sdf_pack_scene,
+            FractalType::explaino_root_sdf,
         }) {
         const FractalCatalogEntry* entry = FindFractalCatalogEntry(unsupportedProbeType);
         Check(entry && !HasFractalCatalogCapabilityFlag(*entry, FractalCatalogCapabilityFlag::sample_probe),

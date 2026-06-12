@@ -708,7 +708,9 @@ int main() {
         bool foundProjectionAndFlowRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundSafeModeFractalTypeSdfGroup = false;
+        bool foundSafeModeFractalTypeExplainoRootSdfGroup = false;
         bool foundFractalTypeSdfGroup = false;
+        bool foundFractalTypeExplainoRootSdfGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
         bool foundFractalTypeExplainoProjectionAndFlowGroup = false;
@@ -729,6 +731,8 @@ int main() {
         bool foundExplainoSeedVisibleForExplainoAll = false;
         bool foundExplainoSeedVisibleForExplainoCounterfactualPair = false;
         bool foundExplainoSeedVisibleForExplainoProjectionAndFlow = false;
+        bool foundExplainoSeedVisibleForExplainoRootSdf = false;
+        bool foundExplainoRootAuthorityVisibleForExplainoRootSdf = false;
         bool foundRippleAmplitudeVisibleForExplainoAll = false;
         bool foundSpliceOffsetVisibleForExplainoAll = false;
         bool foundVortexStrengthVisibleForExplainoAll = false;
@@ -787,6 +791,12 @@ int main() {
         bool foundLensSdfOverlayMode = false;
         bool foundLensSdfOverlayOpacity = false;
         bool foundLensSdfOverlayBand = false;
+        bool foundExplainoRootSdfRadius = false;
+        bool foundExplainoRootSdfBridgeWidth = false;
+        bool foundExplainoRootSdfSmoothBlend = false;
+        bool foundExplainoRootSdfHSource = false;
+        bool foundExplainoRootSdfHAmplitude = false;
+        bool foundExplainoRootSdfHFrequency = false;
 
         if (!LoadAndValidateSchemaFile(schemaPath)) {
             return 1;
@@ -939,7 +949,9 @@ int main() {
                         if (option.id == "projection_and_flow" && option.group == "Root-Finding") foundProjectionAndFlowRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                         if (option.id == "sdf_pack_scene" && option.group == "SDF") foundSafeModeFractalTypeSdfGroup = true;
+                        if (option.id == "explaino_root_sdf" && option.group == "SDF") foundSafeModeFractalTypeExplainoRootSdfGroup = true;
                         if (option.id == "sdf_pack_scene" && option.group == "SDF") foundFractalTypeSdfGroup = true;
+                        if (option.id == "explaino_root_sdf" && option.group == "SDF") foundFractalTypeExplainoRootSdfGroup = true;
                         if (option.group == "Explaino") {
                             ++explainoGroupOptionCount;
                             const ExplainoSelectorDescriptor* descriptor = FindExplainoSelectorDescriptor(option.id);
@@ -970,6 +982,53 @@ int main() {
                     ctrl.has_min && ctrl.min == 2.0 && ctrl.has_max && ctrl.max == 64.0 &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "magnet") {
                     foundMagnetBailout = true;
+                }
+                if (ctrl.id == "explaino_root_sdf_radius" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.explaino_root_sdf_radius" &&
+                    ctrl.has_min && ctrl.min == 0.001 && ctrl.has_max && ctrl.max == 2.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.01 && ctrl.has_ui_max && ctrl.ui_max == 0.6 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "explaino_root_sdf") {
+                    foundExplainoRootSdfRadius = true;
+                }
+                if (ctrl.id == "explaino_root_sdf_bridge_width" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.explaino_root_sdf_bridge_width" &&
+                    ctrl.has_min && ctrl.min == 0.0 && ctrl.has_max && ctrl.max == 2.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.0 && ctrl.has_ui_max && ctrl.ui_max == 0.4 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "explaino_root_sdf") {
+                    foundExplainoRootSdfBridgeWidth = true;
+                }
+                if (ctrl.id == "explaino_root_sdf_smooth_blend" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.explaino_root_sdf_smooth_blend" &&
+                    ctrl.has_min && ctrl.min == 0.0 && ctrl.has_max && ctrl.max == 2.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.0 && ctrl.has_ui_max && ctrl.ui_max == 0.5 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "explaino_root_sdf") {
+                    foundExplainoRootSdfSmoothBlend = true;
+                }
+                if (ctrl.id == "explaino_root_sdf_h_source" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.explaino_root_sdf_h_source" &&
+                    ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "none" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "explaino_root_sdf") {
+                    bool foundNone = false;
+                    bool foundPhaseSine = false;
+                    for (const UISchemaOption& option : ctrl.options) {
+                        foundNone = foundNone || option.id == "none";
+                        foundPhaseSine = foundPhaseSine || option.id == "phase_sine";
+                    }
+                    foundExplainoRootSdfHSource = foundNone && foundPhaseSine;
+                }
+                if (ctrl.id == "explaino_root_sdf_h_amplitude" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.explaino_root_sdf_h_amplitude" &&
+                    ctrl.has_min && ctrl.min == 0.0 && ctrl.has_max && ctrl.max == 1.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.0 && ctrl.has_ui_max && ctrl.ui_max == 0.35 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "explaino_root_sdf") {
+                    foundExplainoRootSdfHAmplitude = true;
+                }
+                if (ctrl.id == "explaino_root_sdf_h_frequency" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.explaino_root_sdf_h_frequency" &&
+                    ctrl.has_min && ctrl.min == 0.1 && ctrl.has_max && ctrl.max == 16.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.25 && ctrl.has_ui_max && ctrl.ui_max == 4.0 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "explaino_root_sdf") {
+                    foundExplainoRootSdfHFrequency = true;
                 }
                 if (ctrl.id == "color_smooth_escape_interior_strength" && ctrl.type == "slider_float" &&
                     ctrl.has_binding && ctrl.binding.path == "fractal.params.color_smooth_escape_interior_strength" &&
@@ -1254,6 +1313,12 @@ int main() {
                 if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_projection_and_flow")) {
                     foundExplainoSeedVisibleForExplainoProjectionAndFlow = true;
                 }
+                if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_root_sdf")) {
+                    foundExplainoSeedVisibleForExplainoRootSdf = true;
+                }
+                if (ctrl.id == "explaino_root_authority" && VisibleIfIncludesFractalType(ctrl, "explaino_root_sdf")) {
+                    foundExplainoRootAuthorityVisibleForExplainoRootSdf = true;
+                }
                 if (ctrl.id == "ripple_amplitude" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundRippleAmplitudeVisibleForExplainoAll = true;
                 }
@@ -1452,8 +1517,14 @@ int main() {
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||
             !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
             !foundFractalTypeSdfGroup || !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
-            !foundFractalTypeExplainoProjectionAndFlowGroup || !foundFractalTypeExplainoCounterfactualPairGroup) {
+            !foundFractalTypeExplainoProjectionAndFlowGroup || !foundFractalTypeExplainoCounterfactualPairGroup ||
+            !foundFractalTypeExplainoRootSdfGroup) {
             std::cerr << "Did not find grouped fractal selector categories including the canonical Explaino-all entry in schema\n";
+            return 1;
+        }
+        if (!foundExplainoRootSdfRadius || !foundExplainoRootSdfBridgeWidth || !foundExplainoRootSdfSmoothBlend ||
+            !foundExplainoRootSdfHSource || !foundExplainoRootSdfHAmplitude || !foundExplainoRootSdfHFrequency) {
+            std::cerr << "Did not find the ExplainO Root SDF owner-lane control surface in schema\n";
             return 1;
         }
         if (!foundFractalTypeExplainoAllFirst) {
@@ -1471,7 +1542,8 @@ int main() {
         if (!foundEpsilonVisibleForExplainoAll || !foundEpsilonVisibleForCounterfactualPair ||
             !foundEpsilonVisibleForExplainoCounterfactualPair || !foundEpsilonVisibleForExplainoProjectionAndFlow ||
             !foundExplainoSeedVisibleForExplainoAll || !foundExplainoSeedVisibleForExplainoCounterfactualPair ||
-            !foundExplainoSeedVisibleForExplainoProjectionAndFlow) {
+            !foundExplainoSeedVisibleForExplainoProjectionAndFlow || !foundExplainoSeedVisibleForExplainoRootSdf ||
+            !foundExplainoRootAuthorityVisibleForExplainoRootSdf) {
             std::cerr << "Did not preserve the existing Explaino family control surface for the canonical Explaino-all identity\n";
             return 1;
         }
@@ -1537,6 +1609,7 @@ int main() {
         bool foundProjectionAndFlowRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundSafeModeFractalTypeSdfGroup = false;
+        bool foundSafeModeFractalTypeExplainoRootSdfGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
         bool foundSafeModeExplainoProjectionAndFlowGroup = false;
@@ -1566,7 +1639,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 29) {
+            fractalPanel->controls.size() != 35) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }
@@ -1800,6 +1873,7 @@ int main() {
                         if (option.id == "projection_and_flow" && option.group == "Root-Finding") foundProjectionAndFlowRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                         if (option.id == "sdf_pack_scene" && option.group == "SDF") foundSafeModeFractalTypeSdfGroup = true;
+                        if (option.id == "explaino_root_sdf" && option.group == "SDF") foundSafeModeFractalTypeExplainoRootSdfGroup = true;
                         if (option.group == "Explaino") {
                             ++safeModeExplainoGroupOptionCount;
                             const ExplainoSelectorDescriptor* descriptor = FindExplainoSelectorDescriptor(option.id);
@@ -1885,7 +1959,8 @@ int main() {
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||
             !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
-            !foundSafeModeFractalTypeSdfGroup || !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
+            !foundSafeModeFractalTypeSdfGroup || !foundSafeModeFractalTypeExplainoRootSdfGroup ||
+            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
             !foundSafeModeExplainoProjectionAndFlowGroup || !foundSafeModeExplainoCounterfactualPairGroup) {
             std::cerr << "Safe-mode schema did not expose grouped fractal selector categories including the canonical Explaino-all entry\n";
             return 1;

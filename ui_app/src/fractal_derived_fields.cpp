@@ -104,6 +104,12 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.magnet_seed_imag = 0.0f;
     params.magnet_relaxation = 1.0f;
     params.magnet_bailout = 12.0f;
+    params.explaino_root_sdf_radius = 0.14f;
+    params.explaino_root_sdf_bridge_width = 0.06f;
+    params.explaino_root_sdf_smooth_blend = 0.10f;
+    params.explaino_root_sdf_h_source = ExplainoRootSdfHSource::none;
+    params.explaino_root_sdf_h_amplitude = 0.0f;
+    params.explaino_root_sdf_h_frequency = 1.0f;
     params.color_saturation = 1.15f;
     params.color_contrast = 1.10f;
     params.color_tint_r = 1.0f;
@@ -721,7 +727,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
 void ApplyFractalPresetDefaultsForFractalSwitch(const ViewState& view, KernelParams& params, bool* ioDirty) {
     const ColorPipelineRuntimeSnapshot previousColor = CaptureColorPipelineRuntimeSnapshot(params);
     const bool canPreserveColor =
-        (view.fractal_type != FractalType::sdf_pack_scene || ColorPipelineSnapshotUsesSdfSource(previousColor)) &&
+        ((view.fractal_type != FractalType::sdf_pack_scene &&
+          view.fractal_type != FractalType::explaino_root_sdf) ||
+         ColorPipelineSnapshotUsesSdfSource(previousColor)) &&
         CanRestoreColorPipelineRuntimeSnapshot(view.fractal_type, previousColor);
     ApplyFractalPresetDefaults(view, params, ioDirty);
     if (canPreserveColor) {
@@ -932,6 +940,9 @@ static void ClearPolynomialCoefficients(float coeffs[5]) {
 }
 
 static bool IsExplainoRootEditorFractalType(FractalType fractalType) {
+    if (fractalType == FractalType::explaino_root_sdf) {
+        return true;
+    }
     switch (fractalType) {
     case FractalType::explaino_julia:
     case FractalType::explaino_lambda:
@@ -963,12 +974,13 @@ static bool IsExplainoComposedVariantType(FractalType fractalType) {
 }
 
 void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool* ioDirty) {
-    if (!IsExplainoFamily(view.fractal_type)) {
+    if (!UsesExplainoRootLayoutAuthority(view.fractal_type)) {
         params.explaino_root_count = 0;
         return;
     }
 
-    if (!UsesExplainoCustomPolynomialAuthority(view.fractal_type)) {
+    if (!UsesExplainoCustomPolynomialAuthority(view.fractal_type) &&
+        view.fractal_type != FractalType::explaino_root_sdf) {
         params.explaino_root_authority = ExplainoRootAuthority::generated;
         params.explaino_root_count = 0;
         ClearPolynomialCoefficients(params.poly_coeffs_b);

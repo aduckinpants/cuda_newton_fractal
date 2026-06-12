@@ -109,7 +109,8 @@ bool ExpectSurfaceControl(
     const char* visibilitySurfaceId,
     bool defaultVisible,
     bool animatable,
-    bool absentFromExplainoAll) {
+    bool absentFromExplainoAll,
+    bool requireValidationRange = true) {
     const json_min::Value* control = FindControlOnLane(root, ownerLane, controlId);
     if (!control) {
         std::cerr << "Missing descriptor control " << controlId << " on " << ownerLane << "\n";
@@ -120,10 +121,13 @@ bool ExpectSurfaceControl(
         !JsonStringFieldEquals(*control, "state_io_key", stateIoKey) ||
         !JsonStringFieldEquals(*control, "visibility_surface_id", visibilitySurfaceId) ||
         !JsonBoolFieldEquals(*control, "binding_resolves", true) ||
-        !JsonBoolFieldEquals(*control, "has_validation_range", true) ||
         !JsonBoolFieldEquals(*control, "animatable", animatable) ||
         !JsonBoolFieldEquals(*control, "default_visible", defaultVisible)) {
         std::cerr << "Descriptor control " << controlId << " on " << ownerLane << " is missing authority fields\n";
+        return false;
+    }
+    if (requireValidationRange && !JsonBoolFieldEquals(*control, "has_validation_range", true)) {
+        std::cerr << "Descriptor control " << controlId << " on " << ownerLane << " is missing numeric validation range\n";
         return false;
     }
     if (absentFromExplainoAll && std::string(ownerLane) != "explaino_all" && FindControlOnLane(root, "explaino_all", controlId)) {
@@ -227,11 +231,20 @@ int main() {
         }
     }
 
-    for (const char* lane : {"explaino", "explaino_all", "explaino_balance_void"}) {
+    for (const char* lane : {"explaino", "explaino_all", "explaino_balance_void", "explaino_root_sdf"}) {
         if (!ExpectSurfaceControl(parsed.value, lane, "explaino_custom_root_count", "fractal.params.explaino_root_count", "int", "explaino_root_count", "explaino_roots_custom", false, false, false) ||
             !ExpectSurfaceControl(parsed.value, lane, "explaino_root_0_x", "fractal.params.explaino_roots.0.x", "float", "explaino_roots.0.x", "explaino_roots_custom", false, false, false)) {
             return 1;
         }
+    }
+
+    if (!ExpectSurfaceControl(parsed.value, "explaino_root_sdf", "explaino_root_sdf_radius", "fractal.params.explaino_root_sdf_radius", "float", "explaino_root_sdf_radius", "default", true, false, true) ||
+        !ExpectSurfaceControl(parsed.value, "explaino_root_sdf", "explaino_root_sdf_bridge_width", "fractal.params.explaino_root_sdf_bridge_width", "float", "explaino_root_sdf_bridge_width", "default", true, false, true) ||
+        !ExpectSurfaceControl(parsed.value, "explaino_root_sdf", "explaino_root_sdf_smooth_blend", "fractal.params.explaino_root_sdf_smooth_blend", "float", "explaino_root_sdf_smooth_blend", "default", true, false, true) ||
+        !ExpectSurfaceControl(parsed.value, "explaino_root_sdf", "explaino_root_sdf_h_source", "fractal.params.explaino_root_sdf_h_source", "enum", "explaino_root_sdf_h_source", "default", true, false, true, false) ||
+        !ExpectSurfaceControl(parsed.value, "explaino_root_sdf", "explaino_root_sdf_h_amplitude", "fractal.params.explaino_root_sdf_h_amplitude", "float", "explaino_root_sdf_h_amplitude", "default", true, false, true) ||
+        !ExpectSurfaceControl(parsed.value, "explaino_root_sdf", "explaino_root_sdf_h_frequency", "fractal.params.explaino_root_sdf_h_frequency", "float", "explaino_root_sdf_h_frequency", "default", true, false, true)) {
+        return 1;
     }
 
     if (!ExpectCommonControl(parsed.value, "explaino_nova", "explaino_warp_strength", "fractal.params.explaino_warp_strength", "float") ||

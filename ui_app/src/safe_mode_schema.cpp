@@ -32,6 +32,7 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"magnet", "Magnet Type I", "Escape-Time"},
     {"generic_equation_pack", "Equation Pack", "Generic"},
     {"sdf_pack_scene", "SDF Pack Scene", "SDF"},
+    {"explaino_root_sdf", "ExplainO Root SDF", "SDF"},
     {"explaino_all", "Explaino-all", "Explaino"},
     {"explaino_y", "Explaino Y", "Explaino"},
     {"explaino_fp", "Explaino FP", "Explaino"},
@@ -424,6 +425,61 @@ UISchemaControl BuildExplainoRationalEscapeDenominatorPowerControl() {
     return control;
 }
 
+UISchemaControl BuildExplainoRootSdfFloatControl(
+    const char* id,
+    const char* label,
+    const char* path,
+    double hardMin,
+    double hardMax,
+    double uiMin,
+    double uiMax,
+    double step,
+    double defaultValue) {
+    UISchemaControl control = MakeRangedParamControl(
+        id,
+        "slider_float",
+        label,
+        "float",
+        hardMin,
+        hardMax,
+        step,
+        path,
+        json_min::Value{defaultValue});
+    control.ui_min = uiMin;
+    control.ui_max = uiMax;
+    control.has_ui_min = true;
+    control.has_ui_max = true;
+    SetVisibleForFractalType(&control, "explaino_root_sdf");
+    return control;
+}
+
+UISchemaControl BuildExplainoRootSdfHSourceControl() {
+    UISchemaControl control = MakeParamControl(
+        "explaino_root_sdf_h_source",
+        "combo",
+        "Root h Source",
+        "enum",
+        "fractal.params.explaino_root_sdf_h_source",
+        json_min::Value{std::string("none")});
+    control.options = {
+        {"none", "None", ""},
+        {"phase_sine", "Phase Sine", ""},
+    };
+    SetVisibleForFractalType(&control, "explaino_root_sdf");
+    return control;
+}
+
+std::vector<UISchemaControl> BuildExplainoRootSdfControls() {
+    return {
+        BuildExplainoRootSdfFloatControl("explaino_root_sdf_radius", "Root SDF Radius", "fractal.params.explaino_root_sdf_radius", 0.001, 2.0, 0.01, 0.6, 0.001, 0.14),
+        BuildExplainoRootSdfFloatControl("explaino_root_sdf_bridge_width", "Bridge Width", "fractal.params.explaino_root_sdf_bridge_width", 0.0, 2.0, 0.0, 0.4, 0.001, 0.06),
+        BuildExplainoRootSdfFloatControl("explaino_root_sdf_smooth_blend", "SDF Smooth Blend", "fractal.params.explaino_root_sdf_smooth_blend", 0.0, 2.0, 0.0, 0.5, 0.001, 0.10),
+        BuildExplainoRootSdfHSourceControl(),
+        BuildExplainoRootSdfFloatControl("explaino_root_sdf_h_amplitude", "Root h Amplitude", "fractal.params.explaino_root_sdf_h_amplitude", 0.0, 1.0, 0.0, 0.35, 0.001, 0.0),
+        BuildExplainoRootSdfFloatControl("explaino_root_sdf_h_frequency", "Root h Frequency", "fractal.params.explaino_root_sdf_h_frequency", 0.1, 16.0, 0.25, 4.0, 0.01, 1.0),
+    };
+}
+
 UISchemaControl BuildMagnetFloatControl(
     const char* id,
     const char* label,
@@ -597,7 +653,7 @@ UISchemaPanel BuildSafeModeViewPanel() {
     return panel;
 }
 
-std::vector<UISchemaControl> BuildSafeModeFractalControls() {
+std::vector<UISchemaControl> BuildSafeModeCoreFractalControls() {
     return {
         MakeSoftMinParamControl("max_iter", "slider_int", "Max Iterations", "int", 1.0, 1.0, 5000.0, 1.0, "fractal.params.max_iter", json_min::Value{500.0}),
         MakeRangedParamControl("exposure", "slider_float", "Exposure", "float", 0.1, 5.0, 0.01, "fractal.params.exposure", json_min::Value{1.0}),
@@ -617,6 +673,11 @@ std::vector<UISchemaControl> BuildSafeModeFractalControls() {
         BuildFixedFamilyFoldMixControl("celtic_abs_mix", "Celtic Abs Mix", "fractal.params.celtic_abs_mix", "celtic_mandelbrot"),
         BuildFixedFamilyFoldMixControl("perpendicular_fold_mix", "Perpendicular Fold Mix", "fractal.params.perpendicular_fold_mix", "perpendicular_burning_ship"),
         BuildExplainoRationalEscapeDenominatorPowerControl(),
+    };
+}
+
+std::vector<UISchemaControl> BuildSafeModeTailFractalControls() {
+    return {
         BuildJuliaFloatControl("julia_c_real", "Julia C (Real)", "fractal.params.julia_c_real", -0.7),
         BuildJuliaFloatControl("julia_c_imag", "Julia C (Imag)", "fractal.params.julia_c_imag", 0.27015),
         BuildExplainoJuliaConstantModeControl(),
@@ -629,6 +690,15 @@ std::vector<UISchemaControl> BuildSafeModeFractalControls() {
         BuildMagnetFloatControl("magnet_relaxation", "Magnet Relaxation", "fractal.params.magnet_relaxation", 0.05, 1.5, 0.01, 1.0),
         BuildMagnetBailoutControl(),
     };
+}
+
+std::vector<UISchemaControl> BuildSafeModeFractalControls() {
+    std::vector<UISchemaControl> controls = BuildSafeModeCoreFractalControls();
+    std::vector<UISchemaControl> rootSdfControls = BuildExplainoRootSdfControls();
+    std::vector<UISchemaControl> tailControls = BuildSafeModeTailFractalControls();
+    controls.insert(controls.end(), rootSdfControls.begin(), rootSdfControls.end());
+    controls.insert(controls.end(), tailControls.begin(), tailControls.end());
+    return controls;
 }
 
 UISchemaPanel BuildSafeModeFractalPanel() {

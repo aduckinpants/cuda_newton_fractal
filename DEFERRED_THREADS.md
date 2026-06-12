@@ -86,6 +86,26 @@ Parked items:
 
 Short-term intent: if this thread preempts SDF, do only the root-authority analyzer repair first, then trace receipt hardening. Do not start seed hunting, GA, charts, or FITS/flashlight integration until root authority and trace receipts are boringly true.
 
+## Deferred Root/SDF Follow-Ups From ExplainO Root SDF Lane - 2026-06-12
+
+Status: deferred opportunity grooming only; these are not part of the active `explaino_root_sdf` v1 lane.
+
+Active interruption:
+
+- `docs/notes/explaino_root_sdf_field_lane_PHASED_PLAN.md`
+
+V1 is intentionally narrow: a field-primary `explaino_root_sdf` lane that consumes existing ExplainO root authority, renders root circles plus explicit index-pair bridge capsules, and colors through existing SDF Color Pipeline rows.
+
+Parked follow-ups:
+
+- ExplainO SDF orbit trap: sample distance to the root-SDF field during normal iteration or coloring.
+- `h(t)` root-homotopy Newton: build a Newton polynomial from roots that move through a typed deterministic homotopy source.
+- Slime-trace fractal: render serialized ExplainO slime parameter traces as geometry or field modulation.
+- Root-metric Color Pipeline sources: expose pair separation, centroid drift, symmetry error, and root velocity as source signals.
+- SDF gradient-force iteration: use SDF distance/normal as a force term in iterative fractal dynamics.
+
+Short-term intent: close the root-SDF lane first, then return to the deferred SDF field-generation/downsample optimization thread. Do not turn this slice into orbit traps, root-homotopy renderer work, trace-driven live rendering, or new SDF force dynamics.
+
 ## Current Difficulty / Reward Priority
 
 This table is the current backlog order after reconciling the older deferred notes, the parameter functionality campaign, the capture/pacing repairs, the generic equation-pack pause README, and the modular Magnet/toolkit plan. It is planning guidance, not permission to skip a new plan/contract for implementation.
@@ -99,7 +119,7 @@ This table is the current backlog order after reconciling the older deferred not
 | 5 | Camera/dive behavior | Medium | High | Make auto-dive dt-aware and implement at least one real behavior mode instead of flat zoom stubs; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 6 | Smooth-escape/color tuning | Medium | Medium/High | Per-family color tuning and interior treatment, without reopening Color Pipeline architecture broadly; see `docs/notes/top_five_backlog_campaign_PHASED_PLAN.md`. |
 | 7 | Color Pipeline composition follow-ups | Medium | High | UI-Salt backend authority, preset workflow truth, visible implementation-wording cleanup, SDF Normal Angle Beauty, typed Source-row applicators, mixed SDF/non-SDF Source rows, and grouped function picker/layout are shipped. More applicators, SDF pack authoring/catalog UX, new SDF ops, and SDF-native lanes remain later. |
-| 8 | SDF performance follow-up after preview policy | Medium/High | High | Preview postprocess quality policy, CUDA SDF postprocess, adaptive field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, and boundary-masked normal-angle UX are shipped. |
+| 8 | SDF performance follow-up after preview policy | Medium/High | High | Preview postprocess quality policy, CUDA SDF postprocess, adaptive field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, and boundary-masked normal-angle UX are shipped. The current short interrupt is the bounded `explaino_root_sdf` lane; return to field-generation/downsample optimization afterward. |
 | 9 | Generic equation-pack productization | Medium/High | High strategic | Persistence first, then catalog picker, authoring UX, Salticid adapter, performance profiling. |
 | 10 | Callable/transpiler handoff | High | High strategic | Finish the handoff boundary without pretending dynamic backend execution already exists. |
 | 11 | Catalog/family authority refactor | High | High | Move remaining family defaults, visibility, and validation out of brittle monolithic paths before larger families. |

@@ -39,6 +39,7 @@ enum class FractalCatalogFamily : uint8_t {
     magnet,
     generic_equation_pack,
     sdf_pack_scene,
+    explaino_root_sdf,
 };
 
 enum class FractalCatalogViewPolicy : uint8_t {
@@ -69,6 +70,7 @@ enum class FractalCatalogFormulaGrowthSurface : uint8_t {
     native_composite_formula,
     generic_equation_pack,
     sdf_pack_scene,
+    field_primary_sdf,
 };
 
 enum class FractalCatalogRuntimeFlag : uint32_t {
@@ -87,6 +89,7 @@ enum class FractalCatalogCapabilityFlag : uint32_t {
     generic_equation_pack = 1u << 5,
     root_basin_coloring = 1u << 6,
     sdf_pack_scene = 1u << 7,
+    field_primary_sdf = 1u << 8,
 };
 
 struct FractalCatalogEntry {
@@ -177,6 +180,9 @@ inline constexpr uint32_t FractalCatalogCapabilityFlagsFor(FractalType fractalTy
                 : 0u) |
         (fractalType == FractalType::sdf_pack_scene
                 ? FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::sdf_pack_scene)
+                : 0u) |
+        (fractalType == FractalType::explaino_root_sdf
+                ? FractalCatalogCapabilityFlagMask(FractalCatalogCapabilityFlag::field_primary_sdf)
                 : 0u);
 }
 
@@ -275,6 +281,7 @@ inline constexpr FractalCatalogEntry kFractalCatalog[] = {
     FRACTAL_CATALOG_ENTRY(magnet, "magnet", "Magnet Type I", escape_time, magnet, escape_tuned_region, escape_direct, native_2d_formula),
     FRACTAL_CATALOG_ENTRY(generic_equation_pack, "generic_equation_pack", "Generic Equation Pack", custom, generic_equation_pack, custom_workbench_region, custom_workbench, generic_equation_pack),
     FRACTAL_CATALOG_ENTRY(sdf_pack_scene, "sdf_pack_scene", "SDF Pack Scene", sdf, sdf_pack_scene, custom_workbench_region, custom_workbench, sdf_pack_scene),
+    FRACTAL_CATALOG_ENTRY(explaino_root_sdf, "explaino_root_sdf", "ExplainO Root SDF", sdf, explaino_root_sdf, explaino_family_region, explaino_family, field_primary_sdf),
 };
 
 #undef FRACTAL_CATALOG_ENTRY

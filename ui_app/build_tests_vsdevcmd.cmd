@@ -130,6 +130,7 @@ if /I "%FOCUSED_TEST%"=="test_fractal_catalog_authority" call :focused_test_frac
 if /I "%FOCUSED_TEST%"=="test_fractal_types" call :focused_test_fractal_types & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_derived_fields" call :focused_test_fractal_derived_fields & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_family_rules" call :focused_test_fractal_family_rules & exit /b
+if /I "%FOCUSED_TEST%"=="test_fractal_runtime_validation" call :focused_test_fractal_runtime_validation & exit /b
 if /I "%FOCUSED_TEST%"=="test_schema_binding" call :focused_test_schema_binding & exit /b
 if /I "%FOCUSED_TEST%"=="test_explaino_counterfactual_repair" call :focused_test_explaino_counterfactual_repair & exit /b
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" call :focused_test_generic_equation_pack_workbench_ui & exit /b
@@ -139,6 +140,7 @@ if /I "%FOCUSED_TEST%"=="test_sdf_pack" call :focused_test_sdf_pack & exit /b
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_cuda" call :focused_test_sdf_pack_cuda & exit /b
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer" call :focused_test_sdf_pack_field_producer & exit /b
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer_cuda" call :focused_test_sdf_pack_field_producer_cuda & exit /b
+if /I "%FOCUSED_TEST%"=="test_explaino_root_sdf_field" call :focused_test_explaino_root_sdf_field & exit /b
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_viewer_ui" call :focused_test_sdf_pack_viewer_ui & exit /b
 if /I "%FOCUSED_TEST%"=="test_generic_probe" call :focused_test_generic_probe & exit /b
 echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
@@ -665,6 +667,14 @@ if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_field_producer_cuda.exe" || exit /b 1
 exit /b 0
 
+:focused_test_explaino_root_sdf_field
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_root_sdf_field.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_root_sdf_field.exe" || exit /b 1
+exit /b 0
+
 :focused_test_sdf_pack_viewer_ui
 cl /nologo /EHsc /MD /std:c++17 /O2 /D SDF_PACK_VIEWER_UI_NO_IMGUI /I. /I.\src ^
   .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\sdf_pack_viewer_ui.cpp .\tests\test_sdf_pack_viewer_ui.cpp ^
@@ -828,6 +838,14 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_runtime_walk_headless.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_runtime_walk_headless.exe" || exit /b 1
+exit /b 0
+
+:focused_test_fractal_runtime_validation
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_fractal_runtime_validation.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_runtime_validation.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_runtime_validation.exe" || exit /b 1
 exit /b 0
 
 :focused_test_explaino_counterfactual_repair
@@ -1405,6 +1423,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_sdf_pack_field_producer.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_root_sdf_field.exe"
+if errorlevel 1 exit /b 1
+
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   %CUDA_GENCODE_FLAGS% ^
   -Xcompiler "/EHsc /MD" ^
@@ -1430,6 +1453,7 @@ call :run_test "%TESTROOT%\test_generic_equation_pack.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_cuda.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_field_producer.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_explaino_root_sdf_field.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_field_producer_cuda.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_generic_equation_pack_workbench_ui.exe" || exit /b 1
 

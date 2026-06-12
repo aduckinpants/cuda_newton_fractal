@@ -148,6 +148,17 @@ static bool IsProjectionAndFlowVisibleControl(const UISchemaControl* control, co
         ContainsCsvToken(control->visible_if.value, "explaino_projection_and_flow");
 }
 
+static bool IsExplainoRootSdfVisibleControl(const UISchemaControl* control, const char* bindingPath) {
+    return control &&
+        control->has_binding &&
+        control->binding.kind == "param" &&
+        control->binding.path == bindingPath &&
+        control->has_visible_if &&
+        control->visible_if.op == "eq" &&
+        control->visible_if.path == "fractal.view.fractal_type" &&
+        control->visible_if.value == "explaino_root_sdf";
+}
+
 static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
     UISchema safeMode = BuildSafeModeSchema();
     const UISchemaPanel* viewPanel = FindPanelById(safeMode, "view");
@@ -156,7 +167,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 29,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 35,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 7,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -187,6 +198,7 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
     bool foundProjectionAndFlowRootFindingGroup = false;
     bool foundFractalTypeEscapeTimeGroup = false;
     bool foundFractalTypeExplainoGroup = false;
+    bool foundFractalTypeSdfGroup = false;
     bool foundExplainoProjectionAndFlowGroup = false;
     bool foundFractalTypeDefaultExplainoAll = false;
     bool foundContinuousRenderDefaultFalse = false;
@@ -206,6 +218,7 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
                     if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                     if (option.id == "magnet" && option.group == "Escape-Time") foundMagnetEscapeTimeGroup = true;
                     if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
+                    if (option.id == "explaino_root_sdf" && option.group == "SDF") foundFractalTypeSdfGroup = true;
                     if (option.id == "explaino_projection_and_flow" && option.group == "Explaino") foundExplainoProjectionAndFlowGroup = true;
                 }
             }
@@ -259,6 +272,8 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
         "TestSafeModeSchemaKeepsGroupedDefaults_MagnetEscapeTimeGroup");
     Check(foundFractalTypeExplainoGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_ExplainoGroup");
+    Check(foundFractalTypeSdfGroup,
+        "TestSafeModeSchemaKeepsGroupedDefaults_SdfGroup");
     Check(foundExplainoProjectionAndFlowGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_ExplainoProjectionAndFlowGroup");
     Check(foundFractalTypeDefaultExplainoAll,
@@ -503,6 +518,54 @@ static void TestSafeModeSchemaExposesProjectionAndFlowControls() {
         "TestSafeModeSchemaExposesProjectionAndFlowControls_PressureThreshold");
 }
 
+static void TestSafeModeSchemaExposesExplainoRootSdfControls() {
+    UISchema safeMode = BuildSafeModeSchema();
+    const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
+    Check(fractalPanel != nullptr, "TestSafeModeSchemaExposesExplainoRootSdfControls_FractalPanelPresent");
+    if (!fractalPanel) {
+        return;
+    }
+
+    const UISchemaControl* radius = FindControlById(*fractalPanel, "explaino_root_sdf_radius");
+    const UISchemaControl* bridgeWidth = FindControlById(*fractalPanel, "explaino_root_sdf_bridge_width");
+    const UISchemaControl* smoothBlend = FindControlById(*fractalPanel, "explaino_root_sdf_smooth_blend");
+    const UISchemaControl* hSource = FindControlById(*fractalPanel, "explaino_root_sdf_h_source");
+    const UISchemaControl* hAmplitude = FindControlById(*fractalPanel, "explaino_root_sdf_h_amplitude");
+    const UISchemaControl* hFrequency = FindControlById(*fractalPanel, "explaino_root_sdf_h_frequency");
+
+    Check(IsExplainoRootSdfVisibleControl(radius, "fractal.params.explaino_root_sdf_radius") &&
+            radius->has_min && radius->min == 0.001 && radius->has_max && radius->max == 2.0 &&
+            radius->has_ui_min && radius->ui_min == 0.01 && radius->has_ui_max && radius->ui_max == 0.6 &&
+            radius->has_default && radius->def.is_number() && radius->def.as_number() == 0.14,
+        "TestSafeModeSchemaExposesExplainoRootSdfControls_Radius");
+    Check(IsExplainoRootSdfVisibleControl(bridgeWidth, "fractal.params.explaino_root_sdf_bridge_width") &&
+            bridgeWidth->has_min && bridgeWidth->min == 0.0 && bridgeWidth->has_max && bridgeWidth->max == 2.0 &&
+            bridgeWidth->has_ui_min && bridgeWidth->ui_min == 0.0 && bridgeWidth->has_ui_max && bridgeWidth->ui_max == 0.4 &&
+            bridgeWidth->has_default && bridgeWidth->def.is_number() && bridgeWidth->def.as_number() == 0.06,
+        "TestSafeModeSchemaExposesExplainoRootSdfControls_BridgeWidth");
+    Check(IsExplainoRootSdfVisibleControl(smoothBlend, "fractal.params.explaino_root_sdf_smooth_blend") &&
+            smoothBlend->has_min && smoothBlend->min == 0.0 && smoothBlend->has_max && smoothBlend->max == 2.0 &&
+            smoothBlend->has_ui_min && smoothBlend->ui_min == 0.0 && smoothBlend->has_ui_max && smoothBlend->ui_max == 0.5 &&
+            smoothBlend->has_default && smoothBlend->def.is_number() && smoothBlend->def.as_number() == 0.10,
+        "TestSafeModeSchemaExposesExplainoRootSdfControls_SmoothBlend");
+    Check(IsExplainoRootSdfVisibleControl(hSource, "fractal.params.explaino_root_sdf_h_source") &&
+            hSource->type == "combo" &&
+            hSource->value_type == "enum" &&
+            hSource->has_default && hSource->def.is_string() && hSource->def.as_string() == "none" &&
+            hSource->options.size() == 2 && hSource->options[0].id == "none" && hSource->options[1].id == "phase_sine",
+        "TestSafeModeSchemaExposesExplainoRootSdfControls_HSource");
+    Check(IsExplainoRootSdfVisibleControl(hAmplitude, "fractal.params.explaino_root_sdf_h_amplitude") &&
+            hAmplitude->has_min && hAmplitude->min == 0.0 && hAmplitude->has_max && hAmplitude->max == 1.0 &&
+            hAmplitude->has_ui_min && hAmplitude->ui_min == 0.0 && hAmplitude->has_ui_max && hAmplitude->ui_max == 0.35 &&
+            hAmplitude->has_default && hAmplitude->def.is_number() && hAmplitude->def.as_number() == 0.0,
+        "TestSafeModeSchemaExposesExplainoRootSdfControls_HAmplitude");
+    Check(IsExplainoRootSdfVisibleControl(hFrequency, "fractal.params.explaino_root_sdf_h_frequency") &&
+            hFrequency->has_min && hFrequency->min == 0.1 && hFrequency->has_max && hFrequency->max == 16.0 &&
+            hFrequency->has_ui_min && hFrequency->ui_min == 0.25 && hFrequency->has_ui_max && hFrequency->ui_max == 4.0 &&
+            hFrequency->has_default && hFrequency->def.is_number() && hFrequency->def.as_number() == 1.0,
+        "TestSafeModeSchemaExposesExplainoRootSdfControls_HFrequency");
+}
+
 int main() {
     TestSafeModeSchemaExposesExpectedPanelsAndActions();
     TestSafeModeSchemaKeepsGroupedDefaults();
@@ -514,6 +577,7 @@ int main() {
     TestSafeModeSchemaExposesPhoenixControls();
     TestSafeModeSchemaExposesFixedFamilyFoldMixControls();
     TestSafeModeSchemaExposesProjectionAndFlowControls();
+    TestSafeModeSchemaExposesExplainoRootSdfControls();
 
     std::printf("test_safe_mode_schema: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

@@ -16,7 +16,7 @@
 
 namespace {
 
-constexpr std::size_t kExpectedFractalCount = 47;
+constexpr std::size_t kExpectedFractalCount = 48;
 
 struct ImGuiTestContext {
     ImGuiContext* context = nullptr;
@@ -502,7 +502,7 @@ bool SchemaFractalOptionsMatchEnumIds(const json_min::Value& schemaRoot) {
         schemaIds.push_back(id);
     }
     if (schemaIds.size() != kExpectedFractalCount || std::size(enum_id_utils::kFractalTypeIds) != kExpectedFractalCount) {
-        std::cerr << "All-fractal inventory expected exactly 47 schema and enum fractal ids\n";
+        std::cerr << "All-fractal inventory expected exactly 48 schema and enum fractal ids\n";
         return false;
     }
     for (const auto& enumId : enum_id_utils::kFractalTypeIds) {
@@ -586,7 +586,7 @@ bool ValidateGeneratedAllFractalControlInventory() {
         }
     }
     if (laneCount != kExpectedFractalCount) {
-        std::cerr << "All-fractal inventory did not visit all 47 fractal lanes\n";
+        std::cerr << "All-fractal inventory did not visit all 48 fractal lanes\n";
         return false;
     }
     if (visibleFamilyControlCells < 200) {
@@ -769,7 +769,7 @@ bool ValidateAndExportAllFractalControlDescriptor(const json_min::Value& schemaR
     }
 
     if (laneCount != kExpectedFractalCount) {
-        std::cerr << "Descriptor export did not visit all 47 fractal lanes\n";
+        std::cerr << "Descriptor export did not visit all 48 fractal lanes\n";
         return false;
     }
     if (visibleControlCells < 200) {
@@ -857,6 +857,12 @@ bool ValidateVisibleControlMatrix() {
         {"projection_and_flow_root_family", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_root_family", "enum"},
         {"projection_and_flow_target_radius", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_target_radius", "float"},
         {"projection_and_flow_pressure_threshold", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_pressure_threshold", "float"},
+        {"explaino_root_sdf_radius", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_radius", "float"},
+        {"explaino_root_sdf_bridge_width", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_bridge_width", "float"},
+        {"explaino_root_sdf_smooth_blend", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_smooth_blend", "float"},
+        {"explaino_root_sdf_h_source", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_source", "enum"},
+        {"explaino_root_sdf_h_amplitude", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_amplitude", "float"},
+        {"explaino_root_sdf_h_frequency", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_frequency", "float"},
         {"counterfactual_pair_root_family", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "enum"},
         {"counterfactual_pair_root_family", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "enum"},
         {"counterfactual_pair_frame", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_frame", "enum"},
@@ -928,6 +934,7 @@ bool ValidateEnumComboEditMatrix() {
         {"counterfactual_pair_frame", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_frame", "view_relative"},
         {"projection_and_flow_root_family", FractalType::projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
         {"projection_and_flow_root_family", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
+        {"explaino_root_sdf_h_source", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_source", "phase_sine"},
         {"transcendental_func", FractalType::explaino_transcendental, "fractal.params.transcendental_func", "f_cosh"},
     };
 
@@ -1313,6 +1320,11 @@ int main() {
         if (!ctx.SetEnumId("fractal.view.fractal_type", "sdf_pack_scene") ||
             ctx.GetEnumId("fractal.view.fractal_type") != "sdf_pack_scene") {
             std::cerr << "Expected fractal type enum round-trip to accept sdf_pack_scene\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.view.fractal_type", "explaino_root_sdf") ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "explaino_root_sdf") {
+            std::cerr << "Expected fractal type enum round-trip to accept explaino_root_sdf\n";
             return 1;
         }
         float* juliaCReal = nullptr;

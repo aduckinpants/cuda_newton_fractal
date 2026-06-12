@@ -9,6 +9,7 @@ enum class SdfFieldProducerKind {
     lens_field_v2,
     authored_sdf_pack,
     sdf_pack_scene,
+    explaino_root_sdf,
 };
 
 inline const char* SdfFieldProducerKindId(SdfFieldProducerKind kind) {
@@ -17,6 +18,7 @@ inline const char* SdfFieldProducerKindId(SdfFieldProducerKind kind) {
     case SdfFieldProducerKind::lens_field_v2: return "lens_field_v2";
     case SdfFieldProducerKind::authored_sdf_pack: return "authored_sdf_pack";
     case SdfFieldProducerKind::sdf_pack_scene: return "sdf_pack_scene";
+    case SdfFieldProducerKind::explaino_root_sdf: return "explaino_root_sdf";
     case SdfFieldProducerKind::none:
     default:
         return "none";

@@ -2215,6 +2215,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     ExplainoRootAuthority explainoRootAuthority = nextParams.explaino_root_authority;
     double explainoDamping = nextParams.explaino_damping;
     int explainoRootCount = 0;
+    double explainoRootSdfRadius = nextParams.explaino_root_sdf_radius;
+    double explainoRootSdfBridgeWidth = nextParams.explaino_root_sdf_bridge_width;
+    double explainoRootSdfSmoothBlend = nextParams.explaino_root_sdf_smooth_blend;
+    ExplainoRootSdfHSource explainoRootSdfHSource = nextParams.explaino_root_sdf_h_source;
+    double explainoRootSdfHAmplitude = nextParams.explaino_root_sdf_h_amplitude;
+    double explainoRootSdfHFrequency = nextParams.explaino_root_sdf_h_frequency;
     double joyCoupling = nextParams.joy_coupling;
     double foldCoupling = nextParams.fold_coupling;
     double bellCoupling = nextParams.bell_coupling;
@@ -2286,6 +2292,17 @@ bool LoadDiagnosticsStateJson(const std::string& text,
                 return false;
             }
         }
+        if (const json_min::Value* rootSdfHSourceValue = paramsObject->get("explaino_root_sdf_h_source")) {
+            if (!rootSdfHSourceValue->is_string()) {
+                if (outError) *outError = "Invalid explaino_root_sdf_h_source field";
+                return false;
+            }
+            const std::string rootSdfHSourceId = rootSdfHSourceValue->as_string();
+            if (!TryParseExplainoRootSdfHSourceId(rootSdfHSourceId, &explainoRootSdfHSource)) {
+                if (outError) *outError = "Unknown explaino_root_sdf_h_source: " + rootSdfHSourceId;
+                return false;
+            }
+        }
     }
     if (!GetOptionalNumber(*paramsObject, "counterfactual_pair_offset_x", &counterfactualPairOffsetX, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "counterfactual_pair_offset_y", &counterfactualPairOffsetY, nullptr, outError)) return false;
@@ -2313,6 +2330,11 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "explaino_root_spread", &explainoRootSpread, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_damping", &explainoDamping, nullptr, outError)) return false;
     if (!ParseIntField(*paramsObject, "explaino_root_count", &explainoRootCount, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_radius", &explainoRootSdfRadius, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_bridge_width", &explainoRootSdfBridgeWidth, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_smooth_blend", &explainoRootSdfSmoothBlend, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_h_amplitude", &explainoRootSdfHAmplitude, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_h_frequency", &explainoRootSdfHFrequency, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "joy_coupling", &joyCoupling, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "fold_coupling", &foldCoupling, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "bell_coupling", &bellCoupling, nullptr, outError)) return false;
@@ -2472,11 +2494,17 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_root_authority = explainoRootAuthority;
     nextParams.explaino_damping = static_cast<float>(explainoDamping);
     nextParams.explaino_root_count = explainoRootCount;
+    nextParams.explaino_root_sdf_radius = static_cast<float>(explainoRootSdfRadius);
+    nextParams.explaino_root_sdf_bridge_width = static_cast<float>(explainoRootSdfBridgeWidth);
+    nextParams.explaino_root_sdf_smooth_blend = static_cast<float>(explainoRootSdfSmoothBlend);
+    nextParams.explaino_root_sdf_h_source = explainoRootSdfHSource;
+    nextParams.explaino_root_sdf_h_amplitude = static_cast<float>(explainoRootSdfHAmplitude);
+    nextParams.explaino_root_sdf_h_frequency = static_cast<float>(explainoRootSdfHFrequency);
     for (Float2& root : nextParams.explaino_roots) {
         root = {0.0f, 0.0f};
     }
     if (!ParseOptionalExplainoRoots(*paramsObject, nextParams.explaino_root_count, &nextParams, nullptr, outError)) return false;
-    if (!UsesExplainoCustomPolynomialAuthority(nextView.fractal_type)) {
+    if (!UsesExplainoRootLayoutAuthority(nextView.fractal_type)) {
         nextParams.explaino_root_authority = ExplainoRootAuthority::generated;
         nextParams.explaino_root_count = 0;
         for (Float2& root : nextParams.explaino_roots) {

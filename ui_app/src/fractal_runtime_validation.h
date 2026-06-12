@@ -180,6 +180,37 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("explaino_cluster_radius must be finite and in [0,2]", outError);
         }
     }
+    if (view.fractal_type == FractalType::explaino_root_sdf) {
+        if (!std::isfinite(params.explaino_root_sdf_radius) ||
+            params.explaino_root_sdf_radius < 0.001f ||
+            params.explaino_root_sdf_radius > 2.0f) {
+            return FailFractalRuntimeValidation("explaino_root_sdf_radius must be finite and in [0.001,2]", outError);
+        }
+        if (!std::isfinite(params.explaino_root_sdf_bridge_width) ||
+            params.explaino_root_sdf_bridge_width < 0.0f ||
+            params.explaino_root_sdf_bridge_width > 2.0f) {
+            return FailFractalRuntimeValidation("explaino_root_sdf_bridge_width must be finite and in [0,2]", outError);
+        }
+        if (!std::isfinite(params.explaino_root_sdf_smooth_blend) ||
+            params.explaino_root_sdf_smooth_blend < 0.0f ||
+            params.explaino_root_sdf_smooth_blend > 2.0f) {
+            return FailFractalRuntimeValidation("explaino_root_sdf_smooth_blend must be finite and in [0,2]", outError);
+        }
+        if (params.explaino_root_sdf_h_source != ExplainoRootSdfHSource::none &&
+            params.explaino_root_sdf_h_source != ExplainoRootSdfHSource::phase_sine) {
+            return FailFractalRuntimeValidation("explaino_root_sdf_h_source must be none or phase_sine", outError);
+        }
+        if (!std::isfinite(params.explaino_root_sdf_h_amplitude) ||
+            params.explaino_root_sdf_h_amplitude < 0.0f ||
+            params.explaino_root_sdf_h_amplitude > 1.0f) {
+            return FailFractalRuntimeValidation("explaino_root_sdf_h_amplitude must be finite and in [0,1]", outError);
+        }
+        if (!std::isfinite(params.explaino_root_sdf_h_frequency) ||
+            params.explaino_root_sdf_h_frequency < 0.1f ||
+            params.explaino_root_sdf_h_frequency > 16.0f) {
+            return FailFractalRuntimeValidation("explaino_root_sdf_h_frequency must be finite and in [0.1,16]", outError);
+        }
+    }
     if (view.fractal_type == FractalType::magnet) {
         if (!std::isfinite(params.magnet_seed_real) || !std::isfinite(params.magnet_seed_imag)) {
             return FailFractalRuntimeValidation("magnet_seed_real/imag must be finite", outError);
@@ -250,7 +281,7 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("explaino_rational_escape_denominator_power must be in [1,6]", outError);
         }
     }
-    if (IsExplainoFamily(view.fractal_type)) {
+    if (UsesExplainoRootLayoutAuthority(view.fractal_type)) {
         if (!std::isfinite(params.explaino_seed) || !std::isfinite(params.explaino_seed_b)) {
             return FailFractalRuntimeValidation("explaino_seed and explaino_seed_b must be finite", outError);
         }
@@ -275,6 +306,9 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             params.explaino_warp_strength > 1.0f) {
             return FailFractalRuntimeValidation("explaino_warp_strength must be finite and in [0,1]", outError);
         }
+    }
+    if (view.fractal_type == FractalType::explaino_root_sdf) {
+        return FailFractalRuntimeValidation("explaino_root_sdf requires the ExplainO Root SDF field producer live render path", outError);
     }
 
     return true;

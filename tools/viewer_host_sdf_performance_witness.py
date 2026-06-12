@@ -28,6 +28,7 @@ class SdfWitnessScenario:
     grading: str = "escape_default"
     lens_downsample: int = 1
     is_sdf: bool = True
+    param_updates: tuple[tuple[str, object], ...] = ()
 
 
 DEFAULT_SCENARIOS: tuple[SdfWitnessScenario, ...] = (
@@ -80,6 +81,23 @@ DEFAULT_SCENARIOS: tuple[SdfWitnessScenario, ...] = (
         color_signal="sdf_signed_distance",
         source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
         fractal_type="sdf_pack_scene",
+    ),
+    SdfWitnessScenario(
+        name="explaino_root_sdf_static",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="explaino_root_sdf",
+    ),
+    SdfWitnessScenario(
+        name="explaino_root_sdf_phase_sine",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="explaino_root_sdf",
+        param_updates=(
+            ("explaino_root_sdf_h_source", "phase_sine"),
+            ("explaino_root_sdf_h_amplitude", 0.18),
+            ("explaino_root_sdf_h_frequency", 2.0),
+        ),
     ),
 )
 
@@ -174,6 +192,11 @@ def measurement_from_payload(
             str(item) for item in payload.get("lens_sdf_supported_signals", [])
         ] if isinstance(payload.get("lens_sdf_supported_signals"), list) else [],
         "lens_sdf_field_capability_fail_closed_reason": payload.get("lens_sdf_field_capability_fail_closed_reason"),
+        "explaino_root_sdf_root_count": _as_int(payload, "explaino_root_sdf_root_count"),
+        "explaino_root_sdf_bridge_count": _as_int(payload, "explaino_root_sdf_bridge_count"),
+        "explaino_root_sdf_h_source": str(payload.get("explaino_root_sdf_h_source", "")),
+        "explaino_root_sdf_base_root_hash": str(payload.get("explaino_root_sdf_base_root_hash", "")),
+        "explaino_root_sdf_effective_root_hash": str(payload.get("explaino_root_sdf_effective_root_hash", "")),
         "rendered_frame_ready": payload.get("rendered_frame_ready") is True,
         "rendered_frame_hash": rendered_hash,
         "target_render_width": _as_int(payload, "target_render_width"),
@@ -541,6 +564,8 @@ def _state_for_scenario(base_state: dict[str, object], scenario: SdfWitnessScena
     params.pop("color_source_stack", None)
     if scenario.source_stack:
         params["color_source_stack"] = [dict(entry) for entry in scenario.source_stack]
+    for key, value in scenario.param_updates:
+        params[key] = value
     state["lens"]["downsample"] = scenario.lens_downsample
     return state
 

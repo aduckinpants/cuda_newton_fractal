@@ -19,6 +19,7 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -54,6 +55,7 @@
 #include "fractal_probe_contract.h"
 #include "fractal_probe_runner.h"
 #include "function_descriptor.h"
+#include "explaino_root_sdf_field.h"
 #include "generic_equation_pack_live.h"
 #include "generic_equation_pack_workbench.h"
 #include "headless_modes.h"
@@ -133,6 +135,16 @@ static void PersistSdfPackViewerStateToDiagnosticLastMirror(
     const SdfPackViewerState& sdfPackViewer,
     std::string* ioStatus);
 static bool SdfPackViewerSelectedAsFieldSource(FractalType fractalType, const SdfPackViewerState& state);
+static bool IsExplainoRootSdfFieldLane(FractalType fractalType);
+static bool ComputeExplainoRootSdfFieldForDispatch(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    int effectiveDownsample,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outPackReport,
+    ExplainoRootSdfFieldReport* outRootReport,
+    std::string* outError);
 static bool ComputeSdfPackViewerFieldForViewport(
     const SdfPackViewerState& state,
     const ViewState& view,
@@ -612,19 +624,50 @@ static void PublishSdfFieldCapability(
         return;
     }
     for (const char* signalId : kSdfFieldCapabilitySignalIds) {
+        if (std::string_view(signalId) == "lens_field_v2_distance" &&
+            producerKind != SdfFieldProducerKind::lens_field_v2) {
+            continue;
+        }
         probe.supported_signal_ids.push_back(signalId);
     }
 }
 
 static bool FractalTypeCanEmitRendererColorSourceSignals(FractalType fractalType) {
     return fractalType != FractalType::generic_equation_pack &&
-        fractalType != FractalType::sdf_pack_scene;
+        fractalType != FractalType::sdf_pack_scene &&
+        fractalType != FractalType::explaino_root_sdf;
 }
 
-static std::string MixedSourceSignalsDeferredMessage(FractalType fractalType) {
+static int FirstNonSdfSourceRowIndex(const KernelParams& params, ColorSignal* outSignal) {
+    const int sourceStackCount = ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count);
+    if (sourceStackCount > 0) {
+        for (int index = 0; index < sourceStackCount; ++index) {
+            const ColorSignal signal = params.color_source_stack[index].signal;
+            if (!IsColorPipelineSdfSourceSignal(signal)) {
+                if (outSignal) *outSignal = signal;
+                return index;
+            }
+        }
+        return -1;
+    }
+    const ColorSignal signal = params.color_pipeline.signal;
+    if (!IsColorPipelineSdfSourceSignal(signal)) {
+        if (outSignal) *outSignal = signal;
+        return 0;
+    }
+    return -1;
+}
+
+static std::string UnsupportedSourceForProducerMessage(FractalType fractalType, const KernelParams& params) {
     const char* fractalTypeId = FractalTypeId(fractalType);
     std::string id = fractalTypeId ? fractalTypeId : "unknown";
-    return id + " mixed Source rows require renderer-backed non-SDF source signals and are deferred.";
+    ColorSignal signal = ColorSignal::smooth_escape;
+    const int rowIndex = FirstNonSdfSourceRowIndex(params, &signal);
+    const char* signalId = ColorSignalId(signal);
+    return "unsupported_source_for_producer: producer_kind=" + id +
+        "; row_index=" + std::to_string(rowIndex) +
+        "; source_id=" + (signalId ? std::string(signalId) : std::string("unknown")) +
+        "; " + id + " mixed Source rows require renderer-backed non-SDF source signals and are deferred.";
 }
 
 static bool PrepareColorPipelineSourceSignalFrame(
@@ -675,14 +718,22 @@ static bool RenderHeadlessFractalFrame(
          sdfSourceResolution.y != render.resolution.y);
 
     outRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+    const bool explainoRootSdfFieldSelected =
+        colorPipelineNeedsSdf && IsExplainoRootSdfFieldLane(view.fractal_type);
+    if (IsExplainoRootSdfFieldLane(view.fractal_type) &&
+        ClassifyColorPipelineSourceStack(params).has_non_sdf) {
+        if (outError) *outError = UnsupportedSourceForProducerMessage(view.fractal_type, params);
+        return false;
+    }
     const bool authoredSdfFieldSelected =
         colorPipelineNeedsSdf &&
         sdfPackForSdf &&
-        SdfPackViewerSelectedAsFieldSource(view.fractal_type, *sdfPackForSdf);
+        SdfPackViewerSelectedAsFieldSource(view.fractal_type, *sdfPackForSdf) &&
+        !explainoRootSdfFieldSelected;
 
     std::vector<uint8_t> mask;
     uint8_t* maskPtr = nullptr;
-    if (colorPipelineNeedsSdf && !authoredSdfFieldSelected && !sdfSourceDiffersFromRender) {
+    if (colorPipelineNeedsSdf && !authoredSdfFieldSelected && !explainoRootSdfFieldSelected && !sdfSourceDiffersFromRender) {
         mask.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
         maskPtr = mask.data();
     }
@@ -690,7 +741,7 @@ static bool RenderHeadlessFractalFrame(
     std::vector<float> sourceSignalValues;
     ColorPipelineSourceSignalFrameView sourceSignalFrame{};
     if (mixedSourceStack && !FractalTypeCanEmitRendererColorSourceSignals(view.fractal_type)) {
-        if (outError) *outError = MixedSourceSignalsDeferredMessage(view.fractal_type);
+        if (outError) *outError = UnsupportedSourceForProducerMessage(view.fractal_type, params);
         return false;
     }
     if (mixedSourceStack && !PrepareColorPipelineSourceSignalFrame(render, sourceSignalRowCount, sourceSignalValues, sourceSignalFrame, outError)) {
@@ -698,9 +749,10 @@ static bool RenderHeadlessFractalFrame(
     }
 
     const char* renderError = nullptr;
-    if (view.fractal_type == FractalType::sdf_pack_scene) {
+    if (view.fractal_type == FractalType::sdf_pack_scene ||
+        view.fractal_type == FractalType::explaino_root_sdf) {
         if (!RenderSdfPackSceneBaseFrame(render, outRgba.data(), maskPtr, outStats)) {
-            if (outError) *outError = "SDF Pack Scene base frame failed during headless capture.";
+            if (outError) *outError = "field-primary SDF base frame failed during headless capture.";
             return false;
         }
     } else if (mixedSourceStack) {
@@ -723,6 +775,44 @@ static bool RenderHeadlessFractalFrame(
     }
 
     if (!colorPipelineNeedsSdf) {
+        return true;
+    }
+
+    if (explainoRootSdfFieldSelected) {
+        RenderSettings sourceRender = render;
+        sourceRender.resolution = sdfSourceResolution;
+        SdfFieldResult rootField;
+        SdfPackFieldReport packReport{};
+        ExplainoRootSdfFieldReport rootReport{};
+        std::string fieldError;
+        if (!ComputeExplainoRootSdfFieldForDispatch(
+                view,
+                params,
+                sourceRender,
+                lensSettings.downsample,
+                rootField,
+                &packReport,
+                &rootReport,
+                &fieldError)) {
+            if (outError) *outError = fieldError.empty()
+                ? "failed to compute ExplainO Root SDF field for headless Color Pipeline SDF source"
+                : fieldError;
+            return false;
+        }
+        SdfColorPipelinePostprocessOptions postprocessOptions{};
+        if (!ApplyLensSdfColorPipelinePostprocess(
+                rootField.View(),
+                render,
+                params,
+                outRgba.data(),
+                outError,
+                nullptr,
+                &postprocessOptions)) {
+            if (outError && outError->empty()) {
+                *outError = "SDF Color Pipeline postprocess failed during headless ExplainO Root SDF capture";
+            }
+            return false;
+        }
         return true;
     }
 
@@ -1138,6 +1228,10 @@ static bool SdfPackViewerSelectedAsFieldSource(FractalType fractalType, const Sd
         (fractalType == FractalType::sdf_pack_scene || state.use_as_sdf_field_source);
 }
 
+static bool IsExplainoRootSdfFieldLane(FractalType fractalType) {
+    return fractalType == FractalType::explaino_root_sdf;
+}
+
 static SdfPackFieldRegion BuildViewportSdfPackFieldRegion(const ViewState& view) {
     const double zoom = (std::max)(1.0e-300, std::exp2(view.log2_zoom));
     SdfPackFieldRegion region{};
@@ -1176,6 +1270,29 @@ static bool ComputeSdfPackViewerFieldForViewport(
     return true;
 }
 
+static bool ComputeExplainoRootSdfFieldForDispatch(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    int effectiveDownsample,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outPackReport,
+    ExplainoRootSdfFieldReport* outRootReport,
+    std::string* outError) {
+    return ComputeExplainoRootSdfFieldForViewport(
+        view,
+        params,
+        BuildViewportSdfPackFieldRegion(view),
+        render.resolution.x,
+        render.resolution.y,
+        effectiveDownsample,
+        SdfPackFieldBackend::auto_backend,
+        outField,
+        outPackReport,
+        outRootReport,
+        outError);
+}
+
 // --- Render dispatch helper ---
 
 
@@ -1207,7 +1324,7 @@ static void DispatchRenderFrame(
     lensSdfProbe.overlay_mode = LensSdfOverlayModeId(lens.sdf_overlay_mode) ? LensSdfOverlayModeId(lens.sdf_overlay_mode) : "off";
     lensSdfProbe.overlay_opacity = lens.sdf_overlay_opacity;
     InvalidateRenderedFrame(&renderedFrame);
-    if (IsExplainoFamily(view.fractal_type)) {
+    if (UsesExplainoRootLayoutAuthority(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);
     }
     if (view.auto_max_iter) {
@@ -1230,23 +1347,31 @@ static void DispatchRenderFrame(
     lensSdfProbe.source_stack_kind = ColorPipelineSourceStackKindId(params);
     const bool lensSdfOverlayEnabled = LensSdfOverlayEnabled(lens);
     const bool needsLensSdfField = lens.enabled || colorPipelineNeedsSdf || lensSdfOverlayEnabled;
+    const bool explainoRootSdfFieldSelected =
+        needsLensSdfField && IsExplainoRootSdfFieldLane(view.fractal_type);
     const bool authoredSdfFieldSelected =
-        needsLensSdfField && SdfPackViewerSelectedAsFieldSource(view.fractal_type, sdfPackViewer);
-    const bool needsMaskDerivedLensSdfField = needsLensSdfField && !authoredSdfFieldSelected;
-    lensSdfProbe.field_source = authoredSdfFieldSelected
-        ? "authored_sdf_pack"
-        : (needsLensSdfField ? "mask_derived_lens_sdf" : "none");
+        needsLensSdfField &&
+        !explainoRootSdfFieldSelected &&
+        SdfPackViewerSelectedAsFieldSource(view.fractal_type, sdfPackViewer);
+    const bool needsMaskDerivedLensSdfField = needsLensSdfField && !authoredSdfFieldSelected && !explainoRootSdfFieldSelected;
+    lensSdfProbe.field_source = explainoRootSdfFieldSelected
+        ? "explaino_root_sdf"
+        : (authoredSdfFieldSelected
+            ? "authored_sdf_pack"
+            : (needsLensSdfField ? "mask_derived_lens_sdf" : "none"));
     PublishSdfFieldCapability(
         lensSdfProbe,
-        authoredSdfFieldSelected
-            ? (view.fractal_type == FractalType::sdf_pack_scene
+        explainoRootSdfFieldSelected
+            ? SdfFieldProducerKind::explaino_root_sdf
+            : (authoredSdfFieldSelected
+                ? (view.fractal_type == FractalType::sdf_pack_scene
                 ? SdfFieldProducerKind::sdf_pack_scene
                 : SdfFieldProducerKind::authored_sdf_pack)
-            : (needsLensSdfField
+                : (needsLensSdfField
                 ? (ColorPipelineUsesLensFieldV2Source(params)
                     ? SdfFieldProducerKind::lens_field_v2
                     : SdfFieldProducerKind::lens_sdf)
-                : SdfFieldProducerKind::none));
+                    : SdfFieldProducerKind::none)));
     if (authoredSdfFieldSelected && sdfPackViewer.have_pack) {
         lensSdfProbe.field_source_pack_id = sdfPackViewer.pack.pack_id;
     }
@@ -1260,8 +1385,14 @@ static void DispatchRenderFrame(
     std::vector<float> sourceSignalValues;
     ColorPipelineSourceSignalFrameView sourceSignalFrame{};
     bool sourceSignalFramePrepared = true;
-    if (mixedSourceStack && !FractalTypeCanEmitRendererColorSourceSignals(view.fractal_type)) {
-        genericRenderError = MixedSourceSignalsDeferredMessage(view.fractal_type);
+    if (IsExplainoRootSdfFieldLane(view.fractal_type) &&
+        ClassifyColorPipelineSourceStack(params).has_non_sdf) {
+        genericRenderError = UnsupportedSourceForProducerMessage(view.fractal_type, params);
+        lensSdfProbe.field_capability_fail_closed_reason = genericRenderError;
+        lensSdfProbe.field_source_error = genericRenderError;
+        sourceSignalFramePrepared = false;
+    } else if (mixedSourceStack && !FractalTypeCanEmitRendererColorSourceSignals(view.fractal_type)) {
+        genericRenderError = UnsupportedSourceForProducerMessage(view.fractal_type, params);
         lensSdfProbe.field_capability_fail_closed_reason = genericRenderError;
         lensSdfProbe.field_source_error = genericRenderError;
         sourceSignalFramePrepared = false;
@@ -1295,6 +1426,15 @@ static void DispatchRenderFrame(
             renderOk = RenderSdfPackSceneBaseFrame(dispatchRender, rgba.data(), maskPtr, &newStats);
             if (!renderOk) {
                 genericRenderError = "SDF Pack Scene base frame failed";
+            }
+        }
+    } else if (view.fractal_type == FractalType::explaino_root_sdf) {
+        if (!sourceSignalFramePrepared) {
+            renderOk = false;
+        } else {
+            renderOk = RenderSdfPackSceneBaseFrame(dispatchRender, rgba.data(), maskPtr, &newStats);
+            if (!renderOk) {
+                genericRenderError = "ExplainO Root SDF base frame failed";
             }
         }
     } else if (mixedSourceStack) {
@@ -1377,6 +1517,7 @@ static void DispatchRenderFrame(
                 SdfFieldResult owned_field;
                 LensSdfBackendReport backend_report{};
                 SdfPackFieldReport pack_report{};
+                ExplainoRootSdfFieldReport root_sdf_report{};
                 LensSdfFieldGenerationReport generation_report{};
                 LensSdfFieldCacheReport cache_report{};
                 float field_ms{0.0f};
@@ -1386,6 +1527,41 @@ static void DispatchRenderFrame(
             };
 
             auto computeOrReuseField = [&](int cacheIndex, int effectiveDownsample, RuntimeLensSdfField& outField) -> bool {
+                if (explainoRootSdfFieldSelected) {
+                    const auto fieldStart = std::chrono::steady_clock::now();
+                    std::string fieldError;
+                    SdfPackFieldReport packReport{};
+                    ExplainoRootSdfFieldReport rootReport{};
+                    const bool ok = ComputeExplainoRootSdfFieldForDispatch(
+                        view,
+                        params,
+                        dispatchRender,
+                        effectiveDownsample,
+                        outField.owned_field,
+                        &packReport,
+                        &rootReport,
+                        &fieldError);
+                    outField.field_ms = static_cast<float>(
+                        std::chrono::duration<double, std::milli>(
+                            std::chrono::steady_clock::now() - fieldStart).count());
+                    outField.from_authored_pack = true;
+                    outField.pack_report = packReport;
+                    outField.root_sdf_report = rootReport;
+                    outField.field = ok ? &outField.owned_field : nullptr;
+                    outField.generation_report.field_width = outField.owned_field.width;
+                    outField.generation_report.field_height = outField.owned_field.height;
+                    outField.generation_report.downsample = NormalizeLensDownsamplePow2(effectiveDownsample);
+                    outField.generation_report.backend_ms = outField.field_ms;
+                    outField.cache_report.status = LensSdfFieldCacheStatus::disabled;
+                    outField.cache_report.hit = false;
+                    if (!ok) {
+                        postprocessError = fieldError.empty()
+                            ? "failed to compute ExplainO Root SDF field"
+                            : fieldError;
+                        lensSdfProbe.field_source_error = postprocessError;
+                    }
+                    return ok && outField.field;
+                }
                 if (authoredSdfFieldSelected) {
                     const auto fieldStart = std::chrono::steady_clock::now();
                     std::string packError;
@@ -1506,6 +1682,15 @@ static void DispatchRenderFrame(
                     anyPackCpuField = anyPackCpuField || runtimeField.pack_report.used == SdfPackFieldBackend::cpu_reference;
                     anyPackDirectGridEvaluation = anyPackDirectGridEvaluation || runtimeField.pack_report.direct_grid_evaluation;
                     anyFieldFallback = anyFieldFallback || runtimeField.backend_report.fallback_used || runtimeField.pack_report.fallback_used;
+                    if (explainoRootSdfFieldSelected) {
+                        lensSdfProbe.explaino_root_sdf_root_count = runtimeField.root_sdf_report.root_count;
+                        lensSdfProbe.explaino_root_sdf_bridge_count = runtimeField.root_sdf_report.bridge_count;
+                        lensSdfProbe.explaino_root_sdf_h_source = runtimeField.root_sdf_report.h_source
+                            ? runtimeField.root_sdf_report.h_source
+                            : "none";
+                        lensSdfProbe.explaino_root_sdf_base_root_hash = runtimeField.root_sdf_report.base_root_hash;
+                        lensSdfProbe.explaino_root_sdf_effective_root_hash = runtimeField.root_sdf_report.effective_root_hash;
+                    }
                     lensSdfProbe.field_ms += runtimeField.field_ms;
                     lensSdfProbe.field_cache_lookup_ms += runtimeField.lookup_ms;
                     lensSdfProbe.field_mask_downsample_ms += runtimeField.generation_report.mask_downsample_ms;
@@ -1550,6 +1735,15 @@ static void DispatchRenderFrame(
                     anyPackCpuField = anyPackCpuField || sharedDisplayField.pack_report.used == SdfPackFieldBackend::cpu_reference;
                     anyPackDirectGridEvaluation = anyPackDirectGridEvaluation || sharedDisplayField.pack_report.direct_grid_evaluation;
                     anyFieldFallback = anyFieldFallback || sharedDisplayField.backend_report.fallback_used || sharedDisplayField.pack_report.fallback_used;
+                    if (explainoRootSdfFieldSelected) {
+                        lensSdfProbe.explaino_root_sdf_root_count = sharedDisplayField.root_sdf_report.root_count;
+                        lensSdfProbe.explaino_root_sdf_bridge_count = sharedDisplayField.root_sdf_report.bridge_count;
+                        lensSdfProbe.explaino_root_sdf_h_source = sharedDisplayField.root_sdf_report.h_source
+                            ? sharedDisplayField.root_sdf_report.h_source
+                            : "none";
+                        lensSdfProbe.explaino_root_sdf_base_root_hash = sharedDisplayField.root_sdf_report.base_root_hash;
+                        lensSdfProbe.explaino_root_sdf_effective_root_hash = sharedDisplayField.root_sdf_report.effective_root_hash;
+                    }
                     lensSdfProbe.field_ms += sharedDisplayField.field_ms;
                     lensSdfProbe.field_cache_lookup_ms += sharedDisplayField.lookup_ms;
                     lensSdfProbe.field_mask_downsample_ms += sharedDisplayField.generation_report.mask_downsample_ms;
@@ -1563,10 +1757,11 @@ static void DispatchRenderFrame(
             }
 
             if (fieldOk && displayLensSdfField) {
-                lensSdfProbe.field_cache_status = authoredSdfFieldSelected
+                lensSdfProbe.field_cache_status = (authoredSdfFieldSelected || explainoRootSdfFieldSelected)
                     ? "disabled"
                     : (anyFieldComputed && allFieldCacheHits ? "hit" : "miss");
-                lensSdfProbe.field_cache_hit = !authoredSdfFieldSelected && anyFieldComputed && allFieldCacheHits;
+                lensSdfProbe.field_cache_hit = !(authoredSdfFieldSelected || explainoRootSdfFieldSelected) &&
+                    anyFieldComputed && allFieldCacheHits;
                 lensSdfProbe.field_cache_mask_bytes = reportedMaskBytes;
                 lensSdfProbe.requested_equivalent_field_ms =
                     lensSdfProbe.field_cache_hit && previousLensSdfFieldMs > 0.0f
@@ -1676,7 +1871,7 @@ static void DispatchRenderFrame(
                     }
                 }
                 lensSdfProbe.fallback_used = anyFieldFallback;
-                if (authoredSdfFieldSelected) {
+                if (authoredSdfFieldSelected || explainoRootSdfFieldSelected) {
                     if (anyPackCudaField) {
                         lensSdfProbe.backend_used = "cuda_sample";
                         lensSdfProbe.pack_backend_used = "cuda_sample";
@@ -1717,7 +1912,7 @@ static void ApplyFractalTypeAndPolyCoherence(ViewState& view, KernelParams& para
         lastFractalType = view.fractal_type;
         ApplyFractalViewPresetDefaults(view, &dirty);
         ApplyFractalPresetDefaultsForFractalSwitch(view, params, &dirty);
-        if (IsExplainoFamily(view.fractal_type)) {
+        if (UsesExplainoRootLayoutAuthority(view.fractal_type)) {
             UpdateExplainoPolynomial(view, params, nullptr);
         }
         SyncViewHpFromUi(view);

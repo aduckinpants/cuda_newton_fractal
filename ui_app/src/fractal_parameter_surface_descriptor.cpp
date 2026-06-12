@@ -63,7 +63,7 @@ bool IsDescriptorExplainoRootEditorFractalType(FractalType fractalType) {
     case FractalType::explaino_projection_and_flow:
         return false;
     default:
-        return IsExplainoFamily(fractalType);
+        return UsesExplainoRootLayoutAuthority(fractalType);
     }
 }
 

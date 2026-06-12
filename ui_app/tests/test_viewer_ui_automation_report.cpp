@@ -1,4 +1,7 @@
 #include <cstdio>
+#include <Windows.h>
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -133,6 +136,11 @@ void TestLensSdfProbeTimingFields() {
     probe.field_cache_hit = true;
     probe.field_cache_mask_bytes = 76800;
     probe.field_producer_kind = "lens_field_v2";
+    probe.explaino_root_sdf_root_count = 4;
+    probe.explaino_root_sdf_bridge_count = 2;
+    probe.explaino_root_sdf_h_source = "phase_sine";
+    probe.explaino_root_sdf_base_root_hash = 0x1234ull;
+    probe.explaino_root_sdf_effective_root_hash = 0x5678ull;
     probe.pack_direct_grid_evaluation = true;
     probe.supported_signal_ids = {
         "sdf_signed_distance",
@@ -203,6 +211,60 @@ void TestLensSdfProbeTimingFields() {
         "lens SDF automation probe carries field-group detail");
     Check(probe.pack_direct_grid_evaluation,
         "lens SDF automation probe carries authored-pack direct-grid status");
+
+    const std::filesystem::path reportPath =
+        std::filesystem::temp_directory_path() / "test_viewer_ui_automation_report_root_sdf.json";
+    std::vector<ViewerUiAutomationRect> viewerRects;
+    ColorPipelineWindowState colorPipelineWindow{};
+    ViewState view{};
+    RenderSettings render{};
+    RenderStats stats{};
+    ViewerRenderPacingDecision pacing{};
+    ViewerUiAutomationFrameProbe frameProbe{};
+    ViewerUiAutomationEnumCommandReport enumReport{};
+    HWND hwnd = CreateWindowExA(
+        0,
+        "STATIC",
+        "automation-report-test",
+        WS_OVERLAPPED,
+        0,
+        0,
+        1,
+        1,
+        nullptr,
+        nullptr,
+        GetModuleHandleA(nullptr),
+        nullptr);
+    Check(hwnd != nullptr, "automation report test creates a valid window handle");
+    WriteColorPipelineUiAutomationReport(
+        reportPath.string(),
+        hwnd,
+        viewerRects,
+        colorPipelineWindow,
+        nullptr,
+        nullptr,
+        view,
+        render,
+        stats,
+        pacing,
+        frameProbe,
+        probe,
+        enumReport,
+        17);
+    if (hwnd) {
+        DestroyWindow(hwnd);
+    }
+    std::ifstream in(reportPath, std::ios::binary);
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    const std::string json = buffer.str();
+    Check(json.find("\"explaino_root_sdf_root_count\": 4") != std::string::npos &&
+            json.find("\"explaino_root_sdf_bridge_count\": 2") != std::string::npos &&
+            json.find("\"explaino_root_sdf_h_source\": \"phase_sine\"") != std::string::npos,
+        "automation report writes ExplainO root-SDF root count, bridge count, and h source");
+    Check(json.find("\"explaino_root_sdf_base_root_hash\": \"fnv1a64:0000000000001234\"") != std::string::npos &&
+            json.find("\"explaino_root_sdf_effective_root_hash\": \"fnv1a64:0000000000005678\"") != std::string::npos,
+        "automation report writes ExplainO root-SDF root hashes");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {

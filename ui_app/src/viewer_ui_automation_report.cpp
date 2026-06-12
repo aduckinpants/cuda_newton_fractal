@@ -99,6 +99,16 @@ void WriteColorPipelineReportOptionalNumber(
     out << "null";
 }
 
+void WriteHashOrNull(std::ostream& out, std::uint64_t hash) {
+    if (hash == 0) {
+        out << "null";
+        return;
+    }
+    std::ostringstream hashText;
+    hashText << "fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << hash;
+    WriteAutomationReportString(out, hashText.str());
+}
+
 void WriteLensSdfReportFields(
     std::ostream& out,
     const ViewerUiAutomationLensSdfProbe& lensSdfProbe) {
@@ -144,6 +154,17 @@ void WriteLensSdfReportFields(
     } else {
         WriteAutomationReportString(out, lensSdfProbe.field_source_error);
     }
+    out << ",\n";
+    out << "  \"explaino_root_sdf_root_count\": " << lensSdfProbe.explaino_root_sdf_root_count << ",\n";
+    out << "  \"explaino_root_sdf_bridge_count\": " << lensSdfProbe.explaino_root_sdf_bridge_count << ",\n";
+    out << "  \"explaino_root_sdf_h_source\": ";
+    WriteAutomationReportString(out, lensSdfProbe.explaino_root_sdf_h_source);
+    out << ",\n";
+    out << "  \"explaino_root_sdf_base_root_hash\": ";
+    WriteHashOrNull(out, lensSdfProbe.explaino_root_sdf_base_root_hash);
+    out << ",\n";
+    out << "  \"explaino_root_sdf_effective_root_hash\": ";
+    WriteHashOrNull(out, lensSdfProbe.explaino_root_sdf_effective_root_hash);
     out << ",\n";
     out << "  \"lens_sdf_backend_used\": ";
     WriteAutomationReportString(out, lensSdfProbe.backend_used);

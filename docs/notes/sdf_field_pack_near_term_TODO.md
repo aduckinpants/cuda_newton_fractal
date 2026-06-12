@@ -3,6 +3,8 @@
 Status: living roadmap. The SDF field-pack system is partially shipped as
 headless/native substrate, live viewer Color Pipeline input, Capture Finding parity, normal viewport overlay, SDF Source row customization, capture/replay authority, phase-signal metadata, Color Pipeline fractal-switch preservation, realtime pacing telemetry, SDF postprocess signal specialization, SDF preview postprocess quality policy, full-quality downsampled-field postprocess cell reuse, CUDA direct-scalar SDF postprocess, CUDA field-signal SDF postprocess for normal-angle/curvature stacks, live-only adaptive SDF field resolution, Lens Field v2 sign contrast, field-generation stage telemetry, CUDA JFA buffer reuse, repeated median SDF witness reporting, measured CUDA SDF postprocess scratch-buffer reuse, row-local SDF field downsample UI/runtime authority, boundary-masked SDF Normal Angle Beauty, authored SDF pack viewer UI, authored-pack Color Pipeline/overlay field consumption, the first selectable `sdf_pack_scene` lane shell with `sdf_smooth_lattice_2d`, the curated built-in SDF pack catalog seed, SDF drag camera mapping repair, typed Source-row applicators, mixed SDF/non-SDF Source rows for supported renderer-backed lanes, Color Pipeline function picker/layout refinement, Capture Finding `fractal-state.json` review sidecars, published-runtime built-in SDF pack staging, SDF field capability reporting, and field-primary mixed Source fail-closed proof. The next recommended SDF product work is field-generation/downsample optimization before new SDF ops; broader composition UI, more applicators, full authored-pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes remain separate later product slices.
 
+Short interrupt as of 2026-06-12: `explaino_root_sdf` is being added as a bounded field-primary lane that consumes existing ExplainO root authority and existing SDF field/Color Pipeline machinery. This is not the generalized SDF optimization thread; return to field-generation/downsample optimization after the root-SDF lane closes.
+
 Shipped since this roadmap was first written:
 
 - Lens SDF downsample/control truth.
@@ -46,7 +48,7 @@ Shipped since this roadmap was first written:
 Next performance/design choices:
 
 - Phase-safe normal-angle UX is shipped: keep the full-field diagnostic view, and use SDF Normal Angle Beauty for the boundary-masked product-facing path without deleting the diagnostic behavior.
-- Active selected product step: SDF engine hardening now has published-runtime built-in pack staging, field capability reporting, field-primary mixed Source honesty, and refreshed performance evidence. The next recommended implementation step is field-generation/downsample optimization before new SDF ops. Broader Color Pipeline UI redesign, more applicator semantics, full authored-pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes remain separate later slices.
+- Active selected product step: SDF engine hardening now has published-runtime built-in pack staging, field capability reporting, field-primary mixed Source honesty, and refreshed performance evidence. The current bounded interrupt is `explaino_root_sdf`; the next recommended SDF engine step after that remains field-generation/downsample optimization before new SDF ops. Broader Color Pipeline UI redesign, more applicator semantics, full authored-pack catalog/authoring UX, new SDF ops, and additional SDF-native lanes remain separate later slices.
 
 Still deferred:
 

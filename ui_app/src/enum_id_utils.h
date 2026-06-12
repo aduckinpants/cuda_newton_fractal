@@ -77,6 +77,11 @@ inline constexpr EnumIdPair<ExplainoRootAuthority> kExplainoRootAuthorityIds[] =
     {ExplainoRootAuthority::custom, "custom"},
 };
 
+inline constexpr EnumIdPair<ExplainoRootSdfHSource> kExplainoRootSdfHSourceIds[] = {
+    {ExplainoRootSdfHSource::none, "none"},
+    {ExplainoRootSdfHSource::phase_sine, "phase_sine"},
+};
+
 inline constexpr EnumIdPair<ColoringMode> kColoringModeIds[] = {
     {ColoringMode::root_basin, "root_basin"},
     {ColoringMode::iteration_count, "iteration_count"},
@@ -183,6 +188,7 @@ inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {
     {FractalType::magnet, "magnet"},
     {FractalType::generic_equation_pack, "generic_equation_pack"},
     {FractalType::sdf_pack_scene, "sdf_pack_scene"},
+    {FractalType::explaino_root_sdf, "explaino_root_sdf"},
 };
 
 inline constexpr EnumIdPair<CameraBehavior> kCameraBehaviorIds[] = {
@@ -270,6 +276,14 @@ inline const char* ExplainoRootAuthorityId(ExplainoRootAuthority value) {
 
 inline bool TryParseExplainoRootAuthorityId(std::string_view id, ExplainoRootAuthority* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kExplainoRootAuthorityIds, outValue);
+}
+
+inline const char* ExplainoRootSdfHSourceId(ExplainoRootSdfHSource value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kExplainoRootSdfHSourceIds);
+}
+
+inline bool TryParseExplainoRootSdfHSourceId(std::string_view id, ExplainoRootSdfHSource* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kExplainoRootSdfHSourceIds, outValue);
 }
 
 inline const char* ColoringModeId(ColoringMode value) {

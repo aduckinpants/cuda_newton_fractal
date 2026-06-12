@@ -9,6 +9,7 @@
 
 #include <Windows.h>
 
+#include <cmath>
 #include <cstring>
 #include <cstdint>
 #include <filesystem>
@@ -819,6 +820,119 @@ std::string BuildFindingExplainoRootsJson(const KernelParams& params) {
     return js.str();
 }
 
+std::string BuildFindingRootArrayJson(const Float2* roots, int rootCount) {
+    std::ostringstream js;
+    js << "[";
+    for (int index = 0; index < rootCount; ++index) {
+        if (index > 0) js << ", ";
+        js << "{\"x\": " << static_cast<double>(roots[index].x)
+           << ", \"y\": " << static_cast<double>(roots[index].y) << "}";
+    }
+    js << "]";
+    return js.str();
+}
+
+struct FindingExplainoRootSdfScene {
+    int root_count{0};
+    Float2 base_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
+    Float2 effective_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
+    int bridge_count{0};
+    std::uint64_t base_root_hash{0};
+    std::uint64_t effective_root_hash{0};
+};
+
+void HashFindingBytes(std::uint64_t& hash, const void* ptr, std::size_t byteCount) {
+    const auto* bytes = static_cast<const unsigned char*>(ptr);
+    for (std::size_t index = 0; index < byteCount; ++index) {
+        hash ^= static_cast<std::uint64_t>(bytes[index]);
+        hash *= 1099511628211ull;
+    }
+}
+
+std::uint64_t HashFindingRoots(const Float2* roots, int rootCount) {
+    std::uint64_t hash = 1469598103934665603ull;
+    HashFindingBytes(hash, &rootCount, sizeof(rootCount));
+    for (int index = 0; index < rootCount; ++index) {
+        HashFindingBytes(hash, &roots[index].x, sizeof(roots[index].x));
+        HashFindingBytes(hash, &roots[index].y, sizeof(roots[index].y));
+    }
+    return hash;
+}
+
+bool ResolveFindingExplainoRootSdfScene(
+    const ViewState& view,
+    const KernelParams& params,
+    FindingExplainoRootSdfScene* outScene,
+    std::string* outError) {
+    if (!outScene) {
+        if (outError) *outError = "root_sdf_scene_output_missing";
+        return false;
+    }
+    *outScene = {};
+    const int rootCount = params.explaino_root_count == 3 ? 3 :
+        (params.explaino_root_count == 4 ? 4 : 0);
+    if (rootCount <= 0) {
+        if (outError) *outError = "ExplainO Root SDF requires 3 or 4 roots";
+        return false;
+    }
+    outScene->root_count = rootCount;
+    for (int index = 0; index < rootCount; ++index) {
+        const Float2 root = params.explaino_roots[index];
+        if (!std::isfinite(root.x) || !std::isfinite(root.y)) {
+            if (outError) *outError = "ExplainO Root SDF roots must be finite";
+            return false;
+        }
+        outScene->base_roots[index] = root;
+        outScene->effective_roots[index] = root;
+    }
+    outScene->bridge_count = params.explaino_root_sdf_bridge_width > 0.0f
+        ? (rootCount >= 4 ? 2 : 1)
+        : 0;
+
+    if (params.explaino_root_sdf_h_source == ExplainoRootSdfHSource::phase_sine &&
+        params.explaino_root_sdf_h_amplitude > 0.0f) {
+        constexpr double kTau = 6.283185307179586476925286766559;
+        const float amplitude = params.explaino_root_sdf_h_amplitude < 0.0f ? 0.0f :
+            (params.explaino_root_sdf_h_amplitude > 1.0f ? 1.0f : params.explaino_root_sdf_h_amplitude);
+        const float frequency = params.explaino_root_sdf_h_frequency < 0.1f ? 0.1f :
+            (params.explaino_root_sdf_h_frequency > 16.0f ? 16.0f : params.explaino_root_sdf_h_frequency);
+        Float2 centroid{0.0f, 0.0f};
+        for (int index = 0; index < rootCount; ++index) {
+            centroid.x += outScene->base_roots[index].x;
+            centroid.y += outScene->base_roots[index].y;
+        }
+        centroid.x /= static_cast<float>(rootCount);
+        centroid.y /= static_cast<float>(rootCount);
+        for (int index = 0; index < rootCount; ++index) {
+            float dx = outScene->base_roots[index].x - centroid.x;
+            float dy = outScene->base_roots[index].y - centroid.y;
+            const float len = std::sqrt(dx * dx + dy * dy);
+            if (len > std::numeric_limits<float>::epsilon()) {
+                dx /= len;
+                dy /= len;
+            } else {
+                const float angle = static_cast<float>(kTau * static_cast<double>(index) /
+                    static_cast<double>(rootCount));
+                dx = std::cos(angle);
+                dy = std::sin(angle);
+            }
+            const float phase = static_cast<float>(
+                kTau * static_cast<double>(frequency) * static_cast<double>(view.explaino_phase) +
+                kTau * static_cast<double>(index) / static_cast<double>(rootCount));
+            const float offset = amplitude * std::sin(phase);
+            outScene->effective_roots[index].x += dx * offset;
+            outScene->effective_roots[index].y += dy * offset;
+        }
+    } else if (params.explaino_root_sdf_h_source != ExplainoRootSdfHSource::none) {
+        if (outError) *outError = "Unknown ExplainO Root SDF h_source";
+        return false;
+    }
+
+    outScene->base_root_hash = HashFindingRoots(outScene->base_roots, rootCount);
+    outScene->effective_root_hash = HashFindingRoots(outScene->effective_roots, rootCount);
+    return true;
+}
+
 void WriteFindingPolynomialControls(FindingControlJsonWriter& writer, FractalType fractalType, const KernelParams& params) {
     if (fractalType != FractalType::newton &&
         fractalType != FractalType::halley &&
@@ -833,7 +947,7 @@ void WriteFindingPolynomialControls(FindingControlJsonWriter& writer, FractalTyp
 }
 
 void WriteFindingExplainoCommonControls(FindingControlJsonWriter& writer, const ViewState& view, const KernelParams& params) {
-    if (!IsExplainoFamily(view.fractal_type)) {
+    if (!UsesExplainoRootLayoutAuthority(view.fractal_type)) {
         return;
     }
     writer.Number("explaino_seed", params.explaino_seed);
@@ -849,6 +963,19 @@ void WriteFindingExplainoCommonControls(FindingControlJsonWriter& writer, const 
     writer.Number("explaino_seed_drift", static_cast<double>(view.explaino_seed_drift));
     writer.Bool("explaino_seed_tween", view.explaino_seed_tween);
     writer.Number("explaino_cluster_radius", static_cast<double>(params.explaino_cluster_radius));
+}
+
+void WriteFindingExplainoRootSdfControls(FindingControlJsonWriter& writer, FractalType fractalType, const KernelParams& params) {
+    if (fractalType != FractalType::explaino_root_sdf) {
+        return;
+    }
+    writer.Number("explaino_root_sdf_radius", static_cast<double>(params.explaino_root_sdf_radius));
+    writer.Number("explaino_root_sdf_bridge_width", static_cast<double>(params.explaino_root_sdf_bridge_width));
+    writer.Number("explaino_root_sdf_smooth_blend", static_cast<double>(params.explaino_root_sdf_smooth_blend));
+    const char* hSourceId = ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source);
+    writer.String("explaino_root_sdf_h_source", hSourceId ? hSourceId : "none");
+    writer.Number("explaino_root_sdf_h_amplitude", static_cast<double>(params.explaino_root_sdf_h_amplitude));
+    writer.Number("explaino_root_sdf_h_frequency", static_cast<double>(params.explaino_root_sdf_h_frequency));
 }
 
 void WriteFindingCoreFractalControls(FindingControlJsonWriter& writer, FractalType fractalType, const KernelParams& params) {
@@ -952,9 +1079,40 @@ void WriteFindingActiveControlsJson(std::ostringstream& js, const ViewState& vie
     writer.Number("exposure", static_cast<double>(params.exposure));
     WriteFindingPolynomialControls(writer, view.fractal_type, params);
     WriteFindingExplainoCommonControls(writer, view, params);
+    WriteFindingExplainoRootSdfControls(writer, view.fractal_type, params);
     WriteFindingCoreFractalControls(writer, view.fractal_type, params);
     WriteFindingExplainoAxisControls(writer, view.fractal_type, params);
     js << "\n  }";
+}
+
+void WriteFindingExplainoRootSdfDerivedJson(std::ostringstream& js, const ViewState& view, const KernelParams& params) {
+    if (view.fractal_type != FractalType::explaino_root_sdf) {
+        return;
+    }
+    FindingExplainoRootSdfScene scene;
+    std::string error;
+    if (ResolveFindingExplainoRootSdfScene(view, params, &scene, &error)) {
+        js << ",\n";
+        js << "    \"explaino_root_sdf\": {\n";
+        js << "      \"producer_kind\": \"explaino_root_sdf\",\n";
+        js << "      \"root_authority\": \"" << CaptureExplainoRootAuthorityId(params.explaino_root_authority) << "\",\n";
+        js << "      \"root_count\": " << scene.root_count << ",\n";
+        js << "      \"bridge_count\": " << scene.bridge_count << ",\n";
+        js << "      \"h_source\": \"" << (ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source) ? ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source) : "none") << "\",\n";
+        js << "      \"base_root_hash\": \"fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << scene.base_root_hash << std::dec << std::setfill(' ') << "\",\n";
+        js << "      \"effective_root_hash\": \"fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << scene.effective_root_hash << std::dec << std::setfill(' ') << "\",\n";
+        js << "      \"base_roots\": " << BuildFindingRootArrayJson(scene.base_roots, scene.root_count) << ",\n";
+        js << "      \"effective_roots\": " << BuildFindingRootArrayJson(scene.effective_roots, scene.root_count) << "\n";
+        js << "    }";
+    } else {
+        js << ",\n";
+        js << "    \"explaino_root_sdf\": {\n";
+        js << "      \"producer_kind\": \"explaino_root_sdf\",\n";
+        js << "      \"fail_closed_reason\": ";
+        WriteJsonEscapedString(js, error.empty() ? "root_sdf_scene_resolution_failed" : error.c_str());
+        js << "\n";
+        js << "    }";
+    }
 }
 
 std::string BuildStateJson(
@@ -1066,6 +1224,12 @@ std::string BuildStateJson(
            << (index + 1 < persistedExplainoRootCount ? "," : "") << "\n";
     }
     js << "    ],\n";
+    js << "    \"explaino_root_sdf_radius\": " << static_cast<double>(params.explaino_root_sdf_radius) << ",\n";
+    js << "    \"explaino_root_sdf_bridge_width\": " << static_cast<double>(params.explaino_root_sdf_bridge_width) << ",\n";
+    js << "    \"explaino_root_sdf_smooth_blend\": " << static_cast<double>(params.explaino_root_sdf_smooth_blend) << ",\n";
+    js << "    \"explaino_root_sdf_h_source\": \"" << (ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source) ? ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source) : "none") << "\",\n";
+    js << "    \"explaino_root_sdf_h_amplitude\": " << static_cast<double>(params.explaino_root_sdf_h_amplitude) << ",\n";
+    js << "    \"explaino_root_sdf_h_frequency\": " << static_cast<double>(params.explaino_root_sdf_h_frequency) << ",\n";
     js << "    \"explaino_cluster_radius\": " << static_cast<double>(params.explaino_cluster_radius) << ",\n";
     WriteExplainoVariantParamsJson(js, params);
     js << "    \"transcendental_func\": \"" << CaptureTranscendentalFuncId(params.transcendental_func) << "\",\n";
@@ -1178,7 +1342,9 @@ std::string BuildFindingFractalStateJson(
     js << "  \"derived_runtime_values\": {\n";
     js << "    \"last_render_ms\": " << static_cast<double>(stats.last_render_ms) << ",\n";
     js << "    \"last_iters_avg\": " << stats.last_iters_avg << ",\n";
-    js << "    \"last_pixel_count\": " << stats.last_pixel_count << "\n";
+    js << "    \"last_pixel_count\": " << stats.last_pixel_count;
+    WriteFindingExplainoRootSdfDerivedJson(js, view, params);
+    js << "\n";
     js << "  },\n";
     js << "  \"color_pipeline\": {\n";
     js << "    \"color_signal\": \"" << CaptureColorSignalId(params.color_pipeline.signal) << "\",\n";
