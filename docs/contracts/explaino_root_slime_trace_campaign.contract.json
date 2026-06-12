@@ -1,54 +1,58 @@
 {
   "version": 1,
   "contract_id": "explaino_root_slime_trace_campaign",
-  "feature_id": "explaino_capability_atlas",
+  "feature_id": "explaino_slime_trace_runner",
   "workflow_type": "headless_only",
   "plan_path": "docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md",
     "docs/contracts/explaino_root_slime_trace_campaign.contract.json",
-    "docs/manifests",
+    "docs/contracts/explaino_slime_trace_receipt_v1.contract.json",
     "docs/handoffs",
     "tools/reality_toolkit/fractal_explorer",
     "tests",
-    "DEFERRED_THREADS.md",
     "HANDOFF_LOG.md",
     "artifacts"
   ],
   "required_operator_inputs": [
-    "generate an ExplainO capability atlas from repo-derived authority surfaces",
-    "cover every current ExplainO fractal id discovered from checked-in type surfaces",
-    "include root generation support, custom-root authority notes, captured-root expectations, conjugate or secondary-root hints, source evidence, and analyzer limitations",
-    "do not change render behavior",
-    "defer trace runner, seed hunter, charts expansion, FITS/flashlight integration, stopping policy, and GA"
+    "add a headless parameter-space slime trace runner for ExplainO states",
+    "load state.json and emit the required v1 trace artifact set",
+    "preserve captured ExplainO root authority in trace root samples",
+    "record previous/applied values, pre/post state hashes, measurement hash, scene id, RNG seed, and policy id for mutation steps",
+    "keep the traversal bounded and deterministic",
+    "stop and replan after this slice before seed hunting, charts, FITS/flashlight reuse, stopping policy, or GA"
   ],
   "forbidden_operator_prompts": [
     "do not change runtime rendering",
     "do not change SDF behavior",
     "do not implement seed hunting",
-    "do not implement root-history chart expansion beyond atlas authority fields",
-    "do not implement a headless trace runner",
-    "do not change sidecar runtime mutation/replay behavior",
+    "do not implement root-history chart expansion",
     "do not implement FITS/flashlight integration",
+    "do not implement slime stopping policy",
     "do not implement slime GA",
     "do not edit salticid-cuda"
   ],
   "required_defaults": {
-    "slice_kind": "explaino_capability_atlas",
+    "slice_kind": "explaino_slime_trace_runner",
     "product_behavior_changes_allowed": false,
     "runtime_publish_required": false,
-    "salticid_repo_edits": false
+    "salticid_repo_edits": false,
+    "trace_runner_mode": "headless_no_mouse"
   },
   "forbidden_defaults": {
     "runtime_mutation": "forbidden",
+    "render_mutation": "forbidden",
     "sdf_mutation": "forbidden",
     "salticid_repo_mutation": "forbidden",
-    "trace_runner": "forbidden",
     "seed_hunter": "forbidden",
+    "root_history_charts": "forbidden",
+    "fits_flashlight_reuse": "forbidden",
+    "slime_stopping_policy": "forbidden",
     "slime_ga": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 -m pytest tests/test_explaino_capability_atlas.py -q --junitxml artifacts/pytest/explaino_capability_atlas.junit.xml",
+    "py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_finding_analyzer.py tests/test_explaino_trace_receipt_contract.py tests/test_explaino_capability_atlas.py tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_root_slime_trace_campaign_slice4_pytest.junit.xml",
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_slime_trace_campaign.contract.json --out-json artifacts/validation/explaino_root_slime_trace_campaign_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md --out-json artifacts/validation/explaino_root_slime_trace_campaign_hostile_audit.json",
@@ -57,11 +61,11 @@
   ],
   "required_acceptance_assertions": [
     {
-      "assertion_id": "focused_capability_atlas_tests_pass",
-      "description": "Focused atlas tests prove generated output freshness, ExplainO id coverage, and authority fields.",
+      "assertion_id": "focused_trace_runner_tests_pass",
+      "description": "Focused trace-runner tests prove required artifact emission, deterministic state hashing, captured-root authority, and bounded traversal.",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/explaino_capability_atlas.junit.xml",
-      "test_nodeid": "tests/test_explaino_capability_atlas.py::test_generated_explaino_capability_atlas_is_current"
+      "artifact_path": "artifacts/pytest/explaino_slime_trace_runner.junit.xml",
+      "test_nodeid": "tests/test_explaino_slime_trace_runner.py::test_run_explaino_slime_trace_writes_required_v1_artifacts"
     },
     {
       "assertion_id": "contract_schema_valid",

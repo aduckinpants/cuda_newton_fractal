@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed for Slice 3 - ExplainO capability atlas generator and manifests are implemented and validated; Slice 4 headless trace runner remains preplanned but requires a fresh contract revision before mutation.
+Closed for Slice 4 - headless parameter-space slime trace runner is implemented and validated. The preplanned ExplainO root/slime campaign slice backlog is now exhausted; the next step must be a replan before seed hunting, charts, FITS/flashlight reuse, stopping policy, GA, or returning to SDF work.
 
 ## Phase Checklist
 
@@ -17,6 +17,10 @@ Closed for Slice 3 - ExplainO capability atlas generator and manifests are imple
 - [x] Phase 8 - add RED tests proving the atlas must cover every current ExplainO fractal id and expose root/source capability fields.
 - [x] Phase 9 - implement the repo-derived atlas generator and generated JSON/Markdown outputs.
 - [x] Phase 10 - validate focused atlas tests, contract, plan sync, hostile audit, code quality, and diff check before checkpoint; receipts, rearward review, push, and clean-tree proof are handled after the checkpoint commit.
+- [x] Phase 11 - merge Slice 3 to `master`, push, repair merged-head receipts, and confirm rearward review `ok`.
+- [x] Phase 12 - revise and lock the campaign contract for the headless trace-runner slice.
+- [x] Phase 13 - add RED tests for the trace-runner artifact set, v1 step receipt fields, captured-root authority, and deterministic state hashing.
+- [x] Phase 14 - implement the headless trace runner and validate focused Python tests, contract, plan sync, hostile audit, code quality, and diff check before checkpoint.
 
 ## Explicit User Asks
 
@@ -29,24 +33,26 @@ Closed for Slice 3 - ExplainO capability atlas generator and manifests are imple
 - [x] Work the next preplanned slice: trace receipt hardening/inventory before trace runner or seed tooling.
 - [x] Keep future trace receipt work separate from existing legacy `sidecar_mutation_history` replay authority.
 - [x] Work the next preplanned slice: generate an ExplainO capability atlas from repo-derived authority surfaces before headless trace-runner work.
+- [x] Work the next preplanned slice: add a headless parameter-space slime trace runner that emits the v1 trace artifact set and stops before seed hunting, charts, FITS/flashlight reuse, stopping policy, or GA.
 
 ## Scope
 
 In scope for this slice:
 
-- Generate a repo-derived ExplainO capability atlas in JSON and Markdown.
-- Include every current ExplainO fractal id discovered from the checked-in enum/type surfaces.
-- Record root generation support, custom-root authority notes, captured-root expectations, conjugate/secondary-root hints, source evidence, and analyzer limitations.
-- Add focused tests proving coverage and generated-output freshness.
-- Campaign planning surfaces.
+- Add a headless/no-mouse ExplainO parameter-space trace runner under the Reality Toolkit fractal explorer tools.
+- Load an input `state.json`, preserve it as `initial_state.json`, apply a bounded deterministic parameter traversal to ExplainO-visible numeric controls, and write `final_state.json`.
+- Emit the v1 trace artifact set: `slime_trace_manifest.json`, `initial_state.json`, `final_state.json`, `mutation_trace.jsonl`, `root_samples.jsonl`, `measurement_samples.jsonl`, and `trace_summary.json`.
+- Record v1 step fields required by `docs/contracts/explaino_slime_trace_receipt_v1.contract.json`: previous/applied values, pre/post state hashes, measurement hash, root authority, roots at step, scene id, RNG seed, and policy id.
+- Reuse captured-root analyzer authority when present and fail clearly on malformed captured roots.
+- Add focused tests proving artifact shape, deterministic output, bounded mutation, and deferred boundaries.
 
 Out of scope for this slice:
 
-- Render/runtime behavior.
+- Render/runtime behavior and live viewer automation.
 - SDF work.
-- Trace runner implementation.
-- Seed hunting, root-history chart expansion beyond atlas authority fields, FITS/flashlight integration, runtime-walk preset packs, adaptive viewport presentation, slime stopping policy, or GA work.
-- Hand-maintained archaeology prose as the atlas authority.
+- Seed hunting, root-history chart expansion, FITS/flashlight integration, runtime-walk preset packs, adaptive viewport presentation, slime stopping policy, or GA work.
+- Claims that legacy `sidecar_mutation_history` is sufficient trace authority.
+- New measurement science beyond deterministic state/root/hash receipts.
 
 ## Campaign Slice Backlog
 
@@ -68,13 +74,13 @@ Slice 2 - trace receipt hardening plan:
 
 Slice 3 - ExplainO capability atlas:
 
-- Status: implemented in this checkpoint.
+- Status: implemented and merged to `master` at `d111a8c`.
 - Generate JSON/Markdown from repo-derived ExplainO capability surfaces rather than hand-maintained archaeology prose.
 - Include fractal id, generated/custom root support, expected captured-root behavior, known conjugate semantics, second-polynomial/secondary root-family notes, and analyzer limitations.
 
 Slice 4 - headless parameter-space slime trace runner:
 
-- Status: deferred pending a fresh contract revision.
+- Status: active on `codex/explaino-slime-trace-runner`.
 - Add a no-mouse/headless runner that loads a state, runs bounded ExplainO sidecar parameter traversal, and emits trace artifacts.
 - Required outputs remain `slime_trace_manifest.json`, `initial_state.json`, `final_state.json`, `mutation_trace.jsonl`, `root_samples.jsonl`, `measurement_samples.jsonl`, and `trace_summary.json`.
 - Stop and replan after this slice before seed hunting, root-history charts, FITS/flashlight reuse, stopping-policy work, or GA.
@@ -120,6 +126,22 @@ Slice 4 - headless parameter-space slime trace runner:
 - Slice 3 code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_slime_trace_campaign_code_quality.json` passed with baseline score 93/100.
 - Slice 3 diff check: `py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_slime_trace_campaign_diff_check --log artifacts/logs/explaino_root_slime_trace_campaign_diff_check.log --out-json artifacts/validation/explaino_root_slime_trace_campaign_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed with exit code 0.
 - Slice 3 final untracked-file whitespace scan: `rg -n "[ \t]+$" docs\manifests\explaino_capability_atlas.json docs\manifests\explaino_capability_atlas.md tests\test_explaino_capability_atlas.py tools\reality_toolkit\fractal_explorer\explaino_capability_atlas.py` found no trailing-whitespace matches.
+- Slice 3 merge: `codex/explaino-capability-atlas` was merged to `master` at `d111a8c`, pushed, validated with the exact atlas contract rails, receipt-written, and rearward review returned `ok`.
+- Slice 4 branch: `codex/explaino-slime-trace-runner` created from pushed `master` at `d111a8c`.
+- Slice 4 planned validation: `py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner.junit.xml`.
+- Slice 4 lock: `py -3.14 tools/viewer_host_begin_work_slice.py --intent "ExplainO headless slime trace runner" --profile native --plan docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md --contract docs/contracts/explaino_root_slime_trace_campaign.contract.json` opened checkpoint `ck:6a915ea1`.
+- Slice 4 RED: `py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner_red.junit.xml` failed at import time because `fractal_explorer.explaino_slime_trace_runner` did not exist.
+- Slice 4 GREEN: `py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner.junit.xml` passed 4 tests.
+- Slice 4 preservation: `py -3.14 -m pytest tests/test_fractal_finding_analyzer.py tests/test_explaino_trace_receipt_contract.py tests/test_explaino_capability_atlas.py tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_root_slime_trace_campaign_slice4_pytest.junit.xml` passed 27 tests.
+- Slice 4 hostile-audit fix: the first implementation wrote a wall-clock `created_at_utc` into `slime_trace_manifest.json`, making one required artifact nondeterministic; removed the timestamp and extended the determinism test to compare the manifest.
+- Slice 4 final focused test: `py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner.junit.xml` passed 4 tests.
+- Slice 4 final preservation test: `py -3.14 -m pytest tests/test_fractal_finding_analyzer.py tests/test_explaino_trace_receipt_contract.py tests/test_explaino_capability_atlas.py tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_root_slime_trace_campaign_slice4_pytest.junit.xml` passed 27 tests.
+- Slice 4 contract validation: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_slime_trace_campaign.contract.json --out-json artifacts/validation/explaino_root_slime_trace_campaign_contract.json` passed.
+- Slice 4 plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
+- Slice 4 hostile audit validation: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md --out-json artifacts/validation/explaino_root_slime_trace_campaign_hostile_audit.json` passed.
+- Slice 4 code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_slime_trace_campaign_code_quality.json` passed with baseline score 93/100.
+- Slice 4 diff check: `py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_slime_trace_campaign_diff_check --log artifacts/logs/explaino_root_slime_trace_campaign_diff_check.log --out-json artifacts/validation/explaino_root_slime_trace_campaign_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed with exit code 0.
+- Slice 4 touched-file whitespace scan: `rg -n "[ \t]+$" docs\notes\explaino_root_slime_trace_campaign_PHASED_PLAN.md docs\contracts\explaino_root_slime_trace_campaign.contract.json tests\test_explaino_slime_trace_runner.py tools\reality_toolkit\fractal_explorer\explaino_slime_trace_runner.py` found no trailing-whitespace matches.
 
 ## Hostile Audit
 
@@ -131,6 +153,13 @@ Questions:
 - Did Slice 3 cover every current ExplainO fractal id and fail if a future id is omitted? Yes; tests compare enum ids, selector registry ids, and generated atlas entries.
 - Did Slice 3 keep runtime, SDF, trace runner, seed hunting, charts expansion, FITS/flashlight, stopping policy, and GA out of scope? Yes; touched files are plan/contract, atlas generator/manifests, focused tests, handoff, and artifacts only.
 - Did Slice 3 expose analyzer limitations without claiming unproven root semantics? Yes; each entry records captured-root authority, legacy coefficient fallback, static-analysis limits, and conservative per-lane notes.
+
+Slice 4 questions:
+
+- Did Slice 4 emit every required v1 trace artifact? Yes; focused tests assert `slime_trace_manifest.json`, `initial_state.json`, `final_state.json`, `mutation_trace.jsonl`, `root_samples.jsonl`, `measurement_samples.jsonl`, and `trace_summary.json`.
+- Did Slice 4 preserve captured-root authority and fail on malformed roots? Yes; the runner reuses `resolve_analysis_roots`, preserves `captured_runtime` / `generated`, and the malformed-root test fails clearly.
+- Did Slice 4 record previous/applied values, state hashes, measurement hash, root authority, roots, scene id, RNG seed, and policy id per mutation step? Yes; focused tests assert every required v1 step field and measurement/root joins.
+- Did Slice 4 avoid seed hunting, charts, FITS/flashlight reuse, stopping policy, GA, runtime, render, and SDF work? Yes; touched behavior is headless Python artifact generation only, with those boundaries listed in the summary artifact.
 
 - Did captured runtime roots actually win over coefficient solving? Yes; `test_analyze_finding_uses_captured_explaino_roots_before_coefficients` monkeypatches the coefficient solver to fail if called and passes on captured roots.
 - Did malformed captured roots fail clearly instead of silently falling back? Yes; count mismatch and nonfinite captured-root tests both fail with `ValueError` before fallback.
@@ -151,6 +180,7 @@ Questions:
 - [x] Pass 6 - audit generated atlas coverage against current ExplainO ids and derived-field evidence; focused tests compare enum ids, selector registry ids, and generated entries.
 - [x] Pass 7 - re-read generated JSON/Markdown for overclaims, stale manual prose, and unsupported capability claims; found missing lens semantics would have been silently labeled `unknown`, then repaired it to fail closed.
 - [x] Pass 8 - confirmed validation rails prove the atlas slice through focused pytest, analyzer preservation pytest, contract validation, code-quality baseline, diff check, and explicit untracked-file whitespace scan; no runtime/SDF collateral was used as proof.
+- [x] Pass 9 - audited Slice 4 trace-runner artifacts, state hashing, captured-root authority, and deferred boundaries; found and fixed nondeterministic manifest timestamp before final validation.
 
 ## Audit Findings
 
@@ -164,3 +194,5 @@ Questions:
 - [x] Slice 3 audit finding: `git diff --stat` and `git diff --check` did not include untracked atlas files before staging; added an explicit trailing-whitespace scan over the new files before closure.
 - [x] Slice 3 atlas hardening finding: missing ExplainO lens-mask registry coverage would have been silently emitted as `unknown`; `build_atlas` now fails closed and focused tests assert no generated row has unknown lens semantics.
 - [x] Clean re-read after the Slice 3 lens-semantics hardening found no additional real issue in the bounded atlas scope.
+- [x] Slice 4 audit finding: `slime_trace_manifest.json` initially included a wall-clock `created_at_utc`, so deterministic trace output was incomplete; removed the timestamp and extended deterministic tests to compare the manifest.
+- [x] Clean re-read after the Slice 4 determinism repair found no additional real issue in the bounded trace-runner scope.
