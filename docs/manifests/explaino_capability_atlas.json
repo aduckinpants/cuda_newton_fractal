@@ -1,0 +1,1062 @@
+{
+  "schema_id": "viewer.explaino_capability_atlas.v1",
+  "version": 1,
+  "generation_mode": "repo_derived_static_analysis",
+  "source_files": [
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "tools/reality_toolkit/fractal_explorer/finding_analyzer.py"
+  ],
+  "authority_notes": [
+    "Captured params.explaino_roots are analysis authority when explaino_root_count is positive.",
+    "Coefficient-derived roots are fallback-only for legacy states missing captured roots.",
+    "The atlas is a static capability map, not a per-seed or per-capture trajectory measurement."
+  ],
+  "fractal_capabilities": [
+    {
+      "fractal_id": "explaino",
+      "selector_role": "baseline",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_y",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_y semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_fp",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_fp semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_nova",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "escape_interior_membership",
+        "semantic_id": "escape_interior_membership",
+        "label": "Escape/Interior Membership"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_nova semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_halley",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_halley semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_dual",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "dual_seed_blended_seed_shape",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [
+        "Uses explaino_seed_b and explaino_mix to blend a secondary seed surface before root generation."
+      ],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_dual semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_mult",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "cluster_radius_split_seed_shape",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "cluster_split_not_strict_conjugate_pairs",
+      "secondary_root_family_notes": [
+        "Uses explaino_cluster_radius to split the generated seed shape into clustered roots."
+      ],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_mult semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_phoenix",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_phoenix semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_transcendental",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_transcendental semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_inertial",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_inertial semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_julia",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": false,
+      "custom_root_count": "unsupported_by_editor",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "escape_interior_membership",
+        "semantic_id": "escape_interior_membership",
+        "label": "Escape/Interior Membership"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_julia semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_rational",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_rational semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_collatz",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_collatz semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_lambda",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": false,
+      "custom_root_count": "unsupported_by_editor",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "escape_interior_membership",
+        "semantic_id": "escape_interior_membership",
+        "label": "Escape/Interior Membership"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_lambda semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_rational_escape",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": false,
+      "custom_root_count": "unsupported_by_editor",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "escape_interior_membership",
+        "semantic_id": "escape_interior_membership",
+        "label": "Escape/Interior Membership"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_rational_escape semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_joy",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_joy semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_fold",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_fold semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_bell",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_bell semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_ripple",
+      "selector_role": "legacy_projection_single_axis",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [
+        "May derive a secondary splice polynomial when splice_offset is nonzero under the composed-variant path."
+      ],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_ripple semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_splice",
+      "selector_role": "legacy_projection_single_axis",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [
+        "Always derives a secondary splice polynomial from splice_offset into poly_coeffs_b."
+      ],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_splice semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_vortex",
+      "selector_role": "legacy_projection_single_axis",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [
+        "May derive a secondary splice polynomial when splice_offset is nonzero under the composed-variant path."
+      ],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_vortex semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_tension",
+      "selector_role": "legacy_projection_single_axis",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [
+        "May derive a secondary splice polynomial when splice_offset is nonzero under the composed-variant path."
+      ],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_tension semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_balance_void",
+      "selector_role": "legacy_projection_multi_axis",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_balance_void semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_all",
+      "selector_role": "canonical_public",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": true,
+      "custom_root_count": "3_or_4",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [
+        "May derive a secondary splice polynomial when splice_offset is nonzero under the composed-variant path."
+      ],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_all semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_counterfactual_pair",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "3_or_4_by_root_family",
+      "root_generation_model": "root_family_selector_driven_seed_shape",
+      "custom_root_editor_support": false,
+      "custom_root_count": "unsupported_by_editor",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "root_family_dependent_quartic_pairs_or_cubic_pair_plus_real",
+      "secondary_root_family_notes": [
+        "counterfactual_pair_root_family selects cubic or quartic generated root layouts."
+      ],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_counterfactual_pair semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_projection_and_flow",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "3_or_4_by_root_family",
+      "root_generation_model": "root_family_selector_driven_seed_shape",
+      "custom_root_editor_support": false,
+      "custom_root_count": "unsupported_by_editor",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "root_family_dependent_quartic_pairs_or_cubic_pair_plus_real",
+      "secondary_root_family_notes": [
+        "projection_and_flow_root_family selects cubic or quartic generated root layouts."
+      ],
+      "lens_mask_semantics": {
+        "partition": "synthetic_basin_root_parity",
+        "semantic_id": "synthetic_basin_root_parity",
+        "label": "Synthetic Basin Root-Parity"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_projection_and_flow semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    },
+    {
+      "fractal_id": "explaino_collatz_direct",
+      "selector_role": "legacy_family_nonprojection",
+      "generated_root_support": true,
+      "generated_root_count": "4",
+      "root_generation_model": "seed_shape_quartic",
+      "custom_root_editor_support": false,
+      "custom_root_count": "unsupported_by_editor",
+      "captured_root_behavior": {
+        "runtime_fields": [
+          "params.explaino_root_authority",
+          "params.explaino_root_count",
+          "params.explaino_roots"
+        ],
+        "analysis_authority": "params.explaino_roots_when_present",
+        "fallback": "legacy_coefficients_when_captured_roots_missing",
+        "malformed_captured_roots": "fail_closed"
+      },
+      "conjugate_semantics": "two_seed_shape_conjugate_pairs",
+      "secondary_root_family_notes": [],
+      "lens_mask_semantics": {
+        "partition": "escape_interior_membership",
+        "semantic_id": "escape_interior_membership",
+        "label": "Escape/Interior Membership"
+      },
+      "source_evidence": [
+        "ui_app/src/fractal_types.h:enum class FractalType",
+        "ui_app/src/fractal_family_rules.h:kExplainoSelectorRegistry",
+        "ui_app/src/fractal_derived_fields.cpp:UpdateExplainoPolynomial",
+        "tools/reality_toolkit/fractal_explorer/finding_analyzer.py:resolve_analysis_roots"
+      ],
+      "analyzer_limitations": [
+        "Finding analysis must use captured roots from params.explaino_roots when explaino_root_count is positive.",
+        "Coefficient solving is fallback-only for legacy states without captured roots.",
+        "This atlas records static capability evidence; it does not recompute per-capture root trajectories.",
+        "explaino_collatz_direct semantics are only as specific as the checked-in static authority surfaces expose."
+      ]
+    }
+  ]
+}

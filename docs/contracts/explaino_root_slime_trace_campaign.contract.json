@@ -1,22 +1,23 @@
 {
   "version": 1,
   "contract_id": "explaino_root_slime_trace_campaign",
-  "feature_id": "explaino_trace_receipt_hardening",
-  "workflow_type": "workflow_only",
+  "feature_id": "explaino_capability_atlas",
+  "workflow_type": "headless_only",
   "plan_path": "docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md",
     "docs/contracts/explaino_root_slime_trace_campaign.contract.json",
-    "docs/contracts/explaino_slime_trace_receipt_v1.contract.json",
-    "tests/test_explaino_trace_receipt_contract.py",
+    "docs/manifests",
+    "tools/reality_toolkit/fractal_explorer",
+    "tests",
     "DEFERRED_THREADS.md",
     "HANDOFF_LOG.md",
     "artifacts"
   ],
   "required_operator_inputs": [
-    "inventory current sidecar_mutation_history before new trace tooling",
-    "define minimum v1 trace receipt fields for future parameter-space slime analysis",
-    "legacy sidecar_mutation_history remains replay input and is not promoted to rigorous trace authority",
+    "generate an ExplainO capability atlas from repo-derived authority surfaces",
+    "cover every current ExplainO fractal id discovered from checked-in type surfaces",
+    "include root generation support, custom-root authority notes, captured-root expectations, conjugate or secondary-root hints, source evidence, and analyzer limitations",
     "do not change render behavior",
     "defer trace runner, seed hunter, charts expansion, FITS/flashlight integration, stopping policy, and GA"
   ],
@@ -24,7 +25,7 @@
     "do not change runtime rendering",
     "do not change SDF behavior",
     "do not implement seed hunting",
-    "do not implement root-history chart expansion",
+    "do not implement root-history chart expansion beyond atlas authority fields",
     "do not implement a headless trace runner",
     "do not change sidecar runtime mutation/replay behavior",
     "do not implement FITS/flashlight integration",
@@ -32,7 +33,7 @@
     "do not edit salticid-cuda"
   ],
   "required_defaults": {
-    "slice_kind": "trace_receipt_contract_hardening",
+    "slice_kind": "explaino_capability_atlas",
     "product_behavior_changes_allowed": false,
     "runtime_publish_required": false,
     "salticid_repo_edits": false
@@ -46,7 +47,7 @@
     "slime_ga": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 -m pytest tests/test_explaino_trace_receipt_contract.py -q --junitxml artifacts/pytest/explaino_trace_receipt_hardening_contract.junit.xml",
+    "py -3.14 -m pytest tests/test_explaino_capability_atlas.py -q --junitxml artifacts/pytest/explaino_capability_atlas.junit.xml",
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_slime_trace_campaign.contract.json --out-json artifacts/validation/explaino_root_slime_trace_campaign_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md --out-json artifacts/validation/explaino_root_slime_trace_campaign_hostile_audit.json",
@@ -55,11 +56,11 @@
   ],
   "required_acceptance_assertions": [
     {
-      "assertion_id": "focused_receipt_contract_tests_pass",
-      "description": "Focused receipt contract tests prove legacy inventory, v1 required fields, authority boundaries, and deferred non-goals.",
+      "assertion_id": "focused_capability_atlas_tests_pass",
+      "description": "Focused atlas tests prove generated output freshness, ExplainO id coverage, and authority fields.",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/explaino_trace_receipt_hardening_contract.junit.xml",
-      "test_nodeid": "tests/test_explaino_trace_receipt_contract.py::test_trace_receipt_v1_requires_golden_thread_root_and_policy_fields"
+      "artifact_path": "artifacts/pytest/explaino_capability_atlas.junit.xml",
+      "test_nodeid": "tests/test_explaino_capability_atlas.py::test_generated_explaino_capability_atlas_is_current"
     },
     {
       "assertion_id": "contract_schema_valid",

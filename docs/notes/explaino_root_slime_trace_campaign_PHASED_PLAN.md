@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed for Slice 2 - trace receipt hardening contract and inventory are implemented and validated; Slice 3 requires a fresh contract revision before mutation.
+Closed for Slice 3 - ExplainO capability atlas generator and manifests are implemented and validated; Slice 4 headless trace runner remains preplanned but requires a fresh contract revision before mutation.
 
 ## Phase Checklist
 
@@ -13,6 +13,10 @@ Closed for Slice 2 - trace receipt hardening contract and inventory are implemen
 - [x] Phase 4 - validate focused Python tests, contract, plan sync, hostile audit, code quality, and diff check before checkpoint; receipts, rearward review, push, and clean-tree proof are handled after the checkpoint commit.
 - [x] Phase 5 - inventory legacy `sidecar_mutation_history` and define the minimum v1 trace receipt contract.
 - [x] Phase 6 - validate the receipt contract with focused tests, contract validation, plan sync, hostile audit, code quality, and diff check before checkpoint; receipts, rearward review, push, and clean-tree proof are handled after the checkpoint commit.
+- [x] Phase 7 - revise and lock the campaign contract for the ExplainO capability atlas slice.
+- [x] Phase 8 - add RED tests proving the atlas must cover every current ExplainO fractal id and expose root/source capability fields.
+- [x] Phase 9 - implement the repo-derived atlas generator and generated JSON/Markdown outputs.
+- [x] Phase 10 - validate focused atlas tests, contract, plan sync, hostile audit, code quality, and diff check before checkpoint; receipts, rearward review, push, and clean-tree proof are handled after the checkpoint commit.
 
 ## Explicit User Asks
 
@@ -24,14 +28,16 @@ Closed for Slice 2 - trace receipt hardening contract and inventory are implemen
 - [x] Do not change render behavior.
 - [x] Work the next preplanned slice: trace receipt hardening/inventory before trace runner or seed tooling.
 - [x] Keep future trace receipt work separate from existing legacy `sidecar_mutation_history` replay authority.
+- [x] Work the next preplanned slice: generate an ExplainO capability atlas from repo-derived authority surfaces before headless trace-runner work.
 
 ## Scope
 
 In scope for this slice:
 
-- Inventory the existing `sidecar_mutation_history` shape and replay seams.
-- Define a minimum v1 trace receipt contract for future parameter-space slime traces.
-- Focused contract tests proving required fields and deferred boundaries.
+- Generate a repo-derived ExplainO capability atlas in JSON and Markdown.
+- Include every current ExplainO fractal id discovered from the checked-in enum/type surfaces.
+- Record root generation support, custom-root authority notes, captured-root expectations, conjugate/secondary-root hints, source evidence, and analyzer limitations.
+- Add focused tests proving coverage and generated-output freshness.
 - Campaign planning surfaces.
 
 Out of scope for this slice:
@@ -39,8 +45,8 @@ Out of scope for this slice:
 - Render/runtime behavior.
 - SDF work.
 - Trace runner implementation.
-- ExplainO capability atlas implementation.
-- Seed hunting, root-history chart expansion, FITS/flashlight integration, runtime-walk preset packs, adaptive viewport presentation, slime stopping policy, or GA work.
+- Seed hunting, root-history chart expansion beyond atlas authority fields, FITS/flashlight integration, runtime-walk preset packs, adaptive viewport presentation, slime stopping policy, or GA work.
+- Hand-maintained archaeology prose as the atlas authority.
 
 ## Campaign Slice Backlog
 
@@ -54,7 +60,7 @@ Slice 1 - captured root analyzer authority:
 
 Slice 2 - trace receipt hardening plan:
 
-- Status: active in this checkpoint.
+- Status: implemented and merged to `master` at `a707daf`.
 - Inventory current `sidecar_mutation_history`.
 - Define the minimum v1 trace receipt fields: step index, path, type, previous value, target value, applied value, utility, selection reason, pre/post state hash, measurement hash, root authority, roots at step, scene id, RNG seed, and policy id.
 - Do not implement a GA or new trace runner under Slice 2 unless the active contract is revised and locked.
@@ -62,7 +68,7 @@ Slice 2 - trace receipt hardening plan:
 
 Slice 3 - ExplainO capability atlas:
 
-- Status: deferred pending a fresh contract revision.
+- Status: implemented in this checkpoint.
 - Generate JSON/Markdown from repo-derived ExplainO capability surfaces rather than hand-maintained archaeology prose.
 - Include fractal id, generated/custom root support, expected captured-root behavior, known conjugate semantics, second-polynomial/secondary root-family notes, and analyzer limitations.
 
@@ -99,11 +105,32 @@ Slice 4 - headless parameter-space slime trace runner:
 - Slice 2 code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_slime_trace_campaign_code_quality.json` passed with baseline score 93/100.
 - Slice 2 diff check: `py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_slime_trace_campaign_diff_check --log artifacts/logs/explaino_root_slime_trace_campaign_diff_check.log --out-json artifacts/validation/explaino_root_slime_trace_campaign_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed with exit code 0.
 
+- Slice 3 branch: `codex/explaino-capability-atlas` created from pushed `master` at `a707daf`.
+- Slice 3 planned validation: `py -3.14 -m pytest tests/test_explaino_capability_atlas.py -q --junitxml artifacts/pytest/explaino_capability_atlas.junit.xml`.
+- Slice 3 contract revision: `docs/contracts/explaino_root_slime_trace_campaign.contract.json` now scopes `explaino_capability_atlas` as a `headless_only` analysis-tooling slice.
+- Slice 3 lock: `py -3.14 tools/viewer_host_begin_work_slice.py --intent "ExplainO capability atlas" --profile native --plan docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md --contract docs/contracts/explaino_root_slime_trace_campaign.contract.json` opened checkpoint `ck:9d60ef9e`.
+- Slice 3 RED: `py -3.14 -m pytest tests/test_explaino_capability_atlas.py -q --junitxml artifacts/pytest/explaino_capability_atlas_red.junit.xml` failed at import time because `tools.reality_toolkit.fractal_explorer.explaino_capability_atlas` did not exist.
+- Slice 3 GREEN: `py -3.14 -m pytest tests/test_explaino_capability_atlas.py -q --junitxml artifacts/pytest/explaino_capability_atlas.junit.xml` passed 4 tests.
+- Slice 3 preservation: `py -3.14 -m pytest tests/test_fractal_finding_analyzer.py tests/test_explaino_capability_atlas.py -q --junitxml artifacts/pytest/explaino_capability_atlas_with_analyzer.junit.xml` passed 19 tests.
+- Slice 3 whitespace audit for untracked files: `rg -n "[ \t]+$" docs\manifests\explaino_capability_atlas.json docs\manifests\explaino_capability_atlas.md tests\test_explaino_capability_atlas.py tools\reality_toolkit\fractal_explorer\explaino_capability_atlas.py` found no trailing-whitespace matches.
+
+- Slice 3 hardening: hostile re-read found the atlas would have silently recorded missing lens-mask registry coverage as `unknown`; `build_atlas` now fails closed and the focused atlas test asserts no ExplainO row has unknown lens semantics.
+- Slice 3 final focused test: `py -3.14 -m pytest tests/test_explaino_capability_atlas.py -q --junitxml artifacts/pytest/explaino_capability_atlas.junit.xml` passed 4 tests after hardening.
+- Slice 3 contract validation: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_slime_trace_campaign.contract.json --out-json artifacts/validation/explaino_root_slime_trace_campaign_contract.json` passed.
+- Slice 3 code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_slime_trace_campaign_code_quality.json` passed with baseline score 93/100.
+- Slice 3 diff check: `py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_slime_trace_campaign_diff_check --log artifacts/logs/explaino_root_slime_trace_campaign_diff_check.log --out-json artifacts/validation/explaino_root_slime_trace_campaign_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed with exit code 0.
+- Slice 3 final untracked-file whitespace scan: `rg -n "[ \t]+$" docs\manifests\explaino_capability_atlas.json docs\manifests\explaino_capability_atlas.md tests\test_explaino_capability_atlas.py tools\reality_toolkit\fractal_explorer\explaino_capability_atlas.py` found no trailing-whitespace matches.
+
 ## Hostile Audit
 
 - Status: complete
 
 Questions:
+
+- Did Slice 3 actually generate the atlas from repo-derived enum/family/derived-field surfaces instead of hand-maintained lore? Yes; the generator parses `fractal_types.h`, `fractal_family_rules.h`, `fractal_derived_fields.cpp`, and analyzer authority surfaces.
+- Did Slice 3 cover every current ExplainO fractal id and fail if a future id is omitted? Yes; tests compare enum ids, selector registry ids, and generated atlas entries.
+- Did Slice 3 keep runtime, SDF, trace runner, seed hunting, charts expansion, FITS/flashlight, stopping policy, and GA out of scope? Yes; touched files are plan/contract, atlas generator/manifests, focused tests, handoff, and artifacts only.
+- Did Slice 3 expose analyzer limitations without claiming unproven root semantics? Yes; each entry records captured-root authority, legacy coefficient fallback, static-analysis limits, and conservative per-lane notes.
 
 - Did captured runtime roots actually win over coefficient solving? Yes; `test_analyze_finding_uses_captured_explaino_roots_before_coefficients` monkeypatches the coefficient solver to fail if called and passes on captured roots.
 - Did malformed captured roots fail clearly instead of silently falling back? Yes; count mismatch and nonfinite captured-root tests both fail with `ValueError` before fallback.
@@ -121,6 +148,9 @@ Questions:
 - [x] Pass 3 - confirmed the repaired state after adding nonfinite-root coverage; pytest and direct script paths proved cleanly.
 - [x] Pass 4 - audited Slice 2 receipt contract against current legacy mutation-history seams and found stale Slice 1 wording that over-described active scope.
 - [x] Pass 5 - re-read deferred boundaries and confirmed trace runner, seed hunter, FITS/flashlight, stopping policy, and GA remain out of scope.
+- [x] Pass 6 - audit generated atlas coverage against current ExplainO ids and derived-field evidence; focused tests compare enum ids, selector registry ids, and generated entries.
+- [x] Pass 7 - re-read generated JSON/Markdown for overclaims, stale manual prose, and unsupported capability claims; found missing lens semantics would have been silently labeled `unknown`, then repaired it to fail closed.
+- [x] Pass 8 - confirmed validation rails prove the atlas slice through focused pytest, analyzer preservation pytest, contract validation, code-quality baseline, diff check, and explicit untracked-file whitespace scan; no runtime/SDF collateral was used as proof.
 
 ## Audit Findings
 
@@ -130,3 +160,7 @@ Questions:
 - [x] Clean re-read the repaired state after the fixes; no additional real issue found in the bounded Slice 1 scope.
 - [x] Slice 2 plan wording initially kept a stale Slice 1 audit sentence saying "this slice" touched analyzer/chart tooling; repaired to explicitly distinguish Slice 1 from Slice 2.
 - [x] Clean re-read the repaired Slice 2 state; no additional real issue found in the bounded receipt-contract scope.
+- [x] Slice 3 workflow mistake: the first Slice 3 contract revision used invalid `workflow_type: analysis_tooling`; repaired to the allowed `headless_only` workflow type before implementation.
+- [x] Slice 3 audit finding: `git diff --stat` and `git diff --check` did not include untracked atlas files before staging; added an explicit trailing-whitespace scan over the new files before closure.
+- [x] Slice 3 atlas hardening finding: missing ExplainO lens-mask registry coverage would have been silently emitted as `unknown`; `build_atlas` now fails closed and focused tests assert no generated row has unknown lens semantics.
+- [x] Clean re-read after the Slice 3 lens-semantics hardening found no additional real issue in the bounded atlas scope.
