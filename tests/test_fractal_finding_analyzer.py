@@ -5,6 +5,7 @@ import json
 import math
 import sys
 import tempfile
+from dataclasses import asdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "reality_toolkit"))
@@ -21,6 +22,7 @@ from fractal_explorer.finding_analyzer import (
     analyze_finding,
     summarize_render_stats,
 )
+from fractal_explorer.finding_charts import write_csv_roots
 
 
 def test_poly_eval_z3_minus_1():
@@ -169,6 +171,155 @@ def test_analyze_finding_roundtrip():
         assert "newton" in report
 
 
+def test_analyze_finding_uses_captured_explaino_roots_before_coefficients(monkeypatch):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        finding_dir = Path(tmpdir)
+        captured_roots = [
+            {"x": 2.25, "y": -0.5},
+            {"x": -1.75, "y": 0.875},
+        ]
+        state = {
+            "state_version": 3,
+            "fractal_type": "explaino_all",
+            "view": {"center_x": 0.0, "center_y": 0.0, "zoom": 1.0},
+            "params": {
+                "poly_coeffs": [-1.0, 0.0, 0.0, 1.0, 0.0],
+                "explaino_root_authority": "generated",
+                "explaino_root_count": 2,
+                "explaino_roots": captured_roots,
+            },
+            "render": {"width": 64, "height": 64},
+        }
+        (finding_dir / "state.json").write_text(json.dumps(state))
+        (finding_dir / "finding.json").write_text(json.dumps({"finding_id": "captured_roots"}))
+
+        def fail_if_called(*_args, **_kwargs):
+            raise AssertionError("coefficient root solver must not run when captured roots are present")
+
+        import fractal_explorer.finding_analyzer as analyzer_module
+
+        monkeypatch.setattr(analyzer_module, "find_roots_numerically", fail_if_called)
+        analysis = analyzer_module.analyze_finding(finding_dir, sample_step=8)
+
+        assert analysis.roots == captured_roots
+        assert analysis.root_source == "captured_runtime"
+        assert analysis.root_authority == "generated"
+        assert "params.explaino_roots" in analysis.root_source_note
+        analysis_json = asdict(analysis)
+        assert analysis_json["root_source"] == "captured_runtime"
+        assert analysis_json["root_authority"] == "generated"
+
+        report = analyzer_module.format_report(analysis)
+        assert "Root source: captured_runtime" in report
+        assert "Root authority: generated" in report
+
+
+def test_analyze_finding_legacy_coefficients_are_labeled_fallback():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        finding_dir = Path(tmpdir)
+        state = {
+            "state_version": 3,
+            "fractal_type": "newton",
+            "view": {"center_x": 0.0, "center_y": 0.0, "zoom": 1.0},
+            "params": {
+                "poly_coeffs": [-1.0, 0.0, 0.0, 1.0, 0.0],
+                "explaino_root_count": 0,
+            },
+            "render": {"width": 64, "height": 64},
+        }
+        (finding_dir / "state.json").write_text(json.dumps(state))
+        (finding_dir / "finding.json").write_text(json.dumps({"finding_id": "legacy_roots"}))
+
+        analysis = analyze_finding(finding_dir, sample_step=8)
+        assert len(analysis.roots) == 3
+        assert analysis.root_source == "legacy_coefficients"
+        assert analysis.root_authority == "fallback_legacy_derived"
+        assert "poly_coeffs" in analysis.root_source_note
+
+
+def test_analyze_finding_rejects_malformed_captured_explaino_roots():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        finding_dir = Path(tmpdir)
+        state = {
+            "state_version": 3,
+            "fractal_type": "explaino_all",
+            "view": {"center_x": 0.0, "center_y": 0.0, "zoom": 1.0},
+            "params": {
+                "poly_coeffs": [-1.0, 0.0, 0.0, 1.0, 0.0],
+                "explaino_root_authority": "generated",
+                "explaino_root_count": 2,
+                "explaino_roots": [{"x": 1.0, "y": 0.0}],
+            },
+            "render": {"width": 64, "height": 64},
+        }
+        (finding_dir / "state.json").write_text(json.dumps(state))
+        (finding_dir / "finding.json").write_text(json.dumps({"finding_id": "bad_roots"}))
+
+        try:
+            analyze_finding(finding_dir, sample_step=8)
+        except ValueError as exc:
+            assert "explaino_roots length" in str(exc)
+        else:
+            raise AssertionError("malformed captured roots should fail instead of falling back")
+
+
+def test_analyze_finding_rejects_nonfinite_captured_explaino_roots():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        finding_dir = Path(tmpdir)
+        state = {
+            "state_version": 3,
+            "fractal_type": "explaino_all",
+            "view": {"center_x": 0.0, "center_y": 0.0, "zoom": 1.0},
+            "params": {
+                "poly_coeffs": [-1.0, 0.0, 0.0, 1.0, 0.0],
+                "explaino_root_authority": "generated",
+                "explaino_root_count": 1,
+                "explaino_roots": [{"x": float("nan"), "y": 0.0}],
+            },
+            "render": {"width": 64, "height": 64},
+        }
+        (finding_dir / "state.json").write_text(json.dumps(state))
+        (finding_dir / "finding.json").write_text(json.dumps({"finding_id": "nonfinite_roots"}))
+
+        try:
+            analyze_finding(finding_dir, sample_step=8)
+        except ValueError as exc:
+            assert "explaino_roots[0].x must be a finite number" in str(exc)
+        else:
+            raise AssertionError("nonfinite captured roots should fail instead of falling back")
+
+
+def test_write_csv_roots_includes_root_source_authority():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        finding_dir = tmp / "finding"
+        finding_dir.mkdir()
+        state = {
+            "state_version": 3,
+            "fractal_type": "explaino_all",
+            "view": {"center_x": 0.0, "center_y": 0.0, "zoom": 1.0},
+            "params": {
+                "poly_coeffs": [-1.0, 0.0, 0.0, 1.0, 0.0],
+                "explaino_root_authority": "generated",
+                "explaino_root_count": 2,
+                "explaino_roots": [
+                    {"x": 0.25, "y": 0.5},
+                    {"x": 0.25, "y": -0.5},
+                ],
+            },
+            "render": {"width": 64, "height": 64},
+        }
+        (finding_dir / "state.json").write_text(json.dumps(state))
+        (finding_dir / "finding.json").write_text(json.dumps({"finding_id": "csv_roots"}))
+
+        analysis = analyze_finding(finding_dir, sample_step=8)
+        out_csv = tmp / "roots.csv"
+        write_csv_roots(analysis, out_csv)
+        text = out_csv.read_text()
+        assert "root_source,root_authority" in text
+        assert "captured_runtime,generated" in text
+
+
 if __name__ == "__main__":
     tests = [
         test_poly_eval_z3_minus_1,
@@ -181,6 +332,10 @@ if __name__ == "__main__":
         test_finding_analyzer_labels_render_stats_without_hiding_raw_totals,
         test_analyze_finding_report_includes_render_stats_labels,
         test_analyze_finding_roundtrip,
+        test_analyze_finding_legacy_coefficients_are_labeled_fallback,
+        test_analyze_finding_rejects_malformed_captured_explaino_roots,
+        test_analyze_finding_rejects_nonfinite_captured_explaino_roots,
+        test_write_csv_roots_includes_root_source_authority,
     ]
     failures = 0
     for t in tests:
