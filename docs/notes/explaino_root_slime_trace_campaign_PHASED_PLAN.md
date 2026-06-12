@@ -148,7 +148,7 @@ Slice 4 - headless parameter-space slime trace runner:
 - Hardening RED: `py -3.14 tools/reality_toolkit/fractal_explorer/explaino_slime_trace_runner.py --help` failed with `ImportError: attempted relative import with no known parent package`.
 - Hardening planned validation: `py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner.junit.xml`.
 - Hardening GREEN: `py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner.junit.xml` passed 5 tests after the direct CLI repair.
-- Hardening direct CLI proof: `py -3.14 tools/reality_toolkit/fractal_explorer/explaino_slime_trace_runner.py --help` passed.
+- Hardening direct CLI proof: `py -3.14 tools/reality_toolkit/fractal_explorer/explaino_slime_trace_runner.py --help` passed. Receipt proof uses logged wrapper: `py -3.14 tools/viewer_host_run_logged_command.py --label explaino_trace_runner_direct_cli_help --log artifacts/logs/explaino_trace_runner_direct_cli_help.log --out-json artifacts/validation/explaino_trace_runner_direct_cli_help.json --heartbeat-seconds 30 --timeout-seconds 30 -- py -3.14 tools/reality_toolkit/fractal_explorer/explaino_slime_trace_runner.py --help`.
 - Hardening preservation: `py -3.14 -m pytest tests/test_fractal_finding_analyzer.py tests/test_explaino_trace_receipt_contract.py tests/test_explaino_capability_atlas.py tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_root_slime_trace_campaign_slice4_pytest.junit.xml` passed 28 tests.
 - Hardening demo: direct CLI run wrote trace artifacts under `artifacts/explaino_root_slime_trace_hardening_demo/trace` and review summaries under `artifacts/explaino_root_slime_trace_hardening_demo/demo_report.json` and `.md`. Demo changed 7 controls and preserved `captured_runtime` / `generated` root authority.
 
@@ -214,4 +214,5 @@ Hardening/demo questions:
 - [x] Clean re-read after the Slice 4 determinism repair found no additional real issue in the bounded trace-runner scope.
 - [x] Hardening finding: direct file-path execution of `explaino_slime_trace_runner.py` failed because package-relative imports had no script-mode fallback.
 - [x] Hardening direct-CLI repair finding: added script-mode import fallback and subprocess regression for `py -3.14 tools/reality_toolkit/fractal_explorer/explaino_slime_trace_runner.py --help`.
+- [x] Hardening receipt finding: raw direct CLI proof passed but was not parseable by receipt preflight; switched required proof to the logged-command wrapper.
 - [x] Hardening demo finding: the trace runner now produces an inspectable demo bundle that changes seven ExplainO controls while preserving captured-root authority and recording joined measurement hashes.
