@@ -97,6 +97,8 @@ def test_explaino_root_sdf_selects_reports_and_mutates_no_mouse(tmp_path: Path) 
 
         baseline_frame_hash = _require_frame_hash(baseline)
         baseline_effective_hash = _require_root_hash(baseline, "explaino_root_sdf_effective_root_hash")
+        assert not _payload_has_control(baseline, "fractal_control.explaino_warp_strength.primary"), baseline
+        assert not _payload_has_control(baseline, "fractal_control.color_smooth_escape_interior_strength.primary"), baseline
 
         for control_id in [
             "fractal_control.explaino_root_sdf_radius.primary",
@@ -108,6 +110,17 @@ def test_explaino_root_sdf_selects_reports_and_mutates_no_mouse(tmp_path: Path) 
             "fractal_control.explaino_phase.primary",
         ]:
             viewer.wait_for_control(control_id, timeout_seconds=30.0)
+
+        next_seed = viewer.click_control("next_seed", timeout_seconds=60.0)
+        assert next_seed.get("click_consumed") is True, next_seed
+        assert next_seed.get("current_fractal_type") == "explaino_root_sdf", next_seed
+        assert _require_root_hash(next_seed, "explaino_root_sdf_effective_root_hash") != baseline_effective_hash
+        assert _require_frame_hash(next_seed) != baseline_frame_hash
+
+        prev_seed = viewer.click_control("prev_seed", timeout_seconds=60.0)
+        assert prev_seed.get("click_consumed") is True, prev_seed
+        assert prev_seed.get("current_fractal_type") == "explaino_root_sdf", prev_seed
+        assert _require_root_hash(prev_seed, "explaino_root_sdf_effective_root_hash") != _require_root_hash(next_seed, "explaino_root_sdf_effective_root_hash")
 
         radius_edited = viewer.set_control_value(
             "fractal_control.explaino_root_sdf_radius.primary",

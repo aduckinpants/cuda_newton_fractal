@@ -1067,6 +1067,12 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
             (params && SchemaColorPipelineUsesSdfSource(*params));
         return true;
     }
+    if (path == "fractal.params.smooth_escape_interior_strength_applicable") {
+        out = view && params &&
+            params->coloring_mode == ColoringMode::smooth_escape &&
+            !IsFieldPrimarySdfFractal(view->fractal_type);
+        return true;
+    }
     bool* ptr = nullptr;
     BindingContext* self = const_cast<BindingContext*>(this);
     if (!self->BindBool(path, &ptr) || !ptr) return false;

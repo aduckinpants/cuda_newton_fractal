@@ -209,7 +209,7 @@
             { "id": "none", "label": "None" },
             { "id": "seed", "label": "Seed", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf" } },
             { "id": "damping", "label": "Damping", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_rational,explaino_collatz,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow" } },
-            { "id": "warp_strength", "label": "Warp Strength", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf" } },
+            { "id": "warp_strength", "label": "Warp Strength", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow" } },
             { "id": "root_spread", "label": "Root Spread", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf" } },
             { "id": "mix", "label": "Mix", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_dual" } },
             { "id": "nova_alpha", "label": "Nova Alpha", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "nova,explaino_nova" } },
@@ -878,7 +878,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -1294,7 +1294,7 @@
           "label": "Interior Strength",
           "value_type": "float",
           "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.2,
-          "visible_if": { "op": "eq", "path": "fractal.params.coloring_mode", "value": "smooth_escape" },
+          "visible_if": { "op": "eq", "path": "fractal.params.smooth_escape_interior_strength_applicable", "value": "true" },
           "binding": { "kind": "param", "path": "fractal.params.color_smooth_escape_interior_strength" },
           "help": "Blends smooth-escape interiors from pure black at 0 to the active Color Pipeline palette/source color at 1."
         },

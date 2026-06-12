@@ -2383,13 +2383,13 @@ static void DispatchUiActions(HWND hwnd,
             }
         }
     }
-    if (nextSeedAction && IsExplainoFamily(view.fractal_type)) {
+    if (nextSeedAction && SupportsExplainoSeedControls(view.fractal_type)) {
         ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + 1.0);
         UpdateExplainoPolynomial(view, params, nullptr);
         dirty = true;
         interactionChanged = true;
     }
-    if (prevSeedAction && IsExplainoFamily(view.fractal_type)) {
+    if (prevSeedAction && SupportsExplainoSeedControls(view.fractal_type)) {
         ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) - 1.0);
         UpdateExplainoPolynomial(view, params, nullptr);
         dirty = true;
@@ -2399,7 +2399,7 @@ static void DispatchUiActions(HWND hwnd,
 
 static void ApplyArrowKeySeedScrub(const ImGuiIO& io, ViewState& view, KernelParams& params,
                                     float& seedScrubAccel, bool& dirty, bool& interactionChanged) {
-    if (!IsExplainoFamily(view.fractal_type)) return;
+    if (!SupportsExplainoSeedControls(view.fractal_type)) return;
     bool left = ImGui::IsKeyDown(ImGuiKey_LeftArrow);
     bool right = ImGui::IsKeyDown(ImGuiKey_RightArrow);
     if (left || right) {

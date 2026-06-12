@@ -379,7 +379,9 @@ int main() {
             if (pair.value == FractalType::explaino_root_sdf) {
                 if (FindExplainoSelectorDescriptor(pair.value) != nullptr ||
                     IsExplainoFamily(pair.value) ||
-                    !UsesExplainoRootLayoutAuthority(pair.value)) {
+                    !UsesExplainoRootLayoutAuthority(pair.value) ||
+                    !SupportsExplainoSeedControls(pair.value) ||
+                    !IsFieldPrimarySdfFractal(pair.value)) {
                     std::cerr << "ExplainO Root SDF should use root-layout authority without joining the legacy Explaino selector registry\n";
                     return 1;
                 }
@@ -400,7 +402,8 @@ int main() {
             if (!IsExplainoFamily(pair.value) ||
                 IsExplainoLegacyProjectionSelector(pair.value) != expectLegacyProjection ||
                 IsExplainoSingleAxisProjectionSelector(pair.value) != expectSingleAxisProjection ||
-                IsExplainoComposedAxisCarrier(pair.value) != expectSingleAxisProjection) {
+                IsExplainoComposedAxisCarrier(pair.value) != expectSingleAxisProjection ||
+                !SupportsExplainoSeedControls(pair.value)) {
                 std::cerr << "Explaino-all slice 3 should keep the CUDA-safe Explaino classifiers in lockstep with the canonical selector registry\n";
                 return 1;
             }

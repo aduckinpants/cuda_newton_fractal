@@ -732,7 +732,10 @@ int main() {
         bool foundExplainoSeedVisibleForExplainoCounterfactualPair = false;
         bool foundExplainoSeedVisibleForExplainoProjectionAndFlow = false;
         bool foundExplainoSeedVisibleForExplainoRootSdf = false;
+        bool foundPrevSeedVisibleForExplainoRootSdf = false;
+        bool foundNextSeedVisibleForExplainoRootSdf = false;
         bool foundExplainoRootAuthorityVisibleForExplainoRootSdf = false;
+        bool foundExplainoWarpHiddenForExplainoRootSdf = false;
         bool foundRippleAmplitudeVisibleForExplainoAll = false;
         bool foundSpliceOffsetVisibleForExplainoAll = false;
         bool foundVortexStrengthVisibleForExplainoAll = false;
@@ -1036,8 +1039,8 @@ int main() {
                     ctrl.has_step && ctrl.step == 0.01 &&
                     ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 0.2 &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
-                    ctrl.visible_if.path == "fractal.params.coloring_mode" &&
-                    ctrl.visible_if.value == "smooth_escape" &&
+                    ctrl.visible_if.path == "fractal.params.smooth_escape_interior_strength_applicable" &&
+                    ctrl.visible_if.value == "true" &&
                     ctrl.has_help &&
                     ctrl.help.find("pure black") != std::string::npos &&
                     ctrl.help.find("active Color Pipeline") != std::string::npos &&
@@ -1316,8 +1319,17 @@ int main() {
                 if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_root_sdf")) {
                     foundExplainoSeedVisibleForExplainoRootSdf = true;
                 }
+                if (ctrl.id == "prev_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_root_sdf")) {
+                    foundPrevSeedVisibleForExplainoRootSdf = true;
+                }
+                if (ctrl.id == "next_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_root_sdf")) {
+                    foundNextSeedVisibleForExplainoRootSdf = true;
+                }
                 if (ctrl.id == "explaino_root_authority" && VisibleIfIncludesFractalType(ctrl, "explaino_root_sdf")) {
                     foundExplainoRootAuthorityVisibleForExplainoRootSdf = true;
+                }
+                if (ctrl.id == "explaino_warp_strength" && !VisibleIfIncludesFractalType(ctrl, "explaino_root_sdf")) {
+                    foundExplainoWarpHiddenForExplainoRootSdf = true;
                 }
                 if (ctrl.id == "ripple_amplitude" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundRippleAmplitudeVisibleForExplainoAll = true;
@@ -1543,7 +1555,8 @@ int main() {
             !foundEpsilonVisibleForExplainoCounterfactualPair || !foundEpsilonVisibleForExplainoProjectionAndFlow ||
             !foundExplainoSeedVisibleForExplainoAll || !foundExplainoSeedVisibleForExplainoCounterfactualPair ||
             !foundExplainoSeedVisibleForExplainoProjectionAndFlow || !foundExplainoSeedVisibleForExplainoRootSdf ||
-            !foundExplainoRootAuthorityVisibleForExplainoRootSdf) {
+            !foundPrevSeedVisibleForExplainoRootSdf || !foundNextSeedVisibleForExplainoRootSdf ||
+            !foundExplainoRootAuthorityVisibleForExplainoRootSdf || !foundExplainoWarpHiddenForExplainoRootSdf) {
             std::cerr << "Did not preserve the existing Explaino family control surface for the canonical Explaino-all identity\n";
             return 1;
         }

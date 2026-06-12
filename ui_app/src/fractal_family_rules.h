@@ -747,6 +747,15 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool UsesExplainoRootLayoutAuthority(Fr
     return IsExplainoFamily(fractalType) || fractalType == FractalType::explaino_root_sdf;
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsExplainoSeedControls(FractalType fractalType) {
+    return UsesExplainoRootLayoutAuthority(fractalType);
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool IsFieldPrimarySdfFractal(FractalType fractalType) {
+    return fractalType == FractalType::sdf_pack_scene ||
+        fractalType == FractalType::explaino_root_sdf;
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsProjectionAndFlowCarrier(FractalType fractalType) {
     return fractalType == FractalType::projection_and_flow ||
         fractalType == FractalType::explaino_projection_and_flow;
@@ -944,8 +953,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr ColorPipelineSelection ColorPipelineFor
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr ColorPipelineSelection DefaultColorPipelineForFractal(FractalType fractalType) {
-    if (fractalType == FractalType::sdf_pack_scene ||
-        fractalType == FractalType::explaino_root_sdf) {
+    if (IsFieldPrimarySdfFractal(fractalType)) {
         return {ColorSignal::sdf_signed_distance, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
     }
     return ColorPipelineForLegacyMode(DefaultColoringModeForFractal(fractalType));

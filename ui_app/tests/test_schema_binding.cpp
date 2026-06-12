@@ -1233,8 +1233,8 @@ int main() {
         }
         UISchemaPredicate smoothInteriorVisible{};
         smoothInteriorVisible.op = "eq";
-        smoothInteriorVisible.path = "fractal.params.coloring_mode";
-        smoothInteriorVisible.value = "smooth_escape";
+        smoothInteriorVisible.path = "fractal.params.smooth_escape_interior_strength_applicable";
+        smoothInteriorVisible.value = "true";
         if (!ctx.EvalVisibleIf(smoothInteriorVisible)) {
             std::cerr << "Expected smooth-escape interior strength to be visible in smooth_escape mode\n";
             return 1;
@@ -1248,6 +1248,12 @@ int main() {
             std::cerr << "Expected coloring mode to return to smooth_escape after visibility proof\n";
             return 1;
         }
+        view.fractal_type = FractalType::explaino_root_sdf;
+        if (ctx.EvalVisibleIf(smoothInteriorVisible)) {
+            std::cerr << "Expected field-primary root SDF to hide smooth-escape interior strength even if legacy coloring_mode is smooth_escape\n";
+            return 1;
+        }
+        view.fractal_type = FractalType::explaino;
         if (ctx.GetEnumId("fractal.params.color_signal") != "smooth_escape" ||
             ctx.GetEnumId("fractal.params.color_palette") != "cyclic_escape" ||
             ctx.GetEnumId("fractal.params.color_grading") != "escape_default") {
