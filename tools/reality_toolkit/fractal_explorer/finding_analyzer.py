@@ -415,12 +415,82 @@ class FindingAnalysis:
     finding_dir: str
     state: dict
     roots: List[dict] = field(default_factory=list)
+    root_source: str = "unavailable"
+    root_authority: str = "unavailable"
+    root_source_note: str = ""
     root_geometry: dict = field(default_factory=dict)
     basin_map: dict = field(default_factory=dict)
     render_stats: dict = field(default_factory=dict)
     frame_metrics: dict = field(default_factory=dict)
     color_clusters: dict = field(default_factory=dict)
     symmetry: dict = field(default_factory=dict)
+
+
+@dataclass
+class RootResolution:
+    roots: List[Complex]
+    source: str
+    authority: str
+    note: str
+
+
+def _finite_number(value: object, label: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{label} must be a finite number")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{label} must be a finite number")
+    return number
+
+
+def _explaino_root_count(params: dict) -> int:
+    value = params.get("explaino_root_count", 0)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError("explaino_root_count must be an integer")
+    if value < 0 or value > 4:
+        raise ValueError("explaino_root_count must be within [0, 4]")
+    return value
+
+
+def resolve_analysis_roots(params: dict, coeffs: List[float]) -> RootResolution:
+    """Resolve analysis roots with captured runtime roots as authority."""
+    root_count = _explaino_root_count(params)
+    roots_raw = params.get("explaino_roots")
+    if root_count > 0:
+        if not isinstance(roots_raw, list):
+            raise ValueError("explaino_roots must be an array when explaino_root_count > 0")
+        if len(roots_raw) != root_count:
+            raise ValueError("explaino_roots length must match explaino_root_count")
+        roots: List[Complex] = []
+        for index, entry in enumerate(roots_raw):
+            if not isinstance(entry, dict):
+                raise ValueError(f"explaino_roots[{index}] must be an object")
+            roots.append(Complex(
+                _finite_number(entry.get("x"), f"explaino_roots[{index}].x"),
+                _finite_number(entry.get("y"), f"explaino_roots[{index}].y"),
+            ))
+        authority = str(params.get("explaino_root_authority") or "captured_unspecified")
+        return RootResolution(
+            roots=roots,
+            source="captured_runtime",
+            authority=authority,
+            note="using captured params.explaino_roots because explaino_root_count > 0",
+        )
+    if isinstance(roots_raw, list) and roots_raw:
+        raise ValueError("explaino_roots are present but explaino_root_count is not positive")
+    if len(coeffs) == 5:
+        return RootResolution(
+            roots=find_roots_numerically(coeffs),
+            source="legacy_coefficients",
+            authority="fallback_legacy_derived",
+            note="derived from params.poly_coeffs because captured explaino_roots were missing",
+        )
+    return RootResolution(
+        roots=[],
+        source="unavailable",
+        authority="unavailable",
+        note="no captured explaino_roots and no degree-4 poly_coeffs fallback",
+    )
 
 
 def summarize_render_stats(state: dict) -> dict:
@@ -490,17 +560,13 @@ def analyze_finding(finding_dir: Path, sample_step: int = 8) -> FindingAnalysis:
     view = state.get("view", {})
     coeffs = params.get("poly_coeffs", [])
 
-    # Extract roots
-    explaino_roots_raw = None
-    root_count = params.get("explaino_root_count", 0)
-    # The state.json doesn't store explaino_roots explicitly in all versions.
-    # Re-derive from coefficients via Newton iteration.
-    if len(coeffs) == 5:
-        roots = find_roots_numerically(coeffs)
-    else:
-        roots = []
+    root_resolution = resolve_analysis_roots(params, coeffs)
+    roots = root_resolution.roots
 
     analysis.roots = [{"x": round(r.x, 6), "y": round(r.y, 6)} for r in roots]
+    analysis.root_source = root_resolution.source
+    analysis.root_authority = root_resolution.authority
+    analysis.root_source_note = root_resolution.note
     analysis.root_geometry = analyze_root_geometry(roots)
 
     # Basin map from Newton iteration over viewport
@@ -557,6 +623,10 @@ def format_report(a: FindingAnalysis) -> str:
 
     # Roots
     lines.append(f"Roots ({len(a.roots)}):")
+    lines.append(f"  Root source: {a.root_source}")
+    lines.append(f"  Root authority: {a.root_authority}")
+    if a.root_source_note:
+        lines.append(f"  Root note: {a.root_source_note}")
     for i, r in enumerate(a.roots):
         lines.append(f"  r{i}: {r['x']:+.6f} {r['y']:+.6f}i")
     lines.append("")

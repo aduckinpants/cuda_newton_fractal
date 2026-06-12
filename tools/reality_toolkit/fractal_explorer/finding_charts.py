@@ -387,7 +387,7 @@ def write_csv_roots(analysis: FindingAnalysis, out_path: Path) -> None:
     with open(out_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["root_index", "re", "im", "basin_fraction", "mean_iterations",
-                     "conjugate_of"])
+                     "conjugate_of", "root_source", "root_authority"])
         roots = analysis.roots
         # Find conjugate pairs
         conj_map = {}
@@ -405,6 +405,8 @@ def write_csv_roots(analysis: FindingAnalysis, out_path: Path) -> None:
                 f"{b.get('fraction', 0):.4f}",
                 f"{b.get('mean_iterations', 0):.1f}",
                 conj_map.get(i, ""),
+                analysis.root_source,
+                analysis.root_authority,
             ])
 
 
@@ -495,6 +497,11 @@ def write_summary_md(analysis: FindingAnalysis, out_dir: Path, out_path: Path) -
     lines.append("## Roots")
     lines.append("")
     lines.append("![Root constellation](root_constellation.png)")
+    lines.append("")
+    lines.append(f"- Root source: `{a.root_source}`")
+    lines.append(f"- Root authority: `{a.root_authority}`")
+    if a.root_source_note:
+        lines.append(f"- Root note: {a.root_source_note}")
     lines.append("")
     lines.append("| Root | Re | Im | Basin % | Mean Iters |")
     lines.append("|------|----|----|---------|------------|")
