@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "contract_id": "explaino_slime_trace_receipt_v1",
+  "status": "draft_contract_only",
+  "purpose": "Define the minimum future ExplainO parameter-space slime trace receipt needed before headless trace runners, seed hunting, stopping-policy work, or GA policy evolution are allowed.",
+  "authority_boundary": {
+    "state_json_remains_replay_authority": true,
+    "captured_roots_remain_analysis_authority_when_present": true,
+    "sidecar_mutation_history_remains_legacy_ordered_replay_input": true,
+    "v1_trace_receipt_is_future_trace_artifact": true,
+    "does_not_change_render_behavior": true
+  },
+  "current_sidecar_mutation_history_inventory": {
+    "storage_path": "state_json.sidecar_mutation_history",
+    "record_type": "SidecarAutoDemoMutationRecord",
+    "record_fields": [
+      "label",
+      "path",
+      "type",
+      "target_value",
+      "utility"
+    ],
+    "write_seams": [
+      "ui_app/src/diagnostics_capture.cpp::WriteSidecarMutationHistoryJson",
+      "ui_app/src/explaino_sidecar_controller.cpp::BuildSidecarAutoDemoMutationRecord",
+      "ui_app/src/headless_modes.cpp::RunHeadlessDiagnosticCapture sidecar apply path",
+      "ui_app/src/main.cpp live sidecar mutation append path"
+    ],
+    "read_replay_seams": [
+      "ui_app/src/diagnostics_state_io.cpp::ParseOptionalSidecarMutationHistory",
+      "ui_app/src/headless_modes.cpp::ReplayLoadedSidecarMutationHistory",
+      "ui_app/src/headless_modes.cpp::BuildReplayDecision"
+    ],
+    "current_guarantees": [
+      "ordered target replay from loaded state_json",
+      "round-trip preservation through diagnostics/finding state load",
+      "malformed legacy history fails atomically during state load",
+      "replay count fails fast when greater than loaded history length"
+    ],
+    "known_gaps_for_trace_analysis": [
+      "no step_index field in each record",
+      "no previous_value field",
+      "no applied_value field distinct from requested target_value",
+      "no pre_state_hash or post_state_hash",
+      "no measurement_hash",
+      "no root_authority or roots_at_step",
+      "no selection_reason beyond label/utility",
+      "no scene_id",
+      "no rng_seed",
+      "no policy_id or policy/genome identity"
+    ]
+  },
+  "v1_trace_artifacts": {
+    "manifest": "slime_trace_manifest.json",
+    "initial_state": "initial_state.json",
+    "final_state": "final_state.json",
+    "mutation_trace": "mutation_trace.jsonl",
+    "root_samples": "root_samples.jsonl",
+    "measurement_samples": "measurement_samples.jsonl",
+    "summary": "trace_summary.json"
+  },
+  "v1_step_record_required_fields": [
+    {
+      "id": "step_index",
+      "type": "integer",
+      "required": true,
+      "reason": "Stable ordered replay and per-step joins across mutation, root, and measurement samples."
+    },
+    {
+      "id": "path",
+      "type": "string",
+      "required": true,
+      "reason": "Binding path that was selected for mutation."
+    },
+    {
+      "id": "type",
+      "type": "string",
+      "required": true,
+      "reason": "Mutation value type required for replay validation."
+    },
+    {
+      "id": "previous_value",
+      "type": "number",
+      "required": true,
+      "reason": "Golden-thread reversal and oscillation/exhaustion analysis need the value before apply."
+    },
+    {
+      "id": "target_value",
+      "type": "number",
+      "required": true,
+      "reason": "Requested value selected by the slime/controller policy."
+    },
+    {
+      "id": "applied_value",
+      "type": "number",
+      "required": true,
+      "reason": "Actual value after binding/clamp/apply must be explicit instead of inferred."
+    },
+    {
+      "id": "utility",
+      "type": "number",
+      "required": true,
+      "reason": "Current sidecar usefulness score is still needed for timeline analysis."
+    },
+    {
+      "id": "selection_reason",
+      "type": "string",
+      "required": true,
+      "reason": "Trace readers need to know why this path/value was selected."
+    },
+    {
+      "id": "pre_state_hash",
+      "type": "string",
+      "required": true,
+      "reason": "Replay and reversal proof need a stable pre-apply state identity."
+    },
+    {
+      "id": "post_state_hash",
+      "type": "string",
+      "required": true,
+      "reason": "Replay and reversal proof need a stable post-apply state identity."
+    },
+    {
+      "id": "measurement_hash",
+      "type": "string",
+      "required": true,
+      "reason": "Mutation steps must join to the exact measurement/sample receipt used for scoring."
+    },
+    {
+      "id": "root_authority",
+      "type": "string",
+      "required": true,
+      "reason": "Root analysis must preserve whether roots are captured runtime authority or fallback."
+    },
+    {
+      "id": "roots_at_step",
+      "type": "array",
+      "required": true,
+      "reason": "Root-space analysis needs the runtime roots observed at this step."
+    },
+    {
+      "id": "scene_id",
+      "type": "string",
+      "required": true,
+      "reason": "Trace bundles must identify the loaded scene/start-state contract."
+    },
+    {
+      "id": "rng_seed",
+      "type": "integer_or_null",
+      "required": true,
+      "reason": "Deterministic policy replay needs explicit RNG identity, even when no RNG was used."
+    },
+    {
+      "id": "policy_id",
+      "type": "string",
+      "required": true,
+      "reason": "Policy/genome identity is required before policy comparison or GA work."
+    }
+  ],
+  "compatibility_rules": [
+    "Legacy sidecar_mutation_history records remain valid ordered replay input.",
+    "V1 trace receipts may include a legacy_sidecar_mutation_history projection for compatibility, but state_json.sidecar_mutation_history is not promoted to rigorous trace authority by itself.",
+    "Missing v1 required fields must make future trace analysis fail closed instead of silently degrading to legacy history.",
+    "Captured runtime roots remain preferred over coefficient-derived roots when both are present.",
+    "No future runner may claim golden-thread reversibility without pre_state_hash, post_state_hash, previous_value, and applied_value."
+  ],
+  "deferred_until_after_receipt_contract": [
+    "headless parameter-space slime trace runner",
+    "root-aware interesting seed hunter",
+    "root-history charts",
+    "FITS/flashlight corpus or visualization reuse",
+    "runtime-walk preset packs",
+    "adaptive viewport presentation",
+    "slime stopping-policy implementation",
+    "genetic algorithm over slime policy"
+  ]
+}
