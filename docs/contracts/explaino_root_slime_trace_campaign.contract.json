@@ -1,7 +1,7 @@
 {
   "version": 1,
   "contract_id": "explaino_root_slime_trace_campaign",
-  "feature_id": "explaino_slime_trace_runner",
+  "feature_id": "explaino_slime_trace_hardening_demo",
   "workflow_type": "headless_only",
   "plan_path": "docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md",
   "allowed_mutation_scope": [
@@ -15,12 +15,11 @@
     "artifacts"
   ],
   "required_operator_inputs": [
-    "add a headless parameter-space slime trace runner for ExplainO states",
-    "load state.json and emit the required v1 trace artifact set",
-    "preserve captured ExplainO root authority in trace root samples",
-    "record previous/applied values, pre/post state hashes, measurement hash, scene id, RNG seed, and policy id for mutation steps",
-    "keep the traversal bounded and deterministic",
-    "stop and replan after this slice before seed hunting, charts, FITS/flashlight reuse, stopping policy, or GA"
+    "perform a hostile hardening pass over the completed ExplainO root/slime work set",
+    "fix direct file-path CLI execution for the headless trace runner",
+    "add a regression proving the direct CLI path works",
+    "produce useful demo trace artifacts showing changed controls, captured-root authority, and state/measurement hashes",
+    "do not add seed hunting, charts, FITS/flashlight reuse, stopping policy, GA, runtime rendering, or SDF work"
   ],
   "forbidden_operator_prompts": [
     "do not change runtime rendering",
@@ -33,7 +32,7 @@
     "do not edit salticid-cuda"
   ],
   "required_defaults": {
-    "slice_kind": "explaino_slime_trace_runner",
+    "slice_kind": "explaino_slime_trace_hardening_demo",
     "product_behavior_changes_allowed": false,
     "runtime_publish_required": false,
     "salticid_repo_edits": false,
@@ -53,6 +52,7 @@
   "required_validation_commands": [
     "py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_finding_analyzer.py tests/test_explaino_trace_receipt_contract.py tests/test_explaino_capability_atlas.py tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_root_slime_trace_campaign_slice4_pytest.junit.xml",
+    "py -3.14 tools/reality_toolkit/fractal_explorer/explaino_slime_trace_runner.py --help",
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_slime_trace_campaign.contract.json --out-json artifacts/validation/explaino_root_slime_trace_campaign_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_root_slime_trace_campaign_PHASED_PLAN.md --out-json artifacts/validation/explaino_root_slime_trace_campaign_hostile_audit.json",
@@ -62,10 +62,10 @@
   "required_acceptance_assertions": [
     {
       "assertion_id": "focused_trace_runner_tests_pass",
-      "description": "Focused trace-runner tests prove required artifact emission, deterministic state hashing, captured-root authority, and bounded traversal.",
+      "description": "Focused trace-runner tests prove required artifact emission, deterministic state hashing, captured-root authority, bounded traversal, and direct CLI execution.",
       "evidence_kind": "pytest_junit_case",
       "artifact_path": "artifacts/pytest/explaino_slime_trace_runner.junit.xml",
-      "test_nodeid": "tests/test_explaino_slime_trace_runner.py::test_run_explaino_slime_trace_writes_required_v1_artifacts"
+      "test_nodeid": "tests/test_explaino_slime_trace_runner.py::test_explaino_slime_trace_runner_direct_cli_help_succeeds"
     },
     {
       "assertion_id": "contract_schema_valid",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -69,6 +70,22 @@ def _write_explaino_state(path: Path) -> dict[str, object]:
 
 def _read_jsonl(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def test_explaino_slime_trace_runner_direct_cli_help_succeeds() -> None:
+    script = REPO_ROOT / "tools" / "reality_toolkit" / "fractal_explorer" / "explaino_slime_trace_runner.py"
+
+    proc = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        cwd=str(REPO_ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    assert "Run a bounded headless ExplainO parameter-space slime trace" in proc.stdout
 
 
 def test_run_explaino_slime_trace_writes_required_v1_artifacts(tmp_path: Path) -> None:

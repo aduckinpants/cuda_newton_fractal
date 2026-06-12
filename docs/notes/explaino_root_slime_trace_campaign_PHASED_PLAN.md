@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed for Slice 4 - headless parameter-space slime trace runner is implemented and validated. The preplanned ExplainO root/slime campaign slice backlog is now exhausted; the next step must be a replan before seed hunting, charts, FITS/flashlight reuse, stopping policy, GA, or returning to SDF work.
+Closed post-Slice-4 hardening/demo pass - direct CLI execution is repaired and demo trace artifacts were generated. The preplanned campaign backlog remains exhausted; the next feature step still requires replan.
 
 ## Phase Checklist
 
@@ -21,6 +21,8 @@ Closed for Slice 4 - headless parameter-space slime trace runner is implemented 
 - [x] Phase 12 - revise and lock the campaign contract for the headless trace-runner slice.
 - [x] Phase 13 - add RED tests for the trace-runner artifact set, v1 step receipt fields, captured-root authority, and deterministic state hashing.
 - [x] Phase 14 - implement the headless trace runner and validate focused Python tests, contract, plan sync, hostile audit, code quality, and diff check before checkpoint.
+- [x] Phase 15 - hostile hardening pass found direct file-path CLI execution fails from relative imports.
+- [x] Phase 16 - add a regression, repair direct execution, generate a useful demo trace, validate, checkpoint, and push.
 
 ## Explicit User Asks
 
@@ -34,6 +36,7 @@ Closed for Slice 4 - headless parameter-space slime trace runner is implemented 
 - [x] Keep future trace receipt work separate from existing legacy `sidecar_mutation_history` replay authority.
 - [x] Work the next preplanned slice: generate an ExplainO capability atlas from repo-derived authority surfaces before headless trace-runner work.
 - [x] Work the next preplanned slice: add a headless parameter-space slime trace runner that emits the v1 trace artifact set and stops before seed hunting, charts, FITS/flashlight reuse, stopping policy, or GA.
+- [x] Harden and demo the completed work set before merge: fix direct CLI execution, preserve the trace-runner contract, and produce a concrete trace artifact demo.
 
 ## Scope
 
@@ -142,6 +145,12 @@ Slice 4 - headless parameter-space slime trace runner:
 - Slice 4 code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_slime_trace_campaign_code_quality.json` passed with baseline score 93/100.
 - Slice 4 diff check: `py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_slime_trace_campaign_diff_check --log artifacts/logs/explaino_root_slime_trace_campaign_diff_check.log --out-json artifacts/validation/explaino_root_slime_trace_campaign_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check` passed with exit code 0.
 - Slice 4 touched-file whitespace scan: `rg -n "[ \t]+$" docs\notes\explaino_root_slime_trace_campaign_PHASED_PLAN.md docs\contracts\explaino_root_slime_trace_campaign.contract.json tests\test_explaino_slime_trace_runner.py tools\reality_toolkit\fractal_explorer\explaino_slime_trace_runner.py` found no trailing-whitespace matches.
+- Hardening RED: `py -3.14 tools/reality_toolkit/fractal_explorer/explaino_slime_trace_runner.py --help` failed with `ImportError: attempted relative import with no known parent package`.
+- Hardening planned validation: `py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner.junit.xml`.
+- Hardening GREEN: `py -3.14 -m pytest tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_slime_trace_runner.junit.xml` passed 5 tests after the direct CLI repair.
+- Hardening direct CLI proof: `py -3.14 tools/reality_toolkit/fractal_explorer/explaino_slime_trace_runner.py --help` passed.
+- Hardening preservation: `py -3.14 -m pytest tests/test_fractal_finding_analyzer.py tests/test_explaino_trace_receipt_contract.py tests/test_explaino_capability_atlas.py tests/test_explaino_slime_trace_runner.py -q --junitxml artifacts/pytest/explaino_root_slime_trace_campaign_slice4_pytest.junit.xml` passed 28 tests.
+- Hardening demo: direct CLI run wrote trace artifacts under `artifacts/explaino_root_slime_trace_hardening_demo/trace` and review summaries under `artifacts/explaino_root_slime_trace_hardening_demo/demo_report.json` and `.md`. Demo changed 7 controls and preserved `captured_runtime` / `generated` root authority.
 
 ## Hostile Audit
 
@@ -160,6 +169,12 @@ Slice 4 questions:
 - Did Slice 4 preserve captured-root authority and fail on malformed roots? Yes; the runner reuses `resolve_analysis_roots`, preserves `captured_runtime` / `generated`, and the malformed-root test fails clearly.
 - Did Slice 4 record previous/applied values, state hashes, measurement hash, root authority, roots, scene id, RNG seed, and policy id per mutation step? Yes; focused tests assert every required v1 step field and measurement/root joins.
 - Did Slice 4 avoid seed hunting, charts, FITS/flashlight reuse, stopping policy, GA, runtime, render, and SDF work? Yes; touched behavior is headless Python artifact generation only, with those boundaries listed in the summary artifact.
+
+Hardening/demo questions:
+
+- Does the runner work through the direct file-path CLI as well as package import? Yes; direct `--help` now passes and a focused subprocess regression covers it.
+- Does the demo produce useful trace rows showing changed parameters, captured-root authority, and measurement/state hashes? Yes; demo artifacts changed seven ExplainO controls, preserve `captured_runtime` / `generated` root authority, and include per-step measurement hashes.
+- Did hardening avoid new feature scope after the preplanned backlog was exhausted? Yes; the only code change is direct CLI import fallback plus regression, and demo artifacts stay under `artifacts/`.
 
 - Did captured runtime roots actually win over coefficient solving? Yes; `test_analyze_finding_uses_captured_explaino_roots_before_coefficients` monkeypatches the coefficient solver to fail if called and passes on captured roots.
 - Did malformed captured roots fail clearly instead of silently falling back? Yes; count mismatch and nonfinite captured-root tests both fail with `ValueError` before fallback.
@@ -181,6 +196,7 @@ Slice 4 questions:
 - [x] Pass 7 - re-read generated JSON/Markdown for overclaims, stale manual prose, and unsupported capability claims; found missing lens semantics would have been silently labeled `unknown`, then repaired it to fail closed.
 - [x] Pass 8 - confirmed validation rails prove the atlas slice through focused pytest, analyzer preservation pytest, contract validation, code-quality baseline, diff check, and explicit untracked-file whitespace scan; no runtime/SDF collateral was used as proof.
 - [x] Pass 9 - audited Slice 4 trace-runner artifacts, state hashing, captured-root authority, and deferred boundaries; found and fixed nondeterministic manifest timestamp before final validation.
+- [x] Pass 10 - audited the direct CLI repair and demo artifacts before checkpoint; direct execution was the concrete defect and demo outputs prove useful trace receipts without new feature scope.
 
 ## Audit Findings
 
@@ -196,3 +212,6 @@ Slice 4 questions:
 - [x] Clean re-read after the Slice 3 lens-semantics hardening found no additional real issue in the bounded atlas scope.
 - [x] Slice 4 audit finding: `slime_trace_manifest.json` initially included a wall-clock `created_at_utc`, so deterministic trace output was incomplete; removed the timestamp and extended deterministic tests to compare the manifest.
 - [x] Clean re-read after the Slice 4 determinism repair found no additional real issue in the bounded trace-runner scope.
+- [x] Hardening finding: direct file-path execution of `explaino_slime_trace_runner.py` failed because package-relative imports had no script-mode fallback.
+- [x] Hardening direct-CLI repair finding: added script-mode import fallback and subprocess regression for `py -3.14 tools/reality_toolkit/fractal_explorer/explaino_slime_trace_runner.py --help`.
+- [x] Hardening demo finding: the trace runner now produces an inspectable demo bundle that changes seven ExplainO controls while preserving captured-root authority and recording joined measurement hashes.

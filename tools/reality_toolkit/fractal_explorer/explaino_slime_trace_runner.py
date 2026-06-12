@@ -5,10 +5,15 @@ import copy
 import hashlib
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Any, Sequence
 
-from .finding_analyzer import RootResolution, resolve_analysis_roots
+try:
+    from .finding_analyzer import RootResolution, resolve_analysis_roots
+except ImportError:  # Allow direct file-path CLI execution.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from fractal_explorer.finding_analyzer import RootResolution, resolve_analysis_roots
 
 TRACE_SCHEMA_ID = "viewer.explaino_slime_trace.v1"
 ROOT_SAMPLE_SCHEMA_ID = "viewer.explaino_slime_trace.root_sample.v1"
