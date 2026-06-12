@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "contract_id": "progress_visibility_protocol",
+  "feature_id": "progress_visibility_repo_rules",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/progress_visibility_protocol_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "AGENTS.md",
+    "AGENT_WORKING_PROTOCOL.md",
+    "docs/notes/progress_visibility_protocol_PHASED_PLAN.md",
+    "docs/contracts/progress_visibility_protocol.contract.json",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "future next steps need more detailed summaries",
+    "agents must say when preplanned sliced work is exhausted",
+    "this must live in repo rules rather than chat history",
+    "moment-to-moment progress should be more visible"
+  ],
+  "forbidden_operator_prompts": [
+    "do not change product runtime behavior",
+    "do not change SDF behavior",
+    "do not change ExplainO analyzer behavior",
+    "do not edit salticid-cuda"
+  ],
+  "required_defaults": {
+    "slice_kind": "workflow_rule_update",
+    "product_behavior_changes_allowed": false,
+    "runtime_publish_required": false,
+    "salticid_repo_edits": false
+  },
+  "forbidden_defaults": {
+    "runtime_mutation": "forbidden",
+    "sdf_mutation": "forbidden",
+    "analyzer_mutation": "forbidden",
+    "salticid_repo_mutation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/progress_visibility_protocol.contract.json --out-json artifacts/validation/progress_visibility_protocol_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/progress_visibility_protocol_PHASED_PLAN.md --out-json artifacts/validation/progress_visibility_protocol_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/progress_visibility_protocol_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label progress_visibility_protocol_rule_text --log artifacts/logs/progress_visibility_protocol_rule_text.log --out-json artifacts/validation/progress_visibility_protocol_rule_text.json --heartbeat-seconds 30 --timeout-seconds 120 -- rg -n \"Progress Visibility Rule|Preplanned Work Exhaustion\" AGENTS.md AGENT_WORKING_PROTOCOL.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label progress_visibility_protocol_diff_check --log artifacts/logs/progress_visibility_protocol_diff_check.log --out-json artifacts/validation/progress_visibility_protocol_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The workflow-rule contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/progress_visibility_protocol_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/progress_visibility_protocol_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "rule_text_found",
+      "description": "The repo rules contain the progress visibility and exhaustion rule text.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/progress_visibility_protocol_rule_text.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "diff_check_ok",
+      "description": "The diff has no whitespace/check errors.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/progress_visibility_protocol_diff_check.json",
+      "json_path": "exit_code",
+      "equals": 0
+    }
+  ]
+}

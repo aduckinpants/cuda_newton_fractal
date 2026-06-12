@@ -42,6 +42,14 @@ The VS Code task surface mirrors these commands:
 - `HANDOFF_LOG.md` is the checkpoint index, not the detailed plan surface.
 - A fresh agent should be able to resume from the repo plan, handoff log, and git state alone.
 
+## Progress Visibility Rule
+
+- While working, give user-facing progress updates that name the current slice/phase, what was just learned or completed, and the next concrete action.
+- Final or pause summaries for meaningful work must include: what changed, what proof ran, what remains next, and whether the remaining work is already covered by checked-in preplanned slices.
+- If the checked-in preplanned sliced work is exhausted, say so explicitly using clear wording such as `Preplanned sliced work is exhausted; stop for replan before more product mutation.`
+- Do not end a turn with unfinished planned work implied as done. If work remains, say what remains and whether it is deferred, blocked, or next in the active plan.
+- Keep this visibility grounded in the repo plan, contract, handoff log, and current git state rather than chat memory.
+
 ## Hard-Denial Rule
 
 - The accepted checked-in phased plan plus checked-in slice contract are binding.

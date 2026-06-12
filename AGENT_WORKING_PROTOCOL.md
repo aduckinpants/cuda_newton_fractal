@@ -204,6 +204,31 @@ Crash-recovery corollary:
 - inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/`
 - then resume the same stranded slice in crash-safe mode, one bounded command at a time
 
+### 2.8 Progress Visibility And Exhaustion Rule
+
+Progress updates are part of the operator contract, not optional chat polish.
+
+During non-trivial work:
+- name the active slice or phase when it matters for understanding progress
+- state what was just learned, repaired, validated, or ruled out
+- state the next concrete action before taking it
+- call out blockers, failed rails, or scope changes as soon as they become known
+- avoid vague status like "working on it" when the repo has a more precise phase, proof rail, or failing seam
+
+Final, pause, or handoff summaries for meaningful work must include:
+- the current branch and commit when they changed
+- what changed in the repo
+- what validation/proof ran and whether it passed
+- what remains next
+- whether remaining work is covered by existing checked-in preplanned slices
+
+Preplanned Work Exhaustion rule:
+- If all checked-in preplanned slices for the active campaign are complete, explicitly say: `Preplanned sliced work is exhausted; stop for replan before more product mutation.`
+- If the active plan has remaining slices, list the next one or two in priority order.
+- If work remains but is not yet planned in a checked-in slice, say it is unplanned and requires a replan before mutation.
+- If the current turn ends before all requested work is complete, say what is not done yet; silence is treated as misleading by omission.
+- Do not keep moving into a new product area merely because a nearby idea exists in chat. The authority is the checked-in plan/contract, handoff log, and current git state.
+
 ### 3. No Implicit Fallback
 
 This is a hard architectural rule, not a suggestion:
