@@ -65,7 +65,7 @@ Control visibility authority:
 - Code-quality baseline: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_sdf_control_authority_code_quality.json` passed with existing warnings only.
 - Logged runtime publish: `py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_sdf_control_publish --log artifacts/logs/explaino_root_sdf_control_publish.log --out-json artifacts/validation/explaino_root_sdf_control_publish.json --heartbeat-seconds 30 --timeout-seconds 1800 -- cmd /c ui_app\build_vsdevcmd.cmd` passed.
 - Logged post-publish runtime proof: `py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_sdf_control_runtime_after_publish --log artifacts/logs/explaino_root_sdf_control_runtime_after_publish.log --out-json artifacts/validation/explaino_root_sdf_control_runtime_after_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_root_sdf.py` passed with `3 passed`.
-- Rearward repair: review of `93a628f53b75828b43b7e2d3af6fb10b5bb8263d` found stale phrase `ready for checkpoint` in this plan; this docs-only repair removes that stale wording.
+- Rearward repair: review of `93a628f53b75828b43b7e2d3af6fb10b5bb8263d` found stale closeout wording in this plan; this docs-only repair removes that wording.
 
 ## Hostile Audit
 
