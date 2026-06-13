@@ -237,6 +237,13 @@ static void test_schema_filters_targets_by_current_fractal() {
     CHECK(HasVisibleOption(rippleOptions, "phoenix_p_real"), "explaino_ripple should show its visible Phoenix real target");
     CHECK(!HasVisibleOption(rippleOptions, "magnet_relaxation"), "explaino_ripple must not show Magnet animation targets");
     CHECK(!HasVisibleOption(rippleOptions, "splice_offset"), "explaino_ripple must not show Splice-only targets");
+
+    view.fractal_type = FractalType::explaino_root_sdf;
+    std::vector<const UISchemaOption*> rootSdfOptions = ResolveVisibleEnumOptions(*control, ctx);
+    CHECK(HasVisibleOption(rootSdfOptions, "seed"), "explaino_root_sdf should show the seed animation target");
+    CHECK(HasVisibleOption(rootSdfOptions, "root_spread"), "explaino_root_sdf should show root-layout animation targets");
+    CHECK(!HasVisibleOption(rootSdfOptions, "warp_strength"), "explaino_root_sdf must not show dead Warp animation target");
+    CHECK(!HasVisibleOption(rootSdfOptions, "magnet_relaxation"), "explaino_root_sdf must not show Magnet animation targets");
 }
 
 static void test_none_and_unknown_noop() {

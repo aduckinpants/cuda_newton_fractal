@@ -267,6 +267,7 @@ Active follow-up:
 
 Still deferred follow-ups:
 - Root-SDF control follow-ups remain deferred after the control-authority repair: lane-local/global SDF field downsample UX cleanup for field-primary lanes, a broader ExplainO Warp redesign, and a metadata-driven "visible control must be consumed by the active domain" refactor. The repair slice hides confirmed dead root-SDF exposures only; it does not redesign shared SDF field resolution or warp semantics.
+- Root-SDF seed/control authority needs a later scanner-backed cleanup: UI/action/dynamics paths have repeatedly drifted when they used broad `IsExplainoFamily(...)` membership instead of narrower predicates such as `SupportsExplainoSeedControls(...)` or `UsesExplainoRootLayoutAuthority(...)`. Renderer and escape-time paths may still use `IsExplainoFamily(...)`; the deferred cleanup should target control-surface and dynamics code only.
 - Add more SDF-native selectable fractal lanes only after `sdf_pack_scene`, the built-in catalog seed, and typed Color Pipeline applicative glue stay stable.
 - Add full authored SDF pack catalog/authoring UX after the field-source path stays stable.
 - Keep treating Lens SDF as the first mask-derived SDF field producer, not as the place to embed authored SDF packs.

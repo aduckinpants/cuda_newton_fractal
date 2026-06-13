@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contract_id": "explaino_root_sdf_seed_dynamics_repair",
+  "feature_id": "explaino_root_sdf_seed_dynamics_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_root_sdf_seed_dynamics_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "repair Auto-Increment Seed on explaino_root_sdf",
+    "cover generic Animate Parameter seed dynamics for the same authority path",
+    "keep explaino_root_sdf outside IsExplainoFamily semantics",
+    "review and document the repeated UI authority anti-pattern"
+  ],
+  "forbidden_operator_prompts": [
+    "add explaino_root_sdf to IsExplainoFamily",
+    "route explaino_root_sdf through RenderFractalCUDA",
+    "redesign animation UI",
+    "redesign ExplainO Warp",
+    "redesign SDF field downsample UX",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "viewer_first_root_sdf_seed_dynamics_repair",
+    "source_head": "82c8d4c811dadd0097ce3c3bcee6deb0c6669fc5",
+    "branch": "codex/explaino-root-sdf-field-lane",
+    "fractal_type_id": "explaino_root_sdf",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true
+  },
+  "forbidden_defaults": {
+    "is_explaino_family_membership": "forbidden",
+    "normal_escape_iteration_lane": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_sdf_seed_dynamics_repair.contract.json --out-json artifacts/validation/explaino_root_sdf_seed_dynamics_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "cmd /c ui_app\\build_tests_vsdevcmd.cmd test_explaino_seed_dynamics test_param_anim_dynamics test_param_anim_generic > artifacts/explaino_root_sdf_seed_dynamics_repair/focused_native.log 2>&1",
+    "cmd /c ui_app\\build_vsdevcmd.cmd > artifacts/explaino_root_sdf_seed_dynamics_repair/build_vsdevcmd.log 2>&1",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_sdf_seed_dynamics_runtime --log artifacts/logs/explaino_root_sdf_seed_dynamics_runtime.log --out-json artifacts/validation/explaino_root_sdf_seed_dynamics_runtime.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_root_sdf.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_sdf_seed_dynamics_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_root_sdf_seed_dynamics_repair_PHASED_PLAN.md --out-json artifacts/validation/explaino_root_sdf_seed_dynamics_hostile_audit.json",
+    "git diff --check > artifacts/explaino_root_sdf_seed_dynamics_repair/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The root-SDF seed-dynamics repair contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_seed_dynamics_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_seed_dynamics_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_auto_increment_proof_passed",
+      "description": "Published no-mouse runtime proof validates root-SDF auto-increment seed behavior.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_seed_dynamics_runtime.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -134,3 +134,6 @@
 - `ck:973c5e2e` 2026-06-12 23:18 UTC | score 95 — Rearward repair removed stale root-SDF control plan wording after review flagged 'ready for checkpoint'; plan sync, hostile audit validation, contract validation, and diff check passed.
 - `ck:1b4f1ca1` 2026-06-12 23:20 UTC — session-start | branch=codex/explaino-root-sdf-field-lane | head=c1322ba | status=clean | profile=native | intent=Rearward repair quoted stale root-SDF plan phrase | rearward_repair_for=c1322ba3be697a3deb983881f5bb0235ac9c06a9
 - `ck:1b4f1ca1` 2026-06-12 23:21 UTC | score 95 — Rearward repair removed a quoted stale closeout phrase from the root-SDF control plan; direct stale-phrase grep, plan sync, hostile audit validation, and diff check passed.
+- `ck:b5f7b943` 2026-06-12 23:41 UTC — session-start | branch=codex/explaino-root-sdf-field-lane | head=82c8d4c | status=dirty | profile=runtime | intent=ExplainO Root SDF seed dynamics repair
+- `ck:b5f7b943` 2026-06-13 00:19 UTC | score 94 — Repaired ExplainO Root SDF seed dynamics: auto-increment and generic seed animation now use root-layout seed authority; focused native, runtime publish, no-mouse runtime proof, contract validation, plan sync, code-quality baseline, hostile audit, and diff check passed.
+- `ck:b5f7b943` 2026-06-13 00:20 UTC | score 94 — Repaired ExplainO Root SDF seed dynamics; focused native and runtime proof passed.

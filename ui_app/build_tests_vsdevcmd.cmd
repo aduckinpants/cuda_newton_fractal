@@ -113,6 +113,7 @@ if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" call :focused_test_findin
 if /I "%FOCUSED_TEST%"=="test_finding_state_actions" call :focused_test_finding_state_actions & exit /b
 if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" call :focused_test_viewer_render_pacing & exit /b
 if /I "%FOCUSED_TEST%"=="test_viewport_interaction" call :focused_test_viewport_interaction & exit /b
+if /I "%FOCUSED_TEST%"=="test_explaino_seed_dynamics" call :focused_test_explaino_seed_dynamics & exit /b
 if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" call :focused_test_sample_tier_resolver & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_renderer" call :focused_test_fractal_renderer & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_sample_kernel" call :focused_test_fractal_sample_kernel & exit /b
@@ -132,6 +133,8 @@ if /I "%FOCUSED_TEST%"=="test_fractal_derived_fields" call :focused_test_fractal
 if /I "%FOCUSED_TEST%"=="test_fractal_family_rules" call :focused_test_fractal_family_rules & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_runtime_validation" call :focused_test_fractal_runtime_validation & exit /b
 if /I "%FOCUSED_TEST%"=="test_schema_binding" call :focused_test_schema_binding & exit /b
+if /I "%FOCUSED_TEST%"=="test_param_anim_dynamics" call :focused_test_param_anim_dynamics & exit /b
+if /I "%FOCUSED_TEST%"=="test_param_anim_generic" call :focused_test_param_anim_generic & exit /b
 if /I "%FOCUSED_TEST%"=="test_explaino_counterfactual_repair" call :focused_test_explaino_counterfactual_repair & exit /b
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" call :focused_test_generic_equation_pack_workbench_ui & exit /b
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_live" call :focused_test_generic_equation_pack_live & exit /b
@@ -145,6 +148,26 @@ if /I "%FOCUSED_TEST%"=="test_sdf_pack_viewer_ui" call :focused_test_sdf_pack_vi
 if /I "%FOCUSED_TEST%"=="test_generic_probe" call :focused_test_generic_probe & exit /b
 echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
 exit /b 1
+
+:focused_test_param_anim_dynamics
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\param_anim_dynamics.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_param_anim_dynamics.cpp ^
+  /Fe:"%TESTROOT%\test_param_anim_dynamics.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_param_anim_dynamics.exe" || exit /b 1
+exit /b 0
+
+:focused_test_param_anim_generic
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\param_anim_dynamics.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_param_anim_generic.cpp ^
+  /Fe:"%TESTROOT%\test_param_anim_generic.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_param_anim_generic.exe" || exit /b 1
+exit /b 0
 
 :full_build_start
 cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /I. /I.\src ^
@@ -627,6 +650,14 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_viewport_interaction.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_viewport_interaction.exe" || exit /b 1
+exit /b 0
+
+:focused_test_explaino_seed_dynamics
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\explaino_seed.cpp .\src\explaino_seed_dynamics.cpp .\tests\test_explaino_seed_dynamics.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_seed_dynamics.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_seed_dynamics.exe" || exit /b 1
 exit /b 0
 
 :focused_test_sdf_pack

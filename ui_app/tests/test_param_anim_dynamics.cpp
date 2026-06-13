@@ -67,6 +67,20 @@ static void test_seed_target_uses_explaino_combined() {
     CHECK(fabs(combined - 0.1) < 1e-5, "combined seed should be ~0.1");
 }
 
+static void test_seed_target_uses_root_sdf_seed_authority() {
+    ViewState view{};
+    view.fractal_type = FractalType::explaino_root_sdf;
+    KernelParams params{};
+    params.explaino_seed = 0.0;
+    view.explaino_seed_drift = 0.0f;
+    set_target(view, "seed");
+    view.param_anim_rate = 0.1f;
+    bool changed = ApplyParamAnimDynamics(1.0, view, params);
+    CHECK(changed, "seed target should animate root-SDF through root-layout seed authority");
+    double combined = params.explaino_seed + (double)view.explaino_seed_drift;
+    CHECK(fabs(combined - 0.1) < 1e-5, "root-SDF combined seed should be ~0.1");
+}
+
 static void test_seed_target_non_explaino_noop() {
     ViewState view{};
     view.fractal_type = FractalType::mandelbrot;
@@ -102,6 +116,7 @@ int main() {
     test_damping_increments();
     test_multibrot_power_increments();
     test_seed_target_uses_explaino_combined();
+    test_seed_target_uses_root_sdf_seed_authority();
     test_seed_target_non_explaino_noop();
     test_zero_rate_noop();
     test_negative_delta_noop();

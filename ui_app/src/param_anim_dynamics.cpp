@@ -43,7 +43,7 @@ bool ApplyParamAnimDynamics(double deltaSeconds, ViewState& view, KernelParams& 
     const double delta = rate * deltaSeconds;
 
     if (std::strcmp(view.param_anim_target, "seed") == 0) {
-        if (!IsExplainoFamily(view.fractal_type)) return false;
+        if (!SupportsExplainoSeedControls(view.fractal_type)) return false;
         ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + delta);
         return true;
     }

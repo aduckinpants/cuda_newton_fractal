@@ -4,6 +4,7 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,30 @@ def _payload_has_control(payload: dict[str, Any], control_id: str) -> bool:
     controls = payload.get("controls")
     assert isinstance(controls, list), payload
     return any(isinstance(control, dict) and control.get("control_id") == control_id for control in controls)
+
+
+def _wait_for_changed_root_sdf_frame(
+    viewer: PersistentRuntimeViewerAutomation,
+    *,
+    baseline_root_hash: str,
+    baseline_frame_hash: str,
+    timeout_seconds: float = 15.0,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout_seconds
+    last_payload: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        payload = viewer._load_report()
+        if payload is not None:
+            last_payload = payload
+            if (
+                payload.get("current_fractal_type") == "explaino_root_sdf"
+                and payload.get("rendered_frame_ready") is True
+                and _require_root_hash(payload, "explaino_root_sdf_effective_root_hash") != baseline_root_hash
+                and _require_frame_hash(payload) != baseline_frame_hash
+            ):
+                return payload
+        time.sleep(0.05)
+    raise AssertionError(f"root-SDF auto-increment seed did not change root/frame hashes; last_payload={last_payload!r}")
 
 
 def _root_sdf_state(exe_path: Path) -> dict[str, object]:
@@ -235,6 +260,40 @@ def test_explaino_root_sdf_rejects_non_sdf_source_rows_with_structured_reason() 
     assert "producer_kind=explaino_root_sdf" in combined, combined
     assert "row_index=0" in combined, combined
     assert "source_id=smooth_escape" in combined, combined
+
+
+def test_explaino_root_sdf_auto_increment_seed_advances_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("viewer UI automation is Windows-only")
+
+    exe_path = active_runtime_exe()
+    state = _root_sdf_state(exe_path)
+    view_state = state.setdefault("view", {})
+    assert isinstance(view_state, dict), state
+    view_state["auto_increment_seed"] = True
+    view_state["explaino_seed_rate"] = 3.0
+    state_path = write_state_bundle(tmp_path / "explaino_root_sdf_auto_increment", state)
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "explaino_root_sdf_auto_increment_report.json",
+        command_path=tmp_path / "explaino_root_sdf_auto_increment_command.json",
+        open_color_pipeline=False,
+    ) as viewer:
+        baseline = viewer.wait_for_report(timeout_seconds=60.0)
+        assert baseline.get("current_fractal_type") == "explaino_root_sdf", baseline
+        assert baseline.get("lens_sdf_field_producer_kind") == "explaino_root_sdf", baseline
+        baseline_root_hash = _require_root_hash(baseline, "explaino_root_sdf_effective_root_hash")
+        baseline_frame_hash = _require_frame_hash(baseline)
+
+        changed = _wait_for_changed_root_sdf_frame(
+            viewer,
+            baseline_root_hash=baseline_root_hash,
+            baseline_frame_hash=baseline_frame_hash,
+            timeout_seconds=20.0,
+        )
+        assert changed.get("current_fractal_type") == "explaino_root_sdf", changed
 
 
 def test_explaino_root_sdf_capture_finding_sidecar_and_replay(tmp_path: Path) -> None:

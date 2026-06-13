@@ -46,6 +46,29 @@ int main() {
         KernelParams params{};
         RenderStats stats{};
 
+        view.fractal_type = FractalType::explaino_root_sdf;
+        view.auto_increment_seed = true;
+        view.explaino_seed_rate = 0.5f;
+        params.explaino_seed = 2.0;
+        view.explaino_seed_drift = 0.25f;
+
+        if (!ApplyExplainoSeedDynamics(stats, 2.0, view, params)) {
+            std::cerr << "Expected root-SDF auto-increment seed dynamics to use root-layout seed authority\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_seed, 3.0) ||
+            !NearlyEqual(view.explaino_seed_drift, 0.25f) ||
+            !NearlyEqual(ExplainoSeedCombined(view, params), 3.25)) {
+            std::cerr << "Expected root-SDF auto-increment to advance through the combined seed seam\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderStats stats{};
+
         view.fractal_type = FractalType::nova;
         view.auto_increment_seed = true;
         view.explaino_seed_rate = 1.0f;

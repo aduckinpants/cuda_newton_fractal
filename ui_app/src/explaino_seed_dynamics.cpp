@@ -14,7 +14,7 @@ bool ApplyExplainoSeedDynamics(const RenderStats& stats,
     ViewState& view,
     KernelParams& params) {
     (void)stats;
-    if (!IsExplainoFamily(view.fractal_type)) return false;
+    if (!SupportsExplainoSeedControls(view.fractal_type)) return false;
     if (!std::isfinite(deltaSeconds) || deltaSeconds <= 0.0) return false;
 
     if (view.auto_increment_seed) {
