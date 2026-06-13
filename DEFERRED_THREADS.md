@@ -88,13 +88,15 @@ Short-term intent: if this thread preempts SDF, do only the root-authority analy
 
 ## Deferred Root/SDF Follow-Ups From ExplainO Root SDF Lane - 2026-06-12
 
-Status: deferred opportunity grooming only; these are not part of the active `explaino_root_sdf` v1 lane.
+Status: deferred opportunity grooming only; these are not part of the now-merged `explaino_root_sdf` v1 lane.
 
-Active interruption:
+Merged foundation:
 
 - `docs/notes/explaino_root_sdf_field_lane_PHASED_PLAN.md`
+- `docs/notes/explaino_root_sdf_control_authority_repair_PHASED_PLAN.md`
+- `docs/notes/explaino_root_sdf_seed_dynamics_repair_PHASED_PLAN.md`
 
-V1 is intentionally narrow: a field-primary `explaino_root_sdf` lane that consumes existing ExplainO root authority, renders root circles plus explicit index-pair bridge capsules, and colors through existing SDF Color Pipeline rows.
+V1 is intentionally narrow: a field-primary `explaino_root_sdf` lane that consumes existing ExplainO root authority, renders root circles plus explicit index-pair bridge capsules, and colors through existing SDF Color Pipeline rows. The lane, control-authority repair, and seed-dynamics repair are merged to `master` at `eebc0e3`.
 
 Parked follow-ups:
 
@@ -104,7 +106,7 @@ Parked follow-ups:
 - Root-metric Color Pipeline sources: expose pair separation, centroid drift, symmetry error, and root velocity as source signals.
 - SDF gradient-force iteration: use SDF distance/normal as a force term in iterative fractal dynamics.
 
-Short-term intent: close the root-SDF lane first, then return to the deferred SDF field-generation/downsample optimization thread. Do not turn this slice into orbit traps, root-homotopy renderer work, trace-driven live rendering, or new SDF force dynamics.
+Short-term intent: the active interruption is now the Wave 1 foundation campaign in `docs/notes/fractal_docs_refresh_wave1_foundation_PHASED_PLAN.md`, stopping after Hardening Pass 1. Do not turn that campaign into orbit traps, root-homotopy renderer work, trace-driven live rendering, or new SDF force dynamics.
 
 ## Current Difficulty / Reward Priority
 

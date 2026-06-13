@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "contract_id": "fractal_docs_refresh_wave1_foundation",
+  "feature_id": "fractal_docs_refresh_wave1_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/fractal_docs_refresh_wave1_foundation_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "spec_intake",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "tools",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "merge the completed Root SDF branch into master if rearward review remains ok",
+    "open a fresh Wave 1 foundation branch from the merged Root SDF head",
+    "review and reconcile the fractal docs bootstrap bundle as an import candidate, not repo authority",
+    "execute only the foundation slices through Hardening Pass 1",
+    "stop after Hardening Pass 1 with an explicit foundation decision before low-hanging fractal ideas or medium enablers"
+  ],
+  "forbidden_operator_prompts": [
+    "start low-hanging fractal idea passes before Hardening Pass 1",
+    "start medium engine enablers before Hardening Pass 1",
+    "start new SDF ops or SDF-native family growth under this foundation contract",
+    "treat the side-folder bundle as authoritative without live repo drift verification",
+    "rewrite existing ExplainO renderer behavior during the descriptor skeleton phase",
+    "replace the legacy four-root ExplainO path instead of preserving legacy_quartic_v1 parity",
+    "make AA a live-performance claim without timing evidence",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "slice_kind": "wave1_foundation_campaign",
+    "source_head": "eebc0e3418002febf7cc5cf01346039c8fa83481",
+    "branch": "codex/fractal-docs-refresh-wave1-foundation",
+    "bundle_path": "D:/salt-output/explaino_novelty_analysis/20260612_000000_viewer_host_fractal_math_refresh_packet_doc_update_working/fractal_docs_bootstrap_bundle",
+    "stop_after": "Hardening Pass 1 foundation decision",
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "low_hanging_fractal_idea_pass": "forbidden_until_after_hardening_pass_1",
+    "medium_engine_enabler": "forbidden_until_after_hardening_pass_1",
+    "bundle_as_authority_without_drift_report": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_docs_refresh_wave1_foundation.contract.json --out-json artifacts/validation/fractal_docs_refresh_wave1_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/fractal_docs_refresh_wave1_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_docs_refresh_wave1_foundation_PHASED_PLAN.md --out-json artifacts/validation/fractal_docs_refresh_wave1_hostile_audit.json",
+    "git diff --check > artifacts/fractal_docs_refresh_wave1_foundation/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Wave 1 foundation contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_docs_refresh_wave1_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_docs_refresh_wave1_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_baseline_ok",
+      "description": "The code quality baseline check passes after the slice.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_docs_refresh_wave1_code_quality.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

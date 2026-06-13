@@ -137,3 +137,5 @@
 - `ck:b5f7b943` 2026-06-12 23:41 UTC — session-start | branch=codex/explaino-root-sdf-field-lane | head=82c8d4c | status=dirty | profile=runtime | intent=ExplainO Root SDF seed dynamics repair
 - `ck:b5f7b943` 2026-06-13 00:19 UTC | score 94 — Repaired ExplainO Root SDF seed dynamics: auto-increment and generic seed animation now use root-layout seed authority; focused native, runtime publish, no-mouse runtime proof, contract validation, plan sync, code-quality baseline, hostile audit, and diff check passed.
 - `ck:b5f7b943` 2026-06-13 00:20 UTC | score 94 — Repaired ExplainO Root SDF seed dynamics; focused native and runtime proof passed.
+- `ck:4b39b5a6` 2026-06-13 01:37 UTC — session-start | branch=codex/fractal-docs-refresh-wave1-foundation | head=eebc0e3 | status=dirty | profile=native | intent=Fractal docs refresh Wave 1 foundation
+- `ck:4b39b5a6` 2026-06-13 01:48 UTC | score 94 — Closed Wave 1 Phase 0 intake: merged Root SDF to master, opened the foundation branch, reconciled the bootstrap bundle as import-candidate only, recorded live drift from 24d9d0e to eebc0e3, and synced Root SDF status docs before foundation implementation.
