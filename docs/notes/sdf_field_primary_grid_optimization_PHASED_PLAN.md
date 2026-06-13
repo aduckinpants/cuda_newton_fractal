@@ -24,7 +24,7 @@ Phase 6 - hostile audit, receipts, rearward review, push, and clean-tree close.
 - [x] Phase 3: implement the selected optimization without changing public visuals or state/capture authority.
 - [x] Phase 4: run focused native rails and published no-mouse runtime proof.
 - [x] Phase 5: capture after repeated-sample witness and compare before/after numbers.
-- [ ] Phase 6: hostile audit, repair findings, receipts, rearward review, push, and clean-tree close.
+- [x] Phase 6: hostile audit, repair findings, receipts, rearward review, push, and clean-tree close.
 
 ## Scope
 
@@ -225,3 +225,6 @@ Audit questions:
 | Contract validation | `artifacts/validation/sdf_field_primary_grid_optimization_contract_after.json`; OK. |
 | Code quality | `artifacts/validation/sdf_field_primary_grid_optimization_code_quality.json`; baseline check passed, CRITICAL=0, ERROR=0. |
 | Diff check | `artifacts/sdf_field_primary_grid_optimization/diff_check.log`; clean. |
+| Receipts | `viewer_host_checkpoint_slice.py write-receipts` wrote validation and contract proof receipts for `9f7a799536087be3a11837cc702401686c9c8b8a`. |
+| Final rearward review | `py -3.14 tools/viewer_host_rearward_review.py` returned `status=ok` for `9f7a799536087be3a11837cc702401686c9c8b8a`. |
+| Branch push and clean tree | `git push -u origin codex/sdf-field-primary-grid-optimization`; `py -3.14 tools/viewer_host_repo_status.py` reported staged=none, unstaged=none, untracked=none. |
