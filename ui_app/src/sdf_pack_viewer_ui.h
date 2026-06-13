@@ -47,6 +47,10 @@ struct SdfPackViewerState {
     std::string pack_load_error;
     SdfPack pack;
     std::map<std::string, double> params;
+    mutable bool runtime_desc_cache_valid{false};
+    mutable std::string runtime_desc_cache_pack_json;
+    mutable std::map<std::string, double> runtime_desc_cache_params;
+    mutable SdfPackRuntimeDesc runtime_desc_cache;
     SdfPackFieldBackend backend_preference{SdfPackFieldBackend::auto_backend};
     SdfPackViewerPreviewSummary last_preview;
 };
@@ -143,6 +147,11 @@ bool SetSdfPackViewerControlValue(
     std::string* outError);
 
 bool ResetSdfPackViewerControlsToDefaults(SdfPackViewerState* ioState, std::string* outError);
+
+bool EnsureSdfPackViewerRuntimeDesc(
+    const SdfPackViewerState& state,
+    const SdfPackRuntimeDesc** outDesc,
+    std::string* outError = nullptr);
 
 bool RunSdfPackViewerPreview(SdfPackViewerState* ioState, std::string* outError);
 

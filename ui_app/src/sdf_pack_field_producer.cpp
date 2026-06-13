@@ -1,5 +1,7 @@
 #include "sdf_pack_field_producer.h"
 
+#include "sdf_pack_runtime_eval.cuh"
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -10,6 +12,11 @@ constexpr std::size_t kMaxFieldSamples = 64ull * 1024ull * 1024ull;
 
 SdfPackFieldBackendFn& RegisteredCudaBackend() {
     static SdfPackFieldBackendFn backend = nullptr;
+    return backend;
+}
+
+SdfPackRuntimeFieldBackendFn& RegisteredRuntimeCudaBackend() {
+    static SdfPackRuntimeFieldBackendFn backend = nullptr;
     return backend;
 }
 
@@ -32,6 +39,18 @@ void ResetReport(
     outReport->requested = requested;
     outReport->used = used;
     outReport->pack_id = pack ? pack->pack_id : std::string{};
+}
+
+void ResetReport(
+    SdfPackFieldReport* outReport,
+    SdfPackFieldBackend requested,
+    SdfPackFieldBackend used,
+    const SdfPackRuntimeFieldRequest& request) {
+    if (!outReport) return;
+    *outReport = {};
+    outReport->requested = requested;
+    outReport->used = used;
+    outReport->pack_id = request.pack_id;
 }
 
 double PixelToWorldX(const SdfPackFieldGeometry& geometry, int x, int width) {
@@ -57,6 +76,10 @@ const char* SdfPackFieldBackendId(SdfPackFieldBackend backend) {
 
 void RegisterSdfPackFieldCudaBackend(SdfPackFieldBackendFn backendFn) {
     RegisteredCudaBackend() = backendFn;
+}
+
+void RegisterSdfPackRuntimeFieldCudaBackend(SdfPackRuntimeFieldBackendFn backendFn) {
+    RegisteredRuntimeCudaBackend() = backendFn;
 }
 
 bool ResolveSdfPackFieldGeometry(
@@ -104,6 +127,63 @@ bool ResolveSdfPackFieldGeometry(
     const double pixelScale = (2.0 * region.half_height) / static_cast<double>(request.height);
     if (!std::isfinite(halfWidth) || !std::isfinite(pixelScale) || pixelScale <= 0.0) {
         if (outError) *outError = "SDF pack field region produced invalid pixel scale";
+        return false;
+    }
+
+    if (outGeometry) {
+        outGeometry->center_x = region.center_x;
+        outGeometry->center_y = region.center_y;
+        outGeometry->half_width = halfWidth;
+        outGeometry->half_height = region.half_height;
+        outGeometry->pixel_scale = pixelScale;
+        outGeometry->sample_count = sampleCount;
+    }
+    return true;
+}
+
+bool ResolveSdfPackRuntimeFieldGeometry(
+    const SdfPackRuntimeFieldRequest& request,
+    SdfPackFieldGeometry* outGeometry,
+    std::string* outError) {
+    if (!request.desc) {
+        if (outError) *outError = "SDF runtime field request requires a descriptor";
+        return false;
+    }
+    if (!sdf_pack_desc_is_valid(*request.desc)) {
+        if (outError) *outError = "SDF runtime field request has an invalid descriptor";
+        return false;
+    }
+    if (request.width <= 0 || request.height <= 0) {
+        if (outError) *outError = "SDF runtime field dimensions must be positive";
+        return false;
+    }
+    const std::size_t sampleCount =
+        static_cast<std::size_t>(request.width) * static_cast<std::size_t>(request.height);
+    if (sampleCount == 0 || sampleCount > kMaxFieldSamples ||
+        sampleCount > static_cast<std::size_t>((std::numeric_limits<int>::max)())) {
+        if (outError) *outError = "SDF runtime field dimensions are too large";
+        return false;
+    }
+
+    SdfPackFieldRegion region = request.region;
+    if (!region.has_region) {
+        region.has_region = true;
+        region.center_x = 0.0;
+        region.center_y = 0.0;
+        region.half_height = 1.0;
+    }
+
+    if (!std::isfinite(region.center_x) || !std::isfinite(region.center_y) ||
+        !std::isfinite(region.half_height) || region.half_height <= 0.0) {
+        if (outError) *outError = "SDF runtime field region must be finite with positive half_height";
+        return false;
+    }
+
+    const double aspect = static_cast<double>(request.width) / static_cast<double>(request.height);
+    const double halfWidth = region.half_height * aspect;
+    const double pixelScale = (2.0 * region.half_height) / static_cast<double>(request.height);
+    if (!std::isfinite(halfWidth) || !std::isfinite(pixelScale) || pixelScale <= 0.0) {
+        if (outError) *outError = "SDF runtime field region produced invalid pixel scale";
         return false;
     }
 
@@ -173,6 +253,59 @@ bool ComputeSdfPackFieldCpu(
     return true;
 }
 
+bool ComputeSdfPackRuntimeFieldCpu(
+    const SdfPackRuntimeFieldRequest& request,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outReport,
+    std::string* outError) {
+    ResetReport(outReport, SdfPackFieldBackend::cpu_reference, SdfPackFieldBackend::cpu_reference, request);
+    outField.Clear();
+    if (outError) {
+        outError->clear();
+    }
+
+    SdfPackFieldGeometry geometry;
+    std::string error;
+    if (!ResolveSdfPackRuntimeFieldGeometry(request, &geometry, &error)) {
+        SetError(outError, outReport, error);
+        return false;
+    }
+
+    outField.width = request.width;
+    outField.height = request.height;
+    outField.pixel_scale = static_cast<float>(geometry.pixel_scale);
+    outField.sign_convention = SdfSignConvention::negative_inside_positive_outside;
+    outField.source_kind = SdfFieldSourceKind::authored_sdf_pack;
+    outField.signed_distance_px.assign(geometry.sample_count, 0.0f);
+
+    for (int y = 0; y < request.height; ++y) {
+        const double worldY = PixelToWorldY(geometry, y, request.height);
+        for (int x = 0; x < request.width; ++x) {
+            const double worldX = PixelToWorldX(geometry, x, request.width);
+            const SdfPackGpuSample sample = EvaluateSdfPackRuntimeDesc(*request.desc, worldX, worldY);
+            if (!sample.ok || sample.error_code != SDF_PACK_EVAL_OK || !std::isfinite(sample.distance)) {
+                outField.Clear();
+                SetError(outError, outReport, "SDF runtime CPU sample failed");
+                return false;
+            }
+            const double distancePx = sample.distance / geometry.pixel_scale;
+            if (!std::isfinite(distancePx)) {
+                outField.Clear();
+                SetError(outError, outReport, "SDF runtime CPU sample produced nonfinite field distance");
+                return false;
+            }
+            outField.signed_distance_px[
+                static_cast<std::size_t>(y) * static_cast<std::size_t>(request.width) + static_cast<std::size_t>(x)] =
+                static_cast<float>(distancePx);
+        }
+    }
+    if (outReport) {
+        outReport->direct_grid_evaluation = true;
+    }
+
+    return true;
+}
+
 bool ComputeSdfPackFieldWithBackend(
     const SdfPackFieldRequest& request,
     SdfPackFieldBackend backend,
@@ -229,6 +362,71 @@ bool ComputeSdfPackFieldWithBackend(
         outReport->used = SdfPackFieldBackend::cpu_reference;
         outReport->fallback_used = true;
         outReport->pack_id = cpuReport.pack_id;
+        outReport->error.clear();
+    }
+    if (outError) {
+        outError->clear();
+    }
+    return true;
+}
+
+bool ComputeSdfPackRuntimeFieldWithBackend(
+    const SdfPackRuntimeFieldRequest& request,
+    SdfPackFieldBackend backend,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outReport,
+    std::string* outError) {
+    if (backend == SdfPackFieldBackend::cpu_reference) {
+        const bool ok = ComputeSdfPackRuntimeFieldCpu(request, outField, outReport, outError);
+        if (outReport) {
+            outReport->requested = SdfPackFieldBackend::cpu_reference;
+            outReport->used = SdfPackFieldBackend::cpu_reference;
+            outReport->fallback_used = false;
+        }
+        return ok;
+    }
+
+    ResetReport(outReport, backend, SdfPackFieldBackend::cuda_sample, request);
+    if (outError) {
+        outError->clear();
+    }
+
+    std::string cudaError;
+    SdfPackRuntimeFieldBackendFn cudaBackend = RegisteredRuntimeCudaBackend();
+    if (cudaBackend) {
+        const bool cudaOk = cudaBackend(request, outField, outReport, &cudaError);
+        if (cudaOk) {
+            if (outReport) {
+                outReport->requested = backend;
+                outReport->used = SdfPackFieldBackend::cuda_sample;
+                outReport->fallback_used = false;
+                outReport->error.clear();
+            }
+            return true;
+        }
+    } else {
+        cudaError = "SDF runtime CUDA backend is not registered";
+    }
+
+    if (backend == SdfPackFieldBackend::cuda_sample) {
+        SetError(outError, outReport, cudaError);
+        return false;
+    }
+
+    SdfPackFieldReport cpuReport;
+    std::string cpuError;
+    const bool cpuOk = ComputeSdfPackRuntimeFieldCpu(request, outField, &cpuReport, &cpuError);
+    if (!cpuOk) {
+        SetError(outError, outReport, "CUDA failed: " + cudaError + "; CPU fallback failed: " + cpuError);
+        return false;
+    }
+
+    if (outReport) {
+        outReport->requested = SdfPackFieldBackend::auto_backend;
+        outReport->used = SdfPackFieldBackend::cpu_reference;
+        outReport->fallback_used = true;
+        outReport->pack_id = cpuReport.pack_id;
+        outReport->direct_grid_evaluation = cpuReport.direct_grid_evaluation;
         outReport->error.clear();
     }
     if (outError) {

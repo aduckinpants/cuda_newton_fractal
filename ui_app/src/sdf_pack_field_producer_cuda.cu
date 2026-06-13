@@ -67,11 +67,60 @@ bool ComputeCudaOnly(
     return true;
 }
 
+bool ComputeRuntimeCudaOnly(
+    const SdfPackRuntimeFieldRequest& request,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outReport,
+    std::string* outError) {
+    outField.Clear();
+    if (outError) {
+        outError->clear();
+    }
+
+    SdfPackFieldGeometry geometry;
+    std::string error;
+    if (!ResolveSdfPackRuntimeFieldGeometry(request, &geometry, &error)) {
+        SetError(outError, outReport, error);
+        return false;
+    }
+
+    outField.width = request.width;
+    outField.height = request.height;
+    outField.pixel_scale = static_cast<float>(geometry.pixel_scale);
+    outField.sign_convention = SdfSignConvention::negative_inside_positive_outside;
+    outField.source_kind = SdfFieldSourceKind::authored_sdf_pack;
+    outField.signed_distance_px.assign(geometry.sample_count, 0.0f);
+
+    const char* cudaError = nullptr;
+    const bool cudaOk = SampleSdfPackGridCuda(
+        request.width,
+        request.height,
+        geometry.center_x,
+        geometry.center_y,
+        geometry.half_width,
+        geometry.half_height,
+        geometry.pixel_scale,
+        *request.desc,
+        outField.signed_distance_px.data(),
+        &cudaError);
+    if (!cudaOk) {
+        outField.Clear();
+        SetError(outError, outReport, cudaError ? cudaError : "SampleSdfPackGridCuda failed");
+        return false;
+    }
+    if (outReport) {
+        outReport->direct_grid_evaluation = true;
+    }
+
+    return true;
+}
+
 } // namespace
 
 struct SdfPackFieldCudaRegistrar {
     SdfPackFieldCudaRegistrar() {
         RegisterSdfPackFieldCudaBackend(ComputeCudaOnly);
+        RegisterSdfPackRuntimeFieldCudaBackend(ComputeRuntimeCudaOnly);
     }
 };
 

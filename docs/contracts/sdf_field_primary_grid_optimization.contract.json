@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_primary_grid_optimization",
+  "feature_id": "sdf_field_primary_grid_optimization",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_field_primary_grid_optimization_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "tools"
+  ],
+  "required_operator_inputs": [
+    "merge measurement branch into master before implementation",
+    "target field-primary direct-grid field generation/downsample optimization",
+    "cover sdf_pack_scene and explaino_root_sdf",
+    "run baseline repeated-sample witness before code edits",
+    "preserve existing visual behavior, capture/replay, and Color Pipeline semantics",
+    "record before/after numbers",
+    "stop for replan before new SDF ops or new visual features"
+  ],
+  "forbidden_operator_prompts": [
+    "add new SDF ops",
+    "add new visual features",
+    "add new SDF-native lanes",
+    "add per-source downsample UX",
+    "redesign Color Pipeline UI",
+    "optimize mask-derived Lens SDF cache/cold-miss as the main seam",
+    "use physical mouse automation",
+    "claim FPS improvement without before/after numbers"
+  ],
+  "required_defaults": {
+    "branch": "codex/sdf-field-primary-grid-optimization",
+    "source_head": "c6e20bfeaee4d041e34a941f07f9264dd584bf8e",
+    "baseline_before_code_edits": true,
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "new_sdf_operator": "forbidden",
+    "new_visual_feature": "forbidden",
+    "per_source_downsample_ux": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_primary_grid_optimization.contract.json --out-json artifacts/validation/sdf_field_primary_grid_optimization_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_primary_grid_optimization_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_primary_grid_optimization_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_primary_grid_optimization_hostile_audit.json",
+    "git diff --check > artifacts/sdf_field_primary_grid_optimization/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field-primary grid optimization contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_primary_grid_optimization_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_primary_grid_optimization_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "The code quality baseline report has no critical findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_primary_grid_optimization_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "code_quality_no_error",
+      "description": "The code quality baseline report has no error findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_primary_grid_optimization_code_quality.json",
+      "json_path": "severity_counts.ERROR",
+      "equals": 0
+    }
+  ]
+}

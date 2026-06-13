@@ -158,14 +158,15 @@ def test_sdf_pack_scene_lane_selects_and_edits_built_in_pack_no_mouse(tmp_path: 
         assert selected.get("current_fractal_type") == "sdf_pack_scene", selected
         assert selected.get("lens_sdf_field_source") == "authored_sdf_pack", selected
         assert selected.get("lens_sdf_field_producer_kind") == "sdf_pack_scene", selected
-        assert set(selected.get("lens_sdf_supported_signals", [])) >= {
+        supported_signals = set(selected.get("lens_sdf_supported_signals", []))
+        assert supported_signals >= {
             "sdf_signed_distance",
             "sdf_inside_outside",
             "sdf_boundary_band",
             "sdf_normal_angle",
             "sdf_curvature",
-            "lens_field_v2_distance",
         }, selected
+        assert "lens_field_v2_distance" not in supported_signals, selected
         assert selected.get("lens_sdf_field_capability_fail_closed_reason") is None, selected
         assert selected.get("lens_sdf_field_source_pack_id") == "sdf_smooth_lattice_2d", selected
         assert selected.get("lens_sdf_valid") is True, selected

@@ -1256,13 +1256,20 @@ static bool ComputeSdfPackViewerFieldForViewport(
         return false;
     }
     const int safeDownsample = NormalizeLensDownsamplePow2(effectiveDownsample);
-    SdfPackFieldRequest request{};
-    request.pack = &state.pack;
-    request.overrides = state.params;
+    const SdfPackRuntimeDesc* desc = nullptr;
+    std::string descError;
+    if (!EnsureSdfPackViewerRuntimeDesc(state, &desc, &descError)) {
+        if (outError) *outError = descError;
+        return false;
+    }
+
+    SdfPackRuntimeFieldRequest request{};
+    request.desc = desc;
+    request.pack_id = state.pack.pack_id;
     request.width = (std::max)(1, (render.resolution.x + safeDownsample - 1) / safeDownsample);
     request.height = (std::max)(1, (render.resolution.y + safeDownsample - 1) / safeDownsample);
     request.region = BuildViewportSdfPackFieldRegion(view);
-    if (!ComputeSdfPackFieldWithBackend(request, state.backend_preference, outField, outReport, outError)) {
+    if (!ComputeSdfPackRuntimeFieldWithBackend(request, state.backend_preference, outField, outReport, outError)) {
         return false;
     }
     outField.source_kind = SdfFieldSourceKind::authored_sdf_pack;

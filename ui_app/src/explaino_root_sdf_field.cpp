@@ -5,11 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstring>
-#include <iomanip>
 #include <limits>
-#include <sstream>
-#include <utility>
 
 namespace {
 
@@ -44,90 +40,136 @@ std::uint64_t HashRoots(const Float2* roots, int rootCount) {
     return hash;
 }
 
-void AppendJsonNumber(std::ostringstream& out, double value) {
-    out << std::setprecision(17) << value;
+SdfPackScalarExpr SdfScalarConst(double value) {
+    SdfPackScalarExpr expr{};
+    expr.kind = SdfPackScalarKind::constant;
+    expr.value = value;
+    return expr;
 }
 
-std::string CircleAst(const Float2& center, float radius) {
-    std::ostringstream out;
-    out << "{\"op\":\"circle\",\"center\":[";
-    AppendJsonNumber(out, center.x);
-    out << ",";
-    AppendJsonNumber(out, center.y);
-    out << "],\"radius\":";
-    AppendJsonNumber(out, radius);
-    out << "}";
-    return out.str();
+SdfPackVec2Expr SdfVec2Const(double x, double y) {
+    SdfPackVec2Expr expr{};
+    expr.x = SdfScalarConst(x);
+    expr.y = SdfScalarConst(y);
+    return expr;
 }
 
-std::string CapsuleAst(const Float2& a, const Float2& b, float radius) {
-    std::ostringstream out;
-    out << "{\"op\":\"capsule\",\"a\":[";
-    AppendJsonNumber(out, a.x);
-    out << ",";
-    AppendJsonNumber(out, a.y);
-    out << "],\"b\":[";
-    AppendJsonNumber(out, b.x);
-    out << ",";
-    AppendJsonNumber(out, b.y);
-    out << "],\"radius\":";
-    AppendJsonNumber(out, radius);
-    out << "}";
-    return out.str();
-}
-
-std::string UnionAst(std::string left, std::string right, float smoothBlend) {
-    std::ostringstream out;
-    if (smoothBlend > 0.0f) {
-        out << "{\"op\":\"smooth_union\",\"k\":";
-        AppendJsonNumber(out, smoothBlend);
-        out << ",\"a\":" << left << ",\"b\":" << right << "}";
-    } else {
-        out << "{\"op\":\"union\",\"a\":" << left << ",\"b\":" << right << "}";
+bool AppendRuntimeNode(
+    SdfPackRuntimeDesc& desc,
+    const SdfPackRuntimeNode& node,
+    int* outIndex,
+    std::string* outError) {
+    if (desc.node_count >= SDF_PACK_MAX_AST_NODES) {
+        if (outError) *outError = "ExplainO Root SDF descriptor exceeds node limit";
+        return false;
     }
-    return out.str();
+    const int index = desc.node_count++;
+    desc.nodes[index] = node;
+    if (outIndex) {
+        *outIndex = index;
+    }
+    return true;
 }
 
-std::string BuildRootSdfPackJson(const ExplainoRootSdfResolvedScene& scene, const KernelParams& params) {
+bool AppendCircleNode(
+    SdfPackRuntimeDesc& desc,
+    const Float2& center,
+    float radius,
+    int* outIndex,
+    std::string* outError) {
+    SdfPackRuntimeNode node{};
+    node.op = SdfPackNodeOp::circle;
+    node.center = SdfVec2Const(center.x, center.y);
+    node.radius = SdfScalarConst(radius);
+    return AppendRuntimeNode(desc, node, outIndex, outError);
+}
+
+bool AppendCapsuleNode(
+    SdfPackRuntimeDesc& desc,
+    const Float2& a,
+    const Float2& b,
+    float radius,
+    int* outIndex,
+    std::string* outError) {
+    SdfPackRuntimeNode node{};
+    node.op = SdfPackNodeOp::capsule;
+    node.point_a = SdfVec2Const(a.x, a.y);
+    node.point_b = SdfVec2Const(b.x, b.y);
+    node.radius = SdfScalarConst(radius);
+    return AppendRuntimeNode(desc, node, outIndex, outError);
+}
+
+bool AppendUnionNode(
+    SdfPackRuntimeDesc& desc,
+    int left,
+    int right,
+    float smoothBlend,
+    int* outIndex,
+    std::string* outError) {
+    SdfPackRuntimeNode node{};
+    node.op = smoothBlend > 0.0f ? SdfPackNodeOp::smooth_union : SdfPackNodeOp::union_op;
+    node.child_a = left;
+    node.child_b = right;
+    node.k = SdfScalarConst(smoothBlend);
+    return AppendRuntimeNode(desc, node, outIndex, outError);
+}
+
+bool BuildRootSdfRuntimeDesc(
+    const ExplainoRootSdfResolvedScene& scene,
+    const KernelParams& params,
+    SdfPackRuntimeDesc* outDesc,
+    std::string* outError) {
+    if (!outDesc) {
+        if (outError) *outError = "ExplainO Root SDF descriptor output is required";
+        return false;
+    }
+    *outDesc = {};
     const float radius = ClampFinite(params.explaino_root_sdf_radius, 0.14f, 0.001f, 2.0f);
     const float bridgeWidth = ClampFinite(params.explaino_root_sdf_bridge_width, 0.06f, 0.0f, 2.0f);
     const float smoothBlend = ClampFinite(params.explaino_root_sdf_smooth_blend, 0.10f, 0.0f, 2.0f);
 
-    std::string ast = CircleAst(scene.effective_roots[0], radius);
+    int current = -1;
+    if (!AppendCircleNode(*outDesc, scene.effective_roots[0], radius, &current, outError)) {
+        return false;
+    }
     for (int index = 1; index < scene.root_count; ++index) {
-        ast = UnionAst(std::move(ast), CircleAst(scene.effective_roots[index], radius), smoothBlend);
+        int primitive = -1;
+        if (!AppendCircleNode(*outDesc, scene.effective_roots[index], radius, &primitive, outError) ||
+            !AppendUnionNode(*outDesc, current, primitive, smoothBlend, &current, outError)) {
+            return false;
+        }
     }
     if (bridgeWidth > 0.0f && scene.root_count >= 2) {
+        auto appendBridge = [&](int a, int b) -> bool {
+            int primitive = -1;
+            return AppendCapsuleNode(
+                       *outDesc,
+                       scene.effective_roots[a],
+                       scene.effective_roots[b],
+                       bridgeWidth,
+                       &primitive,
+                       outError) &&
+                AppendUnionNode(*outDesc, current, primitive, smoothBlend, &current, outError);
+        };
         if (scene.layout_kind == ExplainoRootFieldLayoutKind::regular_ngon_v1) {
             if (scene.root_count == 2) {
-                ast = UnionAst(std::move(ast),
-                    CapsuleAst(scene.effective_roots[0], scene.effective_roots[1], bridgeWidth),
-                    smoothBlend);
+                if (!appendBridge(0, 1)) return false;
             } else {
                 for (int index = 0; index < scene.root_count; ++index) {
                     const int next = (index + 1) % scene.root_count;
-                    ast = UnionAst(std::move(ast),
-                        CapsuleAst(scene.effective_roots[index], scene.effective_roots[next], bridgeWidth),
-                        smoothBlend);
+                    if (!appendBridge(index, next)) return false;
                 }
             }
         } else if (scene.root_count >= 3) {
-            ast = UnionAst(std::move(ast),
-                CapsuleAst(scene.effective_roots[0], scene.effective_roots[1], bridgeWidth),
-                smoothBlend);
+            if (!appendBridge(0, 1)) return false;
             if (scene.root_count >= 4) {
-                ast = UnionAst(std::move(ast),
-                    CapsuleAst(scene.effective_roots[2], scene.effective_roots[3], bridgeWidth),
-                    smoothBlend);
+                if (!appendBridge(2, 3)) return false;
             }
         }
     }
 
-    std::ostringstream out;
-    out << "{\"schema\":1,\"pack_id\":\"explaino_root_sdf_dynamic\","
-        "\"name\":\"ExplainO Root SDF Dynamic\",\"kind\":\"sdf_scene_2d\","
-        "\"ast\":" << ast << "}";
-    return out.str();
+    outDesc->root_node = current;
+    return true;
 }
 
 } // namespace
@@ -245,22 +287,20 @@ bool ComputeExplainoRootSdfFieldForViewport(
         return false;
     }
 
-    SdfPackParseResult parsed = ParseSdfPackJson(BuildRootSdfPackJson(scene, params));
-    if (!parsed.ok) {
-        if (outError) *outError = parsed.error.empty()
-            ? "ExplainO Root SDF dynamic pack parse failed"
-            : parsed.error;
+    SdfPackRuntimeDesc desc{};
+    if (!BuildRootSdfRuntimeDesc(scene, params, &desc, outError)) {
         return false;
     }
 
     const int safeDownsample = NormalizeLensDownsamplePow2(effectiveDownsample);
-    SdfPackFieldRequest request{};
-    request.pack = &parsed.pack;
+    SdfPackRuntimeFieldRequest request{};
+    request.desc = &desc;
+    request.pack_id = "explaino_root_sdf_dynamic";
     request.width = (std::max)(1, (renderWidth + safeDownsample - 1) / safeDownsample);
     request.height = (std::max)(1, (renderHeight + safeDownsample - 1) / safeDownsample);
     request.region = region;
 
-    if (!ComputeSdfPackFieldWithBackend(request, backend, outField, outPackReport, outError)) {
+    if (!ComputeSdfPackRuntimeFieldWithBackend(request, backend, outField, outPackReport, outError)) {
         return false;
     }
     outField.source_kind = SdfFieldSourceKind::explaino_root_sdf;

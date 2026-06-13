@@ -95,6 +95,14 @@ double CurrentControlValue(const SdfPackControl& control, const SdfPackViewerSta
     return param ? param->default_value : 0.0;
 }
 
+void InvalidateRuntimeDescCache(SdfPackViewerState* ioState) {
+    if (!ioState) return;
+    ioState->runtime_desc_cache_valid = false;
+    ioState->runtime_desc_cache_pack_json.clear();
+    ioState->runtime_desc_cache_params.clear();
+    ioState->runtime_desc_cache = {};
+}
+
 bool InitializeStateFromPack(
     SdfPackViewerState* ioState,
     SdfPack pack,
@@ -113,6 +121,7 @@ bool InitializeStateFromPack(
     ioState->have_pack = true;
     ioState->initialized = true;
     ioState->preview_dirty = true;
+    InvalidateRuntimeDescCache(ioState);
     ioState->last_preview = {};
     return true;
 }
@@ -166,6 +175,7 @@ bool ApplyParamValues(
     }
     ioState->params = std::move(normalized);
     ioState->preview_dirty = true;
+    InvalidateRuntimeDescCache(ioState);
     return true;
 }
 
@@ -456,6 +466,7 @@ bool LoadSdfPackViewerJson(
         ioState->pack_load_error = parsed.error;
         ioState->have_pack = false;
         ioState->initialized = true;
+        InvalidateRuntimeDescCache(ioState);
         if (outError) *outError = parsed.error;
         return false;
     }
@@ -463,6 +474,7 @@ bool LoadSdfPackViewerJson(
         ioState->pack_load_error = outError ? *outError : "failed to initialize SDF pack viewer state";
         ioState->have_pack = false;
         ioState->initialized = true;
+        InvalidateRuntimeDescCache(ioState);
         return false;
     }
     if (outError) outError->clear();
@@ -479,6 +491,8 @@ bool LoadSdfPackViewerPack(
         if (ioState) {
             ioState->pack_load_error = error;
             ioState->initialized = true;
+            ioState->have_pack = false;
+            InvalidateRuntimeDescCache(ioState);
         }
         if (outError) *outError = error;
         return false;
@@ -539,21 +553,74 @@ bool ResetSdfPackViewerControlsToDefaults(SdfPackViewerState* ioState, std::stri
     return true;
 }
 
+bool EnsureSdfPackViewerRuntimeDesc(
+    const SdfPackViewerState& state,
+    const SdfPackRuntimeDesc** outDesc,
+    std::string* outError) {
+    if (outDesc) {
+        *outDesc = nullptr;
+    }
+    if (!state.have_pack) {
+        if (outError) *outError = "no SDF pack loaded";
+        return false;
+    }
+    if (state.runtime_desc_cache_valid &&
+        state.runtime_desc_cache_pack_json == state.pack_json &&
+        state.runtime_desc_cache_params == state.params) {
+        if (outDesc) {
+            *outDesc = &state.runtime_desc_cache;
+        }
+        if (outError) outError->clear();
+        return true;
+    }
+
+    SdfPackLowerResult lowered = LowerSdfPackToRuntimeDesc(state.pack, state.params);
+    if (!lowered.ok) {
+        if (outError) *outError = lowered.error.empty() ? "SDF pack lower failed" : lowered.error;
+        return false;
+    }
+    state.runtime_desc_cache = lowered.desc;
+    state.runtime_desc_cache_pack_json = state.pack_json;
+    state.runtime_desc_cache_params = state.params;
+    state.runtime_desc_cache_valid = true;
+    if (outDesc) {
+        *outDesc = &state.runtime_desc_cache;
+    }
+    if (outError) outError->clear();
+    return true;
+}
+
 bool RunSdfPackViewerPreview(SdfPackViewerState* ioState, std::string* outError) {
     if (!ioState || !ioState->have_pack) {
         if (outError) *outError = "no SDF pack loaded";
         return false;
     }
-    SdfPackFieldRequest request;
-    request.pack = &ioState->pack;
-    request.overrides = ioState->params;
+    const SdfPackRuntimeDesc* desc = nullptr;
+    std::string descError;
+    if (!EnsureSdfPackViewerRuntimeDesc(*ioState, &desc, &descError)) {
+        ioState->last_preview = {};
+        ioState->last_preview.error = descError;
+        ioState->preview_dirty = false;
+        if (outError) *outError = descError;
+        return false;
+    }
+
+    SdfPackRuntimeFieldRequest request;
+    request.desc = desc;
+    request.pack_id = ioState->pack.pack_id;
     request.width = kPreviewWidth;
     request.height = kPreviewHeight;
+    if (ioState->pack.region.has_region) {
+        request.region.has_region = true;
+        request.region.center_x = ioState->pack.region.center_x;
+        request.region.center_y = ioState->pack.region.center_y;
+        request.region.half_height = ioState->pack.region.half_height;
+    }
 
     SdfFieldResult field;
     SdfPackFieldReport report;
     std::string error;
-    if (!ComputeSdfPackFieldWithBackend(request, ioState->backend_preference, field, &report, &error)) {
+    if (!ComputeSdfPackRuntimeFieldWithBackend(request, ioState->backend_preference, field, &report, &error)) {
         ioState->last_preview = {};
         ioState->last_preview.error = error;
         ioState->preview_dirty = false;

@@ -2,6 +2,7 @@
 
 #include "lens_sdf.h"
 #include "sdf_pack.h"
+#include "sdf_pack_runtime_types.h"
 
 #include <cstddef>
 #include <map>
@@ -23,6 +24,14 @@ struct SdfPackFieldRegion {
 struct SdfPackFieldRequest {
     const SdfPack* pack{nullptr};
     std::map<std::string, double> overrides;
+    int width{0};
+    int height{0};
+    SdfPackFieldRegion region;
+};
+
+struct SdfPackRuntimeFieldRequest {
+    const SdfPackRuntimeDesc* desc{nullptr};
+    std::string pack_id;
     int width{0};
     int height{0};
     SdfPackFieldRegion region;
@@ -54,10 +63,22 @@ using SdfPackFieldBackendFn = bool (*)(
     SdfPackFieldReport* outReport,
     std::string* outError);
 
+using SdfPackRuntimeFieldBackendFn = bool (*)(
+    const SdfPackRuntimeFieldRequest& request,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outReport,
+    std::string* outError);
+
 void RegisterSdfPackFieldCudaBackend(SdfPackFieldBackendFn backendFn);
+void RegisterSdfPackRuntimeFieldCudaBackend(SdfPackRuntimeFieldBackendFn backendFn);
 
 bool ResolveSdfPackFieldGeometry(
     const SdfPackFieldRequest& request,
+    SdfPackFieldGeometry* outGeometry,
+    std::string* outError = nullptr);
+
+bool ResolveSdfPackRuntimeFieldGeometry(
+    const SdfPackRuntimeFieldRequest& request,
     SdfPackFieldGeometry* outGeometry,
     std::string* outError = nullptr);
 
@@ -67,8 +88,21 @@ bool ComputeSdfPackFieldCpu(
     SdfPackFieldReport* outReport = nullptr,
     std::string* outError = nullptr);
 
+bool ComputeSdfPackRuntimeFieldCpu(
+    const SdfPackRuntimeFieldRequest& request,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outReport = nullptr,
+    std::string* outError = nullptr);
+
 bool ComputeSdfPackFieldWithBackend(
     const SdfPackFieldRequest& request,
+    SdfPackFieldBackend backend,
+    SdfFieldResult& outField,
+    SdfPackFieldReport* outReport = nullptr,
+    std::string* outError = nullptr);
+
+bool ComputeSdfPackRuntimeFieldWithBackend(
+    const SdfPackRuntimeFieldRequest& request,
     SdfPackFieldBackend backend,
     SdfFieldResult& outField,
     SdfPackFieldReport* outReport = nullptr,
