@@ -139,3 +139,5 @@
 - `ck:b5f7b943` 2026-06-13 00:20 UTC | score 94 — Repaired ExplainO Root SDF seed dynamics; focused native and runtime proof passed.
 - `ck:4b39b5a6` 2026-06-13 01:37 UTC — session-start | branch=codex/fractal-docs-refresh-wave1-foundation | head=eebc0e3 | status=dirty | profile=native | intent=Fractal docs refresh Wave 1 foundation
 - `ck:4b39b5a6` 2026-06-13 01:48 UTC | score 94 — Closed Wave 1 Phase 0 intake: merged Root SDF to master, opened the foundation branch, reconciled the bootstrap bundle as import-candidate only, recorded live drift from 24d9d0e to eebc0e3, and synced Root SDF status docs before foundation implementation.
+- `pending` 2026-06-13 02:22 UTC | score 4 — Phase 1 Wave 1 foundation: added ExplainO root-field descriptor, routed Root SDF base-root authority through it, and validated focused descriptor/root-SDF/publish-build rails.
+- `ck:4b39b5a6` 2026-06-13 02:22 UTC | score 4 — Phase 1 Wave 1 foundation root descriptor checkpoint: descriptor parity, Root SDF descriptor consumption, publish build integration validated.

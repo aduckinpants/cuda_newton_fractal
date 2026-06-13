@@ -15,7 +15,7 @@
 
 ## Current Phase
 
-Phase 0 - Bundle intake and drift report.
+Phase 2 - Minimal Preset Core Authority.
 
 ## Phase Checklist
 
@@ -25,8 +25,8 @@ Phase 0 - Bundle intake and drift report.
 - [x] Lock this Wave 1 plan and contract as the active slice.
 - [x] Phase 0: read the bootstrap bundle, compare it to live repo state, and write `docs/notes/fractal_docs_refresh_wave1_bundle_drift_report.md`.
 - [x] Phase 0: sync status/deferred/known-issue docs only where live repo evidence proves the bundle is stale or useful.
-- [ ] Phase 1: add N-root/root-field authority descriptor skeleton without changing existing four-root renderer behavior.
-- [ ] Phase 1: prove `legacy_quartic_v1` parity for current ExplainO lanes and Root SDF compatibility.
+- [x] Phase 1: add N-root/root-field authority descriptor skeleton without changing existing four-root renderer behavior.
+- [x] Phase 1: prove `legacy_quartic_v1` parity for current ExplainO lanes and Root SDF compatibility.
 - [ ] Phase 2: add minimal `preset_core` schema and round-trip authority for root layout, SDF field-primary state, Color Pipeline tuple, and future AA fields.
 - [ ] Phase 3: add deterministic AA V1 with `off` preserving exact current output.
 - [ ] Phase 4: run Hardening Pass 1, record the foundation decision, write receipts, and pause.
@@ -180,7 +180,7 @@ Close Wave 1 foundation with hostile review and a foundation decision before any
 | Code-quality baseline | `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/fractal_docs_refresh_wave1_code_quality.json` passed with score 94/100. |
 | Hostile audit validation | `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_docs_refresh_wave1_foundation_PHASED_PLAN.md --out-json artifacts/validation/fractal_docs_refresh_wave1_hostile_audit.json` passed. |
 | Diff check | `git diff --check > artifacts/fractal_docs_refresh_wave1_foundation/diff_check.log 2>&1` passed. |
-| N-root parity proof | Pending. |
+| N-root parity proof | `cmd /c ui_app\build_tests_vsdevcmd.cmd test_explaino_root_field` passed with 92 checks; `cmd /c ui_app\build_tests_vsdevcmd.cmd test_explaino_root_sdf_field` passed with 31 checks. |
 | Preset core proof | Pending. |
 | AA parity proof | Pending. |
 | Hardening decision | Pending. |
@@ -203,7 +203,10 @@ Audit questions:
 - [x] Pass 1 found a contract-proof defect: the first Wave 1 contract draft used unsupported `file_exists` and `plan_text` assertion evidence kinds.
 - [x] Pass 2 re-read the repaired state and found no additional real defect in the machine-checkable contract assertions.
 - [x] Pass 3 clean re-read of the drift report and status sync found no additional workflow mistake or bundle-authority leak.
+- [x] Pass 4 found a Phase 1 implementation defect: the first descriptor cut exposed only one root array/hash and did not make Root SDF consume the descriptor.
+- [x] Pass 5 re-ran focused descriptor and Root SDF rails after repair and found no additional Phase 1 descriptor defect.
 
 ## Audit Findings
 
 - [x] Finding 1: unsupported contract evidence kinds would have blocked `viewer_host_begin_work_slice.py` and later contract-proof receipt validation. Repaired by replacing prose/file assertions with supported `validator_json` assertions for contract validation, hostile audit validation, and code-quality baseline evidence.
+- [x] Finding 2: initial Phase 1 descriptor work underrepresented the plan by omitting base/effective root arrays and leaving Root SDF on direct `KernelParams.explaino_roots` reads. Repaired by adding base/effective arrays and hashes, preserving effective roots as local derived state, routing Root SDF scene resolution through the descriptor, and adding focused parity tests.

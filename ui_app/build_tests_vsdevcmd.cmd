@@ -143,6 +143,7 @@ if /I "%FOCUSED_TEST%"=="test_sdf_pack" call :focused_test_sdf_pack & exit /b
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_cuda" call :focused_test_sdf_pack_cuda & exit /b
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer" call :focused_test_sdf_pack_field_producer & exit /b
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_field_producer_cuda" call :focused_test_sdf_pack_field_producer_cuda & exit /b
+if /I "%FOCUSED_TEST%"=="test_explaino_root_field" call :focused_test_explaino_root_field & exit /b
 if /I "%FOCUSED_TEST%"=="test_explaino_root_sdf_field" call :focused_test_explaino_root_sdf_field & exit /b
 if /I "%FOCUSED_TEST%"=="test_sdf_pack_viewer_ui" call :focused_test_sdf_pack_viewer_ui & exit /b
 if /I "%FOCUSED_TEST%"=="test_generic_probe" call :focused_test_generic_probe & exit /b
@@ -698,9 +699,17 @@ if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_field_producer_cuda.exe" || exit /b 1
 exit /b 0
 
+:focused_test_explaino_root_field
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\sample_tier_resolver.cpp .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_sdf_field.cpp .\src\explaino_root_field.cpp .\tests\test_explaino_root_field.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_root_field.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_root_field.exe" || exit /b 1
+exit /b 0
+
 :focused_test_explaino_root_sdf_field
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
   /Fe:"%TESTROOT%\test_explaino_root_sdf_field.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_explaino_root_sdf_field.exe" || exit /b 1
@@ -1455,8 +1464,13 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
   /Fe:"%TESTROOT%\test_explaino_root_sdf_field.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\sample_tier_resolver.cpp .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_sdf_field.cpp .\src\explaino_root_field.cpp .\tests\test_explaino_root_field.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_root_field.exe"
 if errorlevel 1 exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
@@ -1484,6 +1498,7 @@ call :run_test "%TESTROOT%\test_generic_equation_pack.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_cuda.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_field_producer.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_explaino_root_field.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_explaino_root_sdf_field.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_sdf_pack_field_producer_cuda.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_generic_equation_pack_workbench_ui.exe" || exit /b 1

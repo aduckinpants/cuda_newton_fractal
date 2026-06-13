@@ -1,6 +1,7 @@
 #include "explaino_root_sdf_field.h"
 
 #include "enum_id_utils.h"
+#include "explaino_root_field.h"
 
 #include <algorithm>
 #include <cmath>
@@ -126,20 +127,24 @@ bool ResolveExplainoRootSdfScene(
         return false;
     }
     *outScene = {};
-    const int rootCount = params.explaino_root_count == 3 ? 3 :
-        (params.explaino_root_count == 4 ? 4 : 0);
+    ExplainoRootFieldDescriptor descriptor{};
+    if (!ResolveExplainoRootFieldDescriptor(view, params, &descriptor, outError)) {
+        return false;
+    }
+    const int rootCount = descriptor.active_count == 3 ? 3 :
+        (descriptor.active_count == 4 ? 4 : 0);
     if (rootCount <= 0) {
         if (outError) *outError = "ExplainO Root SDF requires 3 or 4 captured/generated roots";
         return false;
     }
     outScene->root_count = rootCount;
     for (int index = 0; index < rootCount; ++index) {
-        if (!IsFiniteRoot(params.explaino_roots[index])) {
+        if (!IsFiniteRoot(descriptor.base_roots[index])) {
             if (outError) *outError = "ExplainO Root SDF root coordinates must be finite";
             return false;
         }
-        outScene->base_roots[index] = params.explaino_roots[index];
-        outScene->effective_roots[index] = params.explaino_roots[index];
+        outScene->base_roots[index] = descriptor.base_roots[index];
+        outScene->effective_roots[index] = descriptor.effective_roots[index];
     }
     outScene->bridge_count = rootCount >= 4 ? 2 : 1;
     if (ClampFinite(params.explaino_root_sdf_bridge_width, 0.06f, 0.0f, 2.0f) <= 0.0f) {
@@ -188,7 +193,7 @@ bool ResolveExplainoRootSdfScene(
         return false;
     }
 
-    outScene->base_root_hash = HashRoots(outScene->base_roots, rootCount);
+    outScene->base_root_hash = descriptor.base_root_hash;
     outScene->effective_root_hash = HashRoots(outScene->effective_roots, rootCount);
     return true;
 }
