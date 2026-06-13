@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "contract_id": "explaino_root_sdf_generated_n_root",
+  "feature_id": "explaino_root_sdf_generated_n_root",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_root_sdf_generated_n_root_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "expose regular_ngon_v1 as opt-in generated Root SDF root layout",
+    "preserve legacy_quartic_v1 default Root SDF behavior",
+    "add Root Layout and Root Count controls with correct visibility",
+    "keep custom roots four-slot only",
+    "support generated N roots for N=2..16 with adjacent ring bridges",
+    "keep Root SDF field-primary and avoid escape-time N-root Newton work"
+  ],
+  "forbidden_operator_prompts": [
+    "add arbitrary custom N-root coordinate editing",
+    "add escape-time N-root Newton renderer behavior",
+    "reclassify Root SDF as a broad ExplainO escape-time family",
+    "persist generated N roots as custom authority",
+    "use physical mouse automation",
+    "broaden into SDF optimization or Color Pipeline redesign"
+  ],
+  "required_defaults": {
+    "branch": "codex/explaino-root-sdf-generated-n-root",
+    "source_head": "78dbf8dc3dd2fdb01f0fe65b21bb8c8e330a6823",
+    "default_generated_layout": "legacy_quartic_v1",
+    "regular_ngon_min_count": 2,
+    "regular_ngon_max_count": 16,
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "escape_time_n_root_newton": "forbidden",
+    "custom_n_root_editor": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "sdf_optimization": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_sdf_generated_n_root.contract.json --out-json artifacts/validation/explaino_root_sdf_generated_n_root_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_sdf_generated_n_root_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_root_sdf_generated_n_root_PHASED_PLAN.md --out-json artifacts/validation/explaino_root_sdf_generated_n_root_hostile_audit.json",
+    "git diff --check > artifacts/explaino_root_sdf_generated_n_root/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The N-root Root SDF contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_generated_n_root_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_generated_n_root_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "The code quality baseline report has no critical findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_generated_n_root_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "code_quality_no_error",
+      "description": "The code quality baseline report has no error findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_sdf_generated_n_root_code_quality.json",
+      "json_path": "severity_counts.ERROR",
+      "equals": 0
+    }
+  ]
+}

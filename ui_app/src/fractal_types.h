@@ -227,6 +227,11 @@ enum class ExplainoRootAuthority : int {
     custom = 1,
 };
 
+enum class ExplainoGeneratedRootLayout : int {
+    legacy_quartic_v1 = 0,
+    regular_ngon_v1 = 1,
+};
+
 enum class ExplainoRootSdfHSource : int {
     none = 0,
     phase_sine = 1,
@@ -495,6 +500,9 @@ struct KernelParams {
     float explaino_warp_strength{0.0f};
     float explaino_root_spread{0.5f};
     ExplainoRootAuthority explaino_root_authority{ExplainoRootAuthority::generated};
+    ExplainoGeneratedRootLayout explaino_generated_root_layout{
+        ExplainoGeneratedRootLayout::legacy_quartic_v1};
+    int explaino_generated_root_count{4};
     float explaino_damping{1.0f};
     float explaino_cluster_radius{0.0f};
     int explaino_root_count{0};

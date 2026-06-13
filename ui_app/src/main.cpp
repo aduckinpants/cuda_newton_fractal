@@ -1685,6 +1685,11 @@ static void DispatchRenderFrame(
                     if (explainoRootSdfFieldSelected) {
                         lensSdfProbe.explaino_root_sdf_root_count = runtimeField.root_sdf_report.root_count;
                         lensSdfProbe.explaino_root_sdf_bridge_count = runtimeField.root_sdf_report.bridge_count;
+                        lensSdfProbe.explaino_root_sdf_root_layout_kind = runtimeField.root_sdf_report.root_layout_kind
+                            ? runtimeField.root_sdf_report.root_layout_kind
+                            : "none";
+                        lensSdfProbe.explaino_root_sdf_requested_generated_root_count =
+                            runtimeField.root_sdf_report.requested_generated_root_count;
                         lensSdfProbe.explaino_root_sdf_h_source = runtimeField.root_sdf_report.h_source
                             ? runtimeField.root_sdf_report.h_source
                             : "none";
@@ -1738,6 +1743,11 @@ static void DispatchRenderFrame(
                     if (explainoRootSdfFieldSelected) {
                         lensSdfProbe.explaino_root_sdf_root_count = sharedDisplayField.root_sdf_report.root_count;
                         lensSdfProbe.explaino_root_sdf_bridge_count = sharedDisplayField.root_sdf_report.bridge_count;
+                        lensSdfProbe.explaino_root_sdf_root_layout_kind = sharedDisplayField.root_sdf_report.root_layout_kind
+                            ? sharedDisplayField.root_sdf_report.root_layout_kind
+                            : "none";
+                        lensSdfProbe.explaino_root_sdf_requested_generated_root_count =
+                            sharedDisplayField.root_sdf_report.requested_generated_root_count;
                         lensSdfProbe.explaino_root_sdf_h_source = sharedDisplayField.root_sdf_report.h_source
                             ? sharedDisplayField.root_sdf_report.h_source
                             : "none";

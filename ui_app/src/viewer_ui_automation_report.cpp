@@ -157,6 +157,11 @@ void WriteLensSdfReportFields(
     out << ",\n";
     out << "  \"explaino_root_sdf_root_count\": " << lensSdfProbe.explaino_root_sdf_root_count << ",\n";
     out << "  \"explaino_root_sdf_bridge_count\": " << lensSdfProbe.explaino_root_sdf_bridge_count << ",\n";
+    out << "  \"explaino_root_sdf_root_layout_kind\": ";
+    WriteAutomationReportString(out, lensSdfProbe.explaino_root_sdf_root_layout_kind);
+    out << ",\n";
+    out << "  \"explaino_root_sdf_requested_generated_root_count\": " <<
+        lensSdfProbe.explaino_root_sdf_requested_generated_root_count << ",\n";
     out << "  \"explaino_root_sdf_h_source\": ";
     WriteAutomationReportString(out, lensSdfProbe.explaino_root_sdf_h_source);
     out << ",\n";

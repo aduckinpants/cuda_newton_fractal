@@ -167,9 +167,9 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 35,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 37,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
-    Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 7,
+    Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 9,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
 
     if (!viewPanel) return;
@@ -529,6 +529,8 @@ static void TestSafeModeSchemaExposesExplainoRootSdfControls() {
     const UISchemaControl* radius = FindControlById(*fractalPanel, "explaino_root_sdf_radius");
     const UISchemaControl* bridgeWidth = FindControlById(*fractalPanel, "explaino_root_sdf_bridge_width");
     const UISchemaControl* smoothBlend = FindControlById(*fractalPanel, "explaino_root_sdf_smooth_blend");
+    const UISchemaControl* generatedLayout = FindControlById(*fractalPanel, "explaino_generated_root_layout");
+    const UISchemaControl* generatedCount = FindControlById(*fractalPanel, "explaino_generated_root_count");
     const UISchemaControl* hSource = FindControlById(*fractalPanel, "explaino_root_sdf_h_source");
     const UISchemaControl* hAmplitude = FindControlById(*fractalPanel, "explaino_root_sdf_h_amplitude");
     const UISchemaControl* hFrequency = FindControlById(*fractalPanel, "explaino_root_sdf_h_frequency");
@@ -548,6 +550,25 @@ static void TestSafeModeSchemaExposesExplainoRootSdfControls() {
             smoothBlend->has_ui_min && smoothBlend->ui_min == 0.0 && smoothBlend->has_ui_max && smoothBlend->ui_max == 0.5 &&
             smoothBlend->has_default && smoothBlend->def.is_number() && smoothBlend->def.as_number() == 0.10,
         "TestSafeModeSchemaExposesExplainoRootSdfControls_SmoothBlend");
+    Check(IsExplainoRootSdfVisibleControl(generatedLayout, "fractal.params.explaino_generated_root_layout") &&
+            generatedLayout->type == "combo" &&
+            generatedLayout->value_type == "enum" &&
+            generatedLayout->has_default && generatedLayout->def.is_string() &&
+            generatedLayout->def.as_string() == "legacy_quartic_v1" &&
+            generatedLayout->options.size() == 2 &&
+            generatedLayout->options[0].id == "legacy_quartic_v1" &&
+            generatedLayout->options[1].id == "regular_ngon_v1",
+        "TestSafeModeSchemaExposesExplainoRootSdfControls_GeneratedLayout");
+    Check(generatedCount && generatedCount->has_binding &&
+            generatedCount->binding.path == "fractal.params.explaino_generated_root_count" &&
+            generatedCount->value_type == "int" &&
+            generatedCount->has_min && generatedCount->min == 2.0 &&
+            generatedCount->has_max && generatedCount->max == 16.0 &&
+            generatedCount->has_default && generatedCount->def.is_number() &&
+            generatedCount->def.as_number() == 4.0 &&
+            generatedCount->has_visible_if &&
+            generatedCount->visible_if.path == "fractal.params.explaino_generated_root_count_active",
+        "TestSafeModeSchemaExposesExplainoRootSdfControls_GeneratedCount");
     Check(IsExplainoRootSdfVisibleControl(hSource, "fractal.params.explaino_root_sdf_h_source") &&
             hSource->type == "combo" &&
             hSource->value_type == "enum" &&

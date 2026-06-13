@@ -311,7 +311,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 
@@ -353,12 +353,12 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
+  .\src\finding_archive_actions.cpp .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_seed.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
   /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_capture.cpp ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_seed.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_capture.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_capture.exe"
 if errorlevel 1 exit /b 1
 
@@ -723,7 +723,7 @@ exit /b 0
 
 :focused_test_explaino_root_sdf_field
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_seed.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
   /Fe:"%TESTROOT%\test_explaino_root_sdf_field.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_explaino_root_sdf_field.exe" || exit /b 1
@@ -776,7 +776,7 @@ exit /b 0
 
 :focused_test_diagnostics_state_io
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
@@ -784,7 +784,7 @@ exit /b 0
 
 :focused_test_diagnostics_capture
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_capture.cpp ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_seed.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_capture.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_capture.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_diagnostics_capture.exe" || exit /b 1
@@ -811,7 +811,7 @@ exit /b 0
 
 :focused_test_finding_archive_actions
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
+  .\src\finding_archive_actions.cpp .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_seed.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
   /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_finding_archive_actions.exe" || exit /b 1
@@ -843,11 +843,11 @@ exit /b 0
 
 :focused_serializer_owner_fast
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
+  .\src\finding_archive_actions.cpp .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_seed.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
   /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
@@ -1480,7 +1480,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
+  .\src\json_min.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_seed.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\tests\test_explaino_root_sdf_field.cpp ^
   /Fe:"%TESTROOT%\test_explaino_root_sdf_field.exe"
 if errorlevel 1 exit /b 1
 

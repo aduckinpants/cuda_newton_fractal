@@ -624,12 +624,10 @@ void TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority() {
 
     view.fractal_type = FractalType::explaino_root_sdf;
     view.explaino_phase = 0.125f;
-    params.explaino_root_authority = ExplainoRootAuthority::custom;
-    params.explaino_root_count = 4;
-    params.explaino_roots[0] = {0.0f, 0.0f};
-    params.explaino_roots[1] = {0.8f, 0.0f};
-    params.explaino_roots[2] = {0.0f, 0.8f};
-    params.explaino_roots[3] = {0.8f, 0.8f};
+    params.explaino_root_authority = ExplainoRootAuthority::generated;
+    params.explaino_generated_root_layout = ExplainoGeneratedRootLayout::regular_ngon_v1;
+    params.explaino_generated_root_count = 8;
+    params.explaino_root_spread = 0.35f;
     params.explaino_root_sdf_radius = 0.22f;
     params.explaino_root_sdf_bridge_width = 0.09f;
     params.explaino_root_sdf_smooth_blend = 0.04f;
@@ -642,6 +640,8 @@ void TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority() {
     Check(json.find("\"fractal_type\": \"explaino_root_sdf\"") != std::string::npos,
         "finding fractal-state sidecar records ExplainO Root SDF selector identity");
     Check(json.find("\"explaino_root_sdf_radius\"") != std::string::npos &&
+          json.find("\"explaino_generated_root_layout\": \"regular_ngon_v1\"") != std::string::npos &&
+          json.find("\"explaino_generated_root_count\": 8") != std::string::npos &&
           json.find("\"explaino_root_sdf_bridge_width\"") != std::string::npos &&
           json.find("\"explaino_root_sdf_smooth_blend\"") != std::string::npos &&
           json.find("\"explaino_root_sdf_h_source\": \"phase_sine\"") != std::string::npos &&
@@ -649,9 +649,11 @@ void TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority() {
           json.find("\"explaino_root_sdf_h_frequency\"") != std::string::npos,
         "finding fractal-state sidecar records active ExplainO Root SDF controls");
     Check(json.find("\"producer_kind\": \"explaino_root_sdf\"") != std::string::npos &&
-          json.find("\"root_authority\": \"custom\"") != std::string::npos &&
-          json.find("\"root_count\": 4") != std::string::npos &&
-          json.find("\"bridge_count\": 2") != std::string::npos &&
+          json.find("\"root_authority\": \"generated\"") != std::string::npos &&
+          json.find("\"root_layout_kind\": \"regular_ngon_v1\"") != std::string::npos &&
+          json.find("\"requested_generated_root_count\": 8") != std::string::npos &&
+          json.find("\"root_count\": 8") != std::string::npos &&
+          json.find("\"bridge_count\": 8") != std::string::npos &&
           json.find("\"base_root_hash\": \"fnv1a64:") != std::string::npos &&
           json.find("\"effective_root_hash\": \"fnv1a64:") != std::string::npos &&
           json.find("\"base_roots\"") != std::string::npos &&

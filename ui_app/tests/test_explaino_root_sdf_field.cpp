@@ -36,6 +36,18 @@ static KernelParams MakeRootSdfParams4() {
     return params;
 }
 
+static KernelParams MakeRegularNgonParams(int count) {
+    KernelParams params{};
+    params.explaino_root_authority = ExplainoRootAuthority::generated;
+    params.explaino_generated_root_layout = ExplainoGeneratedRootLayout::regular_ngon_v1;
+    params.explaino_generated_root_count = count;
+    params.explaino_root_spread = 0.25f;
+    params.explaino_root_sdf_radius = 0.12f;
+    params.explaino_root_sdf_bridge_width = 0.08f;
+    params.explaino_root_sdf_smooth_blend = 0.0f;
+    return params;
+}
+
 static SdfPackFieldRegion UnitRegion() {
     SdfPackFieldRegion region{};
     region.has_region = true;
@@ -65,6 +77,55 @@ static void TestSceneResolutionBridgeTopologyAndHashes() {
     params.explaino_root_sdf_bridge_width = 0.0f;
     CHECK(ResolveExplainoRootSdfScene(view, params, &scene, &error), "zero bridge-width scene resolves");
     CHECK(scene.bridge_count == 0, "zero bridge width omits bridge primitives");
+}
+
+static void TestRegularNgonSceneBridgeTopology() {
+    ViewState view{};
+    view.fractal_type = FractalType::explaino_root_sdf;
+    ExplainoRootSdfResolvedScene scene{};
+    std::string error;
+
+    KernelParams twoRoots = MakeRegularNgonParams(2);
+    CHECK(ResolveExplainoRootSdfScene(view, twoRoots, &scene, &error),
+        "regular N-gon two-root scene resolves");
+    CHECK(scene.root_count == 2, "regular N-gon two-root scene keeps requested count");
+    CHECK(scene.bridge_count == 1, "regular N-gon two-root scene has one undirected bridge");
+
+    KernelParams fiveRoots = MakeRegularNgonParams(5);
+    CHECK(ResolveExplainoRootSdfScene(view, fiveRoots, &scene, &error),
+        "regular N-gon five-root scene resolves");
+    CHECK(scene.root_count == 5, "regular N-gon five-root scene keeps requested count");
+    CHECK(scene.bridge_count == 5, "regular N-gon five-root scene uses ring bridges");
+
+    KernelParams sixteenRoots = MakeRegularNgonParams(16);
+    CHECK(ResolveExplainoRootSdfScene(view, sixteenRoots, &scene, &error),
+        "regular N-gon sixteen-root scene resolves");
+    CHECK(scene.root_count == 16, "regular N-gon sixteen-root scene keeps requested count");
+    CHECK(scene.bridge_count == 16, "regular N-gon sixteen-root scene uses ring bridges");
+
+    sixteenRoots.explaino_root_sdf_bridge_width = 0.0f;
+    CHECK(ResolveExplainoRootSdfScene(view, sixteenRoots, &scene, &error),
+        "regular N-gon zero bridge-width scene resolves");
+    CHECK(scene.bridge_count == 0, "regular N-gon zero bridge width omits bridge primitives");
+}
+
+static void TestRegularNgonN4DiffersFromLegacy() {
+    ViewState view{};
+    KernelParams legacy = MakeRootSdfParams4();
+    KernelParams regular = MakeRegularNgonParams(4);
+    ExplainoRootSdfResolvedScene legacyScene{};
+    ExplainoRootSdfResolvedScene regularScene{};
+    std::string error;
+
+    CHECK(ResolveExplainoRootSdfScene(view, legacy, &legacyScene, &error),
+        "legacy four-root scene resolves for comparison");
+    view.fractal_type = FractalType::explaino_root_sdf;
+    CHECK(ResolveExplainoRootSdfScene(view, regular, &regularScene, &error),
+        "regular four-root scene resolves for comparison");
+    CHECK(legacyScene.bridge_count == 2, "legacy four-root scene keeps old two-bridge topology");
+    CHECK(regularScene.bridge_count == 4, "regular four-root scene uses ring topology");
+    CHECK(legacyScene.base_root_hash != regularScene.base_root_hash,
+        "regular four-root layout is distinct from legacy layout");
 }
 
 static void TestSceneResolutionFailsMalformedRoots() {
@@ -178,6 +239,8 @@ static void TestCpuFieldProducerMetadataAndSign() {
 
 int main() {
     TestSceneResolutionBridgeTopologyAndHashes();
+    TestRegularNgonSceneBridgeTopology();
+    TestRegularNgonN4DiffersFromLegacy();
     TestSceneResolutionFailsMalformedRoots();
     TestPhaseSineModulationIsDeterministicAndLocal();
     TestCpuFieldProducerMetadataAndSign();

@@ -2213,6 +2213,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double explainoWarpStrength = 0.0;
     double explainoRootSpread = nextParams.explaino_root_spread;
     ExplainoRootAuthority explainoRootAuthority = nextParams.explaino_root_authority;
+    ExplainoGeneratedRootLayout explainoGeneratedRootLayout = nextParams.explaino_generated_root_layout;
+    int explainoGeneratedRootCount = nextParams.explaino_generated_root_count;
     double explainoDamping = nextParams.explaino_damping;
     int explainoRootCount = 0;
     double explainoRootSdfRadius = nextParams.explaino_root_sdf_radius;
@@ -2292,6 +2294,17 @@ bool LoadDiagnosticsStateJson(const std::string& text,
                 return false;
             }
         }
+        if (const json_min::Value* generatedRootLayoutValue = paramsObject->get("explaino_generated_root_layout")) {
+            if (!generatedRootLayoutValue->is_string()) {
+                if (outError) *outError = "Invalid explaino_generated_root_layout field";
+                return false;
+            }
+            const std::string generatedRootLayoutId = generatedRootLayoutValue->as_string();
+            if (!TryParseExplainoGeneratedRootLayoutId(generatedRootLayoutId, &explainoGeneratedRootLayout)) {
+                if (outError) *outError = "Unknown explaino_generated_root_layout: " + generatedRootLayoutId;
+                return false;
+            }
+        }
         if (const json_min::Value* rootSdfHSourceValue = paramsObject->get("explaino_root_sdf_h_source")) {
             if (!rootSdfHSourceValue->is_string()) {
                 if (outError) *outError = "Invalid explaino_root_sdf_h_source field";
@@ -2330,6 +2343,17 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "explaino_root_spread", &explainoRootSpread, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_damping", &explainoDamping, nullptr, outError)) return false;
     if (!ParseIntField(*paramsObject, "explaino_root_count", &explainoRootCount, outError)) return false;
+    if (const json_min::Value* generatedRootCountValue = paramsObject->get("explaino_generated_root_count")) {
+        if (!generatedRootCountValue->is_number() ||
+            !std::isfinite(generatedRootCountValue->as_number()) ||
+            std::floor(generatedRootCountValue->as_number()) != generatedRootCountValue->as_number() ||
+            generatedRootCountValue->as_number() < 2.0 ||
+            generatedRootCountValue->as_number() > 16.0) {
+            if (outError) *outError = "Invalid explaino_generated_root_count field";
+            return false;
+        }
+        explainoGeneratedRootCount = static_cast<int>(generatedRootCountValue->as_number());
+    }
     if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_radius", &explainoRootSdfRadius, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_bridge_width", &explainoRootSdfBridgeWidth, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_smooth_blend", &explainoRootSdfSmoothBlend, nullptr, outError)) return false;
@@ -2492,6 +2516,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_warp_strength = static_cast<float>(explainoWarpStrength);
     nextParams.explaino_root_spread = static_cast<float>(explainoRootSpread);
     nextParams.explaino_root_authority = explainoRootAuthority;
+    nextParams.explaino_generated_root_layout = explainoGeneratedRootLayout;
+    nextParams.explaino_generated_root_count = explainoGeneratedRootCount;
     nextParams.explaino_damping = static_cast<float>(explainoDamping);
     nextParams.explaino_root_count = explainoRootCount;
     nextParams.explaino_root_sdf_radius = static_cast<float>(explainoRootSdfRadius);

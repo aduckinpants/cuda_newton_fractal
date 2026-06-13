@@ -118,6 +118,8 @@ def test_explaino_root_sdf_selects_reports_and_mutates_no_mouse(tmp_path: Path) 
         assert baseline.get("lens_sdf_backend_used") in {"cuda_jfa", "cpu_chamfer", "cuda_sample", "cpu_reference"}, baseline
         assert baseline.get("explaino_root_sdf_root_count") == 4, baseline
         assert baseline.get("explaino_root_sdf_bridge_count") == 2, baseline
+        assert baseline.get("explaino_root_sdf_root_layout_kind") == "legacy_quartic_v1", baseline
+        assert baseline.get("explaino_root_sdf_requested_generated_root_count") == 4, baseline
         assert baseline.get("explaino_root_sdf_h_source") == "none", baseline
 
         baseline_frame_hash = _require_frame_hash(baseline)
@@ -131,10 +133,45 @@ def test_explaino_root_sdf_selects_reports_and_mutates_no_mouse(tmp_path: Path) 
             "fractal_control.explaino_root_sdf_smooth_blend.primary",
             "fractal_control.explaino_root_sdf_h_amplitude.primary",
             "fractal_control.explaino_root_sdf_h_frequency.primary",
+            "fractal_control.explaino_generated_root_layout.primary",
             "fractal_control.explaino_seed.primary",
             "fractal_control.explaino_phase.primary",
         ]:
             viewer.wait_for_control(control_id, timeout_seconds=30.0)
+
+        regular_layout = viewer.set_enum_id(
+            "fractal.params.explaino_generated_root_layout",
+            "regular_ngon_v1",
+            expected_fractal_type="explaino_root_sdf",
+            timeout_seconds=60.0,
+        )
+        assert regular_layout.get("explaino_root_sdf_root_layout_kind") == "regular_ngon_v1", regular_layout
+        assert regular_layout.get("explaino_root_sdf_root_count") == 4, regular_layout
+        assert regular_layout.get("explaino_root_sdf_bridge_count") == 4, regular_layout
+        assert regular_layout.get("explaino_root_sdf_requested_generated_root_count") == 4, regular_layout
+        assert _require_root_hash(regular_layout, "explaino_root_sdf_effective_root_hash") != baseline_effective_hash
+        viewer.wait_for_control("fractal_control.explaino_generated_root_count.primary", timeout_seconds=30.0)
+
+        previous_n_hash = _require_root_hash(regular_layout, "explaino_root_sdf_effective_root_hash")
+        previous_n_frame_hash = _require_frame_hash(regular_layout)
+        for count, expected_bridges in [(2, 1), (5, 5), (8, 8), (16, 16)]:
+            edited_count = viewer.set_control_value(
+                "fractal_control.explaino_generated_root_count.primary",
+                count,
+                timeout_seconds=60.0,
+            )
+            assert edited_count.get("current_fractal_type") == "explaino_root_sdf", edited_count
+            assert edited_count.get("set_value_consumed") is True, edited_count
+            assert edited_count.get("explaino_root_sdf_root_layout_kind") == "regular_ngon_v1", edited_count
+            assert edited_count.get("explaino_root_sdf_requested_generated_root_count") == count, edited_count
+            assert edited_count.get("explaino_root_sdf_root_count") == count, edited_count
+            assert edited_count.get("explaino_root_sdf_bridge_count") == expected_bridges, edited_count
+            current_n_hash = _require_root_hash(edited_count, "explaino_root_sdf_effective_root_hash")
+            current_n_frame_hash = _require_frame_hash(edited_count)
+            assert current_n_hash != previous_n_hash, edited_count
+            assert current_n_frame_hash != previous_n_frame_hash, edited_count
+            previous_n_hash = current_n_hash
+            previous_n_frame_hash = current_n_frame_hash
 
         next_seed = viewer.click_control("next_seed", timeout_seconds=60.0)
         assert next_seed.get("click_consumed") is True, next_seed
@@ -146,6 +183,8 @@ def test_explaino_root_sdf_selects_reports_and_mutates_no_mouse(tmp_path: Path) 
         assert prev_seed.get("click_consumed") is True, prev_seed
         assert prev_seed.get("current_fractal_type") == "explaino_root_sdf", prev_seed
         assert _require_root_hash(prev_seed, "explaino_root_sdf_effective_root_hash") != _require_root_hash(next_seed, "explaino_root_sdf_effective_root_hash")
+        pre_radius_root_hash = _require_root_hash(prev_seed, "explaino_root_sdf_effective_root_hash")
+        pre_radius_frame_hash = _require_frame_hash(prev_seed)
 
         radius_edited = viewer.set_control_value(
             "fractal_control.explaino_root_sdf_radius.primary",
@@ -154,8 +193,8 @@ def test_explaino_root_sdf_selects_reports_and_mutates_no_mouse(tmp_path: Path) 
         )
         assert radius_edited.get("current_fractal_type") == "explaino_root_sdf", radius_edited
         assert radius_edited.get("set_value_consumed") is True, radius_edited
-        assert _require_frame_hash(radius_edited) != baseline_frame_hash, radius_edited
-        assert _require_root_hash(radius_edited, "explaino_root_sdf_effective_root_hash") == baseline_effective_hash
+        assert _require_frame_hash(radius_edited) != pre_radius_frame_hash, radius_edited
+        assert _require_root_hash(radius_edited, "explaino_root_sdf_effective_root_hash") == pre_radius_root_hash
 
         bridge_edited = viewer.set_control_value(
             "fractal_control.explaino_root_sdf_bridge_width.primary",
@@ -301,6 +340,8 @@ def test_explaino_root_sdf_capture_finding_sidecar_and_replay(tmp_path: Path) ->
     state = _root_sdf_state(exe_path)
     state["params"]["explaino_root_sdf_h_source"] = "phase_sine"
     state["params"]["explaino_root_sdf_h_amplitude"] = 0.18
+    state["params"]["explaino_generated_root_layout"] = "regular_ngon_v1"
+    state["params"]["explaino_generated_root_count"] = 8
     state["view"]["explaino_phase"] = 0.25
     state_path = write_state_bundle(tmp_path / "explaino_root_sdf_capture", state)
 
@@ -348,14 +389,18 @@ def test_explaino_root_sdf_capture_finding_sidecar_and_replay(tmp_path: Path) ->
     assert isinstance(active_controls, dict), sidecar
     assert active_controls.get("explaino_root_sdf_h_source") == "phase_sine", active_controls
     assert active_controls.get("explaino_root_sdf_h_amplitude") == pytest.approx(0.18), active_controls
+    assert active_controls.get("explaino_generated_root_layout") == "regular_ngon_v1", active_controls
+    assert active_controls.get("explaino_generated_root_count") == 8, active_controls
     assert "magnet_relaxation" not in active_controls, active_controls
     derived = sidecar.get("derived_runtime_values")
     assert isinstance(derived, dict), sidecar
     root_sdf = derived.get("explaino_root_sdf")
     assert isinstance(root_sdf, dict), derived
     assert root_sdf.get("producer_kind") == "explaino_root_sdf", root_sdf
-    assert root_sdf.get("root_count") == 4, root_sdf
-    assert root_sdf.get("bridge_count") == 2, root_sdf
+    assert root_sdf.get("root_layout_kind") == "regular_ngon_v1", root_sdf
+    assert root_sdf.get("requested_generated_root_count") == 8, root_sdf
+    assert root_sdf.get("root_count") == 8, root_sdf
+    assert root_sdf.get("bridge_count") == 8, root_sdf
     assert root_sdf.get("h_source") == "phase_sine", root_sdf
     assert isinstance(root_sdf.get("base_root_hash"), str), root_sdf
     assert isinstance(root_sdf.get("effective_root_hash"), str), root_sdf

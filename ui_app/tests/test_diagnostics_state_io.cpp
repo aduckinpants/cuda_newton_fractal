@@ -5966,6 +5966,8 @@ int main() {
         rootSdfView.fractal_type = FractalType::explaino_root_sdf;
         rootSdfView.explaino_phase = 0.25f;
         rootSdfParams.explaino_root_authority = ExplainoRootAuthority::custom;
+        rootSdfParams.explaino_generated_root_layout = ExplainoGeneratedRootLayout::regular_ngon_v1;
+        rootSdfParams.explaino_generated_root_count = 8;
         rootSdfParams.explaino_root_count = 4;
         rootSdfParams.explaino_roots[0] = {0.0f, 0.0f};
         rootSdfParams.explaino_roots[1] = {0.75f, 0.0f};
@@ -6004,6 +6006,8 @@ int main() {
         std::string stateJson;
         if (!ReadTextFile(capture.state_json_path, &stateJson) ||
             stateJson.find("\"fractal_type\": \"explaino_root_sdf\"") == std::string::npos ||
+            stateJson.find("\"explaino_generated_root_layout\": \"regular_ngon_v1\"") == std::string::npos ||
+            stateJson.find("\"explaino_generated_root_count\": 8") == std::string::npos ||
             stateJson.find("\"explaino_root_sdf_h_source\": \"phase_sine\"") == std::string::npos) {
           std::cerr << "Expected diagnostics state.json to serialize ExplainO Root SDF authoritative inputs\n";
           return 1;
@@ -6027,6 +6031,8 @@ int main() {
         }
         if (loadedRootSdfView.fractal_type != FractalType::explaino_root_sdf ||
             loadedRootSdfParams.explaino_root_authority != ExplainoRootAuthority::custom ||
+            loadedRootSdfParams.explaino_generated_root_layout != ExplainoGeneratedRootLayout::regular_ngon_v1 ||
+            loadedRootSdfParams.explaino_generated_root_count != 8 ||
             loadedRootSdfParams.explaino_root_count != 4 ||
             !NearlyEqual(loadedRootSdfParams.explaino_roots[1].x, 0.75f, 1.0e-6) ||
             !NearlyEqual(loadedRootSdfParams.explaino_root_sdf_radius, 0.23f, 1.0e-6) ||

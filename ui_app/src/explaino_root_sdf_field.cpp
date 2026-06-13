@@ -97,14 +97,29 @@ std::string BuildRootSdfPackJson(const ExplainoRootSdfResolvedScene& scene, cons
     for (int index = 1; index < scene.root_count; ++index) {
         ast = UnionAst(std::move(ast), CircleAst(scene.effective_roots[index], radius), smoothBlend);
     }
-    if (bridgeWidth > 0.0f && scene.root_count >= 3) {
-        ast = UnionAst(std::move(ast),
-            CapsuleAst(scene.effective_roots[0], scene.effective_roots[1], bridgeWidth),
-            smoothBlend);
-        if (scene.root_count >= 4) {
+    if (bridgeWidth > 0.0f && scene.root_count >= 2) {
+        if (scene.layout_kind == ExplainoRootFieldLayoutKind::regular_ngon_v1) {
+            if (scene.root_count == 2) {
+                ast = UnionAst(std::move(ast),
+                    CapsuleAst(scene.effective_roots[0], scene.effective_roots[1], bridgeWidth),
+                    smoothBlend);
+            } else {
+                for (int index = 0; index < scene.root_count; ++index) {
+                    const int next = (index + 1) % scene.root_count;
+                    ast = UnionAst(std::move(ast),
+                        CapsuleAst(scene.effective_roots[index], scene.effective_roots[next], bridgeWidth),
+                        smoothBlend);
+                }
+            }
+        } else if (scene.root_count >= 3) {
             ast = UnionAst(std::move(ast),
-                CapsuleAst(scene.effective_roots[2], scene.effective_roots[3], bridgeWidth),
+                CapsuleAst(scene.effective_roots[0], scene.effective_roots[1], bridgeWidth),
                 smoothBlend);
+            if (scene.root_count >= 4) {
+                ast = UnionAst(std::move(ast),
+                    CapsuleAst(scene.effective_roots[2], scene.effective_roots[3], bridgeWidth),
+                    smoothBlend);
+            }
         }
     }
 
@@ -131,13 +146,23 @@ bool ResolveExplainoRootSdfScene(
     if (!ResolveExplainoRootFieldDescriptor(view, params, &descriptor, outError)) {
         return false;
     }
-    const int rootCount = descriptor.active_count == 3 ? 3 :
-        (descriptor.active_count == 4 ? 4 : 0);
+    const int rootCount = descriptor.active_count;
     if (rootCount <= 0) {
-        if (outError) *outError = "ExplainO Root SDF requires 3 or 4 captured/generated roots";
+        if (outError) *outError = "ExplainO Root SDF requires captured/generated roots";
+        return false;
+    }
+    if (descriptor.layout_kind != ExplainoRootFieldLayoutKind::regular_ngon_v1 &&
+        rootCount != 3 &&
+        rootCount != 4) {
+        if (outError) *outError = "ExplainO Root SDF legacy/custom roots require 3 or 4 roots";
+        return false;
+    }
+    if (rootCount > kExplainoRootFieldMaxRoots) {
+        if (outError) *outError = "ExplainO Root SDF root count exceeds descriptor capacity";
         return false;
     }
     outScene->root_count = rootCount;
+    outScene->layout_kind = descriptor.layout_kind;
     for (int index = 0; index < rootCount; ++index) {
         if (!IsFiniteRoot(descriptor.base_roots[index])) {
             if (outError) *outError = "ExplainO Root SDF root coordinates must be finite";
@@ -146,7 +171,11 @@ bool ResolveExplainoRootSdfScene(
         outScene->base_roots[index] = descriptor.base_roots[index];
         outScene->effective_roots[index] = descriptor.effective_roots[index];
     }
-    outScene->bridge_count = rootCount >= 4 ? 2 : 1;
+    if (descriptor.layout_kind == ExplainoRootFieldLayoutKind::regular_ngon_v1) {
+        outScene->bridge_count = rootCount == 2 ? 1 : rootCount;
+    } else {
+        outScene->bridge_count = rootCount >= 4 ? 2 : 1;
+    }
     if (ClampFinite(params.explaino_root_sdf_bridge_width, 0.06f, 0.0f, 2.0f) <= 0.0f) {
         outScene->bridge_count = 0;
     }
@@ -239,6 +268,11 @@ bool ComputeExplainoRootSdfFieldForViewport(
     if (outRootReport) {
         outRootReport->root_count = scene.root_count;
         outRootReport->bridge_count = scene.bridge_count;
+        outRootReport->root_layout_kind = ExplainoRootFieldLayoutKindId(scene.layout_kind);
+        if (!outRootReport->root_layout_kind) {
+            outRootReport->root_layout_kind = "none";
+        }
+        outRootReport->requested_generated_root_count = params.explaino_generated_root_count;
         outRootReport->h_source = ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source);
         if (!outRootReport->h_source) {
             outRootReport->h_source = "none";

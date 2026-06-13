@@ -138,6 +138,8 @@ void TestLensSdfProbeTimingFields() {
     probe.field_producer_kind = "lens_field_v2";
     probe.explaino_root_sdf_root_count = 4;
     probe.explaino_root_sdf_bridge_count = 2;
+    probe.explaino_root_sdf_root_layout_kind = "regular_ngon_v1";
+    probe.explaino_root_sdf_requested_generated_root_count = 8;
     probe.explaino_root_sdf_h_source = "phase_sine";
     probe.explaino_root_sdf_base_root_hash = 0x1234ull;
     probe.explaino_root_sdf_effective_root_hash = 0x5678ull;
@@ -260,8 +262,10 @@ void TestLensSdfProbeTimingFields() {
     const std::string json = buffer.str();
     Check(json.find("\"explaino_root_sdf_root_count\": 4") != std::string::npos &&
             json.find("\"explaino_root_sdf_bridge_count\": 2") != std::string::npos &&
+            json.find("\"explaino_root_sdf_root_layout_kind\": \"regular_ngon_v1\"") != std::string::npos &&
+            json.find("\"explaino_root_sdf_requested_generated_root_count\": 8") != std::string::npos &&
             json.find("\"explaino_root_sdf_h_source\": \"phase_sine\"") != std::string::npos,
-        "automation report writes ExplainO root-SDF root count, bridge count, and h source");
+        "automation report writes ExplainO root-SDF layout, root count, bridge count, and h source");
     Check(json.find("\"explaino_root_sdf_base_root_hash\": \"fnv1a64:0000000000001234\"") != std::string::npos &&
             json.find("\"explaino_root_sdf_effective_root_hash\": \"fnv1a64:0000000000005678\"") != std::string::npos,
         "automation report writes ExplainO root-SDF root hashes");

@@ -929,6 +929,30 @@
           "help": "Switches between generated seed/phase roots and a bounded custom root editor."
         },
         {
+          "id": "explaino_generated_root_layout",
+          "type": "combo",
+          "label": "Generated Layout",
+          "value_type": "enum",
+          "default": "legacy_quartic_v1",
+          "options": [
+            { "id": "legacy_quartic_v1", "label": "Legacy Quartic" },
+            { "id": "regular_ngon_v1", "label": "Regular N-Gon" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.explaino_generated_root_layout" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf" },
+          "help": "Chooses the generated root layout used by ExplainO Root SDF without rewriting custom root authority."
+        },
+        {
+          "id": "explaino_generated_root_count",
+          "type": "slider_int",
+          "label": "Root Count",
+          "value_type": "int",
+          "min": 2, "max": 16, "step": 1, "default": 4,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_generated_root_count" },
+          "visible_if": { "op": "eq", "path": "fractal.params.explaino_generated_root_count_active", "value": "true" },
+          "help": "Sets the generated regular N-gon root count for ExplainO Root SDF. Custom roots remain the four-slot editor."
+        },
+        {
           "id": "explaino_custom_root_count",
           "type": "slider_int",
           "label": "Custom Roots",

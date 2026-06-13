@@ -4,6 +4,7 @@
 #define COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "color_pipeline_window.h"
 #undef COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "explaino_root_sdf_field.h"
 #include "fractal_family_rules.h"
 #include "render_capture_guard.h"
 
@@ -834,30 +835,13 @@ std::string BuildFindingRootArrayJson(const Float2* roots, int rootCount) {
 
 struct FindingExplainoRootSdfScene {
     int root_count{0};
-    Float2 base_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
-    Float2 effective_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
+    ExplainoRootFieldLayoutKind layout_kind{ExplainoRootFieldLayoutKind::none};
+    Float2 base_roots[kExplainoRootFieldMaxRoots]{};
+    Float2 effective_roots[kExplainoRootFieldMaxRoots]{};
     int bridge_count{0};
     std::uint64_t base_root_hash{0};
     std::uint64_t effective_root_hash{0};
 };
-
-void HashFindingBytes(std::uint64_t& hash, const void* ptr, std::size_t byteCount) {
-    const auto* bytes = static_cast<const unsigned char*>(ptr);
-    for (std::size_t index = 0; index < byteCount; ++index) {
-        hash ^= static_cast<std::uint64_t>(bytes[index]);
-        hash *= 1099511628211ull;
-    }
-}
-
-std::uint64_t HashFindingRoots(const Float2* roots, int rootCount) {
-    std::uint64_t hash = 1469598103934665603ull;
-    HashFindingBytes(hash, &rootCount, sizeof(rootCount));
-    for (int index = 0; index < rootCount; ++index) {
-        HashFindingBytes(hash, &roots[index].x, sizeof(roots[index].x));
-        HashFindingBytes(hash, &roots[index].y, sizeof(roots[index].y));
-    }
-    return hash;
-}
 
 bool ResolveFindingExplainoRootSdfScene(
     const ViewState& view,
@@ -869,67 +853,19 @@ bool ResolveFindingExplainoRootSdfScene(
         return false;
     }
     *outScene = {};
-    const int rootCount = params.explaino_root_count == 3 ? 3 :
-        (params.explaino_root_count == 4 ? 4 : 0);
-    if (rootCount <= 0) {
-        if (outError) *outError = "ExplainO Root SDF requires 3 or 4 roots";
+    ExplainoRootSdfResolvedScene resolved{};
+    if (!ResolveExplainoRootSdfScene(view, params, &resolved, outError)) {
         return false;
     }
-    outScene->root_count = rootCount;
-    for (int index = 0; index < rootCount; ++index) {
-        const Float2 root = params.explaino_roots[index];
-        if (!std::isfinite(root.x) || !std::isfinite(root.y)) {
-            if (outError) *outError = "ExplainO Root SDF roots must be finite";
-            return false;
-        }
-        outScene->base_roots[index] = root;
-        outScene->effective_roots[index] = root;
+    outScene->root_count = resolved.root_count;
+    outScene->layout_kind = resolved.layout_kind;
+    outScene->bridge_count = resolved.bridge_count;
+    outScene->base_root_hash = resolved.base_root_hash;
+    outScene->effective_root_hash = resolved.effective_root_hash;
+    for (int index = 0; index < resolved.root_count && index < kExplainoRootFieldMaxRoots; ++index) {
+        outScene->base_roots[index] = resolved.base_roots[index];
+        outScene->effective_roots[index] = resolved.effective_roots[index];
     }
-    outScene->bridge_count = params.explaino_root_sdf_bridge_width > 0.0f
-        ? (rootCount >= 4 ? 2 : 1)
-        : 0;
-
-    if (params.explaino_root_sdf_h_source == ExplainoRootSdfHSource::phase_sine &&
-        params.explaino_root_sdf_h_amplitude > 0.0f) {
-        constexpr double kTau = 6.283185307179586476925286766559;
-        const float amplitude = params.explaino_root_sdf_h_amplitude < 0.0f ? 0.0f :
-            (params.explaino_root_sdf_h_amplitude > 1.0f ? 1.0f : params.explaino_root_sdf_h_amplitude);
-        const float frequency = params.explaino_root_sdf_h_frequency < 0.1f ? 0.1f :
-            (params.explaino_root_sdf_h_frequency > 16.0f ? 16.0f : params.explaino_root_sdf_h_frequency);
-        Float2 centroid{0.0f, 0.0f};
-        for (int index = 0; index < rootCount; ++index) {
-            centroid.x += outScene->base_roots[index].x;
-            centroid.y += outScene->base_roots[index].y;
-        }
-        centroid.x /= static_cast<float>(rootCount);
-        centroid.y /= static_cast<float>(rootCount);
-        for (int index = 0; index < rootCount; ++index) {
-            float dx = outScene->base_roots[index].x - centroid.x;
-            float dy = outScene->base_roots[index].y - centroid.y;
-            const float len = std::sqrt(dx * dx + dy * dy);
-            if (len > std::numeric_limits<float>::epsilon()) {
-                dx /= len;
-                dy /= len;
-            } else {
-                const float angle = static_cast<float>(kTau * static_cast<double>(index) /
-                    static_cast<double>(rootCount));
-                dx = std::cos(angle);
-                dy = std::sin(angle);
-            }
-            const float phase = static_cast<float>(
-                kTau * static_cast<double>(frequency) * static_cast<double>(view.explaino_phase) +
-                kTau * static_cast<double>(index) / static_cast<double>(rootCount));
-            const float offset = amplitude * std::sin(phase);
-            outScene->effective_roots[index].x += dx * offset;
-            outScene->effective_roots[index].y += dy * offset;
-        }
-    } else if (params.explaino_root_sdf_h_source != ExplainoRootSdfHSource::none) {
-        if (outError) *outError = "Unknown ExplainO Root SDF h_source";
-        return false;
-    }
-
-    outScene->base_root_hash = HashFindingRoots(outScene->base_roots, rootCount);
-    outScene->effective_root_hash = HashFindingRoots(outScene->effective_roots, rootCount);
     return true;
 }
 
@@ -956,6 +892,9 @@ void WriteFindingExplainoCommonControls(FindingControlJsonWriter& writer, const 
     writer.Number("explaino_warp_strength", static_cast<double>(params.explaino_warp_strength));
     writer.Number("explaino_root_spread", static_cast<double>(params.explaino_root_spread));
     writer.String("explaino_root_authority", CaptureExplainoRootAuthorityId(params.explaino_root_authority));
+    const char* generatedLayoutId = ExplainoGeneratedRootLayoutId(params.explaino_generated_root_layout);
+    writer.String("explaino_generated_root_layout", generatedLayoutId ? generatedLayoutId : "legacy_quartic_v1");
+    writer.Int("explaino_generated_root_count", params.explaino_generated_root_count);
     writer.Number("explaino_damping", static_cast<double>(params.explaino_damping));
     writer.Int("explaino_root_count", params.explaino_root_count);
     writer.Raw("explaino_roots", BuildFindingExplainoRootsJson(params));
@@ -1096,6 +1035,8 @@ void WriteFindingExplainoRootSdfDerivedJson(std::ostringstream& js, const ViewSt
         js << "    \"explaino_root_sdf\": {\n";
         js << "      \"producer_kind\": \"explaino_root_sdf\",\n";
         js << "      \"root_authority\": \"" << CaptureExplainoRootAuthorityId(params.explaino_root_authority) << "\",\n";
+        js << "      \"root_layout_kind\": \"" << ExplainoRootFieldLayoutKindId(scene.layout_kind) << "\",\n";
+        js << "      \"requested_generated_root_count\": " << params.explaino_generated_root_count << ",\n";
         js << "      \"root_count\": " << scene.root_count << ",\n";
         js << "      \"bridge_count\": " << scene.bridge_count << ",\n";
         js << "      \"h_source\": \"" << (ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source) ? ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source) : "none") << "\",\n";
@@ -1212,6 +1153,8 @@ std::string BuildStateJson(
     js << "    \"explaino_warp_strength\": " << static_cast<double>(params.explaino_warp_strength) << ",\n";
     js << "    \"explaino_root_spread\": " << static_cast<double>(params.explaino_root_spread) << ",\n";
     js << "    \"explaino_root_authority\": \"" << CaptureExplainoRootAuthorityId(params.explaino_root_authority) << "\",\n";
+    js << "    \"explaino_generated_root_layout\": \"" << (ExplainoGeneratedRootLayoutId(params.explaino_generated_root_layout) ? ExplainoGeneratedRootLayoutId(params.explaino_generated_root_layout) : "legacy_quartic_v1") << "\",\n";
+    js << "    \"explaino_generated_root_count\": " << params.explaino_generated_root_count << ",\n";
     js << "    \"explaino_damping\": " << static_cast<double>(params.explaino_damping) << ",\n";
     const int persistedExplainoRootCount = params.explaino_root_count < 0
         ? 0

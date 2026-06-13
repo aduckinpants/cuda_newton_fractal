@@ -99,6 +99,29 @@ DEFAULT_SCENARIOS: tuple[SdfWitnessScenario, ...] = (
             ("explaino_root_sdf_h_frequency", 2.0),
         ),
     ),
+    SdfWitnessScenario(
+        name="explaino_root_sdf_regular_n16_static",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="explaino_root_sdf",
+        param_updates=(
+            ("explaino_generated_root_layout", "regular_ngon_v1"),
+            ("explaino_generated_root_count", 16),
+        ),
+    ),
+    SdfWitnessScenario(
+        name="explaino_root_sdf_regular_n16_phase_sine",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="explaino_root_sdf",
+        param_updates=(
+            ("explaino_generated_root_layout", "regular_ngon_v1"),
+            ("explaino_generated_root_count", 16),
+            ("explaino_root_sdf_h_source", "phase_sine"),
+            ("explaino_root_sdf_h_amplitude", 0.18),
+            ("explaino_root_sdf_h_frequency", 2.0),
+        ),
+    ),
 )
 
 
@@ -194,6 +217,8 @@ def measurement_from_payload(
         "lens_sdf_field_capability_fail_closed_reason": payload.get("lens_sdf_field_capability_fail_closed_reason"),
         "explaino_root_sdf_root_count": _as_int(payload, "explaino_root_sdf_root_count"),
         "explaino_root_sdf_bridge_count": _as_int(payload, "explaino_root_sdf_bridge_count"),
+        "explaino_root_sdf_root_layout_kind": str(payload.get("explaino_root_sdf_root_layout_kind", "")),
+        "explaino_root_sdf_requested_generated_root_count": _as_int(payload, "explaino_root_sdf_requested_generated_root_count"),
         "explaino_root_sdf_h_source": str(payload.get("explaino_root_sdf_h_source", "")),
         "explaino_root_sdf_base_root_hash": str(payload.get("explaino_root_sdf_base_root_hash", "")),
         "explaino_root_sdf_effective_root_hash": str(payload.get("explaino_root_sdf_effective_root_hash", "")),

@@ -469,8 +469,42 @@ UISchemaControl BuildExplainoRootSdfHSourceControl() {
     return control;
 }
 
+UISchemaControl BuildExplainoGeneratedRootLayoutControl() {
+    UISchemaControl control = MakeParamControl(
+        "explaino_generated_root_layout",
+        "combo",
+        "Generated Layout",
+        "enum",
+        "fractal.params.explaino_generated_root_layout",
+        json_min::Value{std::string("legacy_quartic_v1")});
+    control.options = {
+        {"legacy_quartic_v1", "Legacy Quartic", ""},
+        {"regular_ngon_v1", "Regular N-Gon", ""},
+    };
+    SetVisibleForFractalType(&control, "explaino_root_sdf");
+    return control;
+}
+
+UISchemaControl BuildExplainoGeneratedRootCountControl() {
+    UISchemaControl control = MakeRangedParamControl(
+        "explaino_generated_root_count",
+        "slider_int",
+        "Root Count",
+        "int",
+        2.0,
+        16.0,
+        1.0,
+        "fractal.params.explaino_generated_root_count",
+        json_min::Value{4.0});
+    control.has_visible_if = true;
+    control.visible_if = MakeEqVisibleIf("fractal.params.explaino_generated_root_count_active", "true");
+    return control;
+}
+
 std::vector<UISchemaControl> BuildExplainoRootSdfControls() {
     return {
+        BuildExplainoGeneratedRootLayoutControl(),
+        BuildExplainoGeneratedRootCountControl(),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_radius", "Root SDF Radius", "fractal.params.explaino_root_sdf_radius", 0.001, 2.0, 0.01, 0.6, 0.001, 0.14),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_bridge_width", "Bridge Width", "fractal.params.explaino_root_sdf_bridge_width", 0.0, 2.0, 0.0, 0.4, 0.001, 0.06),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_smooth_blend", "SDF Smooth Blend", "fractal.params.explaino_root_sdf_smooth_blend", 0.0, 2.0, 0.0, 0.5, 0.001, 0.10),

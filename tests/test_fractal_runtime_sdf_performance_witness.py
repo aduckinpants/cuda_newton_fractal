@@ -51,8 +51,8 @@ def test_sdf_performance_witness_runs_against_published_runtime_no_mouse(tmp_pat
     assert report["schema_version"] == 1
     assert report["no_mouse_automation"] is True
     assert report["persistent_viewer_launch_count"] == 1
-    assert report["summary"]["scenario_count"] >= 9
-    assert report["summary"]["sdf_scenario_count"] >= 8
+    assert report["summary"]["scenario_count"] >= 11
+    assert report["summary"]["sdf_scenario_count"] >= 10
     assert report["summary"]["preview_sample_count"] >= 1
     assert report["summary"]["full_quality_sample_count"] >= 4
     assert report["summary"]["recommendation"] in {
@@ -86,8 +86,24 @@ def test_sdf_performance_witness_runs_against_published_runtime_no_mouse(tmp_pat
         scenario = scenarios_by_name[scenario_name]
         assert scenario["current_fractal_type"] == "explaino_root_sdf", scenario
         assert scenario["lens_sdf_field_producer_kind"] == "explaino_root_sdf", scenario
+        assert scenario["explaino_root_sdf_root_layout_kind"] == "legacy_quartic_v1", scenario
+        assert scenario["explaino_root_sdf_requested_generated_root_count"] == 4, scenario
         assert scenario["explaino_root_sdf_root_count"] == 4, scenario
         assert scenario["explaino_root_sdf_bridge_count"] == 2, scenario
+        assert scenario["explaino_root_sdf_h_source"] == h_source, scenario
+        assert str(scenario["explaino_root_sdf_base_root_hash"]).startswith("fnv1a64:"), scenario
+        assert str(scenario["explaino_root_sdf_effective_root_hash"]).startswith("fnv1a64:"), scenario
+    for scenario_name, h_source in {
+        "explaino_root_sdf_regular_n16_static": "none",
+        "explaino_root_sdf_regular_n16_phase_sine": "phase_sine",
+    }.items():
+        scenario = scenarios_by_name[scenario_name]
+        assert scenario["current_fractal_type"] == "explaino_root_sdf", scenario
+        assert scenario["lens_sdf_field_producer_kind"] == "explaino_root_sdf", scenario
+        assert scenario["explaino_root_sdf_root_layout_kind"] == "regular_ngon_v1", scenario
+        assert scenario["explaino_root_sdf_requested_generated_root_count"] == 16, scenario
+        assert scenario["explaino_root_sdf_root_count"] == 16, scenario
+        assert scenario["explaino_root_sdf_bridge_count"] == 16, scenario
         assert scenario["explaino_root_sdf_h_source"] == h_source, scenario
         assert str(scenario["explaino_root_sdf_base_root_hash"]).startswith("fnv1a64:"), scenario
         assert str(scenario["explaino_root_sdf_effective_root_hash"]).startswith("fnv1a64:"), scenario

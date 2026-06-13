@@ -76,6 +76,8 @@ struct ViewerUiAutomationLensSdfProbe {
     std::string field_source_error;
     int explaino_root_sdf_root_count = 0;
     int explaino_root_sdf_bridge_count = 0;
+    std::string explaino_root_sdf_root_layout_kind = "none";
+    int explaino_root_sdf_requested_generated_root_count = 0;
     std::string explaino_root_sdf_h_source = "none";
     std::uint64_t explaino_root_sdf_base_root_hash = 0;
     std::uint64_t explaino_root_sdf_effective_root_hash = 0;

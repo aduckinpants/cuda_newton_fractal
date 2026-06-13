@@ -932,6 +932,9 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.explaino_root_authority") {
         return EnumIdOrEmpty(ExplainoRootAuthorityId(params->explaino_root_authority));
     }
+    if (params && path == "fractal.params.explaino_generated_root_layout") {
+        return EnumIdOrEmpty(ExplainoGeneratedRootLayoutId(params->explaino_generated_root_layout));
+    }
     if (params && path == "fractal.params.explaino_root_sdf_h_source") {
         return EnumIdOrEmpty(ExplainoRootSdfHSourceId(params->explaino_root_sdf_h_source));
     }
@@ -1004,6 +1007,9 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     if (params && path == "fractal.params.explaino_root_authority") {
         return SetExplainoRootAuthority(this, id);
     }
+    if (params && path == "fractal.params.explaino_generated_root_layout") {
+        return ParseAndAssignEnumId(id, &params->explaino_generated_root_layout, TryParseExplainoGeneratedRootLayoutId);
+    }
     if (params && path == "fractal.params.explaino_root_sdf_h_source") {
         return ParseAndAssignEnumId(id, &params->explaino_root_sdf_h_source, TryParseExplainoRootSdfHSourceId);
     }
@@ -1061,6 +1067,13 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
         out = view && params &&
             IsExplainoRootEditorFractalType(view->fractal_type) &&
             params->explaino_root_authority == ExplainoRootAuthority::custom;
+        return true;
+    }
+    if (path == "fractal.params.explaino_generated_root_count_active") {
+        out = view && params &&
+            view->fractal_type == FractalType::explaino_root_sdf &&
+            params->explaino_root_authority == ExplainoRootAuthority::generated &&
+            params->explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1;
         return true;
     }
     if (path == "fractal.params.poly_coefficients_custom_active") {
@@ -1317,6 +1330,7 @@ bool BindingContext::BindInt(const std::string& path, int** outPtr) {
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power; return true; }
         if (path == "fractal.params.explaino_rational_escape_denominator_power") { *outPtr = &params->explaino_rational_escape_denominator_power; return true; }
         if (path == "fractal.params.explaino_root_count") { *outPtr = &params->explaino_root_count; return true; }
+        if (path == "fractal.params.explaino_generated_root_count") { *outPtr = &params->explaino_generated_root_count; return true; }
         if (path == "fractal.params.mcmullen_m") { *outPtr = &params->mcmullen_m; return true; }
         if (path == "fractal.params.mcmullen_n") { *outPtr = &params->mcmullen_n; return true; }
     }

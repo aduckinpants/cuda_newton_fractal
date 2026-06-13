@@ -12,6 +12,7 @@ enum class ExplainoRootFieldLayoutKind : std::uint8_t {
     legacy_quartic_v1 = 1,
     custom = 2,
     family_local = 3,
+    regular_ngon_v1 = 4,
 };
 
 enum class ExplainoRootFieldSourceKind : std::uint8_t {

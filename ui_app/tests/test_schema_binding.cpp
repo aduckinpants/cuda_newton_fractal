@@ -860,6 +860,7 @@ bool ValidateVisibleControlMatrix() {
         {"explaino_root_sdf_radius", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_radius", "float"},
         {"explaino_root_sdf_bridge_width", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_bridge_width", "float"},
         {"explaino_root_sdf_smooth_blend", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_smooth_blend", "float"},
+        {"explaino_generated_root_layout", FractalType::explaino_root_sdf, "fractal.params.explaino_generated_root_layout", "enum"},
         {"explaino_root_sdf_h_source", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_source", "enum"},
         {"explaino_root_sdf_h_amplitude", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_amplitude", "float"},
         {"explaino_root_sdf_h_frequency", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_frequency", "float"},
@@ -934,6 +935,7 @@ bool ValidateEnumComboEditMatrix() {
         {"counterfactual_pair_frame", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_frame", "view_relative"},
         {"projection_and_flow_root_family", FractalType::projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
         {"projection_and_flow_root_family", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
+        {"explaino_generated_root_layout", FractalType::explaino_root_sdf, "fractal.params.explaino_generated_root_layout", "regular_ngon_v1"},
         {"explaino_root_sdf_h_source", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_source", "phase_sine"},
         {"transcendental_func", FractalType::explaino_transcendental, "fractal.params.transcendental_func", "f_cosh"},
     };
@@ -1196,6 +1198,41 @@ int main() {
             params.explaino_root_count != 0 ||
             !ctx.GetBoolValue("fractal.params.explaino_custom_roots_active", customRootsActive) || customRootsActive) {
             std::cerr << "Expected generated root authority to hide custom roots and clear explicit root count\n";
+            return 1;
+        }
+        view.fractal_type = FractalType::explaino_root_sdf;
+        if (ctx.GetEnumId("fractal.params.explaino_generated_root_layout") != "legacy_quartic_v1") {
+            std::cerr << "Expected generated root layout to default to legacy_quartic_v1\n";
+            return 1;
+        }
+        bool generatedCountActive = true;
+        if (!ctx.GetBoolValue("fractal.params.explaino_generated_root_count_active", generatedCountActive) ||
+            generatedCountActive) {
+            std::cerr << "Expected generated root count to be hidden until regular_ngon_v1 is selected\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.explaino_generated_root_layout", "regular_ngon_v1") ||
+            ctx.GetEnumId("fractal.params.explaino_generated_root_layout") != "regular_ngon_v1" ||
+            !ctx.GetBoolValue("fractal.params.explaino_generated_root_count_active", generatedCountActive) ||
+            !generatedCountActive) {
+            std::cerr << "Expected regular_ngon_v1 to activate generated Root Count authority\n";
+            return 1;
+        }
+        int* generatedRootCount = nullptr;
+        if (!ctx.BindInt("fractal.params.explaino_generated_root_count", &generatedRootCount) ||
+            !generatedRootCount) {
+            std::cerr << "Expected generated Root Count to bind to generated N-root authority\n";
+            return 1;
+        }
+        *generatedRootCount = 8;
+        if (params.explaino_generated_root_count != 8) {
+            std::cerr << "Expected generated Root Count edits to write the live KernelParams field\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.explaino_root_authority", "custom") ||
+            !ctx.GetBoolValue("fractal.params.explaino_generated_root_count_active", generatedCountActive) ||
+            generatedCountActive) {
+            std::cerr << "Expected custom root authority to hide generated Root Count authority\n";
             return 1;
         }
         view.fractal_type = FractalType::newton;

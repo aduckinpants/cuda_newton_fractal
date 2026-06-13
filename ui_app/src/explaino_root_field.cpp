@@ -1,7 +1,9 @@
 #include "explaino_root_field.h"
 
+#include "explaino_seed.h"
 #include "fractal_family_rules.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 
@@ -9,6 +11,17 @@ namespace {
 
 bool IsFiniteRoot(const Float2& root) {
     return std::isfinite(root.x) && std::isfinite(root.y);
+}
+
+float Clamp01(float value) {
+    if (!std::isfinite(value)) {
+        return 0.0f;
+    }
+    return (std::max)(0.0f, (std::min)(1.0f, value));
+}
+
+double Fract(double value) {
+    return value - std::floor(value);
 }
 
 std::uint64_t HashRoots(const Float2* roots, int count) {
@@ -64,6 +77,7 @@ const char* ExplainoRootFieldLayoutKindId(ExplainoRootFieldLayoutKind kind) {
     case ExplainoRootFieldLayoutKind::legacy_quartic_v1: return "legacy_quartic_v1";
     case ExplainoRootFieldLayoutKind::custom: return "custom";
     case ExplainoRootFieldLayoutKind::family_local: return "family_local";
+    case ExplainoRootFieldLayoutKind::regular_ngon_v1: return "regular_ngon_v1";
     }
     return "unknown";
 }
@@ -92,6 +106,10 @@ bool TryParseExplainoRootFieldLayoutKindId(const std::string& id, ExplainoRootFi
     }
     if (id == "family_local") {
         if (outKind) *outKind = ExplainoRootFieldLayoutKind::family_local;
+        return true;
+    }
+    if (id == "regular_ngon_v1") {
+        if (outKind) *outKind = ExplainoRootFieldLayoutKind::regular_ngon_v1;
         return true;
     }
     return false;
@@ -125,6 +143,40 @@ bool ResolveExplainoRootFieldDescriptor(
 
     *outDescriptor = ExplainoRootFieldDescriptor{};
     if (!UsesExplainoRootLayoutAuthority(view.fractal_type)) {
+        return true;
+    }
+
+    if (params.explaino_root_authority == ExplainoRootAuthority::generated &&
+        view.fractal_type == FractalType::explaino_root_sdf &&
+        params.explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1) {
+        const int count = params.explaino_generated_root_count;
+        if (count < 2 || count > kExplainoRootFieldMaxRoots) {
+            if (outError) *outError = "regular_ngon_v1 generated root count must be in [2, 16]";
+            return false;
+        }
+        constexpr double kTau = 6.283185307179586476925286766559;
+        constexpr double kGoldenConjugate = 0.6180339887498949;
+        const float radius = 0.85f + 0.95f * Clamp01(params.explaino_root_spread);
+        const double seedPhase = Fract(ExplainoSeedCombined(view, params) * kGoldenConjugate);
+        const double rotation = kTau * (static_cast<double>(view.explaino_phase) + seedPhase);
+        for (int index = 0; index < count; ++index) {
+            const double angle = rotation + kTau * static_cast<double>(index) / static_cast<double>(count);
+            const Float2 root{
+                static_cast<float>(static_cast<double>(radius) * std::cos(angle)),
+                static_cast<float>(static_cast<double>(radius) * std::sin(angle)),
+            };
+            if (!IsFiniteRoot(root)) {
+                if (outError) *outError = "regular_ngon_v1 generated a nonfinite root";
+                return false;
+            }
+            outDescriptor->base_roots[index] = root;
+            outDescriptor->effective_roots[index] = root;
+        }
+        outDescriptor->active_count = count;
+        outDescriptor->layout_kind = ExplainoRootFieldLayoutKind::regular_ngon_v1;
+        outDescriptor->source_kind = ExplainoRootFieldSourceKind::generated;
+        outDescriptor->base_root_hash = HashRoots(outDescriptor->base_roots, count);
+        outDescriptor->effective_root_hash = HashRoots(outDescriptor->effective_roots, count);
         return true;
     }
 

@@ -376,10 +376,12 @@ bool ValidateGeneratedInternalEditorSurface(const UISchema& schema) {
     }
 
     const UISchemaControl* rootAuthority = FindControlById(*fractalPanel, "explaino_root_authority");
+    const UISchemaControl* generatedLayout = FindControlById(*fractalPanel, "explaino_generated_root_layout");
+    const UISchemaControl* generatedCount = FindControlById(*fractalPanel, "explaino_generated_root_count");
     const UISchemaControl* rootCount = FindControlById(*fractalPanel, "explaino_custom_root_count");
     const UISchemaControl* root0x = FindControlById(*fractalPanel, "explaino_root_0_x");
     const UISchemaControl* root0y = FindControlById(*fractalPanel, "explaino_root_0_y");
-    if (!rootAuthority || !rootCount || !root0x || !root0y) {
+    if (!rootAuthority || !generatedLayout || !generatedCount || !rootCount || !root0x || !root0y) {
         std::cerr << "Main schema missing safe Explaino custom-root editor controls\n";
         return false;
     }
@@ -404,6 +406,30 @@ bool ValidateGeneratedInternalEditorSurface(const UISchema& schema) {
     };
     if (!rootCustomVisible(rootCount) || !rootCustomVisible(root0x) || !rootCustomVisible(root0y)) {
         std::cerr << "Explaino custom root fields must be hidden unless custom root authority is active\n";
+        return false;
+    }
+    bool hasLegacyLayout = false;
+    bool hasRegularLayout = false;
+    for (const UISchemaOption& option : generatedLayout->options) {
+        hasLegacyLayout = hasLegacyLayout || option.id == "legacy_quartic_v1";
+        hasRegularLayout = hasRegularLayout || option.id == "regular_ngon_v1";
+    }
+    if (generatedLayout->type != "combo" || !generatedLayout->has_binding ||
+        generatedLayout->binding.path != "fractal.params.explaino_generated_root_layout" ||
+        !generatedLayout->has_default || !generatedLayout->def.is_string() ||
+        generatedLayout->def.as_string() != "legacy_quartic_v1" ||
+        !hasLegacyLayout || !hasRegularLayout ||
+        !VisibleIfIncludesFractalType(*generatedLayout, "explaino_root_sdf")) {
+        std::cerr << "Generated root layout must be a Root SDF generated-layout selector\n";
+        return false;
+    }
+    if (!generatedCount->has_binding ||
+        generatedCount->binding.path != "fractal.params.explaino_generated_root_count" ||
+        !generatedCount->has_visible_if ||
+        generatedCount->visible_if.path != "fractal.params.explaino_generated_root_count_active" ||
+        generatedCount->visible_if.op != "eq" ||
+        generatedCount->visible_if.value != "true") {
+        std::cerr << "Generated Root Count must be gated behind regular generated Root SDF authority\n";
         return false;
     }
     if (!root0x->has_binding || root0x->binding.path != "fractal.params.explaino_roots.0.x" ||
@@ -1675,7 +1701,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 35) {
+            fractalPanel->controls.size() != 37) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }

@@ -27,6 +27,10 @@ bool Near(float a, float b, float tol = 1.0e-6f) {
     return std::fabs(a - b) <= tol * (std::max)(1.0f, (std::max)(std::fabs(a), std::fabs(b)));
 }
 
+float Fract(float value) {
+    return value - std::floor(value);
+}
+
 void CheckRootsMatch(const KernelParams& params, const ExplainoRootFieldDescriptor& desc, int count) {
     CHECK("descriptor root count matches", desc.active_count == count);
     CHECK("descriptor max count reserves N-root capacity", desc.max_count == kExplainoRootFieldMaxRoots);
@@ -35,6 +39,66 @@ void CheckRootsMatch(const KernelParams& params, const ExplainoRootFieldDescript
         CHECK("descriptor base root y matches params", Near(desc.base_roots[index].y, params.explaino_roots[index].y));
         CHECK("descriptor effective root x starts as base", Near(desc.effective_roots[index].x, desc.base_roots[index].x));
         CHECK("descriptor effective root y starts as base", Near(desc.effective_roots[index].y, desc.base_roots[index].y));
+    }
+}
+
+void TestRegularNgonGeneratedDescriptor() {
+    const int counts[] = {2, 3, 4, 5, 8, 16};
+    for (int count : counts) {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_root_sdf;
+        view.explaino_phase = 0.125f;
+        params.explaino_seed = 0.5;
+        params.explaino_root_spread = 0.25f;
+        params.explaino_generated_root_layout = ExplainoGeneratedRootLayout::regular_ngon_v1;
+        params.explaino_generated_root_count = count;
+
+        ExplainoRootFieldDescriptor desc{};
+        std::string error;
+        CHECK("regular N-gon descriptor resolves",
+            ResolveExplainoRootFieldDescriptor(view, params, &desc, &error));
+        CHECK("regular N-gon descriptor layout",
+            desc.layout_kind == ExplainoRootFieldLayoutKind::regular_ngon_v1);
+        CHECK("regular N-gon descriptor source",
+            desc.source_kind == ExplainoRootFieldSourceKind::generated);
+        CHECK("regular N-gon active count matches request", desc.active_count == count);
+        CHECK("regular N-gon does not write custom root count", params.explaino_root_count == 0);
+
+        const float radius = 0.85f + 0.95f * 0.25f;
+        const float rotation = static_cast<float>(6.2831853071795864769 *
+            (view.explaino_phase + Fract(static_cast<float>(params.explaino_seed * 0.6180339887498949))));
+        for (int index = 0; index < count; ++index) {
+            const float angle = rotation + static_cast<float>(6.2831853071795864769 * index / count);
+            CHECK("regular N-gon x coordinate",
+                Near(desc.base_roots[index].x, radius * std::cos(angle), 1.0e-5f));
+            CHECK("regular N-gon y coordinate",
+                Near(desc.base_roots[index].y, radius * std::sin(angle), 1.0e-5f));
+            CHECK("regular N-gon effective starts at base x",
+                Near(desc.effective_roots[index].x, desc.base_roots[index].x));
+            CHECK("regular N-gon effective starts at base y",
+                Near(desc.effective_roots[index].y, desc.base_roots[index].y));
+        }
+        CHECK("regular N-gon descriptor hash present", desc.base_root_hash != 0);
+        CHECK("regular N-gon descriptor effective hash starts equal", desc.base_root_hash == desc.effective_root_hash);
+    }
+}
+
+void TestRegularNgonRejectsInvalidCounts() {
+    const int counts[] = {1, 17};
+    for (int count : counts) {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_root_sdf;
+        params.explaino_generated_root_layout = ExplainoGeneratedRootLayout::regular_ngon_v1;
+        params.explaino_generated_root_count = count;
+
+        ExplainoRootFieldDescriptor desc{};
+        std::string error;
+        CHECK("regular N-gon invalid count fails",
+            !ResolveExplainoRootFieldDescriptor(view, params, &desc, &error));
+        CHECK("regular N-gon invalid count reports reason",
+            error.find("root count") != std::string::npos);
     }
 }
 
@@ -142,6 +206,8 @@ void TestMalformedCapturedRootsFailClearly() {
 } // namespace
 
 int main() {
+    TestRegularNgonGeneratedDescriptor();
+    TestRegularNgonRejectsInvalidCounts();
     TestGeneratedLegacyFourRootParity();
     TestRootSdfUsesRootLayoutWithoutExplainoFamilySemantics();
     TestCustomRootOrderIsPreserved();
