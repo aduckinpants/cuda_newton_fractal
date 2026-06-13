@@ -75,12 +75,20 @@
       "equals": true
     },
     {
-      "assertion_id": "code_quality_baseline_ok",
-      "description": "The code quality baseline check passes after the slice.",
+      "assertion_id": "code_quality_baseline_no_critical",
+      "description": "The code quality baseline report has no critical findings after the slice.",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/fractal_docs_refresh_wave1_code_quality.json",
-      "json_path": "ok",
-      "equals": true
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "code_quality_baseline_no_error",
+      "description": "The code quality baseline report has no error findings after the slice.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_docs_refresh_wave1_code_quality.json",
+      "json_path": "severity_counts.ERROR",
+      "equals": 0
     }
   ]
 }

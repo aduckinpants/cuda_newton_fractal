@@ -189,7 +189,7 @@ Close Wave 1 foundation with hostile review and a foundation decision before any
 | Hardening native rails | Serial focused rails passed: `test_explaino_root_field` 92 checks, `test_explaino_root_sdf_field` 31 checks, `test_fractal_preset_core` 44 checks after AA repair, `test_fractal_renderer` 90 checks, and `test_diagnostics_state_io` all passed. |
 | Published runtime proof | `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_root_sdf.py > artifacts\fractal_docs_refresh_wave1_foundation\hardening_repair_runtime_explaino_root_sdf.log 2>&1` passed with 4 tests, 0 skips/errors against the final rebuilt `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`. |
 | Final runtime publish | `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\fractal_docs_refresh_wave1_foundation\hardening_repair_build_vsdevcmd.log 2>&1` passed and staged the final runtime after the preset-core AA repair. |
-| Final workflow validation | Contract validation, plan sync, hostile-audit validation, code-quality baseline, and diff check passed after hardening repairs. |
+| Final workflow validation | Contract validation, contract re-lock, plan sync, hostile-audit validation, code-quality baseline, and diff check passed after hardening repairs. |
 | Hardening decision | `FOUNDATION_READY`: Wave 1 foundation has a drift report, descriptor parity, preset-core authority including AA mode, deterministic AA V1 with AA-off parity and bounded AA-on timing witness, focused native rails, and published-runtime Root SDF proof. Stop here before low-hanging ideas/enablers/new families. |
 
 ## Hostile Audit
@@ -219,6 +219,8 @@ Audit questions:
 - [x] Pass 10 re-read the AA implementation boundaries and found no additional Phase 3 code defect: AA-off is exact by test, `ssaa_2x2` is deterministic by test, and source-signal sidecar use fails closed in V1 instead of silently inventing mixed semantics.
 - [x] Pass 11 found a Phase 4 hardening defect: `preset_core` still wrote `"aa":{"mode":"off"}` unconditionally because Phase 2 had only a placeholder and no render-settings input.
 - [x] Pass 12 re-ran preset-core after adding render-aware overloads and found no additional preset AA authority defect.
+- [x] Pass 13 found a closure-proof defect: the contract proof assertion for code quality expected an `ok` field that `tools/code_quality_audit.py` does not write.
+- [x] Pass 14 revalidated and re-locked the repaired contract with code-quality assertions against the actual severity-count fields.
 
 ## Audit Findings
 
@@ -228,3 +230,4 @@ Audit questions:
 - [x] Finding 4: native helper builds that share `D:/salt-fractal/cuda_newton_fractal_clone/build_tests/obj` cannot be safely parallelized. Repaired operationally by rerunning the affected rail serially; do not parallelize `ui_app/build_tests_vsdevcmd.cmd` invocations in later phases.
 - [x] Finding 5: the CUDA renderer helper can exceed the generic 120s shell timeout and produce a misleading timeout without test output. Repaired operationally for this slice by rerunning the rail with artifact logging and a longer timeout; future CUDA helper rails should use logged execution and avoid assuming the default wrapper timeout is evidence of failure.
 - [x] Finding 6: `preset_core` AA metadata was a hardcoded `off` placeholder after real AA modes were added. Repaired by adding render-aware preset-core build/apply overloads, preserving old callers, parsing AA modes fail-closed, and adding tests for `ssaa_2x2` round-trip plus invalid-mode rejection.
+- [x] Finding 7: the Wave 1 contract's code-quality acceptance assertion pointed at a nonexistent `ok` field in `artifacts/validation/fractal_docs_refresh_wave1_code_quality.json`. Repaired by asserting `severity_counts.CRITICAL == 0` and `severity_counts.ERROR == 0`, then re-locking the active contract with `viewer_host_revise_contract.py`.

@@ -144,3 +144,4 @@
 - `ck:4b39b5a6` 2026-06-13 02:38 UTC | score 4 — Phase 2 Wave 1 foundation preset-core checkpoint: added versioned preset_core authority tuple, root/SDF/color round-trip tests, and runtime build integration.
 - `ck:4b39b5a6` 2026-06-13 03:03 UTC | score 4 — Phase 3 Wave 1 foundation AA checkpoint: deterministic AA mode, AA-off parity, state/capture metadata, renderer and state IO tests, runtime build integration validated.
 - `ck:4b39b5a6` 2026-06-13 03:33 UTC | score 5 — Hardening Pass 1 Wave 1 foundation checkpoint: preset-core AA authority repaired, focused native rails and published Root SDF runtime proof green, foundation decision FOUNDATION_READY recorded.
+- `ck:4b39b5a6` 2026-06-13 03:39 UTC | score 5 — Closure proof repair checkpoint: Wave 1 foundation contract now asserts code-quality severity fields that actually exist, plan records finding, contract re-locked and validators green.
