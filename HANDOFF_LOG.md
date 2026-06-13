@@ -163,3 +163,4 @@
 - `ck:734ddb02` 2026-06-13 20:20 UTC | score 93 — Root-field consumer Wave 2 stale-plan repair: replaced pre-closeout resume wording, plan sync and hostile-audit validation still green.
 - `ck:a1b4de1b` 2026-06-13 22:37 UTC — session-start | branch=codex/root-metric-color-source-wave3 | head=3f2f149 | status=dirty | profile=runtime | intent=Root-metric Color Pipeline source Wave 3
 - `ck:a1b4de1b` 2026-06-13 23:32 UTC | score 93 — Root-metric Color Source Wave 3 implemented: root_phase source, UI-Salt metadata, native coloring/schema rails, and published no-mouse explaino_mandelbrot_root_trap proof are green; stop before Wave 4 replan.
+- `ck:a1b4de1b` 2026-06-13 23:36 UTC | score 93 — Root-metric Color Source Wave 3 plan cleanup: final checklist and proof ledger now record receipts, rearward review, push, and the stop-before-Wave-4 boundary.

@@ -22,7 +22,7 @@ Phase 4 - hardening and close.
 - [x] Phase 1: add RED/native metadata and coloring tests for the selected root-metric source.
 - [x] Phase 2: implement the selected source and minimal runtime plumbing.
 - [x] Phase 3: prove exactly one consumer: `explaino_mandelbrot_root_trap` with `root_phase`.
-- [ ] Phase 4: hostile audit, classify the enabler, sync docs/status, validate, receipt, rearward-review, push, and stop before Wave 4.
+- [x] Phase 4: hostile audit, classify the enabler, sync docs/status, validate, receipt, rearward-review, push, and stop before Wave 4.
 
 ## Scope
 
@@ -203,3 +203,7 @@ Audit questions:
 | UI-Salt materializer/runtime contract proof | `py -3.14 -m pytest tests\test_ui_salt_materializer.py tests\test_fractal_runtime_ui_salt_contract.py -q > artifacts\root_metric_color_source_wave3_py_contract_runtime_2.log 2>&1` passed: `41 passed`. |
 | Runtime publish | `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\root_metric_color_source_wave3_publish.log 2>&1` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`. |
 | Published runtime root-field proof | `py -3.14 -m pytest tests\test_fractal_runtime_root_field_consumers.py -q > artifacts\root_metric_color_source_wave3_runtime_root_field_consumers.log 2>&1` passed: `5 passed`. |
+| Validation and contract receipts | `py -3.14 tools\viewer_host_checkpoint_slice.py write-receipts --session-id global_active_contract ...` wrote receipts for `d77fbec`. |
+| Rearward review | `py -3.14 tools\viewer_host_rearward_review.py` returned `status=ok` for `d77fbec`. |
+| Branch push | `git push -u origin codex/root-metric-color-source-wave3` pushed the branch and set upstream tracking. |
+| Wave 3 replan boundary | Preplanned sliced work for Wave 3 is exhausted; stop before Wave 4 and replan before more product mutation. |
