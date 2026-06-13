@@ -267,8 +267,8 @@ bool ControlBindingResolves(const std::string& valueType, const std::string& bin
         return ctx.BindInt(bindingPath, &value) && value;
     }
     if (valueType == "bool") {
-        bool* value = nullptr;
-        return ctx.BindBool(bindingPath, &value) && value;
+        bool value = false;
+        return ctx.GetBoolValue(bindingPath, value);
     }
     if (valueType == "enum") {
         return !ctx.GetEnumId(bindingPath).empty();
@@ -1536,6 +1536,29 @@ int main() {
             std::cerr << "Expected sample tier enum round-trip to accept standard\n";
             return 1;
         }
+        bool aaEnabled = true;
+        if (!ctx.GetBoolValue("fractal.render.aa_enabled", aaEnabled) || aaEnabled ||
+            ctx.GetEnumId("fractal.render.aa_mode") != "off") {
+            std::cerr << "Expected live AA to default to disabled/off\n";
+            return 1;
+        }
+        if (!ctx.SetBoolValue("fractal.render.aa_enabled", true) ||
+            !ctx.GetBoolValue("fractal.render.aa_enabled", aaEnabled) || !aaEnabled ||
+            render.aa_mode != RenderAntiAliasingMode::ssaa_2x2 ||
+            ctx.GetEnumId("fractal.render.aa_mode") != "ssaa_2x2") {
+            std::cerr << "Expected AA checkbox to enable the default SSAA 2x2 mode\n";
+            return 1;
+        }
+        if (ctx.SetEnumId("fractal.render.aa_mode", "off")) {
+            std::cerr << "AA mode dropdown should not own the off state; the checkbox owns disable\n";
+            return 1;
+        }
+        if (!ctx.SetBoolValue("fractal.render.aa_enabled", false) ||
+            render.aa_mode != RenderAntiAliasingMode::off ||
+            !ctx.GetBoolValue("fractal.render.aa_enabled", aaEnabled) || aaEnabled) {
+            std::cerr << "Expected AA checkbox to disable live AA back to off\n";
+            return 1;
+        }
         if (!ctx.SetEnumId("fractal.params.mcmullen_preset", "z4_z2") ||
             ctx.GetEnumId("fractal.params.mcmullen_preset") != "z4_z2") {
             std::cerr << "Expected McMullen preset enum round-trip to accept z4_z2\n";
@@ -2131,6 +2154,27 @@ int main() {
         if (ctx.GetEnumId("fractal.render.resolution.aspect_preset") != "custom" ||
             !ctx.GetIntValue("fractal.render.resolution.long_edge", longEdge) || longEdge != 1000) {
             std::cerr << "Expected non-preset dimensions to derive the Custom aspect mode and current long edge\n";
+            return 1;
+        }
+
+        render.aa_mode = RenderAntiAliasingMode::off;
+        UISchemaControl aaEnabledDefault = MakeBoundControl("aa_enabled", "checkbox", "Anti-Aliasing", "bool", "param", "fractal.render.aa_enabled");
+        aaEnabledDefault.has_default = true;
+        aaEnabledDefault.def = json_min::Value{false};
+        UISchemaControl aaModeDefault = MakeBoundControl("aa_mode", "combo", "AA Mode", "enum", "param", "fractal.render.aa_mode");
+        aaModeDefault.has_default = true;
+        aaModeDefault.def = json_min::Value{std::string("ssaa_2x2")};
+        dirty = false;
+        if (ApplySchemaDefaultForControl(aaEnabledDefault, ctx, &dirty) ||
+            ApplySchemaDefaultForControl(aaModeDefault, ctx, &dirty) ||
+            dirty || render.aa_mode != RenderAntiAliasingMode::off) {
+            std::cerr << "Default-off live AA controls must not enable AA during blanket schema default application\n";
+            return 1;
+        }
+        aaEnabledDefault.def = json_min::Value{true};
+        if (!ApplySchemaDefaultForControl(aaEnabledDefault, ctx, &dirty) ||
+            render.aa_mode != RenderAntiAliasingMode::ssaa_2x2) {
+            std::cerr << "AA enabled default must enable SSAA 2x2 through the checkbox authority\n";
             return 1;
         }
 

@@ -763,6 +763,35 @@ UISchemaControl BuildResolutionDimensionControl(
     return control;
 }
 
+UISchemaControl BuildAaEnabledControl() {
+    UISchemaControl control = MakeParamControl(
+        "aa_enabled",
+        "checkbox",
+        "Anti-Aliasing",
+        "bool",
+        "fractal.render.aa_enabled",
+        json_min::Value{false});
+    control.has_help = true;
+    control.help = "Enable live viewport supersampling. This increases render cost, so keep it off while exploring heavy scenes.";
+    return control;
+}
+
+UISchemaControl BuildAaModeControl() {
+    UISchemaControl control = MakeParamControl(
+        "aa_mode",
+        "combo",
+        "AA Mode",
+        "enum",
+        "fractal.render.aa_mode",
+        json_min::Value{std::string("ssaa_2x2")});
+    control.has_visible_if = true;
+    control.visible_if = MakeEqVisibleIf("fractal.render.aa_enabled", "true");
+    control.options = {
+        {"ssaa_2x2", "SSAA 2x2", ""},
+    };
+    return control;
+}
+
 UISchemaPanel BuildSafeModeRenderPanel() {
     UISchemaPanel panel;
     panel.id = "render";
@@ -777,6 +806,8 @@ UISchemaPanel BuildSafeModeRenderPanel() {
         MakeRangedParamControl("interaction_debounce_ms", "slider_int", "Interaction Debounce (ms)", "int", 0.0, 1000.0, 10.0, "fractal.render.interaction_debounce_ms", json_min::Value{static_cast<double>(RenderSettings::kDefaultInteractionDebounceMs)}),
         MakeRangedParamControl("preview_target_fps", "slider_float", "Preview Target FPS", "float", 5.0, 120.0, 1.0, "fractal.render.preview_target_fps", json_min::Value{static_cast<double>(RenderSettings::kDefaultPreviewTargetFps)}),
         MakeRangedParamControl("preview_min_scale", "slider_float", "Preview Min Scale", "float", 0.25, 1.0, 0.05, "fractal.render.preview_min_scale", json_min::Value{static_cast<double>(RenderSettings::kDefaultPreviewMinScale)}),
+        BuildAaEnabledControl(),
+        BuildAaModeControl(),
     };
     return panel;
 }

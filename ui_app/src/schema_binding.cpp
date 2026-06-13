@@ -176,6 +176,8 @@ void ClampNumericValue(T* value, const NumericControlRange& range) {
 
 constexpr const char* kResolutionAspectPresetPath = "fractal.render.resolution.aspect_preset";
 constexpr const char* kResolutionLongEdgePath = "fractal.render.resolution.long_edge";
+constexpr const char* kRenderAaEnabledPath = "fractal.render.aa_enabled";
+constexpr const char* kRenderAaModePath = "fractal.render.aa_mode";
 constexpr const char* kResolutionAspectCustomId = "custom";
 constexpr int kResolutionLongEdgeMin = 256;
 constexpr int kResolutionLongEdgeMax = 4096;
@@ -957,6 +959,9 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (render && path == "fractal.render.sample_tier") {
         return EnumIdOrEmpty(SampleTierId(render->sample_tier));
     }
+    if (render && path == kRenderAaModePath) {
+        return EnumIdOrEmpty(RenderAntiAliasingModeId(render->aa_mode));
+    }
     if (lens && path == "fractal.lens.sdf_overlay_mode") {
         return EnumIdOrEmpty(LensSdfOverlayModeId(lens->sdf_overlay_mode));
     }
@@ -1026,6 +1031,14 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     if (render && path == "fractal.render.sample_tier") {
         return ParseAndAssignEnumId(id, &render->sample_tier, TryParseSampleTierId);
     }
+    if (render && path == kRenderAaModePath) {
+        RenderAntiAliasingMode mode{};
+        if (!TryParseRenderAntiAliasingModeId(id, &mode) || mode == RenderAntiAliasingMode::off) {
+            return false;
+        }
+        render->aa_mode = mode;
+        return true;
+    }
     if (lens && path == "fractal.lens.sdf_overlay_mode") {
         return ParseAndAssignEnumId(id, &lens->sdf_overlay_mode, TryParseLensSdfOverlayModeId);
     }
@@ -1073,10 +1086,31 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
             !IsFieldPrimarySdfFractal(view->fractal_type);
         return true;
     }
+    if (render && path == kRenderAaEnabledPath) {
+        out = render->aa_mode != RenderAntiAliasingMode::off;
+        return true;
+    }
     bool* ptr = nullptr;
     BindingContext* self = const_cast<BindingContext*>(this);
     if (!self->BindBool(path, &ptr) || !ptr) return false;
     out = *ptr;
+    return true;
+}
+
+bool BindingContext::SetBoolValue(const std::string& path, bool value) {
+    if (render && path == kRenderAaEnabledPath) {
+        if (value) {
+            if (render->aa_mode == RenderAntiAliasingMode::off) {
+                render->aa_mode = RenderAntiAliasingMode::ssaa_2x2;
+            }
+        } else {
+            render->aa_mode = RenderAntiAliasingMode::off;
+        }
+        return true;
+    }
+    bool* ptr = nullptr;
+    if (!BindBool(path, &ptr) || !ptr) return false;
+    *ptr = value;
     return true;
 }
 
@@ -1388,17 +1422,17 @@ bool ValidateIntComboOptions(const UISchemaControl& control, std::string* outErr
 }
 
 bool ApplyBoolSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
-    bool* value = nullptr;
-    if (!ctx.BindBool(control.binding.path, &value) || !value) return false;
+    bool currentValue = false;
+    if (!ctx.GetBoolValue(control.binding.path, currentValue)) return false;
 
-    bool newValue = *value;
+    bool newValue = currentValue;
     if (control.def.is_bool()) newValue = control.def.as_bool();
     else if (control.def.is_number()) newValue = (control.def.as_number() != 0.0);
     else if (control.def.is_string()) newValue = (control.def.as_string() == "true" || control.def.as_string() == "1");
     else return false;
 
-    if (*value == newValue) return false;
-    *value = newValue;
+    if (currentValue == newValue) return false;
+    if (!ctx.SetBoolValue(control.binding.path, newValue)) return false;
     if (ioDirty) *ioDirty = true;
     return true;
 }
@@ -1504,6 +1538,12 @@ bool ApplyDoubleSchemaDefault(const UISchemaControl& control, BindingContext& ct
 
 bool ApplyEnumSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
     if (!control.def.is_string()) return false;
+    if (control.binding.path == kRenderAaModePath) {
+        bool aaEnabled = false;
+        if (!ctx.GetBoolValue(kRenderAaEnabledPath, aaEnabled) || !aaEnabled) {
+            return false;
+        }
+    }
 
     const std::string currentValue = ctx.GetEnumId(control.binding.path);
     const std::string& wantedValue = control.def.as_string();
@@ -1570,8 +1610,8 @@ bool ValidateParamBinding(const UISchemaControl& control, BindingContext& ctx, s
     }
     const std::string& path = control.binding.path;
     if (control.value_type == "bool") {
-        bool* value = nullptr;
-        if (!ctx.BindBool(path, &value) || !value) {
+        bool value = false;
+        if (!ctx.GetBoolValue(path, value)) {
             if (outError) *outError = "Bind failed for bool path: " + path + " (control: " + control.id + ")";
             return false;
         }
@@ -1711,11 +1751,7 @@ bool TryApplyPrimaryUiAutomationSetValue(
     } else if (control.value_type == "double") {
         applied = ApplyDoubleControlEdit(binding, ctx, range, ctx.ui_automation_set_control_value);
     } else if (control.value_type == "bool") {
-        bool* boolValue = nullptr;
-        if (ctx.BindBool(binding.path, &boolValue) && boolValue) {
-            *boolValue = ctx.ui_automation_set_control_value >= 0.5;
-            applied = true;
-        }
+        applied = ctx.SetBoolValue(binding.path, ctx.ui_automation_set_control_value >= 0.5);
     }
     if (!applied) {
         if (ctx.ui_automation_set_error) {
@@ -1787,16 +1823,20 @@ bool RenderCheckboxControl(
     const UISchemaBinding& binding,
     bool* ioDirty,
     bool* ioInteracted) {
-    bool* value = nullptr;
-    if (!ctx.BindBool(binding.path, &value) || !value) {
+    bool editValue = false;
+    if (!ctx.GetBoolValue(binding.path, editValue)) {
         return RenderDiagnosticLabel(control, "bind failed");
     }
 
-    const bool changed = ImGui::Checkbox(control.label.c_str(), value);
+    const bool changed = ImGui::Checkbox(control.label.c_str(), &editValue);
+    bool appliedChange = false;
+    if (changed) {
+        appliedChange = ctx.SetBoolValue(binding.path, editValue);
+    }
     MaybeNotePrimaryUiAutomationRect(ctx, control);
     const NumericControlRange range{};
     const bool automationChanged = TryApplyPrimaryUiAutomationSetValue(ctx, control, binding, range, ioDirty, ioInteracted);
-    const bool anyChanged = changed || automationChanged;
+    const bool anyChanged = appliedChange || automationChanged;
     MarkDirtyIfChanged(anyChanged, ioDirty);
     MarkCurrentItemInteraction(anyChanged, ioInteracted);
     return anyChanged;

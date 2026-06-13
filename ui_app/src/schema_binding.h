@@ -25,6 +25,7 @@ struct BindingContext {
     bool SetEnumId(const std::string& path, const std::string& id);
 
     bool GetBoolValue(const std::string& path, bool& out) const;
+    bool SetBoolValue(const std::string& path, bool value);
     bool GetIntValue(const std::string& path, int& out) const;
     bool GetFloatValue(const std::string& path, float& out) const;
     bool SetIntValue(const std::string& path, int value);

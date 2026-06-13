@@ -129,6 +129,8 @@ __global__ void kernel_render(
     double2 refC0,
     float* outSourceSignals,
     int sourceSignalRows,
+    double sampleOffsetX,
+    double sampleOffsetY,
     unsigned long long* outItersSum)
 {
     int px = (int)(blockIdx.x * blockDim.x + threadIdx.x);
@@ -141,8 +143,8 @@ __global__ void kernel_render(
     double zoom = fmax(1.0e-300, exp2(view.log2_zoom));
     double base = 2.0 / zoom;
 
-    double nx = (((double)px + 0.5) / (double)width - 0.5) * 2.0;
-    double ny = (((double)py + 0.5) / (double)height - 0.5) * 2.0;
+    double nx = (((double)px + 0.5 + sampleOffsetX) / (double)width - 0.5) * 2.0;
+    double ny = (((double)py + 0.5 + sampleOffsetY) / (double)height - 0.5) * 2.0;
 
     double x = (double)view.center_hp_x + nx * base * aspect;
     double y = (double)view.center_hp_y + ny * base;
@@ -443,19 +445,30 @@ bool ensure_ref_orbit(int len, const char** outError) {
     return true;
 }
 
-uint32_t AverageRgba2x2(const std::vector<uint32_t>& pixels, int highWidth, int x, int y) {
+bool RenderFractalCUDACore(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    uint32_t* outRGBA,
+    uint8_t* outMask,
+    float* outSourceSignals,
+    int sourceSignalRowCount,
+    double sampleOffsetX,
+    double sampleOffsetY,
+    RenderStats* outStats,
+    const char** outError);
+
+uint32_t AverageRgba4(const uint32_t samples[4]) {
     unsigned int r = 0;
     unsigned int g = 0;
     unsigned int b = 0;
     unsigned int a = 0;
-    for (int dy = 0; dy < 2; ++dy) {
-        for (int dx = 0; dx < 2; ++dx) {
-            const uint32_t pixel = pixels[static_cast<std::size_t>((y * 2 + dy) * highWidth + (x * 2 + dx))];
-            r += pixel & 0xffu;
-            g += (pixel >> 8) & 0xffu;
-            b += (pixel >> 16) & 0xffu;
-            a += (pixel >> 24) & 0xffu;
-        }
+    for (int index = 0; index < 4; ++index) {
+        const uint32_t pixel = samples[index];
+        r += pixel & 0xffu;
+        g += (pixel >> 8) & 0xffu;
+        b += (pixel >> 16) & 0xffu;
+        a += (pixel >> 24) & 0xffu;
     }
     r = (r + 2u) / 4u;
     g = (g + 2u) / 4u;
@@ -464,12 +477,10 @@ uint32_t AverageRgba2x2(const std::vector<uint32_t>& pixels, int highWidth, int 
     return r | (g << 8) | (b << 16) | (a << 24);
 }
 
-uint8_t MajorityMask2x2(const std::vector<uint8_t>& mask, int highWidth, int x, int y) {
+uint8_t MajorityMask4(const uint8_t samples[4]) {
     int inside = 0;
-    for (int dy = 0; dy < 2; ++dy) {
-        for (int dx = 0; dx < 2; ++dx) {
-            inside += mask[static_cast<std::size_t>((y * 2 + dy) * highWidth + (x * 2 + dx))] ? 1 : 0;
-        }
+    for (int index = 0; index < 4; ++index) {
+        inside += samples[index] ? 1 : 0;
     }
     return inside >= 2 ? 255 : 0;
 }
@@ -488,43 +499,75 @@ bool RenderFractalCUDAWithSsaa2x2(
         if (outError) *outError = "Invalid SSAA resolution";
         return false;
     }
-    RenderSettings highRender = render;
-    highRender.aa_mode = RenderAntiAliasingMode::off;
-    highRender.resolution = {w * 2, h * 2};
+    RenderSettings sampleRender = render;
+    sampleRender.aa_mode = RenderAntiAliasingMode::off;
 
-    std::vector<uint32_t> highRgba(static_cast<std::size_t>(highRender.resolution.x) *
-        static_cast<std::size_t>(highRender.resolution.y), 0u);
-    std::vector<uint8_t> highMask;
+    const std::size_t pixelCount = static_cast<std::size_t>(w) * static_cast<std::size_t>(h);
+    std::vector<uint32_t> sampleRgba[4];
+    std::vector<uint8_t> sampleMask[4];
+    for (int sampleIndex = 0; sampleIndex < 4; ++sampleIndex) {
+        sampleRgba[sampleIndex].assign(pixelCount, 0u);
+    }
     if (outMask) {
-        highMask.assign(highRgba.size(), 0u);
+        for (int sampleIndex = 0; sampleIndex < 4; ++sampleIndex) {
+            sampleMask[sampleIndex].assign(pixelCount, 0u);
+        }
     }
 
-    RenderStats highStats{};
-    if (!RenderFractalCUDAWithColorSourceSignals(
+    const double offsets[4][2] = {
+        {-0.25, -0.25},
+        { 0.25, -0.25},
+        {-0.25,  0.25},
+        { 0.25,  0.25},
+    };
+    RenderStats sampleStats[4]{};
+    for (int sampleIndex = 0; sampleIndex < 4; ++sampleIndex) {
+        if (!RenderFractalCUDACore(
             view,
             params,
-            highRender,
-            highRgba.data(),
-            outMask ? highMask.data() : nullptr,
+            sampleRender,
+            sampleRgba[sampleIndex].data(),
+            outMask ? sampleMask[sampleIndex].data() : nullptr,
             nullptr,
             0,
-            &highStats,
+            offsets[sampleIndex][0],
+            offsets[sampleIndex][1],
+            &sampleStats[sampleIndex],
             outError)) {
-        return false;
+            return false;
+        }
     }
 
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            const int pixelIndex = y * w + x;
-            outRGBA[pixelIndex] = AverageRgba2x2(highRgba, highRender.resolution.x, x, y);
-            if (outMask) {
-                outMask[pixelIndex] = MajorityMask2x2(highMask, highRender.resolution.x, x, y);
-            }
+    for (std::size_t pixelIndex = 0; pixelIndex < pixelCount; ++pixelIndex) {
+        const uint32_t rgbaSamples[4] = {
+            sampleRgba[0][pixelIndex],
+            sampleRgba[1][pixelIndex],
+            sampleRgba[2][pixelIndex],
+            sampleRgba[3][pixelIndex],
+        };
+        outRGBA[pixelIndex] = AverageRgba4(rgbaSamples);
+        if (outMask) {
+            const uint8_t maskSamples[4] = {
+                sampleMask[0][pixelIndex],
+                sampleMask[1][pixelIndex],
+                sampleMask[2][pixelIndex],
+                sampleMask[3][pixelIndex],
+            };
+            outMask[pixelIndex] = MajorityMask4(maskSamples);
         }
     }
 
     if (outStats) {
-        *outStats = highStats;
+        *outStats = sampleStats[3];
+        outStats->last_render_ms = sampleStats[0].last_render_ms + sampleStats[1].last_render_ms +
+            sampleStats[2].last_render_ms + sampleStats[3].last_render_ms;
+        outStats->last_iters_sum = sampleStats[0].last_iters_sum + sampleStats[1].last_iters_sum +
+            sampleStats[2].last_iters_sum + sampleStats[3].last_iters_sum;
+        outStats->last_pixel_count = sampleStats[0].last_pixel_count + sampleStats[1].last_pixel_count +
+            sampleStats[2].last_pixel_count + sampleStats[3].last_pixel_count;
+        outStats->last_iters_avg = ComputeRenderStatsIterationAverage(
+            outStats->last_iters_sum,
+            outStats->last_pixel_count);
     }
     return true;
 }
@@ -564,6 +607,32 @@ bool RenderFractalCUDAWithColorSourceSignals(
     const char** outError)
 {
     if (outError) *outError = nullptr;
+    if (render.aa_mode == RenderAntiAliasingMode::ssaa_2x2) {
+        if (sourceSignalRowCount > 0) {
+            if (outError) *outError = "ssaa_2x2 does not support color source signal sidecar in V1";
+            return false;
+        }
+        return RenderFractalCUDAWithSsaa2x2(view, params, render, outRGBA, outMask, outStats, outError);
+    }
+    return RenderFractalCUDACore(view, params, render, outRGBA, outMask, outSourceSignals, sourceSignalRowCount, 0.0, 0.0, outStats, outError);
+}
+
+namespace {
+
+bool RenderFractalCUDACore(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    uint32_t* outRGBA,
+    uint8_t* outMask,
+    float* outSourceSignals,
+    int sourceSignalRowCount,
+    double sampleOffsetX,
+    double sampleOffsetY,
+    RenderStats* outStats,
+    const char** outError)
+{
+    if (outError) *outError = nullptr;
     if (!outRGBA) {
         if (outError) *outError = "outRGBA is null";
         return false;
@@ -576,14 +645,6 @@ bool RenderFractalCUDAWithColorSourceSignals(
         if (outError) *outError = "outSourceSignals is null";
         return false;
     }
-    if (render.aa_mode == RenderAntiAliasingMode::ssaa_2x2) {
-        if (sourceSignalRowCount > 0) {
-            if (outError) *outError = "ssaa_2x2 does not support color source signal sidecar in V1";
-            return false;
-        }
-        return RenderFractalCUDAWithSsaa2x2(view, params, render, outRGBA, outMask, outStats, outError);
-    }
-
     // Fail-fast validation (no implicit fallback/repair).
     if (!ValidateFractalRuntimeState(view, params, outError)) return false;
 
@@ -667,6 +728,8 @@ bool RenderFractalCUDAWithColorSourceSignals(
         refC0,
         sourceSignalRowCount > 0 ? g_cached.d_sourceSignals : nullptr,
         sourceSignalRowCount,
+        sampleOffsetX,
+        sampleOffsetY,
         g_cached.d_itersSum);
 
     cudaError_t launchErr = cudaGetLastError();
@@ -718,6 +781,8 @@ bool RenderFractalCUDAWithColorSourceSignals(
 
     return true;
 }
+
+} // namespace
 
 // SampleFractalPoints() has been moved to fractal_sample_core.cu (K5).
 

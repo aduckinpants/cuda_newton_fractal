@@ -1420,6 +1420,27 @@
           "binding": { "kind": "param", "path": "fractal.render.preview_min_scale" }
         },
         {
+          "id": "aa_enabled",
+          "type": "checkbox",
+          "label": "Anti-Aliasing",
+          "help": "Enable live viewport supersampling. This increases render cost, so keep it off while exploring heavy scenes.",
+          "value_type": "bool",
+          "default": false,
+          "binding": { "kind": "param", "path": "fractal.render.aa_enabled" }
+        },
+        {
+          "id": "aa_mode",
+          "type": "combo",
+          "label": "AA Mode",
+          "value_type": "enum",
+          "default": "ssaa_2x2",
+          "visible_if": { "op": "eq", "path": "fractal.render.aa_enabled", "value": "true" },
+          "options": [
+            { "id": "ssaa_2x2", "label": "SSAA 2x2" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.render.aa_mode" }
+        },
+        {
           "id": "block_size",
           "type": "combo",
           "label": "Block Size",

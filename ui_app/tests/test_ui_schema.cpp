@@ -754,6 +754,8 @@ int main() {
         bool foundInteractionDebounceDefault = false;
         bool foundPreviewTargetFpsDefault = false;
         bool foundPreviewMinScaleDefault = false;
+        bool foundAaEnabledDefaultOff = false;
+        bool foundAaModeVisibleWhenEnabled = false;
         bool foundContinuousRenderDefaultFalse = false;
         bool foundNegativeExplainoSeedRange = false;
         bool foundNegativeExplainoSeedBRange = false;
@@ -1077,6 +1079,21 @@ int main() {
                 }
                 if (ctrl.id == "preview_min_scale" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 0.5) {
                     foundPreviewMinScaleDefault = true;
+                }
+                if (ctrl.id == "aa_enabled" && ctrl.type == "checkbox" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.render.aa_enabled" &&
+                    ctrl.has_default && ctrl.def.is_bool() && !ctrl.def.as_bool() &&
+                    ctrl.has_help && ctrl.help.find("render cost") != std::string::npos) {
+                    foundAaEnabledDefaultOff = true;
+                }
+                if (ctrl.id == "aa_mode" && ctrl.type == "combo" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.render.aa_mode" &&
+                    ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "ssaa_2x2" &&
+                    ctrl.options.size() == 1 && ctrl.options[0].id == "ssaa_2x2" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
+                    ctrl.visible_if.path == "fractal.render.aa_enabled" &&
+                    ctrl.visible_if.value == "true") {
+                    foundAaModeVisibleWhenEnabled = true;
                 }
                 if (ctrl.id == "auto_refresh" && ctrl.label == "Continuous Render" && ctrl.has_default && ctrl.def.is_bool() && !ctrl.def.as_bool()) {
                     foundContinuousRenderDefaultFalse = true;
@@ -1484,6 +1501,10 @@ int main() {
             std::cerr << "Did not find adaptive preview pacing controls with the expected defaults in schema\n";
             return 1;
         }
+        if (!foundAaEnabledDefaultOff || !foundAaModeVisibleWhenEnabled) {
+            std::cerr << "Did not find default-off live AA controls with a gated mode dropdown in schema\n";
+            return 1;
+        }
         if (!foundContinuousRenderDefaultFalse) {
             std::cerr << "Did not find continuous-render control with a disabled-by-default schema value\n";
             return 1;
@@ -1638,6 +1659,8 @@ int main() {
         bool foundResolutionAspectPresetDefault = false;
         bool foundResolutionLongEdgeDefault = false;
         bool foundPreviewMinScaleDefault = false;
+        bool foundAaEnabledDefaultOff = false;
+        bool foundAaModeVisibleWhenEnabled = false;
         bool foundContinuousRenderDefaultFalse = false;
         bool foundSafeModeCenterXUiRange = false;
         bool foundSafeModeCenterYUiRange = false;
@@ -1657,7 +1680,7 @@ int main() {
             return 1;
         }
         if (!renderPanel || renderPanel->label != "Render (Safe Mode)" || !renderPanel->has_order || renderPanel->order != 30 ||
-            renderPanel->controls.size() != 7) {
+            renderPanel->controls.size() != 9) {
             std::cerr << "Safe-mode schema did not expose the expected render panel shape\n";
             return 1;
         }
@@ -1939,6 +1962,21 @@ int main() {
                 if (ctrl.id == "preview_min_scale" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 0.5) {
                     foundPreviewMinScaleDefault = true;
                 }
+                if (ctrl.id == "aa_enabled" && ctrl.type == "checkbox" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.render.aa_enabled" &&
+                    ctrl.has_default && ctrl.def.is_bool() && !ctrl.def.as_bool() &&
+                    ctrl.has_help && ctrl.help.find("render cost") != std::string::npos) {
+                    foundAaEnabledDefaultOff = true;
+                }
+                if (ctrl.id == "aa_mode" && ctrl.type == "combo" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.render.aa_mode" &&
+                    ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "ssaa_2x2" &&
+                    ctrl.options.size() == 1 && ctrl.options[0].id == "ssaa_2x2" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
+                    ctrl.visible_if.path == "fractal.render.aa_enabled" &&
+                    ctrl.visible_if.value == "true") {
+                    foundAaModeVisibleWhenEnabled = true;
+                }
                 if (ctrl.id == "auto_refresh" && ctrl.label == "Continuous Render" && ctrl.has_default && ctrl.def.is_bool() && !ctrl.def.as_bool()) {
                     foundContinuousRenderDefaultFalse = true;
                 }
@@ -1968,6 +2006,10 @@ int main() {
         }
         if (!foundInteractionDebounceDefault || !foundPreviewTargetFpsDefault || !foundPreviewMinScaleDefault) {
             std::cerr << "Safe-mode schema did not expose the adaptive preview pacing controls with the expected defaults\n";
+            return 1;
+        }
+        if (!foundAaEnabledDefaultOff || !foundAaModeVisibleWhenEnabled) {
+            std::cerr << "Safe-mode schema did not expose default-off live AA controls with a gated mode dropdown\n";
             return 1;
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||

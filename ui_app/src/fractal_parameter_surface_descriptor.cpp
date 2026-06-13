@@ -172,8 +172,8 @@ bool BindingResolvesAsKind(
         return resolves;
     }
     if (control.value_type == "bool") {
-        bool* value = nullptr;
-        const bool resolves = ctx.BindBool(path, &value) && value;
+        bool value = false;
+        const bool resolves = ctx.GetBoolValue(path, value);
         if (resolves && outKind) *outKind = "bool";
         return resolves;
     }

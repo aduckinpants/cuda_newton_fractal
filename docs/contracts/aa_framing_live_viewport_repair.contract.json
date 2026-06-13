@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contract_id": "aa_framing_live_viewport_repair",
+  "feature_id": "aa_framing_live_viewport_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/aa_framing_live_viewport_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "repair the AA side-by-side visual framing issue",
+    "add conservative live viewport AA controls",
+    "keep AA default off",
+    "do not broaden into SDF or render pacing redesign"
+  ],
+  "forbidden_operator_prompts": [
+    "start SDF work under this repair slice",
+    "add new AA algorithms beyond off and ssaa_2x2",
+    "claim live AA performance without measured proof",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/fractal-docs-refresh-wave1-foundation",
+    "source_head": "e8a448ba967c2d7556d3576fb7bb74492f6f1df9",
+    "aa_default": "off",
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "physical_mouse_automation": "forbidden",
+    "sdf_work": "forbidden",
+    "render_pacing_redesign": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/aa_framing_live_viewport_repair.contract.json --out-json artifacts/validation/aa_framing_live_viewport_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/aa_framing_live_viewport_repair_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/aa_framing_live_viewport_repair_PHASED_PLAN.md --out-json artifacts/validation/aa_framing_live_viewport_repair_hostile_audit.json",
+    "git diff --check > artifacts/aa_framing_live_viewport_repair/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The AA repair contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/aa_framing_live_viewport_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/aa_framing_live_viewport_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "The code quality baseline report has no critical findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/aa_framing_live_viewport_repair_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "code_quality_no_error",
+      "description": "The code quality baseline report has no error findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/aa_framing_live_viewport_repair_code_quality.json",
+      "json_path": "severity_counts.ERROR",
+      "equals": 0
+    }
+  ]
+}

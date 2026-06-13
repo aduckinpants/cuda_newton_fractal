@@ -210,12 +210,10 @@ bool ApplySingleOverride(const FractalProbeOverride& overrideValue,
     }
 
     if (overrideValue.value.kind == FractalProbeScalar::Kind::boolean) {
-        bool* ptr = nullptr;
-        if (!ctx.BindBool(overrideValue.path, &ptr) || !ptr) {
+        if (!ctx.SetBoolValue(overrideValue.path, overrideValue.value.bool_value)) {
             if (outError) *outError = "Unknown bool binding path: " + overrideValue.path;
             return false;
         }
-        *ptr = overrideValue.value.bool_value;
         return true;
     }
 
