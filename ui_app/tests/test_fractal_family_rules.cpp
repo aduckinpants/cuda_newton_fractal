@@ -376,6 +376,29 @@ int main() {
             if (!isExplainoSelector) {
                 continue;
             }
+            if (IsRootFieldConsumerFractal(pair.value)) {
+                if (FindExplainoSelectorDescriptor(pair.value) != nullptr ||
+                    IsExplainoFamily(pair.value) ||
+                    !UsesExplainoRootLayoutAuthority(pair.value) ||
+                    !SupportsExplainoSeedControls(pair.value) ||
+                    RootFieldConsumerBaseFractalType(pair.value) == pair.value ||
+                    IsFieldPrimarySdfFractal(pair.value)) {
+                    std::cerr << "ExplainO root-field consumer lanes should use root-layout authority without joining the legacy Explaino selector registry or SDF field-primary dispatch\n";
+                    return 1;
+                }
+                if (!IsColorPipelineAllowedForFractal(
+                        pair.value,
+                        {ColorSignal::root_proximity, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default})) {
+                    std::cerr << "ExplainO root-field consumer lanes should allow their default root_proximity pipeline for state replay\n";
+                    return 1;
+                }
+                if (IsColorSignalAllowedForFractal(pair.value, ColorSignal::root_index) ||
+                    IsColoringModeAllowedForFractal(pair.value, ColoringMode::root_basin)) {
+                    std::cerr << "ExplainO root-field consumer lanes should not gain root-index or basin coloring authority\n";
+                    return 1;
+                }
+                continue;
+            }
             if (pair.value == FractalType::explaino_root_sdf) {
                 if (FindExplainoSelectorDescriptor(pair.value) != nullptr ||
                     IsExplainoFamily(pair.value) ||

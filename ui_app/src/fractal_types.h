@@ -286,6 +286,8 @@ enum class FractalType : int {
     explaino_collatz_direct = 45,
     sdf_pack_scene = 46,
     explaino_root_sdf = 47,
+    explaino_mandelbrot_root_trap = 48,
+    explaino_magnet_root_well = 49,
 };
 
 enum class CounterfactualPairRootFamily : int {
@@ -513,6 +515,8 @@ struct KernelParams {
     ExplainoRootSdfHSource explaino_root_sdf_h_source{ExplainoRootSdfHSource::none};
     float explaino_root_sdf_h_amplitude{0.0f};
     float explaino_root_sdf_h_frequency{1.0f};
+    float explaino_root_field_trap_strength{0.75f};
+    float explaino_root_field_trap_scale{1.0f};
     TranscendentalFunc transcendental_func{TranscendentalFunc::f_sin};
     float momentum_beta{0.0f};
     float joy_coupling{0.0f};

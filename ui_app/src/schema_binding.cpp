@@ -40,7 +40,8 @@ bool IsMcMullenDirectParamPath(const std::string& path) {
 
 
 bool IsExplainoRootEditorFractalType(FractalType fractalType) {
-    if (fractalType == FractalType::explaino_root_sdf) {
+    if (fractalType == FractalType::explaino_root_sdf ||
+        IsRootFieldConsumerFractal(fractalType)) {
         return true;
     }
     switch (fractalType) {
@@ -117,6 +118,8 @@ bool BindExplainoRootSdfFloat(KernelParams& params, const std::string& path, flo
     if (path == "fractal.params.explaino_root_sdf_smooth_blend") { *outPtr = &params.explaino_root_sdf_smooth_blend; return true; }
     if (path == "fractal.params.explaino_root_sdf_h_amplitude") { *outPtr = &params.explaino_root_sdf_h_amplitude; return true; }
     if (path == "fractal.params.explaino_root_sdf_h_frequency") { *outPtr = &params.explaino_root_sdf_h_frequency; return true; }
+    if (path == "fractal.params.explaino_root_field_trap_strength") { *outPtr = &params.explaino_root_field_trap_strength; return true; }
+    if (path == "fractal.params.explaino_root_field_trap_scale") { *outPtr = &params.explaino_root_field_trap_scale; return true; }
     return false;
 }
 
@@ -1071,7 +1074,8 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
     }
     if (path == "fractal.params.explaino_generated_root_count_active") {
         out = view && params &&
-            view->fractal_type == FractalType::explaino_root_sdf &&
+            (view->fractal_type == FractalType::explaino_root_sdf ||
+             IsRootFieldConsumerFractal(view->fractal_type)) &&
             params->explaino_root_authority == ExplainoRootAuthority::generated &&
             params->explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1;
         return true;

@@ -958,6 +958,7 @@ void WriteFindingCoreFractalControls(FindingControlJsonWriter& writer, FractalTy
         writer.Number("lambda_imag", static_cast<double>(params.lambda_imag));
         break;
     case FractalType::magnet:
+    case FractalType::explaino_magnet_root_well:
         writer.Number("magnet_seed_real", static_cast<double>(params.magnet_seed_real));
         writer.Number("magnet_seed_imag", static_cast<double>(params.magnet_seed_imag));
         writer.Number("magnet_relaxation", static_cast<double>(params.magnet_relaxation));
@@ -975,6 +976,14 @@ void WriteFindingCoreFractalControls(FindingControlJsonWriter& writer, FractalTy
     default:
         break;
     }
+}
+
+void WriteFindingRootFieldConsumerControls(FindingControlJsonWriter& writer, FractalType fractalType, const KernelParams& params) {
+    if (!IsRootFieldConsumerFractal(fractalType)) {
+        return;
+    }
+    writer.Number("explaino_root_field_trap_strength", static_cast<double>(params.explaino_root_field_trap_strength));
+    writer.Number("explaino_root_field_trap_scale", static_cast<double>(params.explaino_root_field_trap_scale));
 }
 
 void WriteFindingExplainoAxisControls(FindingControlJsonWriter& writer, FractalType fractalType, const KernelParams& params) {
@@ -1019,6 +1028,7 @@ void WriteFindingActiveControlsJson(std::ostringstream& js, const ViewState& vie
     WriteFindingPolynomialControls(writer, view.fractal_type, params);
     WriteFindingExplainoCommonControls(writer, view, params);
     WriteFindingExplainoRootSdfControls(writer, view.fractal_type, params);
+    WriteFindingRootFieldConsumerControls(writer, view.fractal_type, params);
     WriteFindingCoreFractalControls(writer, view.fractal_type, params);
     WriteFindingExplainoAxisControls(writer, view.fractal_type, params);
     js << "\n  }";
@@ -1051,6 +1061,38 @@ void WriteFindingExplainoRootSdfDerivedJson(std::ostringstream& js, const ViewSt
         js << "      \"producer_kind\": \"explaino_root_sdf\",\n";
         js << "      \"fail_closed_reason\": ";
         WriteJsonEscapedString(js, error.empty() ? "root_sdf_scene_resolution_failed" : error.c_str());
+        js << "\n";
+        js << "    }";
+    }
+}
+
+void WriteFindingRootFieldConsumerDerivedJson(std::ostringstream& js, const ViewState& view, const KernelParams& params) {
+    if (!IsRootFieldConsumerFractal(view.fractal_type)) {
+        return;
+    }
+    ExplainoRootFieldDescriptor descriptor{};
+    std::string error;
+    if (ResolveExplainoRootFieldDescriptor(view, params, &descriptor, &error) && descriptor.active_count > 0) {
+        js << ",\n";
+        js << "    \"root_field_consumer\": {\n";
+        js << "      \"consumer_kind\": \"" << (FractalTypeId(view.fractal_type) ? FractalTypeId(view.fractal_type) : "unknown") << "\",\n";
+        js << "      \"base_fractal_type\": \"" << (FractalTypeId(RootFieldConsumerBaseFractalType(view.fractal_type)) ? FractalTypeId(RootFieldConsumerBaseFractalType(view.fractal_type)) : "unknown") << "\",\n";
+        js << "      \"root_authority\": \"" << CaptureExplainoRootAuthorityId(params.explaino_root_authority) << "\",\n";
+        js << "      \"root_layout_kind\": \"" << ExplainoRootFieldLayoutKindId(descriptor.layout_kind) << "\",\n";
+        js << "      \"requested_generated_root_count\": " << params.explaino_generated_root_count << ",\n";
+        js << "      \"root_count\": " << descriptor.active_count << ",\n";
+        js << "      \"trap_strength\": " << static_cast<double>(params.explaino_root_field_trap_strength) << ",\n";
+        js << "      \"trap_scale\": " << static_cast<double>(params.explaino_root_field_trap_scale) << ",\n";
+        js << "      \"base_root_hash\": \"fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << descriptor.base_root_hash << std::dec << std::setfill(' ') << "\",\n";
+        js << "      \"effective_root_hash\": \"fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << descriptor.effective_root_hash << std::dec << std::setfill(' ') << "\",\n";
+        js << "      \"base_roots\": " << BuildFindingRootArrayJson(descriptor.base_roots, descriptor.active_count) << "\n";
+        js << "    }";
+    } else {
+        js << ",\n";
+        js << "    \"root_field_consumer\": {\n";
+        js << "      \"consumer_kind\": \"" << (FractalTypeId(view.fractal_type) ? FractalTypeId(view.fractal_type) : "unknown") << "\",\n";
+        js << "      \"fail_closed_reason\": ";
+        WriteJsonEscapedString(js, error.empty() ? "root_field_descriptor_resolution_failed" : error.c_str());
         js << "\n";
         js << "    }";
     }
@@ -1173,6 +1215,8 @@ std::string BuildStateJson(
     js << "    \"explaino_root_sdf_h_source\": \"" << (ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source) ? ExplainoRootSdfHSourceId(params.explaino_root_sdf_h_source) : "none") << "\",\n";
     js << "    \"explaino_root_sdf_h_amplitude\": " << static_cast<double>(params.explaino_root_sdf_h_amplitude) << ",\n";
     js << "    \"explaino_root_sdf_h_frequency\": " << static_cast<double>(params.explaino_root_sdf_h_frequency) << ",\n";
+    js << "    \"explaino_root_field_trap_strength\": " << static_cast<double>(params.explaino_root_field_trap_strength) << ",\n";
+    js << "    \"explaino_root_field_trap_scale\": " << static_cast<double>(params.explaino_root_field_trap_scale) << ",\n";
     js << "    \"explaino_cluster_radius\": " << static_cast<double>(params.explaino_cluster_radius) << ",\n";
     WriteExplainoVariantParamsJson(js, params);
     js << "    \"transcendental_func\": \"" << CaptureTranscendentalFuncId(params.transcendental_func) << "\",\n";
@@ -1288,6 +1332,7 @@ std::string BuildFindingFractalStateJson(
     js << "    \"last_iters_avg\": " << stats.last_iters_avg << ",\n";
     js << "    \"last_pixel_count\": " << stats.last_pixel_count;
     WriteFindingExplainoRootSdfDerivedJson(js, view, params);
+    WriteFindingRootFieldConsumerDerivedJson(js, view, params);
     js << "\n";
     js << "  },\n";
     js << "  \"color_pipeline\": {\n";

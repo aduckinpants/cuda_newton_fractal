@@ -155,6 +155,39 @@ void WriteLensSdfReportFields(
         WriteAutomationReportString(out, lensSdfProbe.field_source_error);
     }
     out << ",\n";
+    out << "  \"root_field_consumer_active\": " << (lensSdfProbe.root_field_consumer_active ? "true" : "false") << ",\n";
+    out << "  \"root_field_consumer_kind\": ";
+    WriteAutomationReportString(out, lensSdfProbe.root_field_consumer_kind);
+    out << ",\n";
+    out << "  \"root_field_consumer_base_fractal_type\": ";
+    WriteAutomationReportString(out, lensSdfProbe.root_field_consumer_base_fractal_type);
+    out << ",\n";
+    out << "  \"root_field_consumer_root_layout_kind\": ";
+    WriteAutomationReportString(out, lensSdfProbe.root_field_consumer_root_layout_kind);
+    out << ",\n";
+    out << "  \"root_field_consumer_root_source_kind\": ";
+    WriteAutomationReportString(out, lensSdfProbe.root_field_consumer_root_source_kind);
+    out << ",\n";
+    out << "  \"root_field_consumer_root_count\": " << lensSdfProbe.root_field_consumer_root_count << ",\n";
+    out << "  \"root_field_consumer_requested_generated_root_count\": " <<
+        lensSdfProbe.root_field_consumer_requested_generated_root_count << ",\n";
+    out << "  \"root_field_consumer_trap_strength\": " << std::setprecision(12) <<
+        lensSdfProbe.root_field_consumer_trap_strength << ",\n";
+    out << "  \"root_field_consumer_trap_scale\": " << std::setprecision(12) <<
+        lensSdfProbe.root_field_consumer_trap_scale << ",\n";
+    out << "  \"root_field_consumer_base_root_hash\": ";
+    WriteHashOrNull(out, lensSdfProbe.root_field_consumer_base_root_hash);
+    out << ",\n";
+    out << "  \"root_field_consumer_effective_root_hash\": ";
+    WriteHashOrNull(out, lensSdfProbe.root_field_consumer_effective_root_hash);
+    out << ",\n";
+    out << "  \"root_field_consumer_fail_closed_reason\": ";
+    if (lensSdfProbe.root_field_consumer_fail_closed_reason.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, lensSdfProbe.root_field_consumer_fail_closed_reason);
+    }
+    out << ",\n";
     out << "  \"explaino_root_sdf_root_count\": " << lensSdfProbe.explaino_root_sdf_root_count << ",\n";
     out << "  \"explaino_root_sdf_bridge_count\": " << lensSdfProbe.explaino_root_sdf_bridge_count << ",\n";
     out << "  \"explaino_root_sdf_root_layout_kind\": ";

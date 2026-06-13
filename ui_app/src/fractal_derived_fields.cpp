@@ -940,7 +940,8 @@ static void ClearPolynomialCoefficients(float coeffs[5]) {
 }
 
 static bool IsExplainoRootEditorFractalType(FractalType fractalType) {
-    if (fractalType == FractalType::explaino_root_sdf) {
+    if (fractalType == FractalType::explaino_root_sdf ||
+        IsRootFieldConsumerFractal(fractalType)) {
         return true;
     }
     switch (fractalType) {
@@ -980,7 +981,8 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     }
 
     if (!UsesExplainoCustomPolynomialAuthority(view.fractal_type) &&
-        view.fractal_type != FractalType::explaino_root_sdf) {
+        view.fractal_type != FractalType::explaino_root_sdf &&
+        !IsRootFieldConsumerFractal(view.fractal_type)) {
         params.explaino_root_authority = ExplainoRootAuthority::generated;
         params.explaino_root_count = 0;
         ClearPolynomialCoefficients(params.poly_coeffs_b);

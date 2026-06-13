@@ -1641,6 +1641,119 @@ int main() {
     }
 
     {
+        KernelParams rootConsumerParams{};
+        rootConsumerParams.color_shape = ColorPipelineShape::identity;
+        rootConsumerParams.color_shape_offset = 0.0f;
+        rootConsumerParams.color_shape_scale = 1.0f;
+        rootConsumerParams.color_heatmap_cycle_scale = 1.0f;
+        rootConsumerParams.color_heatmap_saturation = 1.0f;
+        rootConsumerParams.color_contrast_lift_exposure = 1.0f;
+        rootConsumerParams.color_contrast_lift_saturation = 1.0f;
+        rootConsumerParams.color_root_proximity_scale = 1.0f;
+        rootConsumerParams.color_root_proximity_bias = 0.0f;
+        rootConsumerParams.explaino_root_count = 2;
+        rootConsumerParams.explaino_roots[0] = {0.25f, 0.0f};
+        rootConsumerParams.explaino_roots[1] = {-0.25f, 0.0f};
+
+        KernelParams baselineParams = rootConsumerParams;
+        baselineParams.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+
+        rootConsumerParams.color_pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        rootConsumerParams.explaino_root_field_trap_strength = 0.0f;
+        rootConsumerParams.explaino_root_field_trap_scale = 1.0f;
+
+        const TestColor mandelbrotBase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            17,
+            100,
+            TestComplex{0.25f, 0.0f},
+            baselineParams);
+        const TestColor mandelbrotNeutral = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_mandelbrot_root_trap,
+            ColoringMode::smooth_escape,
+            true,
+            17,
+            100,
+            TestComplex{0.25f, 0.0f},
+            rootConsumerParams);
+        if (!Equals(mandelbrotBase, mandelbrotNeutral)) {
+            std::cerr << "ExplainO Mandelbrot Root Trap should collapse exactly to baseline Mandelbrot color when trap strength is zero\n";
+            return 1;
+        }
+        rootConsumerParams.explaino_root_field_trap_strength = 1.0f;
+        const TestColor mandelbrotTrapped = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_mandelbrot_root_trap,
+            ColoringMode::smooth_escape,
+            true,
+            17,
+            100,
+            TestComplex{0.25f, 0.0f},
+            rootConsumerParams);
+        if (Equals(mandelbrotNeutral, mandelbrotTrapped)) {
+            std::cerr << "ExplainO Mandelbrot Root Trap should react to nonzero trap strength\n";
+            return 1;
+        }
+
+        rootConsumerParams.explaino_root_field_trap_strength = 0.0f;
+        const TestColor magnetBase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::magnet,
+            ColoringMode::smooth_escape,
+            true,
+            23,
+            100,
+            TestComplex{0.25f, 0.0f},
+            baselineParams);
+        const TestColor magnetNeutral = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_magnet_root_well,
+            ColoringMode::smooth_escape,
+            true,
+            23,
+            100,
+            TestComplex{0.25f, 0.0f},
+            rootConsumerParams);
+        if (!Equals(magnetBase, magnetNeutral)) {
+            std::cerr << "ExplainO Magnet Root Well should collapse exactly to baseline Magnet color when trap strength is zero\n";
+            return 1;
+        }
+        rootConsumerParams.explaino_root_field_trap_strength = 1.0f;
+        const TestColor magnetTrapped = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_magnet_root_well,
+            ColoringMode::smooth_escape,
+            true,
+            23,
+            100,
+            TestComplex{0.25f, 0.0f},
+            rootConsumerParams);
+        if (Equals(magnetNeutral, magnetTrapped)) {
+            std::cerr << "ExplainO Magnet Root Well should react to nonzero trap strength\n";
+            return 1;
+        }
+
+        KernelParams generatedRootConsumerParams{};
+        generatedRootConsumerParams.explaino_root_authority = ExplainoRootAuthority::generated;
+        generatedRootConsumerParams.explaino_generated_root_layout = ExplainoGeneratedRootLayout::regular_ngon_v1;
+        generatedRootConsumerParams.explaino_generated_root_count = 5;
+        generatedRootConsumerParams.explaino_root_spread = 0.3f;
+        generatedRootConsumerParams.explaino_seed = 2.0;
+        ViewState rootViewA{};
+        rootViewA.fractal_type = FractalType::explaino_mandelbrot_root_trap;
+        rootViewA.explaino_phase = 0.0f;
+        rootViewA.explaino_seed_drift = 0.0f;
+        ViewState rootViewB = rootViewA;
+        rootViewB.explaino_phase = 0.125f;
+        float distanceA = 0.0f;
+        float distanceB = 0.0f;
+        if (!TryResolveRootFieldConsumerDistance(TestComplex{0.8f, 0.1f}, generatedRootConsumerParams, &rootViewA, &distanceA) ||
+            !TryResolveRootFieldConsumerDistance(TestComplex{0.8f, 0.1f}, generatedRootConsumerParams, &rootViewB, &distanceB) ||
+            NearlyEqual(distanceA, distanceB, 1.0e-5)) {
+            std::cerr << "Generated regular N-gon root-field consumer distance should use ViewState phase authority\n";
+            return 1;
+        }
+    }
+
+    {
         params.poly_kind = PolyKind::custom;
         params.explaino_root_count = 0;
         const float noRootSignal = ResolveRootProximitySignal(TestComplex{0.5f, -0.5f}, params);

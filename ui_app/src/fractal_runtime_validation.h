@@ -211,7 +211,8 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("explaino_root_sdf_h_frequency must be finite and in [0.1,16]", outError);
         }
     }
-    if (view.fractal_type == FractalType::magnet) {
+    if (view.fractal_type == FractalType::magnet ||
+        view.fractal_type == FractalType::explaino_magnet_root_well) {
         if (!std::isfinite(params.magnet_seed_real) || !std::isfinite(params.magnet_seed_imag)) {
             return FailFractalRuntimeValidation("magnet_seed_real/imag must be finite", outError);
         }
@@ -220,6 +221,18 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
         }
         if (!std::isfinite(params.magnet_bailout) || params.magnet_bailout < 2.0f || params.magnet_bailout > 64.0f) {
             return FailFractalRuntimeValidation("magnet_bailout must be finite and in [2,64]", outError);
+        }
+    }
+    if (IsRootFieldConsumerFractal(view.fractal_type)) {
+        if (!std::isfinite(params.explaino_root_field_trap_strength) ||
+            params.explaino_root_field_trap_strength < 0.0f ||
+            params.explaino_root_field_trap_strength > 2.0f) {
+            return FailFractalRuntimeValidation("explaino_root_field_trap_strength must be finite and in [0,2]", outError);
+        }
+        if (!std::isfinite(params.explaino_root_field_trap_scale) ||
+            params.explaino_root_field_trap_scale < 0.05f ||
+            params.explaino_root_field_trap_scale > 16.0f) {
+            return FailFractalRuntimeValidation("explaino_root_field_trap_scale must be finite and in [0.05,16]", outError);
         }
     }
     if (view.fractal_type == FractalType::multibrot) {

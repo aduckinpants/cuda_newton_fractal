@@ -87,6 +87,16 @@ static void TestConcreteEnumIdWrappers() {
         "TestConcreteEnumIdWrappers_FractalTypeMagnetLookup");
     Check(TryParseFractalTypeId("magnet", &fractalType) && fractalType == FractalType::magnet,
         "TestConcreteEnumIdWrappers_FractalTypeMagnetParse");
+    Check(std::string_view(FractalTypeId(FractalType::explaino_mandelbrot_root_trap)) == "explaino_mandelbrot_root_trap",
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoMandelbrotRootTrapLookup");
+    Check(TryParseFractalTypeId("explaino_mandelbrot_root_trap", &fractalType) &&
+            fractalType == FractalType::explaino_mandelbrot_root_trap,
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoMandelbrotRootTrapParse");
+    Check(std::string_view(FractalTypeId(FractalType::explaino_magnet_root_well)) == "explaino_magnet_root_well",
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoMagnetRootWellLookup");
+    Check(TryParseFractalTypeId("explaino_magnet_root_well", &fractalType) &&
+            fractalType == FractalType::explaino_magnet_root_well,
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoMagnetRootWellParse");
     Check(std::string_view(FractalTypeId(FractalType::generic_equation_pack)) == "generic_equation_pack",
         "TestConcreteEnumIdWrappers_FractalTypeGenericEquationPackLookup");
     Check(TryParseFractalTypeId("generic_equation_pack", &fractalType) && fractalType == FractalType::generic_equation_pack,

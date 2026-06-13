@@ -3089,7 +3089,8 @@
             Cxd dc{0.0, 0.0};
             Cxd delta{0.0, 0.0};
 
-            if (ft == FractalType::mandelbrot) {
+            const FractalType directFractalType = RootFieldConsumerBaseFractalType(ft);
+            if (directFractalType == FractalType::mandelbrot) {
                 dc = cxd_sub(coordD, cxd_from_double2(refC0));
                 delta = {0.0, 0.0};
             } else {
@@ -3129,13 +3130,14 @@
                 const double powerImag = (double)params.multibrot_power_imag;
                 const Cxd lambdaConstD{(double)params.lambda_real, (double)params.lambda_imag};
                 const Cxd phoenixPD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
-                const double escapeRadiusSquaredD = ft == FractalType::magnet
+                const FractalType directFractalType = RootFieldConsumerBaseFractalType(ft);
+                const double escapeRadiusSquaredD = directFractalType == FractalType::magnet
                     ? DirectEscapeTimeRadiusSquared<double>((double)params.magnet_bailout)
                     : DirectEscapeTimeRadiusSquared<double>();
 
                 for (; it < maxIter; ++it) {
                     StepEscapeTimeDirectState(
-                        ft,
+                        directFractalType,
                         powerFloat,
                         powerImag,
                         params.multibrot_power,
@@ -3147,7 +3149,7 @@
                         (double)params.celtic_abs_mix,
                         (double)params.perpendicular_fold_mix,
                         &state);
-                    if (ft == FractalType::magnet) {
+                    if (directFractalType == FractalType::magnet) {
                         const double residualSquaredD = EscapeTimeDirectMagnetResidualSquared(state.z);
                         pAbs = (float)sqrt(residualSquaredD);
                         if (residualSquaredD < epsD * epsD) {
@@ -3173,13 +3175,14 @@
                 const float powerImag = params.multibrot_power_imag;
                 const Cx lambdaConst{params.lambda_real, params.lambda_imag};
                 const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
-                const float escapeRadiusSquared = ft == FractalType::magnet
+                const FractalType directFractalType = RootFieldConsumerBaseFractalType(ft);
+                const float escapeRadiusSquared = directFractalType == FractalType::magnet
                     ? DirectEscapeTimeRadiusSquared<float>(params.magnet_bailout)
                     : DirectEscapeTimeRadiusSquared<float>();
 
                 for (; it < maxIter; ++it) {
                     StepEscapeTimeDirectState(
-                        ft,
+                        directFractalType,
                         powerFloat,
                         powerImag,
                         params.multibrot_power,
@@ -3191,7 +3194,7 @@
                         params.celtic_abs_mix,
                         params.perpendicular_fold_mix,
                         &state);
-                    if (ft == FractalType::magnet) {
+                    if (directFractalType == FractalType::magnet) {
                         const float residualSquared = EscapeTimeDirectMagnetResidualSquared(state.z);
                         pAbs = sqrt(residualSquared);
                         if (residualSquared < eps * eps) {

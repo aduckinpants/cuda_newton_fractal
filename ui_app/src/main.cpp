@@ -55,6 +55,7 @@
 #include "fractal_probe_contract.h"
 #include "fractal_probe_runner.h"
 #include "function_descriptor.h"
+#include "explaino_root_field.h"
 #include "explaino_root_sdf_field.h"
 #include "generic_equation_pack_live.h"
 #include "generic_equation_pack_workbench.h"
@@ -1333,6 +1334,37 @@ static void DispatchRenderFrame(
     InvalidateRenderedFrame(&renderedFrame);
     if (UsesExplainoRootLayoutAuthority(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);
+    }
+    if (IsRootFieldConsumerFractal(view.fractal_type)) {
+        lensSdfProbe.root_field_consumer_active = true;
+        lensSdfProbe.root_field_consumer_kind = FractalTypeId(view.fractal_type)
+            ? FractalTypeId(view.fractal_type)
+            : "unknown";
+        const FractalType baseFractalType = RootFieldConsumerBaseFractalType(view.fractal_type);
+        lensSdfProbe.root_field_consumer_base_fractal_type = FractalTypeId(baseFractalType)
+            ? FractalTypeId(baseFractalType)
+            : "unknown";
+        lensSdfProbe.root_field_consumer_requested_generated_root_count = params.explaino_generated_root_count;
+        lensSdfProbe.root_field_consumer_trap_strength = params.explaino_root_field_trap_strength;
+        lensSdfProbe.root_field_consumer_trap_scale = params.explaino_root_field_trap_scale;
+        ExplainoRootFieldDescriptor rootFieldDescriptor{};
+        std::string rootFieldError;
+        if (ResolveExplainoRootFieldDescriptor(view, params, &rootFieldDescriptor, &rootFieldError)) {
+            lensSdfProbe.root_field_consumer_root_count = rootFieldDescriptor.active_count;
+            lensSdfProbe.root_field_consumer_root_layout_kind =
+                ExplainoRootFieldLayoutKindId(rootFieldDescriptor.layout_kind)
+                    ? ExplainoRootFieldLayoutKindId(rootFieldDescriptor.layout_kind)
+                    : "none";
+            lensSdfProbe.root_field_consumer_root_source_kind =
+                ExplainoRootFieldSourceKindId(rootFieldDescriptor.source_kind)
+                    ? ExplainoRootFieldSourceKindId(rootFieldDescriptor.source_kind)
+                    : "none";
+            lensSdfProbe.root_field_consumer_base_root_hash = rootFieldDescriptor.base_root_hash;
+            lensSdfProbe.root_field_consumer_effective_root_hash = rootFieldDescriptor.effective_root_hash;
+        } else {
+            lensSdfProbe.root_field_consumer_fail_closed_reason =
+                rootFieldError.empty() ? "root_field_descriptor_resolution_failed" : rootFieldError;
+        }
     }
     if (view.auto_max_iter) {
         params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);

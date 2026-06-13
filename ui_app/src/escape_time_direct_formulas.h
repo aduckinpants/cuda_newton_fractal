@@ -132,6 +132,7 @@ ESCAPE_TIME_DIRECT_HD inline Complex EscapeTimeDirectPowComplexPrincipal(Complex
 
 ESCAPE_TIME_DIRECT_HD inline constexpr bool UsesSharedEscapeTimeDirectFormula(FractalType fractalType) {
     return fractalType == FractalType::mandelbrot ||
+        fractalType == FractalType::explaino_mandelbrot_root_trap ||
         fractalType == FractalType::julia ||
         fractalType == FractalType::burning_ship ||
         fractalType == FractalType::multibrot ||
@@ -139,6 +140,7 @@ ESCAPE_TIME_DIRECT_HD inline constexpr bool UsesSharedEscapeTimeDirectFormula(Fr
         fractalType == FractalType::multicorn ||
         fractalType == FractalType::lambda_map ||
         fractalType == FractalType::magnet ||
+        fractalType == FractalType::explaino_magnet_root_well ||
         fractalType == FractalType::spider ||
         fractalType == FractalType::celtic_mandelbrot ||
         fractalType == FractalType::perpendicular_burning_ship;
@@ -153,13 +155,16 @@ ESCAPE_TIME_DIRECT_HD inline EscapeTimeDirectState<Complex> InitEscapeTimeDirect
     using Scalar = decltype(coord.x);
 
     EscapeTimeDirectState<Complex> state{};
-    if (fractalType == FractalType::julia) {
+    const FractalType directFractalType = fractalType == FractalType::explaino_mandelbrot_root_trap
+        ? FractalType::mandelbrot
+        : (fractalType == FractalType::explaino_magnet_root_well ? FractalType::magnet : fractalType);
+    if (directFractalType == FractalType::julia) {
         state.z = coord;
         state.c = juliaConst;
-    } else if (fractalType == FractalType::lambda_map) {
+    } else if (directFractalType == FractalType::lambda_map) {
         state.z = coord;
         state.c = {static_cast<Scalar>(0), static_cast<Scalar>(0)};
-    } else if (fractalType == FractalType::magnet) {
+    } else if (directFractalType == FractalType::magnet) {
         state.z = magnetSeed;
         state.c = coord;
     } else {
@@ -211,41 +216,45 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     Complex c = ioState->c;
     Complex zPrev = ioState->z_prev;
 
-    if (fractalType == FractalType::spider) {
+    const FractalType directFractalType = fractalType == FractalType::explaino_mandelbrot_root_trap
+        ? FractalType::mandelbrot
+        : (fractalType == FractalType::explaino_magnet_root_well ? FractalType::magnet : fractalType);
+
+    if (directFractalType == FractalType::spider) {
         const Complex z2 = EscapeTimeDirectMul(z, z);
         z = EscapeTimeDirectAdd(z2, c);
         const Real feedback = EscapeTimeDirectClamp(static_cast<Real>(spiderFeedback), static_cast<Real>(-2), static_cast<Real>(2));
         c = EscapeTimeDirectAdd(EscapeTimeDirectScale(c, feedback), z);
-    } else if (fractalType == FractalType::celtic_mandelbrot) {
+    } else if (directFractalType == FractalType::celtic_mandelbrot) {
         const Real mix = EscapeTimeDirectClamp(static_cast<Real>(celticAbsMix), static_cast<Real>(0), static_cast<Real>(1));
         const Real realTerm = z.x * z.x - z.y * z.y;
         const Complex z2{EscapeTimeDirectMix(realTerm, EscapeTimeDirectAbs(realTerm), mix), static_cast<Real>(2) * z.x * z.y};
         z = EscapeTimeDirectAdd(z2, c);
-    } else if (fractalType == FractalType::perpendicular_burning_ship) {
+    } else if (directFractalType == FractalType::perpendicular_burning_ship) {
         const Real mix = EscapeTimeDirectClamp(static_cast<Real>(perpendicularFoldMix), static_cast<Real>(0), static_cast<Real>(1));
         const Real foldedX = EscapeTimeDirectMix(z.x, EscapeTimeDirectAbs(z.x), mix);
         const Complex z2{z.x * z.x - z.y * z.y, static_cast<Real>(2) * foldedX * z.y};
         z = EscapeTimeDirectAdd(z2, c);
-    } else if (fractalType == FractalType::burning_ship) {
+    } else if (directFractalType == FractalType::burning_ship) {
         const Real mix = EscapeTimeDirectClamp(static_cast<Real>(burningShipFoldMix), static_cast<Real>(0), static_cast<Real>(1));
         const Complex absZ = EscapeTimeDirectAbsComponents(z);
         const Complex foldedZ{
             EscapeTimeDirectMix(z.x, absZ.x, mix),
             EscapeTimeDirectMix(z.y, absZ.y, mix)};
         z = EscapeTimeDirectAdd(EscapeTimeDirectMul(foldedZ, foldedZ), c);
-    } else if (fractalType == FractalType::multibrot) {
+    } else if (directFractalType == FractalType::multibrot) {
         z = EscapeTimeDirectAdd(EscapeTimeDirectPowComplexPrincipal(z, static_cast<Real>(multibrotPowerFloat), static_cast<Real>(multibrotPowerImag)), c);
-    } else if (fractalType == FractalType::multicorn) {
+    } else if (directFractalType == FractalType::multicorn) {
         const Complex conjugateZ{z.x, -z.y};
         z = EscapeTimeDirectAdd(EscapeTimeDirectPowInt(conjugateZ, multibrotPowerInt), c);
-    } else if (fractalType == FractalType::lambda_map) {
+    } else if (directFractalType == FractalType::lambda_map) {
         const Complex oneMinusZ{static_cast<Real>(1) - z.x, -z.y};
         z = EscapeTimeDirectMul(lambdaConst, EscapeTimeDirectMul(z, oneMinusZ));
-    } else if (fractalType == FractalType::phoenix) {
+    } else if (directFractalType == FractalType::phoenix) {
         const Complex zNext = EscapeTimeDirectAdd(EscapeTimeDirectAdd(EscapeTimeDirectMul(z, z), c), EscapeTimeDirectMul(phoenixP, zPrev));
         zPrev = z;
         z = zNext;
-    } else if (fractalType == FractalType::magnet) {
+    } else if (directFractalType == FractalType::magnet) {
         const Complex z2 = EscapeTimeDirectMul(z, z);
         const Complex numerator = EscapeTimeDirectAdd(EscapeTimeDirectSub(z2, {static_cast<Real>(1), static_cast<Real>(0)}), c);
         const Complex denominator = EscapeTimeDirectAdd(EscapeTimeDirectSub(EscapeTimeDirectScale(z, static_cast<Real>(2)), {static_cast<Real>(2), static_cast<Real>(0)}), c);

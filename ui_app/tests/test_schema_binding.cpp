@@ -16,7 +16,7 @@
 
 namespace {
 
-constexpr std::size_t kExpectedFractalCount = 48;
+constexpr std::size_t kExpectedFractalCount = 50;
 
 struct ImGuiTestContext {
     ImGuiContext* context = nullptr;
@@ -502,7 +502,7 @@ bool SchemaFractalOptionsMatchEnumIds(const json_min::Value& schemaRoot) {
         schemaIds.push_back(id);
     }
     if (schemaIds.size() != kExpectedFractalCount || std::size(enum_id_utils::kFractalTypeIds) != kExpectedFractalCount) {
-        std::cerr << "All-fractal inventory expected exactly 48 schema and enum fractal ids\n";
+        std::cerr << "All-fractal inventory expected exactly " << kExpectedFractalCount << " schema and enum fractal ids\n";
         return false;
     }
     for (const auto& enumId : enum_id_utils::kFractalTypeIds) {
@@ -586,7 +586,7 @@ bool ValidateGeneratedAllFractalControlInventory() {
         }
     }
     if (laneCount != kExpectedFractalCount) {
-        std::cerr << "All-fractal inventory did not visit all 48 fractal lanes\n";
+        std::cerr << "All-fractal inventory did not visit all " << kExpectedFractalCount << " fractal lanes\n";
         return false;
     }
     if (visibleFamilyControlCells < 200) {
@@ -769,7 +769,7 @@ bool ValidateAndExportAllFractalControlDescriptor(const json_min::Value& schemaR
     }
 
     if (laneCount != kExpectedFractalCount) {
-        std::cerr << "Descriptor export did not visit all 48 fractal lanes\n";
+        std::cerr << "Descriptor export did not visit all " << kExpectedFractalCount << " fractal lanes\n";
         return false;
     }
     if (visibleControlCells < 200) {
@@ -864,6 +864,12 @@ bool ValidateVisibleControlMatrix() {
         {"explaino_root_sdf_h_source", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_source", "enum"},
         {"explaino_root_sdf_h_amplitude", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_amplitude", "float"},
         {"explaino_root_sdf_h_frequency", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_frequency", "float"},
+        {"explaino_generated_root_layout", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_generated_root_layout", "enum"},
+        {"explaino_generated_root_layout", FractalType::explaino_magnet_root_well, "fractal.params.explaino_generated_root_layout", "enum"},
+        {"explaino_root_field_trap_strength", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_root_field_trap_strength", "float"},
+        {"explaino_root_field_trap_scale", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_root_field_trap_scale", "float"},
+        {"explaino_root_field_trap_strength", FractalType::explaino_magnet_root_well, "fractal.params.explaino_root_field_trap_strength", "float"},
+        {"explaino_root_field_trap_scale", FractalType::explaino_magnet_root_well, "fractal.params.explaino_root_field_trap_scale", "float"},
         {"counterfactual_pair_root_family", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "enum"},
         {"counterfactual_pair_root_family", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "enum"},
         {"counterfactual_pair_frame", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_frame", "enum"},
@@ -936,6 +942,8 @@ bool ValidateEnumComboEditMatrix() {
         {"projection_and_flow_root_family", FractalType::projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
         {"projection_and_flow_root_family", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
         {"explaino_generated_root_layout", FractalType::explaino_root_sdf, "fractal.params.explaino_generated_root_layout", "regular_ngon_v1"},
+        {"explaino_generated_root_layout", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_generated_root_layout", "regular_ngon_v1"},
+        {"explaino_generated_root_layout", FractalType::explaino_magnet_root_well, "fractal.params.explaino_generated_root_layout", "regular_ngon_v1"},
         {"explaino_root_sdf_h_source", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_source", "phase_sine"},
         {"transcendental_func", FractalType::explaino_transcendental, "fractal.params.transcendental_func", "f_cosh"},
     };

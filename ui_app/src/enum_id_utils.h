@@ -194,6 +194,8 @@ inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {
     {FractalType::generic_equation_pack, "generic_equation_pack"},
     {FractalType::sdf_pack_scene, "sdf_pack_scene"},
     {FractalType::explaino_root_sdf, "explaino_root_sdf"},
+    {FractalType::explaino_mandelbrot_root_trap, "explaino_mandelbrot_root_trap"},
+    {FractalType::explaino_magnet_root_well, "explaino_magnet_root_well"},
 };
 
 inline constexpr EnumIdPair<CameraBehavior> kCameraBehaviorIds[] = {

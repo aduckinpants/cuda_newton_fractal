@@ -2223,6 +2223,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     ExplainoRootSdfHSource explainoRootSdfHSource = nextParams.explaino_root_sdf_h_source;
     double explainoRootSdfHAmplitude = nextParams.explaino_root_sdf_h_amplitude;
     double explainoRootSdfHFrequency = nextParams.explaino_root_sdf_h_frequency;
+    double explainoRootFieldTrapStrength = nextParams.explaino_root_field_trap_strength;
+    double explainoRootFieldTrapScale = nextParams.explaino_root_field_trap_scale;
     double joyCoupling = nextParams.joy_coupling;
     double foldCoupling = nextParams.fold_coupling;
     double bellCoupling = nextParams.bell_coupling;
@@ -2359,6 +2361,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_smooth_blend", &explainoRootSdfSmoothBlend, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_h_amplitude", &explainoRootSdfHAmplitude, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_h_frequency", &explainoRootSdfHFrequency, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_root_field_trap_strength", &explainoRootFieldTrapStrength, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_root_field_trap_scale", &explainoRootFieldTrapScale, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "joy_coupling", &joyCoupling, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "fold_coupling", &foldCoupling, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "bell_coupling", &bellCoupling, nullptr, outError)) return false;
@@ -2526,6 +2530,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_root_sdf_h_source = explainoRootSdfHSource;
     nextParams.explaino_root_sdf_h_amplitude = static_cast<float>(explainoRootSdfHAmplitude);
     nextParams.explaino_root_sdf_h_frequency = static_cast<float>(explainoRootSdfHFrequency);
+    nextParams.explaino_root_field_trap_strength = static_cast<float>(explainoRootFieldTrapStrength);
+    nextParams.explaino_root_field_trap_scale = static_cast<float>(explainoRootFieldTrapScale);
     for (Float2& root : nextParams.explaino_roots) {
         root = {0.0f, 0.0f};
     }

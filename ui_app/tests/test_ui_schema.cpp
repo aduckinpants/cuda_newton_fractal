@@ -742,6 +742,8 @@ int main() {
         bool foundFractalTypeExplainoProjectionAndFlowGroup = false;
         bool foundSafeModeExplainoCounterfactualPairGroup = false;
         bool foundFractalTypeExplainoCounterfactualPairGroup = false;
+        bool foundFractalTypeExplainoMandelbrotRootTrapExperimentGroup = false;
+        bool foundFractalTypeExplainoMagnetRootWellExperimentGroup = false;
         bool foundFractalTypeExplainoAllFirst = false;
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
@@ -828,6 +830,8 @@ int main() {
         bool foundExplainoRootSdfHSource = false;
         bool foundExplainoRootSdfHAmplitude = false;
         bool foundExplainoRootSdfHFrequency = false;
+        bool foundExplainoRootFieldTrapStrength = false;
+        bool foundExplainoRootFieldTrapScale = false;
 
         if (!LoadAndValidateSchemaFile(schemaPath)) {
             return 1;
@@ -995,6 +999,8 @@ int main() {
                         if (option.id == "explaino_all" && option.group == "Explaino") foundFractalTypeExplainoAllGroup = true;
                         if (option.id == "explaino_projection_and_flow" && option.group == "Explaino") foundFractalTypeExplainoProjectionAndFlowGroup = true;
                         if (option.id == "explaino_counterfactual_pair" && option.group == "Explaino") foundFractalTypeExplainoCounterfactualPairGroup = true;
+                        if (option.id == "explaino_mandelbrot_root_trap" && option.group == "Explaino Experiments") foundFractalTypeExplainoMandelbrotRootTrapExperimentGroup = true;
+                        if (option.id == "explaino_magnet_root_well" && option.group == "Explaino Experiments") foundFractalTypeExplainoMagnetRootWellExperimentGroup = true;
                         if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
                             foundFractalTypeExplainoAllFirst = option.id == "explaino_all";
                         }
@@ -1060,6 +1066,28 @@ int main() {
                     ctrl.has_ui_min && ctrl.ui_min == 0.25 && ctrl.has_ui_max && ctrl.ui_max == 4.0 &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "explaino_root_sdf") {
                     foundExplainoRootSdfHFrequency = true;
+                }
+                if (ctrl.id == "explaino_root_field_trap_strength" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.explaino_root_field_trap_strength" &&
+                    ctrl.has_min && ctrl.min == 0.0 && ctrl.has_max && ctrl.max == 2.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.0 && ctrl.has_ui_max && ctrl.ui_max == 1.0 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_mandelbrot_root_trap") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") &&
+                    !VisibleIfIncludesFractalType(ctrl, "mandelbrot") &&
+                    !VisibleIfIncludesFractalType(ctrl, "magnet")) {
+                    foundExplainoRootFieldTrapStrength = true;
+                }
+                if (ctrl.id == "explaino_root_field_trap_scale" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.explaino_root_field_trap_scale" &&
+                    ctrl.has_min && ctrl.min == 0.05 && ctrl.has_max && ctrl.max == 16.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.25 && ctrl.has_ui_max && ctrl.ui_max == 4.0 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_mandelbrot_root_trap") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") &&
+                    !VisibleIfIncludesFractalType(ctrl, "mandelbrot") &&
+                    !VisibleIfIncludesFractalType(ctrl, "magnet")) {
+                    foundExplainoRootFieldTrapScale = true;
                 }
                 if (ctrl.id == "color_smooth_escape_interior_strength" && ctrl.type == "slider_float" &&
                     ctrl.has_binding && ctrl.binding.path == "fractal.params.color_smooth_escape_interior_strength" &&
@@ -1577,13 +1605,18 @@ int main() {
             !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
             !foundFractalTypeSdfGroup || !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
             !foundFractalTypeExplainoProjectionAndFlowGroup || !foundFractalTypeExplainoCounterfactualPairGroup ||
-            !foundFractalTypeExplainoRootSdfGroup) {
+            !foundFractalTypeExplainoRootSdfGroup || !foundFractalTypeExplainoMandelbrotRootTrapExperimentGroup ||
+            !foundFractalTypeExplainoMagnetRootWellExperimentGroup) {
             std::cerr << "Did not find grouped fractal selector categories including the canonical Explaino-all entry in schema\n";
             return 1;
         }
         if (!foundExplainoRootSdfRadius || !foundExplainoRootSdfBridgeWidth || !foundExplainoRootSdfSmoothBlend ||
             !foundExplainoRootSdfHSource || !foundExplainoRootSdfHAmplitude || !foundExplainoRootSdfHFrequency) {
             std::cerr << "Did not find the ExplainO Root SDF owner-lane control surface in schema\n";
+            return 1;
+        }
+        if (!foundExplainoRootFieldTrapStrength || !foundExplainoRootFieldTrapScale) {
+            std::cerr << "Did not find the ExplainO root-field consumer trap control surface in schema\n";
             return 1;
         }
         if (!foundFractalTypeExplainoAllFirst) {

@@ -136,6 +136,17 @@ void TestLensSdfProbeTimingFields() {
     probe.field_cache_hit = true;
     probe.field_cache_mask_bytes = 76800;
     probe.field_producer_kind = "lens_field_v2";
+    probe.root_field_consumer_active = true;
+    probe.root_field_consumer_kind = "explaino_mandelbrot_root_trap";
+    probe.root_field_consumer_base_fractal_type = "mandelbrot";
+    probe.root_field_consumer_root_layout_kind = "regular_ngon_v1";
+    probe.root_field_consumer_root_source_kind = "generated";
+    probe.root_field_consumer_root_count = 5;
+    probe.root_field_consumer_requested_generated_root_count = 5;
+    probe.root_field_consumer_trap_strength = 0.75f;
+    probe.root_field_consumer_trap_scale = 1.5f;
+    probe.root_field_consumer_base_root_hash = 0x9012ull;
+    probe.root_field_consumer_effective_root_hash = 0x3456ull;
     probe.explaino_root_sdf_root_count = 4;
     probe.explaino_root_sdf_bridge_count = 2;
     probe.explaino_root_sdf_root_layout_kind = "regular_ngon_v1";
@@ -269,6 +280,17 @@ void TestLensSdfProbeTimingFields() {
     Check(json.find("\"explaino_root_sdf_base_root_hash\": \"fnv1a64:0000000000001234\"") != std::string::npos &&
             json.find("\"explaino_root_sdf_effective_root_hash\": \"fnv1a64:0000000000005678\"") != std::string::npos,
         "automation report writes ExplainO root-SDF root hashes");
+    Check(json.find("\"root_field_consumer_active\": true") != std::string::npos &&
+            json.find("\"root_field_consumer_kind\": \"explaino_mandelbrot_root_trap\"") != std::string::npos &&
+            json.find("\"root_field_consumer_base_fractal_type\": \"mandelbrot\"") != std::string::npos &&
+            json.find("\"root_field_consumer_root_layout_kind\": \"regular_ngon_v1\"") != std::string::npos &&
+            json.find("\"root_field_consumer_root_source_kind\": \"generated\"") != std::string::npos &&
+            json.find("\"root_field_consumer_root_count\": 5") != std::string::npos &&
+            json.find("\"root_field_consumer_requested_generated_root_count\": 5") != std::string::npos,
+        "automation report writes root-field consumer identity and root-layout diagnostics");
+    Check(json.find("\"root_field_consumer_base_root_hash\": \"fnv1a64:0000000000009012\"") != std::string::npos &&
+            json.find("\"root_field_consumer_effective_root_hash\": \"fnv1a64:0000000000003456\"") != std::string::npos,
+        "automation report writes root-field consumer root hashes");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {

@@ -147,7 +147,7 @@ bool ResolveExplainoRootFieldDescriptor(
     }
 
     if (params.explaino_root_authority == ExplainoRootAuthority::generated &&
-        view.fractal_type == FractalType::explaino_root_sdf &&
+        UsesExplainoRootLayoutAuthority(view.fractal_type) &&
         params.explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1) {
         const int count = params.explaino_generated_root_count;
         if (count < 2 || count > kExplainoRootFieldMaxRoots) {

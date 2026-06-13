@@ -74,6 +74,18 @@ struct ViewerUiAutomationLensSdfProbe {
     std::string field_capability_fail_closed_reason;
     std::string field_source_pack_id;
     std::string field_source_error;
+    bool root_field_consumer_active = false;
+    std::string root_field_consumer_kind = "none";
+    std::string root_field_consumer_base_fractal_type = "none";
+    std::string root_field_consumer_root_layout_kind = "none";
+    std::string root_field_consumer_root_source_kind = "none";
+    int root_field_consumer_root_count = 0;
+    int root_field_consumer_requested_generated_root_count = 0;
+    float root_field_consumer_trap_strength = 0.0f;
+    float root_field_consumer_trap_scale = 1.0f;
+    std::uint64_t root_field_consumer_base_root_hash = 0;
+    std::uint64_t root_field_consumer_effective_root_hash = 0;
+    std::string root_field_consumer_fail_closed_reason;
     int explaino_root_sdf_root_count = 0;
     int explaino_root_sdf_bridge_count = 0;
     std::string explaino_root_sdf_root_layout_kind = "none";

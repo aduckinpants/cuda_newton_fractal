@@ -74,6 +74,7 @@ __device__ __forceinline__ bool IsRendererBackedColorSourceSignal(ColorSignal si
 
 __device__ __forceinline__ float ResolveRendererBackedColorSourceSignal(
     FractalType ft,
+    const ViewState& view,
     bool hasExplicitSyntheticClass,
     bool converged,
     bool escaped,
@@ -113,6 +114,7 @@ __device__ __forceinline__ float ResolveRendererBackedColorSourceSignal(
         magnitude,
         angle,
         params,
+        &view,
         entry);
 }
 
@@ -197,6 +199,7 @@ __global__ void kernel_render(
             if (rowIndex < stackRows) {
                 signal = ResolveRendererBackedColorSourceSignal(
                     ft,
+                    view,
                     hasExplicitSyntheticClass,
                     converged,
                     escaped,
@@ -295,7 +298,7 @@ __global__ void kernel_render(
         }
     } else {
         // Escape-time coloring.
-        color = MakeEscapeTimeBaseColor<uchar4>(ft, mode, escaped, it, maxIter, z, params);
+        color = MakeEscapeTimeBaseColor<uchar4>(ft, mode, escaped, it, maxIter, z, params, &view);
     }
 
     color = ApplyFractalColorGrading(color, params);

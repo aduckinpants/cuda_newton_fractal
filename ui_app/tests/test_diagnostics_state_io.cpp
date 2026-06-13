@@ -6046,6 +6046,87 @@ int main() {
         }
       }
 
+      {
+        const char* rootConsumerIds[] = {
+            "explaino_mandelbrot_root_trap",
+            "explaino_magnet_root_well",
+        };
+        const FractalType expectedTypes[] = {
+            FractalType::explaino_mandelbrot_root_trap,
+            FractalType::explaino_magnet_root_well,
+        };
+        for (std::size_t index = 0; index < 2; ++index) {
+          std::string stateJson = std::string(R"({
+      "state_version": 3,
+      "fractal_type": ")") + rootConsumerIds[index] + R"(",
+      "view": {
+      "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+      "rotation_degrees": 0.0,
+      "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+      "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+      },
+      "params": {
+      "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+      "poly_kind": 2,
+      "coloring_mode": "smooth_escape",
+      "color_signal": "root_proximity",
+      "color_shape": "identity",
+      "color_palette": "explaino_cmap",
+      "color_grading": "escape_default",
+      "nova_alpha": 0.5,
+      "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+      "julia_c_real": -0.7, "julia_c_imag": 0.27015,
+      "multibrot_power": 3,
+      "lambda_real": 2.9685855, "lambda_imag": -0.27446103,
+      "magnet_seed_real": 0.0, "magnet_seed_imag": 0.0,
+      "magnet_relaxation": 1.0, "magnet_bailout": 12.0,
+      "explaino_seed": 0.0,
+      "explaino_seed_b": 1.0,
+      "explaino_mix": 0.5,
+      "explaino_warp_strength": 0.0,
+      "explaino_root_spread": 0.5,
+      "explaino_root_authority": "generated",
+      "explaino_generated_root_layout": "legacy_quartic_v1",
+      "explaino_generated_root_count": 4,
+      "explaino_damping": 1.0,
+      "explaino_root_count": 4,
+      "explaino_root_field_trap_strength": 0.75,
+      "explaino_root_field_trap_scale": 1.0,
+      "poly_coeffs": [-1, 0, 0, 1, 0],
+      "color_root_proximity_scale": 1.0,
+      "color_root_proximity_bias": 0.0
+      },
+      "render": { "width": 256, "height": 192, "block_size": 256, "device_id": 0 }
+    })";
+          ViewState loadedView{};
+          KernelParams loadedParams{};
+          RenderSettings loadedRender{};
+          ColorPipelineWindowState loadedDraft{};
+          std::string error;
+          if (!LoadDiagnosticsStateJson(
+                  stateJson,
+                  &loadedView,
+                  &loadedParams,
+                  &loadedRender,
+                  &loadedDraft,
+                  nullptr,
+                  &error)) {
+            std::cerr << "Expected root-field consumer diagnostics state to reload for "
+                      << rootConsumerIds[index] << ": " << error << "\n";
+            return 1;
+          }
+          if (loadedView.fractal_type != expectedTypes[index] ||
+              loadedParams.color_pipeline.signal != ColorSignal::root_proximity ||
+              loadedParams.color_pipeline.palette != ColorPalette::explaino_cmap ||
+              loadedParams.color_pipeline.grading != ColorGradingPreset::escape_default ||
+              loadedParams.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Expected root-field consumer state reload to preserve selector and root-proximity pipeline for "
+                      << rootConsumerIds[index] << "\n";
+            return 1;
+          }
+        }
+      }
+
     std::cout << "test_diagnostics_state_io: all passed\n";
     return 0;
 }
