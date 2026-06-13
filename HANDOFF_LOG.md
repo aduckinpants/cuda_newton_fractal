@@ -155,3 +155,5 @@
 - `ck:880bba43` 2026-06-13 14:29 UTC | score 4 — SDF field-primary grid optimization closed: descriptor field producer plus Root SDF direct descriptor and SDF pack viewer descriptor cache; hashes preserved and focused native/runtime proof green.
 - `ck:880bba43` 2026-06-13 14:31 UTC | score 4 — SDF field-primary grid optimization handoff cleanup: removed stale pending closeout line; final ck:880bba43 entry remains authoritative.
 - `ck:880bba43` 2026-06-13 15:42 UTC | score 4 — SDF field-primary grid optimization plan cleanup: checked final closeout phase and recorded receipts/rearward/push proof in the proof ledger.
+- `ck:09b30046` 2026-06-13 15:52 UTC — session-start | branch=codex/sdf-field-generation-downsample-second-pass | head=344de1d | status=dirty | profile=runtime | intent=SDF field-generation/downsample second-pass measurement
+- `ck:09b30046` 2026-06-13 16:16 UTC | score 4 — SDF field-generation/downsample second-pass measurement closed: repaired witness coverage for field-primary downsample and preview rows, captured 1024/2048 measurements, and stopped for replan on split bottleneck.

@@ -12,6 +12,34 @@ def test_repo_absolute_path_resolves_relative_paths_from_repo_root() -> None:
     assert resolved == witness.REPO_ROOT / "artifacts" / "sdf_performance_witness" / "report.json"
 
 
+def test_default_scenarios_cover_field_primary_downsample_variants() -> None:
+    scenarios = {scenario.name: scenario for scenario in witness.DEFAULT_SCENARIOS}
+
+    for name in {
+        "lens_field_v2_downsample4",
+        "sdf_pack_scene_signed_distance_downsample2",
+        "sdf_pack_scene_signed_distance_downsample4",
+        "sdf_pack_scene_signed_distance_downsample8",
+        "explaino_root_sdf_regular_n16_downsample2",
+        "explaino_root_sdf_regular_n16_downsample4",
+        "explaino_root_sdf_regular_n16_downsample8",
+    }:
+        assert name in scenarios
+        assert scenarios[name].lens_downsample > 1
+
+    assert scenarios["sdf_pack_scene_signed_distance_downsample8"].fractal_type == "sdf_pack_scene"
+    assert scenarios["explaino_root_sdf_regular_n16_downsample8"].fractal_type == "explaino_root_sdf"
+    assert ("explaino_generated_root_count", 16) in scenarios["explaino_root_sdf_regular_n16_downsample8"].param_updates
+
+
+def test_preview_scenarios_cover_mask_derived_and_field_primary_rows() -> None:
+    assert witness.PREVIEW_SCENARIO_NAMES == {
+        "sdf_normal_angle_curvature_stack",
+        "sdf_pack_scene_signed_distance",
+        "explaino_root_sdf_regular_n16_static",
+    }
+
+
 def _payload(
     *,
     name: str,

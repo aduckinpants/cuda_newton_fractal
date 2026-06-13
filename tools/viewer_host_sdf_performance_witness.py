@@ -17,6 +17,14 @@ from typing import Any, Callable
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TESTS_DIR = REPO_ROOT / "tests"
 
+PREVIEW_SCENARIO_NAMES: frozenset[str] = frozenset(
+    {
+        "sdf_normal_angle_curvature_stack",
+        "sdf_pack_scene_signed_distance",
+        "explaino_root_sdf_regular_n16_static",
+    }
+)
+
 
 @dataclass(frozen=True)
 class SdfWitnessScenario:
@@ -77,10 +85,37 @@ DEFAULT_SCENARIOS: tuple[SdfWitnessScenario, ...] = (
         source_stack=({"signal": "lens_field_v2_distance", "scale": 1.0, "bias": 0.0, "blend_weight": 1.0},),
     ),
     SdfWitnessScenario(
+        name="lens_field_v2_downsample4",
+        color_signal="lens_field_v2_distance",
+        source_stack=({"signal": "lens_field_v2_distance", "scale": 1.0, "bias": 0.0, "blend_weight": 1.0},),
+        lens_downsample=4,
+    ),
+    SdfWitnessScenario(
         name="sdf_pack_scene_signed_distance",
         color_signal="sdf_signed_distance",
         source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
         fractal_type="sdf_pack_scene",
+    ),
+    SdfWitnessScenario(
+        name="sdf_pack_scene_signed_distance_downsample2",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="sdf_pack_scene",
+        lens_downsample=2,
+    ),
+    SdfWitnessScenario(
+        name="sdf_pack_scene_signed_distance_downsample4",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="sdf_pack_scene",
+        lens_downsample=4,
+    ),
+    SdfWitnessScenario(
+        name="sdf_pack_scene_signed_distance_downsample8",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="sdf_pack_scene",
+        lens_downsample=8,
     ),
     SdfWitnessScenario(
         name="explaino_root_sdf_static",
@@ -104,6 +139,39 @@ DEFAULT_SCENARIOS: tuple[SdfWitnessScenario, ...] = (
         color_signal="sdf_signed_distance",
         source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
         fractal_type="explaino_root_sdf",
+        param_updates=(
+            ("explaino_generated_root_layout", "regular_ngon_v1"),
+            ("explaino_generated_root_count", 16),
+        ),
+    ),
+    SdfWitnessScenario(
+        name="explaino_root_sdf_regular_n16_downsample2",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="explaino_root_sdf",
+        lens_downsample=2,
+        param_updates=(
+            ("explaino_generated_root_layout", "regular_ngon_v1"),
+            ("explaino_generated_root_count", 16),
+        ),
+    ),
+    SdfWitnessScenario(
+        name="explaino_root_sdf_regular_n16_downsample4",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="explaino_root_sdf",
+        lens_downsample=4,
+        param_updates=(
+            ("explaino_generated_root_layout", "regular_ngon_v1"),
+            ("explaino_generated_root_count", 16),
+        ),
+    ),
+    SdfWitnessScenario(
+        name="explaino_root_sdf_regular_n16_downsample8",
+        color_signal="sdf_signed_distance",
+        source_stack=({"signal": "sdf_signed_distance", "scale": 0.05, "bias": 0.5, "blend_weight": 1.0},),
+        fractal_type="explaino_root_sdf",
+        lens_downsample=8,
         param_updates=(
             ("explaino_generated_root_layout", "regular_ngon_v1"),
             ("explaino_generated_root_count", 16),
@@ -694,8 +762,7 @@ def collect_runtime_measurements(
                     )
                 )
 
-            preview_path: Path | None = None
-            preview_scenario: SdfWitnessScenario | None = None
+            preview_paths: list[tuple[SdfWitnessScenario, Path]] = []
             for scenario, state_path in scenario_paths[1:]:
                 for _repeat_index in range(max(1, repeat_count)):
                     payload = viewer.load_state_json(state_path, expected_fractal_type=scenario.fractal_type, timeout_seconds=timeout_seconds)
@@ -709,42 +776,42 @@ def collect_runtime_measurements(
                             is_sdf=scenario.is_sdf,
                         )
                     )
-                if scenario.name == "sdf_normal_angle_curvature_stack":
-                    preview_path = state_path
-                    preview_scenario = scenario
+                if scenario.name in PREVIEW_SCENARIO_NAMES:
+                    preview_paths.append((scenario, state_path))
 
-            if include_preview_sample and preview_path is not None and preview_scenario is not None:
-                viewer.load_state_json(preview_path, expected_fractal_type=preview_scenario.fractal_type, timeout_seconds=timeout_seconds)
-                preview_payload = viewer.set_control_value(
-                    "fractal_control.center_x.primary",
-                    -0.49,
-                    timeout_seconds=timeout_seconds,
-                )
-                measurements.append(
-                    measurement_from_payload(
-                        f"{preview_scenario.name}_interaction_preview",
-                        "preview",
-                        preview_payload,
-                        source_stack=[str(entry.get("signal", "")) for entry in preview_scenario.source_stack],
-                        lens_downsample=preview_scenario.lens_downsample,
-                        is_sdf=preview_scenario.is_sdf,
+            if include_preview_sample:
+                for preview_scenario, preview_path in preview_paths:
+                    viewer.load_state_json(preview_path, expected_fractal_type=preview_scenario.fractal_type, timeout_seconds=timeout_seconds)
+                    preview_payload = viewer.set_control_value(
+                        "fractal_control.center_x.primary",
+                        -0.49,
+                        timeout_seconds=timeout_seconds,
                     )
-                )
-                settled_payload = _wait_for_report_predicate(
-                    viewer,
-                    lambda payload: _is_settled_full_quality_report(payload, command_sequence=viewer.sequence),
-                    timeout_seconds=timeout_seconds,
-                )
-                measurements.append(
-                    measurement_from_payload(
-                        f"{preview_scenario.name}_settled_full_quality",
-                        "full_quality",
-                        settled_payload,
-                        source_stack=[str(entry.get("signal", "")) for entry in preview_scenario.source_stack],
-                        lens_downsample=preview_scenario.lens_downsample,
-                        is_sdf=preview_scenario.is_sdf,
+                    measurements.append(
+                        measurement_from_payload(
+                            f"{preview_scenario.name}_interaction_preview",
+                            "preview",
+                            preview_payload,
+                            source_stack=[str(entry.get("signal", "")) for entry in preview_scenario.source_stack],
+                            lens_downsample=preview_scenario.lens_downsample,
+                            is_sdf=preview_scenario.is_sdf,
+                        )
                     )
-                )
+                    settled_payload = _wait_for_report_predicate(
+                        viewer,
+                        lambda payload: _is_settled_full_quality_report(payload, command_sequence=viewer.sequence),
+                        timeout_seconds=timeout_seconds,
+                    )
+                    measurements.append(
+                        measurement_from_payload(
+                            f"{preview_scenario.name}_settled_full_quality",
+                            "full_quality",
+                            settled_payload,
+                            source_stack=[str(entry.get("signal", "")) for entry in preview_scenario.source_stack],
+                            lens_downsample=preview_scenario.lens_downsample,
+                            is_sdf=preview_scenario.is_sdf,
+                        )
+                    )
             return measurements, int(viewer.launch_count)
 
 

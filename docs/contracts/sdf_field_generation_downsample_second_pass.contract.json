@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_generation_downsample_second_pass",
+  "feature_id": "sdf_field_generation_downsample_second_pass",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_field_generation_downsample_second_pass_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "tools",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "start from clean master after merging sdf_field_primary_grid_optimization",
+    "measure remaining SDF field-generation/downsample bottlenecks before choosing implementation",
+    "cover sdf_pack_scene, explaino_root_sdf, Lens Field v2, and mask-derived Lens SDF where supported",
+    "include requested/effective downsample behavior in the witness",
+    "record measurement artifacts under artifacts/sdf_field_generation_downsample_second_pass",
+    "stop for replan if the next seam is ambiguous"
+  ],
+  "forbidden_operator_prompts": [
+    "add new SDF ops",
+    "add new SDF-native lanes",
+    "add new visual features or presets",
+    "add per-source downsample UX",
+    "redesign Color Pipeline UI",
+    "add Salticid adapter/removal work",
+    "start perturbation zoom work",
+    "use approximate pixels or LUT quantization",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/sdf-field-generation-downsample-second-pass",
+    "source_head": "344de1d4ceb08c924f079b93af6dcd791ed0628f",
+    "baseline_before_code_edits": true,
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true,
+    "measurement_first": true
+  },
+  "forbidden_defaults": {
+    "new_sdf_operator": "forbidden",
+    "new_visual_feature": "forbidden",
+    "per_source_downsample_ux": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "implementation_without_measurement_decision": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_generation_downsample_second_pass.contract.json --out-json artifacts/validation/sdf_field_generation_downsample_second_pass_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_generation_downsample_second_pass_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_generation_downsample_second_pass_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_generation_downsample_second_pass_hostile_audit.json",
+    "git diff --check > artifacts/sdf_field_generation_downsample_second_pass/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field-generation/downsample second-pass contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_generation_downsample_second_pass_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_generation_downsample_second_pass_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "The code quality baseline report has no critical findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_generation_downsample_second_pass_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "code_quality_no_error",
+      "description": "The code quality baseline report has no error findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_generation_downsample_second_pass_code_quality.json",
+      "json_path": "severity_counts.ERROR",
+      "equals": 0
+    }
+  ]
+}
