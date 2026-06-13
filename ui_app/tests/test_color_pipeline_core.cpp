@@ -204,6 +204,7 @@ const char* ExpectedTypedSignalForFunction(const char* functionId) {
     if (std::strcmp(functionId, "escape_magnitude") == 0) return "scalar.unit";
     if (std::strcmp(functionId, "orbit_stripe") == 0) return "phase.radians";
     if (std::strcmp(functionId, "root_proximity") == 0) return "scalar.unit";
+    if (std::strcmp(functionId, "root_phase") == 0) return "phase.radians";
     if (std::strcmp(functionId, "root_index") == 0) return "category.root_index";
     if (std::strcmp(functionId, "sdf_signed_distance") == 0) return "scalar.sdf_signed_distance";
     if (std::strcmp(functionId, "sdf_inside_outside") == 0) return "category.inside_outside";
@@ -293,6 +294,10 @@ void TestFunctionIdMappingsRoundTrip() {
     ColorSignal signal = ColorSignal::smooth_escape;
     Check(std::string(color_pipeline_core::AdvancedColorSignalFunctionId(ColorSignal::root_index)) == "root_index",
         "TestFunctionIdMappingsRoundTrip_SignalId");
+    Check(std::string(color_pipeline_core::AdvancedColorSignalFunctionId(ColorSignal::root_phase)) == "root_phase",
+        "TestFunctionIdMappingsRoundTrip_RootPhaseSignalId");
+    Check(color_pipeline_core::TryParseAdvancedColorSignalFunctionId("root_phase", &signal) && signal == ColorSignal::root_phase,
+        "TestFunctionIdMappingsRoundTrip_RootPhaseSignalParse");
     Check(color_pipeline_core::TryParseAdvancedColorSignalFunctionId("orbit_stripe", &signal) && signal == ColorSignal::orbit_stripe,
         "TestFunctionIdMappingsRoundTrip_SignalParse");
     Check(std::string(color_pipeline_core::AdvancedColorSignalFunctionId(ColorSignal::sdf_signed_distance)) == "sdf_signed_distance",
@@ -365,11 +370,12 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
     Check(source && shape && palette && grading, "TestLaneCatalogFiltersRuntimeBackedRows_AllCatalogsDiscoverable");
     if (!source || !shape || !palette || !grading) return;
 
-    Check(source->default_function_id == std::string("smooth_escape_ramp") && source->functions.size() == 13,
+    Check(source->default_function_id == std::string("smooth_escape_ramp") && source->functions.size() == 14,
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceShape");
     Check(HasFunction(*source, "smooth_escape_ramp") && HasFunction(*source, "phase_orbit") &&
             HasFunction(*source, "banded_signal") && HasFunction(*source, "escape_magnitude") &&
             HasFunction(*source, "orbit_stripe") && HasFunction(*source, "root_proximity") &&
+            HasFunction(*source, "root_phase") &&
             HasFunction(*source, "root_index") &&
             HasFunction(*source, "sdf_signed_distance") &&
             HasFunction(*source, "sdf_inside_outside") &&
@@ -397,6 +403,7 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             "escape_magnitude",
             "orbit_stripe",
             "root_proximity",
+            "root_phase",
             "root_index",
             "sdf_signed_distance",
             "sdf_inside_outside",
@@ -482,6 +489,14 @@ void TestSourceSignalKindMetadata() {
     Check(color_pipeline_core::ColorPipelineSourceSignalKindForSignal(ColorSignal::phase_angle) ==
             ColorPipelineSourceSignalKind::phase,
         "TestSourceSignalKindMetadata_PhaseOrbitIsPhase");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForSignal(ColorSignal::root_phase) ==
+            ColorPipelineSourceSignalKind::phase,
+        "TestSourceSignalKindMetadata_RootPhaseIsPhase");
+    Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("root_phase") ==
+            ColorPipelineSourceSignalKind::phase,
+        "TestSourceSignalKindMetadata_RootPhaseFunctionIsPhase");
+    Check(color_pipeline_core::ColorPipelineSourceFunctionIsPhaseSignal("root_phase"),
+        "TestSourceSignalKindMetadata_RootPhasePhasePredicate");
     Check(color_pipeline_core::ColorPipelineSourceSignalKindForFunctionId("orbit_stripe") ==
             ColorPipelineSourceSignalKind::phase,
         "TestSourceSignalKindMetadata_OrbitStripeIsPhase");
@@ -1025,11 +1040,11 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
 
     Check(contract.lanes.size() == color_pipeline_core::GetColorPipelineLaneCatalogs().size(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
-    Check(contract.compatibility.size() == 22,
+    Check(contract.compatibility.size() == 23,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
     Check(contract.compat_overrides.size() == 18,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatOverrideCount");
-    Check(contract.compatibility_audit.size() == 22,
+    Check(contract.compatibility_audit.size() == 23,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
     Check(contract.recipes.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.has_recipe_v2, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Present");
@@ -1054,7 +1069,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                 contract.edge_links[2].id == "palette_to_grading",
             "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_EdgeLinkOrder");
     }
-    Check(contract.resolution_cases.size() == 10,
+    Check(contract.resolution_cases.size() == 11,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ResolutionCaseCount");
     const MaterializedColorPipelineCompatibilityAudit* smoothAudit =
         FindCompatibilityAudit(contract, "smooth_escape_ramp", "heatmap", "contrast_lift");
@@ -1161,6 +1176,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
 
     CheckMaterializedPort(contract, "source", "smooth_escape_ramp", 0, 1, "output", "signal", "scalar.unit", true, "");
     CheckMaterializedPort(contract, "source", "phase_orbit", 0, 1, "output", "signal", "phase.radians", true, "");
+    CheckMaterializedPort(contract, "source", "root_phase", 0, 1, "output", "signal", "phase.radians", true, "");
     CheckMaterializedPort(contract, "source", "root_index", 0, 1, "output", "signal", "category.root_index", true, "");
     CheckMaterializedPort(contract, "source", "sdf_signed_distance", 0, 1, "output", "signal", "scalar.sdf_signed_distance", true, "");
     CheckMaterializedPort(contract, "source", "sdf_normal_angle", 0, 1, "output", "signal", "phase.radians", true, "");
@@ -1243,8 +1259,8 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     const ColorPipelineMetadataParityReport parity = ValidateColorPipelineMetadataParity(contract);
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
-    Check(parity.lane_count == 4 && parity.function_count == 36 &&
-            parity.compatibility_count == 22 && parity.recipe_count == 4 &&
+    Check(parity.lane_count == 4 && parity.function_count == 37 &&
+            parity.compatibility_count == 23 && parity.recipe_count == 4 &&
             parity.taxonomy_group_count == 24 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
@@ -1528,7 +1544,7 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
     Check(color_pipeline_core::IsColorPipelineCompatibilityDiagnosticsActive() &&
             color_pipeline_core::ColorPipelineCompatibilityDiagnosticsAuthorityId() == std::string("materialized_json_diagnostic"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsActive");
-    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 22,
+    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 23,
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Count");
 
     color_pipeline_core::ColorPipelineCompatibilityRouteExplanation smoothExplanation;

@@ -1059,10 +1059,10 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColorSignalAllowedForFractal(
     FractalType fractalType,
     ColorSignal signal) {
-    if (signal == ColorSignal::root_proximity && IsRootFieldConsumerFractal(fractalType)) {
+    if ((signal == ColorSignal::root_proximity || signal == ColorSignal::root_phase) && IsRootFieldConsumerFractal(fractalType)) {
         return true;
     }
-    if (signal == ColorSignal::root_index || signal == ColorSignal::root_proximity) {
+    if (signal == ColorSignal::root_index || signal == ColorSignal::root_proximity || signal == ColorSignal::root_phase) {
         return SupportsBasinColoring(fractalType);
     }
     return true;
@@ -1089,6 +1089,12 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline
         return true;
     }
     if (pipeline.signal == ColorSignal::orbit_stripe &&
+        pipeline.palette == ColorPalette::phase_wheel &&
+        isPhaseLikeGrading) {
+        if (outMode) *outMode = ColoringMode::phase;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_phase &&
         pipeline.palette == ColorPalette::phase_wheel &&
         isPhaseLikeGrading) {
         if (outMode) *outMode = ColoringMode::phase;

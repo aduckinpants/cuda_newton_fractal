@@ -510,6 +510,7 @@ void ApplyLegacyColorSourceMirrorParams(const ColorPipelineSourceStackEntry& sou
         ioParams->color_smooth_escape_bias = sourceEntry.params.bias;
         break;
     case ColorSignal::phase_angle:
+    case ColorSignal::root_phase:
         ioParams->color_phase_signal_offset = sourceEntry.params.phase_offset;
         ioParams->color_phase_wrap_cycles = sourceEntry.params.wrap_cycles;
         break;

@@ -7,6 +7,7 @@ bool BasinColorSignalNeedsStandard(ColorSignal signal) {
     switch (signal) {
     case ColorSignal::smooth_escape:
     case ColorSignal::root_proximity:
+    case ColorSignal::root_phase:
         return true;
     default:
         return false;

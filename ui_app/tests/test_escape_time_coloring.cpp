@@ -1174,6 +1174,7 @@ int main() {
             {"escape_magnitude", ColorSignal::escape_magnitude, MakeDistinctnessSourceParams(ColorSignal::escape_magnitude)},
             {"orbit_stripe", ColorSignal::orbit_stripe, MakeDistinctnessSourceParams(ColorSignal::orbit_stripe)},
             {"root_proximity", ColorSignal::root_proximity, MakeDistinctnessSourceParams(ColorSignal::root_proximity)},
+            {"root_phase", ColorSignal::root_phase, MakeDistinctnessSourceParams(ColorSignal::root_phase)},
             {"root_index", ColorSignal::root_index, MakeDistinctnessSourceParams(ColorSignal::root_index)},
         };
         for (std::size_t left = 0; left < sizeof(sourceCases) / sizeof(sourceCases[0]); ++left) {
@@ -1696,7 +1697,49 @@ int main() {
             return 1;
         }
 
+        rootConsumerParams.color_pipeline = {ColorSignal::root_phase, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+        rootConsumerParams.explaino_root_field_trap_strength = 1.0f;
+        rootConsumerParams.color_phase_signal_offset = 0.0f;
+        rootConsumerParams.color_phase_wrap_cycles = 1.0f;
+        const TestColor mandelbrotRootPhase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_mandelbrot_root_trap,
+            ColoringMode::phase,
+            true,
+            17,
+            100,
+            TestComplex{0.25f, 0.35f},
+            rootConsumerParams);
+        rootConsumerParams.color_phase_signal_offset = 1.5707963f;
+        const TestColor mandelbrotRootPhaseShifted = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_mandelbrot_root_trap,
+            ColoringMode::phase,
+            true,
+            17,
+            100,
+            TestComplex{0.25f, 0.35f},
+            rootConsumerParams);
+        if (Equals(mandelbrotRootPhase, mandelbrotRootPhaseShifted)) {
+            std::cerr << "ExplainO Mandelbrot Root Trap root_phase should react to phase offset\n";
+            return 1;
+        }
+
+        rootConsumerParams.color_pipeline = {ColorSignal::root_proximity, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+        rootConsumerParams.color_phase_signal_offset = 0.0f;
+        const TestColor mandelbrotRootProximity = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_mandelbrot_root_trap,
+            ColoringMode::phase,
+            true,
+            17,
+            100,
+            TestComplex{0.25f, 0.35f},
+            rootConsumerParams);
+        if (Equals(mandelbrotRootPhase, mandelbrotRootProximity)) {
+            std::cerr << "root_phase should not alias root_proximity on the Mandelbrot root trap consumer\n";
+            return 1;
+        }
+
         rootConsumerParams.explaino_root_field_trap_strength = 0.0f;
+        rootConsumerParams.color_pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
         const TestColor magnetBase = MakeEscapeTimeBaseColor<TestColor>(
             FractalType::magnet,
             ColoringMode::smooth_escape,

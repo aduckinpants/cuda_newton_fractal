@@ -351,6 +351,7 @@ inline ColorPipelineSourceSignalKind ColorPipelineSourceSignalKindForSignal(Colo
     switch (value) {
     case ColorSignal::phase_angle:
     case ColorSignal::orbit_stripe:
+    case ColorSignal::root_phase:
     case ColorSignal::sdf_normal_angle:
         return ColorPipelineSourceSignalKind::phase;
     case ColorSignal::root_index:
@@ -384,6 +385,8 @@ inline const char* AdvancedColorSignalFunctionId(ColorSignal value) {
         return "orbit_stripe";
     case ColorSignal::root_proximity:
         return "root_proximity";
+    case ColorSignal::root_phase:
+        return "root_phase";
     case ColorSignal::sdf_signed_distance:
         return "sdf_signed_distance";
     case ColorSignal::lens_field_v2_distance:
@@ -425,6 +428,10 @@ inline bool TryParseAdvancedColorSignalFunctionId(const std::string& functionId,
     }
     if (functionId == "root_proximity") {
         if (outValue) *outValue = ColorSignal::root_proximity;
+        return true;
+    }
+    if (functionId == "root_phase") {
+        if (outValue) *outValue = ColorSignal::root_phase;
         return true;
     }
     if (functionId == "sdf_signed_distance") {
@@ -661,6 +668,16 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineFloatParam("signal.proximity_scale", "Proximity Scale", "Control how quickly root proximity falls off away from a root.", 0.25, 8.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.proximity_bias", "Proximity Bias", "Shift the root-proximity source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineSourceBlendWeightParam(),
+            }),
+        MakeColorPipelineFunction(
+            "root_phase",
+            "Root Phase",
+            "Use the angular phase from the nearest authoritative root to the sample point.",
+            "phase",
+            {
+                MakeColorPipelineFloatParam("signal.phase_offset", "Phase Offset", "Rotate the root-phase signal before downstream palette work.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
+                MakeColorPipelineFloatParam("signal.wrap_cycles", "Wrap Cycles", "Control how many hue cycles appear across one full root-relative rotation.", 0.5, 6.0, 0.01, 1.0),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -1007,6 +1024,7 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "escape_magnitude" ||
             functionId == "orbit_stripe" ||
             functionId == "root_proximity" ||
+            functionId == "root_phase" ||
             functionId == "root_index" ||
             functionId == "sdf_signed_distance" ||
             functionId == "sdf_inside_outside" ||
@@ -1652,7 +1670,7 @@ inline bool TrySuggestHardcodedColorPipelineCompanionFunction(
         if (function == "smooth_escape_ramp" || function == "escape_magnitude" || function == "root_proximity") {
             return SetColorPipelineCompanionSuggestion("palette", "heatmap", outCompanionLaneId, outCompanionFunctionId);
         }
-        if (function == "phase_orbit" || function == "orbit_stripe") {
+        if (function == "phase_orbit" || function == "orbit_stripe" || function == "root_phase") {
             return SetColorPipelineCompanionSuggestion("palette", "phase_wheel_palette", outCompanionLaneId, outCompanionFunctionId);
         }
         if (function == "banded_signal") {
@@ -2314,7 +2332,7 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
             SetColorPipelineParamNumber(ioRow, "grade.chroma_tension", NormalizeImportedColorPipelineNumber(liveParams.color_chroma_tension), outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.accent_bias", NormalizeImportedColorPipelineNumber(liveParams.color_accent_bias), outError);
     }
-    if (ioRow->function_id == "phase_orbit") {
+    if (ioRow->function_id == "phase_orbit" || ioRow->function_id == "root_phase") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", liveParams.color_phase_wrap_cycles, outError);
     }
@@ -2416,6 +2434,11 @@ inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
     }
     if (std::strcmp(sourceFunctionId, "orbit_stripe") == 0 && std::strcmp(paletteFunctionId, "phase_wheel_palette") == 0) {
         *outPipeline = {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+        *outMode = ColoringMode::phase;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "root_phase") == 0 && std::strcmp(paletteFunctionId, "phase_wheel_palette") == 0) {
+        *outPipeline = {ColorSignal::root_phase, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
         *outMode = ColoringMode::phase;
         return true;
     }
@@ -2755,7 +2778,7 @@ inline bool ApplySupportedColorPipelineRowParamsToLive(
         assignFloat(&ioParams->color_balance_void, static_cast<float>(balanceVoid));
         assignFloat(&ioParams->color_chroma_tension, static_cast<float>(chromaTension));
         assignFloat(&ioParams->color_accent_bias, static_cast<float>(accentBias));
-    } else if (row.function_id == "phase_orbit") {
+    } else if (row.function_id == "phase_orbit" || row.function_id == "root_phase") {
         double phaseOffset = 0.0;
         double wrapCycles = 0.0;
         if (!TryGetColorPipelineParamNumber(row, "signal.phase_offset", &phaseOffset, outError) ||
@@ -2910,6 +2933,13 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         pipeline.palette == ColorPalette::phase_wheel &&
         pipeline.grading == ColorGradingPreset::phase_default) {
         if (outSourceFunctionId) *outSourceFunctionId = "orbit_stripe";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "phase_wheel_palette";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_phase &&
+        pipeline.palette == ColorPalette::phase_wheel &&
+        pipeline.grading == ColorGradingPreset::phase_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "root_phase";
         if (outPaletteFunctionId) *outPaletteFunctionId = "phase_wheel_palette";
         return true;
     }

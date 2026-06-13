@@ -516,6 +516,54 @@
             "typed_signal": "scalar.unit"
           },
           {
+            "id": "root_phase",
+            "label": "Root Phase",
+            "description": "Use the angular phase from the nearest authoritative root to the sample point.",
+            "taxonomy_group": "phase",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "path": "signal.phase_offset",
+                "type": "float",
+                "label": "Phase Offset",
+                "min": -3.141592653589793,
+                "max": 3.141592653589793,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "path": "signal.wrap_cycles",
+                "type": "float",
+                "label": "Wrap Cycles",
+                "min": 0.5,
+                "max": 6.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "phase",
+            "typed_signal": "phase.radians",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "phase.radians",
+                "canonical": true
+              }
+            ]
+          },
+          {
             "id": "root_index",
             "label": "Root Index",
             "description": "Use the resolved nearest-root classification index as the upstream basin source.",
@@ -2020,6 +2068,15 @@
         "reason": "supported_runtime_bridge"
       },
       {
+        "source": "root_phase",
+        "palette": "phase_wheel_palette",
+        "signal": "root_phase",
+        "palette_runtime": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "mode": "phase",
+        "reason": "supported_runtime_bridge"
+      },
+      {
         "source": "banded_signal",
         "palette": "banded_heatmap",
         "signal": "banded_signal",
@@ -2811,6 +2868,16 @@
         "reason": "typed resolver route covers this compatibility row"
       },
       {
+        "source": "root_phase",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "mode": "phase",
+        "classification": "typed_resolved",
+        "route_case_id": "root_phase_wheel",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
         "source": "banded_signal",
         "palette": "banded_heatmap",
         "grading": "band_finish",
@@ -3363,6 +3430,63 @@
           {
             "edge_id": "source_to_shape",
             "from_function": "phase_orbit",
+            "to_function": "identity",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "phase.radians",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "phase_wheel_palette",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "phase_wheel_palette",
+            "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_phase_wheel",
+        "source": "root_phase",
+        "shape": "identity",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_phase",
             "to_function": "identity",
             "from_type": "phase.radians",
             "to_type": "phase.radians",

@@ -2400,20 +2400,21 @@ int main() {
         const ColorPipelineLaneCatalog* coreSourceCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("source");
         if (!coreSourceCatalog ||
             coreSourceCatalog->default_function_id != std::string("smooth_escape_ramp") ||
-            coreSourceCatalog->functions.size() != 13 ||
+            coreSourceCatalog->functions.size() != 14 ||
             coreSourceCatalog->functions[0].id != "smooth_escape_ramp" ||
             coreSourceCatalog->functions[1].id != "phase_orbit" ||
             coreSourceCatalog->functions[2].id != "banded_signal" ||
             coreSourceCatalog->functions[3].id != "escape_magnitude" ||
             coreSourceCatalog->functions[4].id != "orbit_stripe" ||
             coreSourceCatalog->functions[5].id != "root_proximity" ||
-            coreSourceCatalog->functions[6].id != "root_index" ||
-            coreSourceCatalog->functions[7].id != "sdf_signed_distance" ||
-            coreSourceCatalog->functions[8].id != "sdf_inside_outside" ||
-            coreSourceCatalog->functions[9].id != "sdf_boundary_band" ||
-            coreSourceCatalog->functions[10].id != "sdf_normal_angle" ||
-            coreSourceCatalog->functions[11].id != "sdf_curvature" ||
-            coreSourceCatalog->functions[12].id != "lens_field_v2_distance") {
+            coreSourceCatalog->functions[6].id != "root_phase" ||
+            coreSourceCatalog->functions[7].id != "root_index" ||
+            coreSourceCatalog->functions[8].id != "sdf_signed_distance" ||
+            coreSourceCatalog->functions[9].id != "sdf_inside_outside" ||
+            coreSourceCatalog->functions[10].id != "sdf_boundary_band" ||
+            coreSourceCatalog->functions[11].id != "sdf_normal_angle" ||
+            coreSourceCatalog->functions[12].id != "sdf_curvature" ||
+            coreSourceCatalog->functions[13].id != "lens_field_v2_distance") {
             std::cerr << "Expected the extracted advanced color core to widen the shipped Source catalog through runtime-real source rows, including root_index and Lens SDF source tuples\n";
             return 1;
         }
@@ -2442,6 +2443,15 @@ int main() {
             coreRootProximityDescriptor->parameters[1].path != "signal.proximity_bias" ||
             coreRootProximityDescriptor->parameters[2].path != "signal.blend_weight") {
             std::cerr << "Expected root_proximity to carry stable proximity-scale, proximity-bias, and blend-weight source parameters\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreRootPhaseDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_phase");
+        if (!coreRootPhaseDescriptor ||
+            coreRootPhaseDescriptor->parameters.size() != 3 ||
+            coreRootPhaseDescriptor->parameters[0].path != "signal.phase_offset" ||
+            coreRootPhaseDescriptor->parameters[1].path != "signal.wrap_cycles" ||
+            coreRootPhaseDescriptor->parameters[2].path != "signal.blend_weight") {
+            std::cerr << "Expected root_phase to carry stable phase-offset, wrap-cycles, and blend-weight source parameters\n";
             return 1;
         }
         const FunctionDescriptor* coreRootIndexDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_index");

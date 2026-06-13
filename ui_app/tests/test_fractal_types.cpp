@@ -47,6 +47,7 @@ void TestEnumOrdinalContracts() {
     Check(static_cast<int>(ColoringMode::iteration_bands) == 5, "ColoringMode iteration_bands ordinal is stable");
     Check(static_cast<int>(ColorSignal::root_index) == 0, "ColorSignal root_index ordinal is stable");
     Check(static_cast<int>(ColorSignal::root_proximity) == 7, "ColorSignal root_proximity ordinal is stable");
+    Check(static_cast<int>(ColorSignal::root_phase) == 14, "ColorSignal root_phase ordinal is append-only stable");
     Check(static_cast<int>(ColorPalette::root_classic) == 0, "ColorPalette root_classic ordinal is stable");
     Check(static_cast<int>(ColorPalette::explaino_cmap) == 5, "ColorPalette explaino_cmap ordinal is stable");
     Check(static_cast<int>(ColorGradingPreset::basin_default) == 0, "ColorGradingPreset basin_default ordinal is stable");

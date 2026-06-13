@@ -705,11 +705,12 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "palette",
         "grading",
     ]
-    assert len(lanes["source"]["functions"]) == 13
+    assert len(lanes["source"]["functions"]) == 14
     assert len(lanes["shape"]["functions"]) == 9
     assert len(lanes["palette"]["functions"]) == 6
     assert len(lanes["grading"]["functions"]) == 8
     signal_kinds = {fn["id"]: fn.get("signal_kind") for fn in lanes["source"]["functions"]}
+    assert signal_kinds["root_phase"] == "phase"
     assert signal_kinds["sdf_normal_angle"] == "phase"
     assert signal_kinds["sdf_inside_outside"] == "categorical"
     assert signal_kinds["lens_field_v2_distance"] == "scalar"
@@ -787,11 +788,11 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert all(item["sample_step_param"] == "signal.sdf_sample_step" for item in sdf_capabilities)
     assert all(item["field_downsample_param"] == "signal.sdf_field_downsample" for item in sdf_capabilities)
     assert all(item["supported_applicators"] == ["none", "sdf_boundary_band", "sdf_inside", "sdf_outside"] for item in sdf_capabilities)
-    assert len(actual["composition_recipe_contract"]["compatibility"]) == 22
+    assert len(actual["composition_recipe_contract"]["compatibility"]) == 23
     compat_overrides = actual["composition_recipe_contract"]["compat_overrides"]
     compatibility_audit = actual["composition_recipe_contract"]["compatibility_audit"]
     assert len(compat_overrides) == 18
-    assert len(compatibility_audit) == 22
+    assert len(compatibility_audit) == 23
     audit_by_key = {
         (row["source"], row["palette"], row["grading"]): row
         for row in compatibility_audit
@@ -799,6 +800,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert audit_by_key[("smooth_escape_ramp", "heatmap", "contrast_lift")]["classification"] == "typed_resolved"
     assert audit_by_key[("smooth_escape_ramp", "heatmap", "contrast_lift")]["route_case_id"] == "smooth_escape_heatmap"
     assert audit_by_key[("phase_orbit", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
+    assert audit_by_key[("root_phase", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
     assert audit_by_key[("root_index", "root_classic_palette", "basin_default")]["classification"] == "typed_resolved"
     assert audit_by_key[("sdf_normal_angle", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
     assert audit_by_key[("sdf_signed_distance", "heatmap", "contrast_lift")]["classification"] == "runtime_legacy_override"
@@ -818,6 +820,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "smooth_escape_log_compress_heatmap",
         "smooth_escape_smoothstep_range_heatmap",
         "phase_orbit_wheel",
+        "root_phase_wheel",
         "root_classic",
         "sdf_normal_angle_phase_wheel",
         "sdf_signed_distance_normalized_heatmap",

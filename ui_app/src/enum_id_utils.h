@@ -105,6 +105,7 @@ inline constexpr EnumIdPair<ColorSignal> kColorSignalIds[] = {
     {ColorSignal::escape_magnitude, "escape_magnitude"},
     {ColorSignal::orbit_stripe, "orbit_stripe"},
     {ColorSignal::root_proximity, "root_proximity"},
+    {ColorSignal::root_phase, "root_phase"},
     {ColorSignal::sdf_signed_distance, "sdf_signed_distance"},
     {ColorSignal::sdf_inside_outside, "sdf_inside_outside"},
     {ColorSignal::sdf_boundary_band, "sdf_boundary_band"},

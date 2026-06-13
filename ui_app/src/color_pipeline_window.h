@@ -1377,7 +1377,7 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "balance_void_grade") {
         return path == "grade.balance_void" || path == "grade.chroma_tension" || path == "grade.accent_bias";
     }
-    if (functionId == "phase_orbit") {
+    if (functionId == "phase_orbit" || functionId == "root_phase") {
         return path == "signal.phase_offset" || path == "signal.wrap_cycles" || path == "signal.blend_weight";
     }
     if (functionId == "escape_magnitude") {
@@ -1622,7 +1622,7 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
             SetColorPipelineParamNumber(ioRow, "signal.sdf_sample_step", static_cast<double>(sourceEntry.params.sdf_sample_step), outError) &&
             SetColorPipelineParamEnum(ioRow, "signal.sdf_field_downsample", fieldDownsampleId.c_str(), outError);
     }
-    if (ioRow->function_id == "phase_orbit") {
+    if (ioRow->function_id == "phase_orbit" || ioRow->function_id == "root_phase") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", sourceEntry.params.phase_offset, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", sourceEntry.params.wrap_cycles, outError);
     }
@@ -1699,6 +1699,7 @@ inline bool IsSupportedColorPipelineSourceStackFunctionId(const std::string& fun
         functionId == "escape_magnitude" ||
         functionId == "orbit_stripe" ||
         functionId == "root_proximity" ||
+        functionId == "root_phase" ||
         functionId == "sdf_signed_distance" ||
         functionId == "sdf_inside_outside" ||
         functionId == "sdf_boundary_band" ||
@@ -1918,7 +1919,7 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
         }
         entry.params.sdf_gate_width_px = static_cast<float>(gateWidthPx);
         entry.params.sdf_sample_step = sampleStep;
-    } else if (row.function_id == "phase_orbit") {
+    } else if (row.function_id == "phase_orbit" || row.function_id == "root_phase") {
         double phaseOffset = 0.0;
         double wrapCycles = 0.0;
         if (!TryGetColorPipelineParamNumber(row, "signal.phase_offset", &phaseOffset, outError) ||
@@ -3374,7 +3375,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     if (legacySourceEntry.signal == ColorSignal::smooth_escape) {
         assignShapeFloat(&ioParams->color_smooth_escape_scale, legacySourceEntry.params.scale);
         assignShapeFloat(&ioParams->color_smooth_escape_bias, legacySourceEntry.params.bias);
-    } else if (legacySourceEntry.signal == ColorSignal::phase_angle) {
+    } else if (legacySourceEntry.signal == ColorSignal::phase_angle || legacySourceEntry.signal == ColorSignal::root_phase) {
         assignShapeFloat(&ioParams->color_phase_signal_offset, legacySourceEntry.params.phase_offset);
         assignShapeFloat(&ioParams->color_phase_wrap_cycles, legacySourceEntry.params.wrap_cycles);
     } else if (legacySourceEntry.signal == ColorSignal::iteration_bands) {

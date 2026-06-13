@@ -1014,6 +1014,147 @@ ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerDistance(
 }
 
 template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline bool TryResolveNearestUnitRootPoint(Complex z, int rootCount, Float2* outRoot) {
+    if (rootCount <= 0) {
+        return false;
+    }
+    double bestDistanceSquared = 1.0e30;
+    Float2 bestRoot{1.0f, 0.0f};
+    for (int index = 0; index < rootCount; ++index) {
+        const Double2 root = UnitRootCoord(index, rootCount);
+        const double d2 = BasinDistanceSquared(
+            static_cast<double>(z.x),
+            static_cast<double>(z.y),
+            root.x,
+            root.y);
+        if (d2 < bestDistanceSquared) {
+            bestDistanceSquared = d2;
+            bestRoot = {static_cast<float>(root.x), static_cast<float>(root.y)};
+        }
+    }
+    if (outRoot) {
+        *outRoot = bestRoot;
+    }
+    return true;
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline bool TryResolveNearestRootPointList(Complex z, const Float2* roots, int rootCount, Float2* outRoot) {
+    if (!roots || rootCount <= 0) {
+        return false;
+    }
+    int bestIndex = 0;
+    double bestDistanceSquared = 1.0e30;
+    for (int index = 0; index < rootCount; ++index) {
+        const double d2 = BasinDistanceSquaredToRoot(z, roots[index]);
+        if (d2 < bestDistanceSquared) {
+            bestDistanceSquared = d2;
+            bestIndex = index;
+        }
+    }
+    if (outRoot) {
+        *outRoot = roots[bestIndex];
+    }
+    return true;
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerNearestRootPoint(
+    Complex z,
+    const KernelParams& params,
+    const ViewState* view,
+    Float2* outRoot) {
+    if (params.explaino_root_authority == ExplainoRootAuthority::generated &&
+        params.explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1 &&
+        params.explaino_generated_root_count >= 2 &&
+        params.explaino_generated_root_count <= 16) {
+        const int rootCount = params.explaino_generated_root_count;
+        const float radius = 0.85f + 0.95f * EscapeTimeColorClamp(params.explaino_root_spread, 0.0f, 1.0f);
+        const float twoPi = 6.28318530717958647692f;
+        const double seedCombined = params.explaino_seed + (view ? static_cast<double>(view->explaino_seed_drift) : 0.0);
+        const double seed = seedCombined * 0.6180339887498949;
+        const float phase = view ? view->explaino_phase : 0.0f;
+        const float rotation = twoPi * (phase + static_cast<float>(seed - floor(seed)));
+        double bestDistanceSquared = 1.0e30;
+        Float2 bestRoot{radius, 0.0f};
+        for (int index = 0; index < rootCount; ++index) {
+            const float angle = rotation + twoPi * static_cast<float>(index) / static_cast<float>(rootCount);
+            const Float2 root{radius * cosf(angle), radius * sinf(angle)};
+            const double d2 = BasinDistanceSquaredToRoot(z, root);
+            if (d2 < bestDistanceSquared) {
+                bestDistanceSquared = d2;
+                bestRoot = root;
+            }
+        }
+        if (outRoot) {
+            *outRoot = bestRoot;
+        }
+        return true;
+    }
+    if (params.explaino_root_count > 0) {
+        return TryResolveNearestRootPointList(z, params.explaino_roots, params.explaino_root_count, outRoot);
+    }
+    return TryResolveNearestUnitRootPoint(z, 4, outRoot);
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline bool TryResolveColorPipelineRootPhasePoint(
+    FractalType fractalType,
+    Complex z,
+    const KernelParams& params,
+    const ViewState* view,
+    Float2* outRoot) {
+    if (IsRootFieldConsumerFractal(fractalType)) {
+        return TryResolveRootFieldConsumerNearestRootPoint(z, params, view, outRoot);
+    }
+    if (fractalType == FractalType::projection_and_flow) {
+        const int projectionRootCount =
+            params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
+        return TryResolveNearestUnitRootPoint(z, projectionRootCount * 4 + 1, outRoot);
+    }
+    const int polynomialRootCount = ResolvePolynomialRootCount(params.poly_kind);
+    const bool useCustomRoots = polynomialRootCount == 0 &&
+        IsExplainoFamily(fractalType) &&
+        params.explaino_root_count > 0;
+    if (useCustomRoots) {
+        return TryResolveNearestRootPointList(z, params.explaino_roots, params.explaino_root_count, outRoot);
+    }
+    if (polynomialRootCount <= 0) {
+        return false;
+    }
+    return TryResolveNearestUnitRootPoint(z, polynomialRootCount, outRoot);
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveRootPhaseSignal(
+    FractalType fractalType,
+    Complex z,
+    const KernelParams& params,
+    const ViewState* view,
+    const ColorPipelineSourceRuntimeParams& sourceParams) {
+    Float2 root{0.0f, 0.0f};
+    if (!TryResolveColorPipelineRootPhasePoint(fractalType, z, params, view, &root)) {
+        return 0.0f;
+    }
+    const float angle = atan2f(static_cast<float>(z.y) - root.y, static_cast<float>(z.x) - root.x);
+    return ResolveAngularSignal(ColorSignal::phase_angle, angle, sourceParams);
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveRootPhaseSignal(
+    FractalType fractalType,
+    Complex z,
+    const KernelParams& params,
+    const ViewState* view) {
+    Float2 root{0.0f, 0.0f};
+    if (!TryResolveColorPipelineRootPhasePoint(fractalType, z, params, view, &root)) {
+        return 0.0f;
+    }
+    const float angle = atan2f(static_cast<float>(z.y) - root.y, static_cast<float>(z.x) - root.x);
+    return ResolveAngularSignal(ColorSignal::phase_angle, angle, params);
+}
+
+template <typename Complex>
 ESCAPE_TIME_COLOR_HD inline float ResolveRootFieldConsumerTrapSignal(
     FractalType fractalType,
     int iteration,
@@ -1114,6 +1255,9 @@ ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineSourceStackEntryEscapeSign
     const KernelParams& params,
     const ViewState* view,
     const ColorPipelineSourceStackEntry& entry) {
+    if (entry.signal == ColorSignal::root_phase) {
+        return ResolveRootPhaseSignal(fractalType, z, params, view, entry.params);
+    }
     if (entry.signal == ColorSignal::root_proximity) {
         if (IsRootFieldConsumerFractal(fractalType)) {
             return ResolveRootFieldConsumerTrapSignal(
@@ -1210,6 +1354,9 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableEscapeTimeSignal(
                 EscapeTimeColorClamp(entry.params.blend_weight, 0.0f, 1.0f));
         }
         return blendedSignal;
+    }
+    if (params.color_pipeline.signal == ColorSignal::root_phase) {
+        return ResolveRootPhaseSignal(fractalType, z, params, view);
     }
     if (params.color_pipeline.signal == ColorSignal::root_proximity) {
         if (IsRootFieldConsumerFractal(fractalType)) {
@@ -1488,6 +1635,9 @@ ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineSourceStackEntryBasinSigna
     float residual,
     const KernelParams& params,
     const ColorPipelineSourceStackEntry& entry) {
+    if (entry.signal == ColorSignal::root_phase) {
+        return ResolveRootPhaseSignal(fractalType, z, params, nullptr, entry.params);
+    }
     if (entry.signal == ColorSignal::root_proximity) {
         return ResolveRootProximitySignal(z, params, entry.params);
     }
@@ -1558,6 +1708,9 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
         }
         return blendedSignal;
     }
+    if (params.color_pipeline.signal == ColorSignal::root_phase) {
+        return ResolveRootPhaseSignal(fractalType, z, params, nullptr);
+    }
     if (params.color_pipeline.signal == ColorSignal::root_proximity) {
         return ResolveRootProximitySignal(z, params);
     }
@@ -1586,6 +1739,7 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
 
 ESCAPE_TIME_COLOR_HD inline bool ShouldUseProgrammableColorForUnescapedSample(const KernelParams& params) {
     return params.color_pipeline.signal == ColorSignal::root_proximity ||
+        params.color_pipeline.signal == ColorSignal::root_phase ||
         params.color_pipeline.signal == ColorSignal::smooth_escape ||
         params.color_pipeline.palette == ColorPalette::phase_wheel;
 }

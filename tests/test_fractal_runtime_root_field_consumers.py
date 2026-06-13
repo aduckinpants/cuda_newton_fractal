@@ -53,6 +53,32 @@ def _state_for_lane(exe_path: Path, lane_id: str) -> dict[str, Any]:
     return state
 
 
+def _color_pipeline_row(state: dict[str, Any], lane_id: str, row_index: int) -> dict[str, Any]:
+    draft = state.get("color_pipeline_draft")
+    assert isinstance(draft, dict), "expected captured state to include color_pipeline_draft"
+    lanes = draft.get("lanes")
+    assert isinstance(lanes, list), "expected color_pipeline_draft.lanes to be a list"
+    for lane in lanes:
+        if isinstance(lane, dict) and lane.get("lane_id") == lane_id:
+            rows = lane.get("rows")
+            assert isinstance(rows, list), f"expected {lane_id} rows to be a list"
+            row = rows[row_index]
+            assert isinstance(row, dict), f"expected {lane_id} row {row_index} to be an object"
+            return row
+    raise AssertionError(f"missing color pipeline lane {lane_id!r}")
+
+
+def _color_pipeline_number_param(row: dict[str, Any], path: str) -> float:
+    values = row.get("parameter_values")
+    assert isinstance(values, list), row
+    for value in values:
+        if isinstance(value, dict) and value.get("path") == path:
+            number = value.get("number_value")
+            assert isinstance(number, (int, float)), value
+            return float(number)
+    raise AssertionError(f"missing color pipeline param {path!r} in row {row!r}")
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
 @pytest.mark.parametrize(
     ("lane_id", "base_lane"),
@@ -130,6 +156,68 @@ def test_root_field_consumer_lanes_report_and_mutate_no_mouse(
         assert root_count.get("root_field_consumer_root_count") == 5, root_count
         assert _require_root_hash(root_count) != baseline_root_hash, root_count
         assert _require_frame_hash(root_count) != baseline_hash, root_count
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
+def test_mandelbrot_root_trap_root_phase_source_runtime_actions_change_frame(
+    tmp_path: Path,
+) -> None:
+    exe_path = active_runtime_exe()
+    lane_id = "explaino_mandelbrot_root_trap"
+    state = _state_for_lane(exe_path, lane_id)
+    state_path = write_state_bundle(tmp_path / "root_phase_source", state)
+
+    baseline = run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--capture-diagnostic",
+    )
+    root_phase = run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--color-pipeline-action",
+        "select_function:source:0:root_phase",
+        "--color-pipeline-action",
+        "select_function:palette:0:phase_wheel_palette",
+        "--capture-diagnostic",
+    )
+    shifted = run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--color-pipeline-action",
+        "select_function:source:0:root_phase",
+        "--color-pipeline-action",
+        "select_function:palette:0:phase_wheel_palette",
+        "--color-pipeline-action",
+        "set_param:source:0:signal.phase_offset:number:1.57079632679",
+        "--capture-diagnostic",
+    )
+
+    root_phase_state = root_phase["state"]
+    params = root_phase_state.get("params")
+    assert isinstance(params, dict), root_phase_state
+    assert root_phase_state.get("fractal_type") == lane_id
+    assert params.get("color_signal") == "root_phase", params
+    assert params.get("color_palette") == "phase_wheel", params
+    assert params.get("coloring_mode") == "phase", params
+
+    root_phase_source_row = _color_pipeline_row(root_phase_state, "source", 0)
+    assert root_phase_source_row.get("function_id") == "root_phase", root_phase_source_row
+    root_phase_palette_row = _color_pipeline_row(root_phase_state, "palette", 0)
+    assert root_phase_palette_row.get("function_id") == "phase_wheel_palette", root_phase_palette_row
+
+    shifted_source_row = _color_pipeline_row(shifted["state"], "source", 0)
+    assert shifted_source_row.get("function_id") == "root_phase", shifted_source_row
+    assert _color_pipeline_number_param(shifted_source_row, "signal.phase_offset") == pytest.approx(
+        1.57079632679,
+        abs=1.0e-6,
+    )
+
+    assert root_phase["frame_hash"] != baseline["frame_hash"]
+    assert shifted["frame_hash"] != root_phase["frame_hash"]
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
