@@ -2,7 +2,7 @@
 
 ## Explicit User Asks
 
-- Resume the intake-packet work after Wave 1 foundation and the SDF measurement branch.
+- Continue the intake-packet Wave 2 work after Wave 1 foundation and the SDF measurement branch.
 - Merge the completed SDF measurement branch before starting Wave 2.
 - Implement only the selected Wave 2 low-hanging root-field consumers:
   1. `root_field_debug_views`
