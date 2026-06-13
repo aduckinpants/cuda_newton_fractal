@@ -2801,7 +2801,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double previewTargetFps = nextRender.preview_target_fps;
     double previewMinScale = nextRender.preview_min_scale;
     std::string sampleTierId;
+    std::string aaModeId;
     const bool hasSampleTierId = TryGetOptionalString(*renderObject, "sample_tier", &sampleTierId);
+    const bool hasAaModeId = TryGetOptionalString(*renderObject, "aa_mode", &aaModeId);
     if (!ParseIntField(*renderObject, "width", &width, outError)) return false;
     if (!ParseIntField(*renderObject, "height", &height, outError)) return false;
     if (!ParseIntField(*renderObject, "block_size", &blockSize, outError)) return false;
@@ -2816,6 +2818,14 @@ bool LoadDiagnosticsStateJson(const std::string& text,
             return false;
         }
         nextRender.sample_tier = sampleTier;
+    }
+    if (hasAaModeId) {
+        RenderAntiAliasingMode aaMode{};
+        if (!TryParseRenderAntiAliasingModeId(aaModeId, &aaMode)) {
+            if (outError) *outError = "Unknown aa_mode: " + aaModeId;
+            return false;
+        }
+        nextRender.aa_mode = aaMode;
     }
     if (!RequirePositiveIntField(width, "width", outError)) return false;
     if (!RequirePositiveIntField(height, "height", outError)) return false;

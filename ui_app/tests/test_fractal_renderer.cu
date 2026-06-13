@@ -661,6 +661,100 @@ void TestColorSourceSignalSidecarProducesFiniteRowOrderedSignals() {
     CleanupFractalCUDA();
 }
 
+void TestAaOffMatchesDefaultRenderExactly() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats statsDefault{};
+    RenderStats statsOff{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::multibrot;
+    view.center_hp_x = -0.6;
+    view.center_hp_y = 0.05;
+    view.log2_zoom = 0.5;
+    params.max_iter = 48;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    render.resolution = {10, 8};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    std::vector<uint32_t> defaultPixels(80, 0u);
+    std::vector<uint32_t> offPixels(80, 0u);
+    Check(RenderFractalCUDA(view, params, render, defaultPixels.data(), nullptr, &statsDefault, &error),
+        error ? error : "default AA-off render succeeds");
+    render.aa_mode = RenderAntiAliasingMode::off;
+    Check(RenderFractalCUDA(view, params, render, offPixels.data(), nullptr, &statsOff, &error),
+        error ? error : "explicit AA-off render succeeds");
+    Check(defaultPixels == offPixels, "explicit AA off preserves exact current pixels");
+    CleanupFractalCUDA();
+}
+
+void TestSsaa2x2IsDeterministicAndChangesEdgePixels() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::multibrot;
+    view.center_hp_x = -0.75;
+    view.center_hp_y = 0.1;
+    view.log2_zoom = 1.0;
+    params.max_iter = 80;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    render.resolution = {12, 10};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    std::vector<uint32_t> offPixels(120, 0u);
+    Check(RenderFractalCUDA(view, params, render, offPixels.data(), nullptr, &stats, &error),
+        error ? error : "AA baseline render succeeds");
+
+    render.aa_mode = RenderAntiAliasingMode::ssaa_2x2;
+    std::vector<uint32_t> aaPixelsA(120, 0u);
+    std::vector<uint32_t> aaPixelsB(120, 0u);
+    Check(RenderFractalCUDA(view, params, render, aaPixelsA.data(), nullptr, &stats, &error),
+        error ? error : "SSAA 2x2 render succeeds");
+    Check(RenderFractalCUDA(view, params, render, aaPixelsB.data(), nullptr, &stats, &error),
+        error ? error : "SSAA 2x2 repeat render succeeds");
+    Check(aaPixelsA == aaPixelsB, "SSAA 2x2 output is deterministic");
+    Check(aaPixelsA != offPixels, "SSAA 2x2 changes edge-rich pixels versus AA off");
+    CleanupFractalCUDA();
+}
+
+void TestSsaa2x2FailsClosedForSourceSignalSidecar() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::multibrot;
+    params.max_iter = 32;
+    render.resolution = {4, 4};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+    render.aa_mode = RenderAntiAliasingMode::ssaa_2x2;
+    std::vector<uint32_t> pixels(16, 0u);
+    std::vector<float> signals(16, 0.0f);
+    Check(!RenderFractalCUDAWithColorSourceSignals(
+              view,
+              params,
+              render,
+              pixels.data(),
+              nullptr,
+              signals.data(),
+              1,
+              &stats,
+              &error),
+        "SSAA 2x2 fails closed for source-signal sidecar in V1");
+    Check(ErrorContains(error, "source signal sidecar"), "SSAA source-signal failure is explicit");
+    CleanupFractalCUDA();
+}
+
 } // namespace
 
 int main() {
@@ -678,6 +772,9 @@ int main() {
     TestMultibrotRenderRespondsToRealAndImaginaryPower();
     TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold();
     TestColorSourceSignalSidecarProducesFiniteRowOrderedSignals();
+    TestAaOffMatchesDefaultRenderExactly();
+    TestSsaa2x2IsDeterministicAndChangesEdgePixels();
+    TestSsaa2x2FailsClosedForSourceSignalSidecar();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";
     return g_failed == 0 ? 0 : 1;

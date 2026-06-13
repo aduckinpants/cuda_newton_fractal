@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <string>
 
 struct Float2 {
     float x;
@@ -523,6 +524,31 @@ struct KernelParams {
     float mcmullen_lambda{-0.125f};
 };
 
+enum class RenderAntiAliasingMode : int {
+    off = 0,
+    ssaa_2x2 = 1,
+};
+
+inline const char* RenderAntiAliasingModeId(RenderAntiAliasingMode mode) {
+    switch (mode) {
+    case RenderAntiAliasingMode::off: return "off";
+    case RenderAntiAliasingMode::ssaa_2x2: return "ssaa_2x2";
+    }
+    return "unknown";
+}
+
+inline bool TryParseRenderAntiAliasingModeId(const std::string& id, RenderAntiAliasingMode* outMode) {
+    if (id == "off") {
+        if (outMode) *outMode = RenderAntiAliasingMode::off;
+        return true;
+    }
+    if (id == "ssaa_2x2") {
+        if (outMode) *outMode = RenderAntiAliasingMode::ssaa_2x2;
+        return true;
+    }
+    return false;
+}
+
 struct RenderSettings {
     static constexpr int kDefaultWidth = 2048;
     static constexpr int kDefaultHeight = 1536;
@@ -538,6 +564,7 @@ struct RenderSettings {
     float preview_target_fps{kDefaultPreviewTargetFps};
     float preview_min_scale{kDefaultPreviewMinScale};
     SampleTier sample_tier{SampleTier::tier_auto};
+    RenderAntiAliasingMode aa_mode{RenderAntiAliasingMode::off};
     ResolvedEvalMode resolved_eval{};  // filled by resolver before dispatch
 };
 

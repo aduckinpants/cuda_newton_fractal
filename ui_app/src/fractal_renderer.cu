@@ -443,6 +443,92 @@ bool ensure_ref_orbit(int len, const char** outError) {
     return true;
 }
 
+uint32_t AverageRgba2x2(const std::vector<uint32_t>& pixels, int highWidth, int x, int y) {
+    unsigned int r = 0;
+    unsigned int g = 0;
+    unsigned int b = 0;
+    unsigned int a = 0;
+    for (int dy = 0; dy < 2; ++dy) {
+        for (int dx = 0; dx < 2; ++dx) {
+            const uint32_t pixel = pixels[static_cast<std::size_t>((y * 2 + dy) * highWidth + (x * 2 + dx))];
+            r += pixel & 0xffu;
+            g += (pixel >> 8) & 0xffu;
+            b += (pixel >> 16) & 0xffu;
+            a += (pixel >> 24) & 0xffu;
+        }
+    }
+    r = (r + 2u) / 4u;
+    g = (g + 2u) / 4u;
+    b = (b + 2u) / 4u;
+    a = (a + 2u) / 4u;
+    return r | (g << 8) | (b << 16) | (a << 24);
+}
+
+uint8_t MajorityMask2x2(const std::vector<uint8_t>& mask, int highWidth, int x, int y) {
+    int inside = 0;
+    for (int dy = 0; dy < 2; ++dy) {
+        for (int dx = 0; dx < 2; ++dx) {
+            inside += mask[static_cast<std::size_t>((y * 2 + dy) * highWidth + (x * 2 + dx))] ? 1 : 0;
+        }
+    }
+    return inside >= 2 ? 255 : 0;
+}
+
+bool RenderFractalCUDAWithSsaa2x2(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    uint32_t* outRGBA,
+    uint8_t* outMask,
+    RenderStats* outStats,
+    const char** outError) {
+    const int w = render.resolution.x;
+    const int h = render.resolution.y;
+    if (w <= 0 || h <= 0 || w > 16384 || h > 16384) {
+        if (outError) *outError = "Invalid SSAA resolution";
+        return false;
+    }
+    RenderSettings highRender = render;
+    highRender.aa_mode = RenderAntiAliasingMode::off;
+    highRender.resolution = {w * 2, h * 2};
+
+    std::vector<uint32_t> highRgba(static_cast<std::size_t>(highRender.resolution.x) *
+        static_cast<std::size_t>(highRender.resolution.y), 0u);
+    std::vector<uint8_t> highMask;
+    if (outMask) {
+        highMask.assign(highRgba.size(), 0u);
+    }
+
+    RenderStats highStats{};
+    if (!RenderFractalCUDAWithColorSourceSignals(
+            view,
+            params,
+            highRender,
+            highRgba.data(),
+            outMask ? highMask.data() : nullptr,
+            nullptr,
+            0,
+            &highStats,
+            outError)) {
+        return false;
+    }
+
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            const int pixelIndex = y * w + x;
+            outRGBA[pixelIndex] = AverageRgba2x2(highRgba, highRender.resolution.x, x, y);
+            if (outMask) {
+                outMask[pixelIndex] = MajorityMask2x2(highMask, highRender.resolution.x, x, y);
+            }
+        }
+    }
+
+    if (outStats) {
+        *outStats = highStats;
+    }
+    return true;
+}
+
 } // namespace
 
 bool RenderFractalCUDA(
@@ -489,6 +575,13 @@ bool RenderFractalCUDAWithColorSourceSignals(
     if (sourceSignalRowCount > 0 && !outSourceSignals) {
         if (outError) *outError = "outSourceSignals is null";
         return false;
+    }
+    if (render.aa_mode == RenderAntiAliasingMode::ssaa_2x2) {
+        if (sourceSignalRowCount > 0) {
+            if (outError) *outError = "ssaa_2x2 does not support color source signal sidecar in V1";
+            return false;
+        }
+        return RenderFractalCUDAWithSsaa2x2(view, params, render, outRGBA, outMask, outStats, outError);
     }
 
     // Fail-fast validation (no implicit fallback/repair).

@@ -812,6 +812,7 @@ int main() {
     "block_size": 512,
     "device_id": 1,
     "sample_tier": "standard",
+    "aa_mode": "ssaa_2x2",
     "interaction_debounce_ms": 420,
     "preview_target_fps": 24.0,
     "preview_min_scale": 0.4
@@ -930,6 +931,10 @@ int main() {
           std::cerr << "render sample_tier should load from saved diagnostics state\n";
           return 1;
         }
+        if (render.aa_mode != RenderAntiAliasingMode::ssaa_2x2) {
+          std::cerr << "render aa_mode should load from saved diagnostics state\n";
+          return 1;
+        }
         if (render.interaction_debounce_ms != 420 || !NearlyEqual(render.preview_target_fps, 24.0f, 1.0e-6) || !NearlyEqual(render.preview_min_scale, 0.4f, 1.0e-6)) {
           std::cerr << "render adaptive preview pacing mismatch\n";
           return 1;
@@ -964,6 +969,10 @@ int main() {
         if (!NearlyEqual(params.poly_coeffs_b[0], 0.0f, 1.0e-6) ||
             !NearlyEqual(params.poly_coeffs_b[4], 0.0f, 1.0e-6)) {
             std::cerr << "Expected legacy state load to clear stale secondary ExplainO polynomial when poly_coeffs_b is absent\n";
+            return 1;
+        }
+        if (render.aa_mode != RenderAntiAliasingMode::off) {
+            std::cerr << "Expected legacy state without aa_mode to default to AA off\n";
             return 1;
         }
     }
@@ -1006,6 +1015,16 @@ int main() {
         std::string error;
         if (!ExpectLoadDiagnosticsStateFailure(statePath, "sample_tier", &error)) {
           std::cerr << "Expected unknown sample_tier to fail: " << error << "\n";
+          return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "bad_aa_mode_state.json";
+        WriteMinimalStateWithExtraParams(statePath, "", "    \"aa_mode\": \"jitter_64x\"");
+        std::string error;
+        if (!ExpectLoadDiagnosticsStateFailure(statePath, "aa_mode", &error)) {
+          std::cerr << "Expected unknown aa_mode to fail: " << error << "\n";
           return 1;
         }
     }

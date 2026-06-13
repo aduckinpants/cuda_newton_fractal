@@ -15,7 +15,7 @@
 
 ## Current Phase
 
-Phase 3 - Deterministic AA V1.
+Phase 4 - Hardening Pass 1 And Pause.
 
 ## Phase Checklist
 
@@ -28,7 +28,7 @@ Phase 3 - Deterministic AA V1.
 - [x] Phase 1: add N-root/root-field authority descriptor skeleton without changing existing four-root renderer behavior.
 - [x] Phase 1: prove `legacy_quartic_v1` parity for current ExplainO lanes and Root SDF compatibility.
 - [x] Phase 2: add minimal `preset_core` schema and round-trip authority for root layout, SDF field-primary state, Color Pipeline tuple, and future AA fields.
-- [ ] Phase 3: add deterministic AA V1 with `off` preserving exact current output.
+- [x] Phase 3: add deterministic AA V1 with `off` preserving exact current output.
 - [ ] Phase 4: run Hardening Pass 1, record the foundation decision, write receipts, and pause.
 
 ## Foundation Stop Rule
@@ -182,7 +182,9 @@ Close Wave 1 foundation with hostile review and a foundation decision before any
 | Diff check | `git diff --check > artifacts/fractal_docs_refresh_wave1_foundation/diff_check.log 2>&1` passed. |
 | N-root parity proof | `cmd /c ui_app\build_tests_vsdevcmd.cmd test_explaino_root_field` passed with 92 checks; `cmd /c ui_app\build_tests_vsdevcmd.cmd test_explaino_root_sdf_field` passed with 31 checks. |
 | Preset core proof | `cmd /c ui_app\build_tests_vsdevcmd.cmd test_fractal_preset_core` passed with 36 checks; `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\fractal_docs_refresh_wave1_foundation\phase2_build_vsdevcmd.log 2>&1` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`. |
-| AA parity proof | Pending. |
+| AA parity proof | `cmd /c ui_app\build_tests_vsdevcmd.cmd test_fractal_renderer > artifacts\fractal_docs_refresh_wave1_foundation\phase3_test_fractal_renderer.log 2>&1` passed with 90 checks, including AA-off exact parity, deterministic `ssaa_2x2`, and fail-closed source-signal sidecar behavior. |
+| AA state IO proof | `cmd /c ui_app\build_tests_vsdevcmd.cmd test_diagnostics_state_io > artifacts\fractal_docs_refresh_wave1_foundation\phase3_test_diagnostics_state_io.log 2>&1` passed and covers explicit `ssaa_2x2`, legacy default `off`, and unknown-mode rejection. |
+| AA runtime publish | `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\fractal_docs_refresh_wave1_foundation\phase3_build_vsdevcmd.log 2>&1` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`. |
 | Hardening decision | Pending. |
 
 ## Hostile Audit
@@ -208,6 +210,8 @@ Audit questions:
 - [x] Pass 6 found a Phase 2 authority defect: the first preset-core source-stack serializer assumed a runtime `enabled` member that exists on draft rows, not `KernelParams` source-stack rows.
 - [x] Pass 7 found a workflow/test-harness misuse: two native helper builds were run in parallel against the same `build_tests/obj` directory, causing a transient compiler permission-denied collision.
 - [x] Pass 8 re-ran affected native rails serially and found no additional Phase 2 preset-core defect.
+- [x] Pass 9 found a Phase 3 validation friction defect: the default 120s command wrapper timed out the CUDA renderer helper and left an `nvcc` process briefly orphaned even though the focused rail passed when rerun logged with an appropriate timeout.
+- [x] Pass 10 re-read the AA implementation boundaries and found no additional Phase 3 code defect: AA-off is exact by test, `ssaa_2x2` is deterministic by test, and source-signal sidecar use fails closed in V1 instead of silently inventing mixed semantics.
 
 ## Audit Findings
 
@@ -215,3 +219,4 @@ Audit questions:
 - [x] Finding 2: initial Phase 1 descriptor work underrepresented the plan by omitting base/effective root arrays and leaving Root SDF on direct `KernelParams.explaino_roots` reads. Repaired by adding base/effective arrays and hashes, preserving effective roots as local derived state, routing Root SDF scene resolution through the descriptor, and adding focused parity tests.
 - [x] Finding 3: preset-core initially serialized a false `enabled` source-stack field from the live runtime stack. Repaired by removing that field from `preset_core`; enabled/disabled remains draft/window authority, while `preset_core` preserves the live source-stack rows that actually exist in `KernelParams`.
 - [x] Finding 4: native helper builds that share `D:/salt-fractal/cuda_newton_fractal_clone/build_tests/obj` cannot be safely parallelized. Repaired operationally by rerunning the affected rail serially; do not parallelize `ui_app/build_tests_vsdevcmd.cmd` invocations in later phases.
+- [x] Finding 5: the CUDA renderer helper can exceed the generic 120s shell timeout and produce a misleading timeout without test output. Repaired operationally for this slice by rerunning the rail with artifact logging and a longer timeout; future CUDA helper rails should use logged execution and avoid assuming the default wrapper timeout is evidence of failure.

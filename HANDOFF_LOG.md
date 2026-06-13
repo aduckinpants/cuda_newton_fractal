@@ -142,3 +142,4 @@
 - `pending` 2026-06-13 02:22 UTC | score 4 — Phase 1 Wave 1 foundation: added ExplainO root-field descriptor, routed Root SDF base-root authority through it, and validated focused descriptor/root-SDF/publish-build rails.
 - `ck:4b39b5a6` 2026-06-13 02:22 UTC | score 4 — Phase 1 Wave 1 foundation root descriptor checkpoint: descriptor parity, Root SDF descriptor consumption, publish build integration validated.
 - `ck:4b39b5a6` 2026-06-13 02:38 UTC | score 4 — Phase 2 Wave 1 foundation preset-core checkpoint: added versioned preset_core authority tuple, root/SDF/color round-trip tests, and runtime build integration.
+- `ck:4b39b5a6` 2026-06-13 03:03 UTC | score 4 — Phase 3 Wave 1 foundation AA checkpoint: deterministic AA mode, AA-off parity, state/capture metadata, renderer and state IO tests, runtime build integration validated.

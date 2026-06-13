@@ -1260,7 +1260,8 @@ std::string BuildStateJson(
     js << "    \"preview_min_scale\": " << static_cast<double>(render.preview_min_scale) << ",\n";
     js << "    \"block_size\": " << render.block_size << ",\n";
     js << "    \"device_id\": " << render.device_id << ",\n";
-    js << "    \"sample_tier\": \"" << CaptureSampleTierId(render.sample_tier) << "\"\n";
+    js << "    \"sample_tier\": \"" << CaptureSampleTierId(render.sample_tier) << "\",\n";
+    js << "    \"aa_mode\": \"" << RenderAntiAliasingModeId(render.aa_mode) << "\"\n";
     js << "  },\n";
     js << "  \"stats\": {\n";
     js << "    \"last_render_ms\": " << static_cast<double>(stats.last_render_ms) << ",\n";
