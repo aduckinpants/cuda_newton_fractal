@@ -209,12 +209,42 @@ bool ParseSourceStack(const json_min::Object& object, KernelParams* outParams, s
     return true;
 }
 
+bool ParseAa(const json_min::Object& root, RenderSettings* outRender, std::string* outError) {
+    if (!outRender) return true;
+    auto it = root.find("aa");
+    if (it == root.end()) return true;
+    if (!it->second.is_object()) {
+        if (outError) *outError = "preset_core aa must be an object";
+        return false;
+    }
+    const json_min::Object& aa = it->second.as_object();
+    std::string modeId;
+    if (!GetString(aa, "mode", &modeId, outError)) return false;
+    RenderAntiAliasingMode mode{};
+    if (!TryParseRenderAntiAliasingModeId(modeId, &mode)) {
+        if (outError) *outError = "preset_core aa mode is unknown";
+        return false;
+    }
+    outRender->aa_mode = mode;
+    return true;
+}
+
 } // namespace
 
 std::string BuildFractalPresetCoreJson(
     const ViewState& view,
     const KernelParams& params,
     const LensSettings& lens,
+    std::string* outError) {
+    RenderSettings render{};
+    return BuildFractalPresetCoreJson(view, params, lens, render, outError);
+}
+
+std::string BuildFractalPresetCoreJson(
+    const ViewState& view,
+    const KernelParams& params,
+    const LensSettings& lens,
+    const RenderSettings& render,
     std::string* outError) {
     if (outError) outError->clear();
     std::ostringstream out;
@@ -254,7 +284,9 @@ std::string BuildFractalPresetCoreJson(
     out << ',';
     WriteSourceStack(out, params);
     out << '}';
-    out << ",\"aa\":{\"mode\":\"off\"}";
+    out << ",\"aa\":{\"mode\":";
+    JsonString(out, RenderAntiAliasingModeId(render.aa_mode));
+    out << '}';
     out << '}';
     return out.str();
 }
@@ -264,6 +296,16 @@ bool ApplyFractalPresetCoreJson(
     ViewState* outView,
     KernelParams* outParams,
     LensSettings* outLens,
+    std::string* outError) {
+    return ApplyFractalPresetCoreJson(json, outView, outParams, outLens, nullptr, outError);
+}
+
+bool ApplyFractalPresetCoreJson(
+    std::string_view json,
+    ViewState* outView,
+    KernelParams* outParams,
+    LensSettings* outLens,
+    RenderSettings* outRender,
     std::string* outError) {
     if (!outView || !outParams || !outLens) {
         if (outError) *outError = "preset_core apply requires view, params, and lens outputs";
@@ -323,6 +365,7 @@ bool ApplyFractalPresetCoreJson(
     if (!GetString(*color, "palette", &id, outError) || !TryParseColorPaletteId(id, &outParams->color_pipeline.palette)) return false;
     if (!GetString(*color, "grading", &id, outError) || !TryParseColorGradingPresetId(id, &outParams->color_pipeline.grading)) return false;
     if (!ParseSourceStack(*color, outParams, outError)) return false;
+    if (!ParseAa(root, outRender, outError)) return false;
 
     if (UsesExplainoRootLayoutAuthority(outView->fractal_type)) {
         UpdateExplainoPolynomial(*outView, *outParams, nullptr);

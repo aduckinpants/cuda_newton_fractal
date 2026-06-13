@@ -29,7 +29,7 @@ Phase 4 - Hardening Pass 1 And Pause.
 - [x] Phase 1: prove `legacy_quartic_v1` parity for current ExplainO lanes and Root SDF compatibility.
 - [x] Phase 2: add minimal `preset_core` schema and round-trip authority for root layout, SDF field-primary state, Color Pipeline tuple, and future AA fields.
 - [x] Phase 3: add deterministic AA V1 with `off` preserving exact current output.
-- [ ] Phase 4: run Hardening Pass 1, record the foundation decision, write receipts, and pause.
+- [x] Phase 4: run Hardening Pass 1, record the foundation decision, write receipts, and pause.
 
 ## Foundation Stop Rule
 
@@ -185,7 +185,12 @@ Close Wave 1 foundation with hostile review and a foundation decision before any
 | AA parity proof | `cmd /c ui_app\build_tests_vsdevcmd.cmd test_fractal_renderer > artifacts\fractal_docs_refresh_wave1_foundation\phase3_test_fractal_renderer.log 2>&1` passed with 90 checks, including AA-off exact parity, deterministic `ssaa_2x2`, and fail-closed source-signal sidecar behavior. |
 | AA state IO proof | `cmd /c ui_app\build_tests_vsdevcmd.cmd test_diagnostics_state_io > artifacts\fractal_docs_refresh_wave1_foundation\phase3_test_diagnostics_state_io.log 2>&1` passed and covers explicit `ssaa_2x2`, legacy default `off`, and unknown-mode rejection. |
 | AA runtime publish | `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\fractal_docs_refresh_wave1_foundation\phase3_build_vsdevcmd.log 2>&1` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`. |
-| Hardening decision | Pending. |
+| AA timing witness | `artifacts/fractal_docs_refresh_wave1_foundation/phase3_aa_timing_witness.json` records compact 256x192 Multibrot `aa_mode=off` at 2.6368 ms and `aa_mode=ssaa_2x2` at 4.2107 ms with changed frame hash; this is a bounded cost witness, not a realtime performance claim. |
+| Hardening native rails | Serial focused rails passed: `test_explaino_root_field` 92 checks, `test_explaino_root_sdf_field` 31 checks, `test_fractal_preset_core` 44 checks after AA repair, `test_fractal_renderer` 90 checks, and `test_diagnostics_state_io` all passed. |
+| Published runtime proof | `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_root_sdf.py > artifacts\fractal_docs_refresh_wave1_foundation\hardening_repair_runtime_explaino_root_sdf.log 2>&1` passed with 4 tests, 0 skips/errors against the final rebuilt `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`. |
+| Final runtime publish | `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\fractal_docs_refresh_wave1_foundation\hardening_repair_build_vsdevcmd.log 2>&1` passed and staged the final runtime after the preset-core AA repair. |
+| Final workflow validation | Contract validation, plan sync, hostile-audit validation, code-quality baseline, and diff check passed after hardening repairs. |
+| Hardening decision | `FOUNDATION_READY`: Wave 1 foundation has a drift report, descriptor parity, preset-core authority including AA mode, deterministic AA V1 with AA-off parity and bounded AA-on timing witness, focused native rails, and published-runtime Root SDF proof. Stop here before low-hanging ideas/enablers/new families. |
 
 ## Hostile Audit
 
@@ -212,6 +217,8 @@ Audit questions:
 - [x] Pass 8 re-ran affected native rails serially and found no additional Phase 2 preset-core defect.
 - [x] Pass 9 found a Phase 3 validation friction defect: the default 120s command wrapper timed out the CUDA renderer helper and left an `nvcc` process briefly orphaned even though the focused rail passed when rerun logged with an appropriate timeout.
 - [x] Pass 10 re-read the AA implementation boundaries and found no additional Phase 3 code defect: AA-off is exact by test, `ssaa_2x2` is deterministic by test, and source-signal sidecar use fails closed in V1 instead of silently inventing mixed semantics.
+- [x] Pass 11 found a Phase 4 hardening defect: `preset_core` still wrote `"aa":{"mode":"off"}` unconditionally because Phase 2 had only a placeholder and no render-settings input.
+- [x] Pass 12 re-ran preset-core after adding render-aware overloads and found no additional preset AA authority defect.
 
 ## Audit Findings
 
@@ -220,3 +227,4 @@ Audit questions:
 - [x] Finding 3: preset-core initially serialized a false `enabled` source-stack field from the live runtime stack. Repaired by removing that field from `preset_core`; enabled/disabled remains draft/window authority, while `preset_core` preserves the live source-stack rows that actually exist in `KernelParams`.
 - [x] Finding 4: native helper builds that share `D:/salt-fractal/cuda_newton_fractal_clone/build_tests/obj` cannot be safely parallelized. Repaired operationally by rerunning the affected rail serially; do not parallelize `ui_app/build_tests_vsdevcmd.cmd` invocations in later phases.
 - [x] Finding 5: the CUDA renderer helper can exceed the generic 120s shell timeout and produce a misleading timeout without test output. Repaired operationally for this slice by rerunning the rail with artifact logging and a longer timeout; future CUDA helper rails should use logged execution and avoid assuming the default wrapper timeout is evidence of failure.
+- [x] Finding 6: `preset_core` AA metadata was a hardcoded `off` placeholder after real AA modes were added. Repaired by adding render-aware preset-core build/apply overloads, preserving old callers, parsing AA modes fail-closed, and adding tests for `ssaa_2x2` round-trip plus invalid-mode rejection.

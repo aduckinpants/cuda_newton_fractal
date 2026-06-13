@@ -36,6 +36,17 @@ bool RoundTrip(const ViewState& view, const KernelParams& params, const LensSett
     return ok;
 }
 
+bool RoundTripWithRender(const ViewState& view, const KernelParams& params, const LensSettings& lens, const RenderSettings& render,
+    ViewState* outView, KernelParams* outParams, LensSettings* outLens, RenderSettings* outRender) {
+    std::string error;
+    const std::string json = BuildFractalPresetCoreJson(view, params, lens, render, &error);
+    CHECK("preset_core render-aware export produced json", !json.empty());
+    CHECK("preset_core render-aware export reports no error", error.empty());
+    const bool ok = ApplyFractalPresetCoreJson(json, outView, outParams, outLens, outRender, &error);
+    if (!ok) std::cerr << "    error: " << error << "\n";
+    return ok;
+}
+
 void TestLegacyFlatColorTupleRoundTrips() {
     ViewState view{};
     KernelParams params{};
@@ -143,6 +154,45 @@ void TestSdfSourceStackAuthorityRoundTrips() {
     CHECK("SDF source stack row 1 blend round-trips", Near(loadedParams.color_source_stack[1].params.blend_weight, 0.35f));
 }
 
+void TestAaModeRoundTripsThroughRenderAwarePresetCore() {
+    ViewState view{};
+    KernelParams params{};
+    LensSettings lens{};
+    RenderSettings render{};
+    view.fractal_type = FractalType::multibrot;
+    render.aa_mode = RenderAntiAliasingMode::ssaa_2x2;
+
+    ViewState loadedView{};
+    KernelParams loadedParams{};
+    LensSettings loadedLens{};
+    RenderSettings loadedRender{};
+    CHECK("AA preset_core applies", RoundTripWithRender(view, params, lens, render, &loadedView, &loadedParams, &loadedLens, &loadedRender));
+    CHECK("AA mode round-trips", loadedRender.aa_mode == RenderAntiAliasingMode::ssaa_2x2);
+}
+
+void TestBadAaModeFailsClosed() {
+    ViewState seedView{};
+    KernelParams seedParams{};
+    LensSettings seedLens{};
+    RenderSettings seedRender{};
+    std::string error;
+    std::string json = BuildFractalPresetCoreJson(seedView, seedParams, seedLens, seedRender, &error);
+    CHECK("bad AA seed export reports no error", error.empty());
+    const std::string from = "\"aa\":{\"mode\":\"off\"}";
+    const std::string to = "\"aa\":{\"mode\":\"jitter_64x\"}";
+    const std::size_t pos = json.find(from);
+    CHECK("bad AA test found aa mode slot", pos != std::string::npos);
+    if (pos != std::string::npos) {
+        json.replace(pos, from.size(), to);
+    }
+    ViewState view{};
+    KernelParams params{};
+    LensSettings lens{};
+    RenderSettings render{};
+    CHECK("bad AA preset_core fails closed", !ApplyFractalPresetCoreJson(json, &view, &params, &lens, &render, &error));
+    CHECK("bad AA preset_core error names aa", error.find("aa") != std::string::npos);
+}
+
 } // namespace
 
 int main() {
@@ -150,6 +200,8 @@ int main() {
     TestGeneratedExplainoAuthorityRoundTrips();
     TestRootSdfCustomAuthorityAndControlsRoundTrip();
     TestSdfSourceStackAuthorityRoundTrips();
+    TestAaModeRoundTripsThroughRenderAwarePresetCore();
+    TestBadAaModeFailsClosed();
     std::cout << "test_fractal_preset_core: " << gPass << " passed, " << gFail << " failed\n";
     return gFail == 0 ? 0 : 1;
 }
