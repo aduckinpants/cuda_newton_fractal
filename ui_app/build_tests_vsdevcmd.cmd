@@ -127,6 +127,7 @@ if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess" call :focused_test
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess_cuda" call :focused_test_color_pipeline_sdf_postprocess_cuda & exit /b
 if /I "%FOCUSED_TEST%"=="test_escape_time_coloring" call :focused_test_escape_time_coloring & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_parameter_surface_descriptor" call :focused_test_fractal_parameter_surface_descriptor & exit /b
+if /I "%FOCUSED_TEST%"=="test_fractal_preset_core" call :focused_test_fractal_preset_core & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_catalog_authority" call :focused_test_fractal_catalog_authority & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_types" call :focused_test_fractal_types & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_derived_fields" call :focused_test_fractal_derived_fields & exit /b
@@ -418,6 +419,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /Fe:"%TESTROOT%\test_fractal_parameter_surface_descriptor.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\sample_tier_resolver.cpp .\src\json_min.cpp .\src\explaino_root_field.cpp .\src\fractal_preset_core.cpp .\tests\test_fractal_preset_core.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_preset_core.exe"
+if errorlevel 1 exit /b 1
+
 call :build_generic_sample_core_object || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
@@ -705,6 +711,14 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_explaino_root_field.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_explaino_root_field.exe" || exit /b 1
+exit /b 0
+
+:focused_test_fractal_preset_core
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\sample_tier_resolver.cpp .\src\json_min.cpp .\src\explaino_root_field.cpp .\src\fractal_preset_core.cpp .\tests\test_fractal_preset_core.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_preset_core.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_preset_core.exe" || exit /b 1
 exit /b 0
 
 :focused_test_explaino_root_sdf_field
@@ -1237,6 +1251,8 @@ call :run_test "%TESTROOT%\test_basin_coloring.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_escape_time_direct_formulas.exe" || exit /b 1
 
 call :run_test "%TESTROOT%\test_fractal_parameter_surface_descriptor.exe" || exit /b 1
+
+call :run_test "%TESTROOT%\test_fractal_preset_core.exe" || exit /b 1
 
 call :run_test "%TESTROOT%\test_fractal_probe.exe" || exit /b 1
 

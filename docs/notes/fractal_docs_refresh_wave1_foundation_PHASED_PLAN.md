@@ -15,7 +15,7 @@
 
 ## Current Phase
 
-Phase 2 - Minimal Preset Core Authority.
+Phase 3 - Deterministic AA V1.
 
 ## Phase Checklist
 
@@ -27,7 +27,7 @@ Phase 2 - Minimal Preset Core Authority.
 - [x] Phase 0: sync status/deferred/known-issue docs only where live repo evidence proves the bundle is stale or useful.
 - [x] Phase 1: add N-root/root-field authority descriptor skeleton without changing existing four-root renderer behavior.
 - [x] Phase 1: prove `legacy_quartic_v1` parity for current ExplainO lanes and Root SDF compatibility.
-- [ ] Phase 2: add minimal `preset_core` schema and round-trip authority for root layout, SDF field-primary state, Color Pipeline tuple, and future AA fields.
+- [x] Phase 2: add minimal `preset_core` schema and round-trip authority for root layout, SDF field-primary state, Color Pipeline tuple, and future AA fields.
 - [ ] Phase 3: add deterministic AA V1 with `off` preserving exact current output.
 - [ ] Phase 4: run Hardening Pass 1, record the foundation decision, write receipts, and pause.
 
@@ -181,7 +181,7 @@ Close Wave 1 foundation with hostile review and a foundation decision before any
 | Hostile audit validation | `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_docs_refresh_wave1_foundation_PHASED_PLAN.md --out-json artifacts/validation/fractal_docs_refresh_wave1_hostile_audit.json` passed. |
 | Diff check | `git diff --check > artifacts/fractal_docs_refresh_wave1_foundation/diff_check.log 2>&1` passed. |
 | N-root parity proof | `cmd /c ui_app\build_tests_vsdevcmd.cmd test_explaino_root_field` passed with 92 checks; `cmd /c ui_app\build_tests_vsdevcmd.cmd test_explaino_root_sdf_field` passed with 31 checks. |
-| Preset core proof | Pending. |
+| Preset core proof | `cmd /c ui_app\build_tests_vsdevcmd.cmd test_fractal_preset_core` passed with 36 checks; `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\fractal_docs_refresh_wave1_foundation\phase2_build_vsdevcmd.log 2>&1` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`. |
 | AA parity proof | Pending. |
 | Hardening decision | Pending. |
 
@@ -205,8 +205,13 @@ Audit questions:
 - [x] Pass 3 clean re-read of the drift report and status sync found no additional workflow mistake or bundle-authority leak.
 - [x] Pass 4 found a Phase 1 implementation defect: the first descriptor cut exposed only one root array/hash and did not make Root SDF consume the descriptor.
 - [x] Pass 5 re-ran focused descriptor and Root SDF rails after repair and found no additional Phase 1 descriptor defect.
+- [x] Pass 6 found a Phase 2 authority defect: the first preset-core source-stack serializer assumed a runtime `enabled` member that exists on draft rows, not `KernelParams` source-stack rows.
+- [x] Pass 7 found a workflow/test-harness misuse: two native helper builds were run in parallel against the same `build_tests/obj` directory, causing a transient compiler permission-denied collision.
+- [x] Pass 8 re-ran affected native rails serially and found no additional Phase 2 preset-core defect.
 
 ## Audit Findings
 
 - [x] Finding 1: unsupported contract evidence kinds would have blocked `viewer_host_begin_work_slice.py` and later contract-proof receipt validation. Repaired by replacing prose/file assertions with supported `validator_json` assertions for contract validation, hostile audit validation, and code-quality baseline evidence.
 - [x] Finding 2: initial Phase 1 descriptor work underrepresented the plan by omitting base/effective root arrays and leaving Root SDF on direct `KernelParams.explaino_roots` reads. Repaired by adding base/effective arrays and hashes, preserving effective roots as local derived state, routing Root SDF scene resolution through the descriptor, and adding focused parity tests.
+- [x] Finding 3: preset-core initially serialized a false `enabled` source-stack field from the live runtime stack. Repaired by removing that field from `preset_core`; enabled/disabled remains draft/window authority, while `preset_core` preserves the live source-stack rows that actually exist in `KernelParams`.
+- [x] Finding 4: native helper builds that share `D:/salt-fractal/cuda_newton_fractal_clone/build_tests/obj` cannot be safely parallelized. Repaired operationally by rerunning the affected rail serially; do not parallelize `ui_app/build_tests_vsdevcmd.cmd` invocations in later phases.

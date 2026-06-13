@@ -141,3 +141,4 @@
 - `ck:4b39b5a6` 2026-06-13 01:48 UTC | score 94 — Closed Wave 1 Phase 0 intake: merged Root SDF to master, opened the foundation branch, reconciled the bootstrap bundle as import-candidate only, recorded live drift from 24d9d0e to eebc0e3, and synced Root SDF status docs before foundation implementation.
 - `pending` 2026-06-13 02:22 UTC | score 4 — Phase 1 Wave 1 foundation: added ExplainO root-field descriptor, routed Root SDF base-root authority through it, and validated focused descriptor/root-SDF/publish-build rails.
 - `ck:4b39b5a6` 2026-06-13 02:22 UTC | score 4 — Phase 1 Wave 1 foundation root descriptor checkpoint: descriptor parity, Root SDF descriptor consumption, publish build integration validated.
+- `ck:4b39b5a6` 2026-06-13 02:38 UTC | score 4 — Phase 2 Wave 1 foundation preset-core checkpoint: added versioned preset_core authority tuple, root/SDF/color round-trip tests, and runtime build integration.

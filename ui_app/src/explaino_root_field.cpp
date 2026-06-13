@@ -77,6 +77,42 @@ const char* ExplainoRootFieldSourceKindId(ExplainoRootFieldSourceKind kind) {
     return "unknown";
 }
 
+bool TryParseExplainoRootFieldLayoutKindId(const std::string& id, ExplainoRootFieldLayoutKind* outKind) {
+    if (id == "none") {
+        if (outKind) *outKind = ExplainoRootFieldLayoutKind::none;
+        return true;
+    }
+    if (id == "legacy_quartic_v1") {
+        if (outKind) *outKind = ExplainoRootFieldLayoutKind::legacy_quartic_v1;
+        return true;
+    }
+    if (id == "custom") {
+        if (outKind) *outKind = ExplainoRootFieldLayoutKind::custom;
+        return true;
+    }
+    if (id == "family_local") {
+        if (outKind) *outKind = ExplainoRootFieldLayoutKind::family_local;
+        return true;
+    }
+    return false;
+}
+
+bool TryParseExplainoRootFieldSourceKindId(const std::string& id, ExplainoRootFieldSourceKind* outKind) {
+    if (id == "none") {
+        if (outKind) *outKind = ExplainoRootFieldSourceKind::none;
+        return true;
+    }
+    if (id == "generated") {
+        if (outKind) *outKind = ExplainoRootFieldSourceKind::generated;
+        return true;
+    }
+    if (id == "custom") {
+        if (outKind) *outKind = ExplainoRootFieldSourceKind::custom;
+        return true;
+    }
+    return false;
+}
+
 bool ResolveExplainoRootFieldDescriptor(
     const ViewState& view,
     const KernelParams& params,

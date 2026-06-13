@@ -34,6 +34,8 @@ struct ExplainoRootFieldDescriptor {
 
 const char* ExplainoRootFieldLayoutKindId(ExplainoRootFieldLayoutKind kind);
 const char* ExplainoRootFieldSourceKindId(ExplainoRootFieldSourceKind kind);
+bool TryParseExplainoRootFieldLayoutKindId(const std::string& id, ExplainoRootFieldLayoutKind* outKind);
+bool TryParseExplainoRootFieldSourceKindId(const std::string& id, ExplainoRootFieldSourceKind* outKind);
 
 bool ResolveExplainoRootFieldDescriptor(
     const ViewState& view,
