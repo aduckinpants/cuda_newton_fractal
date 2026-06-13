@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "contract_id": "sdf_field_resolution_optimization_matrix",
+  "feature_id": "sdf_field_resolution_optimization_matrix",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/sdf_field_resolution_optimization_matrix_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "tools",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "merge completed ExplainO Root SDF generated N-root branch into master",
+    "open bounded SDF field-resolution optimization slice",
+    "run repeated-sample performance matrix before selecting an optimization seam",
+    "cover Lens SDF, Lens Field v2, sdf_pack_scene, and explaino_root_sdf",
+    "do not add new visual features before the measured seam is selected"
+  ],
+  "forbidden_operator_prompts": [
+    "add new SDF visual features",
+    "add new SDF ops",
+    "add recursive or apollonian packs",
+    "add new SDF-native lanes",
+    "redesign Color Pipeline UI",
+    "use physical mouse automation",
+    "claim FPS improvement without before/after numbers"
+  ],
+  "required_defaults": {
+    "branch": "codex/sdf-field-resolution-optimization-matrix",
+    "source_head": "b4dd99e0317f3c594eff829d3964b4896b5e9b52",
+    "measurement_first": true,
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "new_visual_feature": "forbidden",
+    "new_sdf_operator": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "optimization_without_matrix": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/sdf_field_resolution_optimization_matrix.contract.json --out-json artifacts/validation/sdf_field_resolution_optimization_matrix_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/sdf_field_resolution_optimization_matrix_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/sdf_field_resolution_optimization_matrix_PHASED_PLAN.md --out-json artifacts/validation/sdf_field_resolution_optimization_matrix_hostile_audit.json",
+    "git diff --check > artifacts/sdf_field_resolution_optimization_matrix/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The SDF field-resolution optimization matrix contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_resolution_optimization_matrix_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_resolution_optimization_matrix_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "The code quality baseline report has no critical findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_resolution_optimization_matrix_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "code_quality_no_error",
+      "description": "The code quality baseline report has no error findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/sdf_field_resolution_optimization_matrix_code_quality.json",
+      "json_path": "severity_counts.ERROR",
+      "equals": 0
+    }
+  ]
+}
