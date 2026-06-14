@@ -117,7 +117,7 @@ Expected first failures should show one or more of:
 | Native validation | done | `cmd /c "ui_app\build_tests_vsdevcmd.cmd test_schema_binding test_color_pipeline_core test_diagnostics_state_io test_diagnostics_capture test_viewer_ui_automation_report > artifacts\scoped_root_pattern_authority_hardening\native_scoped_root_pattern_hardening.log 2>&1"` passed after hardening assertions. |
 | Refactor validation | done | Code-quality found `escape_time_coloring.h` function-size regression; refactored generated-root list building, then reran native rail to `artifacts\scoped_root_pattern_authority_hardening\native_scoped_root_pattern_hardening_after_refactor.log` and code-quality JSON `artifacts\validation\scoped_root_pattern_authority_hardening_code_quality_after_refactor.json`, both green. |
 | Runtime publish | done | `cmd /c "ui_app\build_vsdevcmd.cmd > artifacts\scoped_root_pattern_authority_hardening\runtime_publish_after_refactor.log 2>&1"` passed after the refactor. |
-| Published runtime proof | done | `py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py::test_magnet_root_well_divergent_dynamics_and_color_root_fields_no_mouse -q --junitxml artifacts/pytest/scoped_root_pattern_authority_hardening_runtime_after_refactor.junit.xml` passed after the refactor. |
+| Published runtime proof | done | `py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py -q --junitxml artifacts/pytest/scoped_root_pattern_authority_hardening_runtime.junit.xml` passed after repairing the stale secondary-root expectation. |
 | Hostile audit | done | Hostile audit complete; final clean re-read found no additional blocking defect after repaired include, behavior-proof, invalid-ref, scoped-control, and code-quality issues. |
 | Receipts/rearward/push | pending | Required before final closeout. |
 
@@ -189,6 +189,7 @@ Required questions:
 - [x] Pass 3: Clean re-read checked UI labels, scoped control/action bindings, runtime behavior assertions, state reload seams, and compatibility storage; no additional blocking defect found.
 - [x] Pass 4: Code-quality closure gate found a real function-size regression in `escape_time_coloring.h`; factored generated root list building into smaller config/regular-ngon/legacy-quartic helpers.
 - [x] Pass 5: Reran focused native rail, runtime publish, published runtime proof, and code-quality baseline after the refactor; no additional blocking defect found.
+- [x] Pass 6: Full contracted runtime file found stale secondary-root proof expecting Color Root output to change from Dynamics-only edits; fixed the test to mutate scoped Color Root fields explicitly and reran the full runtime file green.
 
 ## Audit Findings
 
@@ -196,6 +197,7 @@ Required questions:
 - [x] Finding 2: The first implementation did not prove invalid root-pattern refs fail closed at the row-edit seam; added a focused native rejection assertion.
 - [x] Finding 3: The generated-root helper used by Color Pipeline source rows currently resolves without a caller fractal type and uses the root-field consumer lane semantics. This is acceptable for current root-field consumers, but it is recorded as a future seam if cluster-specific root-source semantics are added.
 - [x] Finding 4: Generated-root list reuse inflated `escape_time_coloring.h` past the code-quality baseline; refactored the helper and reran native/runtime/code-quality proof.
+- [x] Finding 5: An older runtime test still encoded the pre-scope ambiguity by expecting Color Root Field frames to change when only Dynamics fields changed; updated it to mutate Color Root Field authority explicitly.
 
 ## Stop Point
 

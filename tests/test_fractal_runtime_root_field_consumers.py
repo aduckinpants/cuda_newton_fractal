@@ -489,6 +489,10 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
         phase: float,
         spread: float,
         source_pattern_ref: str,
+        color_seed: float = 0.25,
+        color_phase: float = 0.15,
+        color_spread: float = 0.5,
+        color_phase_strength: float = 1.0,
     ) -> dict[str, Any]:
         configured = json.loads(json.dumps(source))
         configured["fractal_type"] = lane_id
@@ -503,6 +507,10 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
         params["explaino_generated_root_count"] = 11
         params["explaino_secondary_root_pattern_layout"] = "legacy_quartic_v1"
         params["explaino_secondary_root_pattern_count"] = 4
+        params["explaino_secondary_root_pattern_seed"] = color_seed
+        params["explaino_secondary_root_pattern_spread"] = color_spread
+        params["explaino_secondary_root_pattern_phase"] = color_phase
+        params["explaino_secondary_root_pattern_phase_strength"] = color_phase_strength
         params["explaino_root_field_pattern_ref"] = "dynamics_root_field"
         params["explaino_root_field_trap_strength"] = 1.0
         params["explaino_root_field_trap_scale"] = 1.5
@@ -534,11 +542,31 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
     )
     secondary_a_path = write_state_bundle(
         tmp_path / "magnet_secondary_legacy_a",
-        configure_state(state, seed=0.13, phase=0.08, spread=0.45, source_pattern_ref="color_root_field"),
+        configure_state(
+            state,
+            seed=0.13,
+            phase=0.08,
+            spread=0.45,
+            source_pattern_ref="color_root_field",
+            color_seed=0.25,
+            color_phase=0.15,
+            color_spread=0.5,
+            color_phase_strength=1.0,
+        ),
     )
     secondary_b_path = write_state_bundle(
         tmp_path / "magnet_secondary_legacy_b",
-        configure_state(state, seed=0.57, phase=0.42, spread=0.92, source_pattern_ref="color_root_field"),
+        configure_state(
+            state,
+            seed=0.57,
+            phase=0.42,
+            spread=0.92,
+            source_pattern_ref="color_root_field",
+            color_seed=2.25,
+            color_phase=0.45,
+            color_spread=0.8,
+            color_phase_strength=1.2,
+        ),
     )
 
     with PersistentRuntimeViewerAutomation(
