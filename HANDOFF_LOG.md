@@ -171,3 +171,5 @@
 - `ck:76904bda` 2026-06-14 04:56 UTC — session-start | branch=codex/explaino-root-field-active-ux-repair | head=9648b7c | status=dirty | profile=runtime | intent=ExplainO Root-Field Active UX Repair
 - `ck:76904bda` 2026-06-14 06:14 UTC | score 93 — Closed ExplainO Root-Field Active UX Repair: hid Pattern B/Dynamics controls from normal Magnet Root Well flow, added Active Root Field report/sidecar alias, preserved secondary compatibility, and validated native plus published no-mouse runtime rails.
 - `ck:76904bda` 2026-06-14 06:52 UTC | score 93 — Follow-up contract repair for ExplainO Root-Field Active UX: escaped Windows build command paths in JSON so receipt preflight can match executable validation commands.
+- `ck:7a5d0567` 2026-06-14 07:04 UTC — session-start | branch=codex/viewer-host-tooling-hardening | head=b5847ff | status=dirty | profile=native | intent=Viewer Host Tooling Hardening
+- `ck:7a5d0567` 2026-06-14 07:22 UTC | score 4 — Viewer Host Tooling Hardening: hardened patch wrapper path/LF handling, contract command escape validation, receipt command hints, and logged-command timeout reporting; focused workflow tests and validators passed.

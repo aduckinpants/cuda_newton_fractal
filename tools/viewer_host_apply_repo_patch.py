@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 try:
@@ -13,14 +14,48 @@ except ModuleNotFoundError:
     from viewer_host_contract_state import file_path_is_in_contract_scope, validate_locked_contract_state
 
 
+def _normalize_patch_target(raw_target: str) -> str | None:
+    target = raw_target.strip()
+    if len(target) >= 2 and target[0] == target[-1] == '"':
+        target = target[1:-1]
+    target = target.replace("\\", "/")
+    while "//" in target:
+        target = target.replace("//", "/")
+    if target == "/dev/null":
+        return None
+    if target.startswith("a/") or target.startswith("b/"):
+        target = target[2:]
+    return target.strip("/") or None
+
+
 def _extract_patch_targets(patch_text: str) -> list[str]:
     targets: list[str] = []
     for line in patch_text.splitlines():
-        if line.startswith("+++ b/"):
-            targets.append(line.removeprefix("+++ b/").strip())
-        elif line.startswith("--- a/"):
-            targets.append(line.removeprefix("--- a/").strip())
+        if line.startswith("+++") or line.startswith("---"):
+            parts = line.split(maxsplit=1)
+            if len(parts) != 2 or parts[0] not in {"+++", "---"}:
+                continue
+            target = _normalize_patch_target(parts[1])
+            if target is not None:
+                targets.append(target)
     return sorted(set(targets))
+
+
+def _patch_text_for_git_apply(patch_text: str) -> str:
+    return patch_text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _write_git_apply_patch_file(patch_text: str) -> Path:
+    handle = tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        newline="\n",
+        delete=False,
+        suffix=".patch",
+    )
+    with handle:
+        handle.write(_patch_text_for_git_apply(patch_text))
+    return Path(handle.name)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -53,8 +88,12 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"viewer_host_apply_repo_patch: patch target outside contract scope: {target}\n")
             return 2
 
-    proc = subprocess.run(["git", "apply", str(patch_path)], cwd=str(repo_root), check=False)
-    return int(proc.returncode)
+    normalized_patch_path = _write_git_apply_patch_file(patch_text)
+    try:
+        proc = subprocess.run(["git", "apply", str(normalized_patch_path)], cwd=str(repo_root), check=False)
+        return int(proc.returncode)
+    finally:
+        normalized_patch_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

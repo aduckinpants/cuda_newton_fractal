@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "contract_id": "viewer_host_tooling_hardening",
+  "feature_id": "viewer_host_tooling_hardening",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/viewer_host_tooling_hardening_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "tools",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "address tooling issues after the completed active-root-field goal",
+    "review and harden the workflow tools that caused closure friction",
+    "fix the concrete tooling gaps without product/runtime behavior changes"
+  ],
+  "forbidden_operator_prompts": [
+    "change fractal runtime behavior",
+    "change Color Pipeline product behavior",
+    "start SDF work",
+    "add new UI features",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/viewer-host-tooling-hardening",
+    "source_head": "b5847ff5e84aecb1ba813fd4f869b3f3eba5b82c",
+    "runtime_publish_required_before_viewer_visible_closeout": false,
+    "published_runtime_proof_required_before_viewer_visible_closeout": false
+  },
+  "forbidden_defaults": {
+    "product_behavior_change": "forbidden",
+    "runtime_publish_requirement": "not_required_for_tooling_only_slice"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/viewer_host_tooling_hardening.contract.json --out-json artifacts/validation/viewer_host_tooling_hardening_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label viewer_host_tooling_hardening_plan_sync --log artifacts/viewer_host_tooling_hardening/plan_sync.log -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/viewer_host_tooling_hardening_code_quality.json",
+    "py -3.14 -m pytest tests/test_viewer_host_tooling_hardening.py -q --junitxml artifacts/pytest/viewer_host_tooling_hardening.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/viewer_host_tooling_hardening_PHASED_PLAN.md --out-json artifacts/validation/viewer_host_tooling_hardening_hostile_audit.json",
+    "git diff --check > artifacts/viewer_host_tooling_hardening/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The tooling hardening contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_tooling_hardening_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_tooling_hardening_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -64,6 +64,13 @@ def load_json_file(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _first_control_character(text: str) -> str | None:
+    for char in text:
+        if ord(char) < 32:
+            return f"U+{ord(char):04X}"
+    return None
+
+
 def contract_state_path_for_session(session_id: str, repo_root: Path = REPO_ROOT) -> Path:
     return repo_root / "artifacts" / "hooks" / "viewer_host_contract_guard" / f"{_sanitize_session_id(session_id)}.json"
 
@@ -159,6 +166,18 @@ def validate_slice_contract_payload(payload: dict[str, Any], repo_root: Path = R
             errors.append(f"missing required non-empty list field: {field}")
         elif not all(isinstance(item, str) and item.strip() for item in value):
             errors.append(f"invalid list entries for field: {field}")
+
+    validation_commands = payload.get("required_validation_commands")
+    if isinstance(validation_commands, list):
+        for index, command in enumerate(validation_commands):
+            if not isinstance(command, str):
+                continue
+            control_char = _first_control_character(command)
+            if control_char is not None:
+                errors.append(
+                    f"required_validation_commands[{index}] contains control character {control_char}; "
+                    "escape Windows backslashes as \\ or use forward slashes"
+                )
 
     for dict_field in ("required_defaults", "forbidden_defaults"):
         value = payload.get(dict_field)

@@ -80,6 +80,36 @@ def _append_error_section(lines: list[str], title: str, items: list[str]) -> Non
         lines.append(f"  - {item}")
 
 
+def _visible_validation_command(command: str) -> str:
+    visible: list[str] = []
+    for char in command:
+        if ord(char) < 32:
+            visible.append(f"<U+{ord(char):04X}>")
+        else:
+            visible.append(char)
+    return "".join(visible)
+
+
+def _validation_command_hint_key(command: str) -> str:
+    return _visible_validation_command(command).replace("\\", "/")
+
+
+def _build_validation_command_hints(missing_required: list[str], provided_commands: list[str]) -> list[str]:
+    hints: list[str] = []
+    provided_by_key: dict[str, str] = {}
+    for command in provided_commands:
+        provided_by_key.setdefault(_validation_command_hint_key(command), command)
+    for missing in missing_required:
+        near_match = provided_by_key.get(_validation_command_hint_key(missing))
+        if near_match is None:
+            continue
+        hints.append(
+            "required command differs only after slash/control-character normalization; "
+            f"required={_visible_validation_command(missing)} | provided={_visible_validation_command(near_match)}"
+        )
+    return hints
+
+
 def _collect_write_receipts_preflight_errors(
     contract_state: dict[str, object],
     repo_root: Path,
@@ -123,6 +153,11 @@ def _collect_write_receipts_preflight_errors(
 
     lines: list[str] = []
     _append_error_section(lines, "missing required validation commands", missing_required)
+    _append_error_section(
+        lines,
+        "near-matching validation commands",
+        _build_validation_command_hints(missing_required, provided_commands),
+    )
     _append_error_section(lines, "missing parseable evidence for required validation commands", missing_parseable_evidence)
     _append_error_section(lines, "missing validation artifacts for provided commands", missing_artifacts)
     return lines

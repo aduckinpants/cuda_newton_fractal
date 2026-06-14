@@ -130,6 +130,8 @@ def main(argv: list[str] | None = None) -> int:
     if not cwd.is_absolute():
         cwd = (REPO_ROOT / cwd).resolve()
     command = _normalize_command_for_launch(command, cwd)
+    heartbeat_seconds = max(0.0, float(args.heartbeat_seconds))
+    timeout_seconds = max(0.0, float(args.timeout_seconds))
 
     log_path = Path(args.log)
     if not log_path.is_absolute():
@@ -140,6 +142,10 @@ def main(argv: list[str] | None = None) -> int:
     _emit_summary_line(f"cwd={_relative_to_repo(cwd)}")
     _emit_summary_line(f"command={_format_command(command)}")
     _emit_summary_line(f"log={_relative_to_repo(log_path)}")
+    if timeout_seconds:
+        _emit_summary_line(f"timeout_seconds={timeout_seconds:.3f}")
+    else:
+        _emit_summary_line("timeout_seconds=disabled")
     _emit_summary_line("result=started")
 
     return_code = 0
@@ -147,8 +153,6 @@ def main(argv: list[str] | None = None) -> int:
     timed_out = False
     cleanup_result: dict[str, object] | None = None
     started_at = time.monotonic()
-    heartbeat_seconds = max(0.0, float(args.heartbeat_seconds))
-    timeout_seconds = max(0.0, float(args.timeout_seconds))
     with log_path.open("w", encoding="utf-8", errors="replace") as handle:
         try:
             proc = subprocess.Popen(
