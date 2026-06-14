@@ -974,6 +974,126 @@ ESCAPE_TIME_COLOR_HD inline float ResolveRootProximitySignal(
     return -log2f(fmaxf(scale * safeDistance, 1.0e-12f)) + bias;
 }
 
+struct EscapeRootPatternShape { float a; float b; float c; float d; };
+
+ESCAPE_TIME_COLOR_HD inline uint32_t EscapeRootPatternHashU32(uint32_t x) {
+    x ^= x >> 16; x *= 0x7feb352dU; x ^= x >> 15; x *= 0x846ca68bU; x ^= x >> 16; return x;
+}
+
+ESCAPE_TIME_COLOR_HD inline float EscapeRootPatternHash01(uint32_t x) {
+    return static_cast<float>(EscapeRootPatternHashU32(x) & 0x00ffffffU) / static_cast<float>(0x01000000U);
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeRootPatternShape EscapeRootPatternShapeForSeed(uint32_t seed, float phase, float spread, float phaseStrength) {
+    const float r0 = EscapeRootPatternHash01(seed ^ 0x13579bdu);
+    const float r1 = EscapeRootPatternHash01(seed ^ 0x2468aceu);
+    const float r2 = EscapeRootPatternHash01(seed ^ 0xdeadbeefu);
+    const float r3 = EscapeRootPatternHash01(seed ^ 0x9e3779b9u);
+    const float baseR = 0.85f + 0.95f * spread;
+    const float ps = 0.35f * phaseStrength;
+    const float aAngle = (r0 * 6.2831853f) + ps * sinf(phase * (0.15f + 0.20f * r2));
+    const float cAngle = (r1 * 6.2831853f) + ps * cosf(phase * (0.13f + 0.23f * r3));
+    EscapeRootPatternShape out{};
+    out.a = baseR * cosf(aAngle);
+    out.b = (0.25f + 0.95f * fabsf(sinf(aAngle + 0.7f))) * (0.65f + 0.45f * r2);
+    out.c = baseR * cosf(cAngle);
+    out.d = (0.25f + 0.95f * fabsf(sinf(cAngle - 0.4f))) * (0.65f + 0.45f * r3);
+    return out;
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeRootPatternShape EscapeRootPatternShapeForCombinedSeed(double combinedSeed, bool seedTween, float phase, float spread, float phaseStrength) {
+    if (!isfinite(combinedSeed)) combinedSeed = 0.0;
+    const double seedFloor = floor(combinedSeed);
+    float driftFrac = static_cast<float>(combinedSeed - seedFloor);
+    if (!isfinite(driftFrac)) driftFrac = 0.0f;
+    driftFrac = EscapeTimeColorClamp(driftFrac, 0.0f, 1.0f);
+    const int seedBase = static_cast<int>(seedFloor);
+    const EscapeRootPatternShape shape0 = EscapeRootPatternShapeForSeed(static_cast<uint32_t>(seedBase), phase, spread, phaseStrength);
+    if (!seedTween || driftFrac <= 0.0f) return shape0;
+    const EscapeRootPatternShape shape1 = EscapeRootPatternShapeForSeed(static_cast<uint32_t>(seedBase + 1), phase, spread, phaseStrength);
+    const float tweenFrac = static_cast<float>(ExplainoWedgeTween(static_cast<double>(driftFrac)));
+    EscapeRootPatternShape out{};
+    out.a = EscapeTimeColorLerp(shape0.a, shape1.a, tweenFrac);
+    out.b = EscapeTimeColorLerp(shape0.b, shape1.b, tweenFrac);
+    out.c = EscapeTimeColorLerp(shape0.c, shape1.c, tweenFrac);
+    out.d = EscapeTimeColorLerp(shape0.d, shape1.d, tweenFrac);
+    return out;
+}
+
+struct EscapeGeneratedRootPatternConfig {
+    ExplainoGeneratedRootLayout layout;
+    int count;
+    double seed;
+    float spread;
+    float phase;
+    float phaseStrength;
+    bool seedTween;
+    bool useSecondary;
+};
+
+ESCAPE_TIME_COLOR_HD inline EscapeGeneratedRootPatternConfig EscapeGeneratedRootPatternConfigFromParams(
+        const KernelParams& params, const ViewState* view, ExplainoRootPatternRef patternRef) {
+    const bool useSecondary = patternRef == ExplainoRootPatternRef::secondary;
+    EscapeGeneratedRootPatternConfig config{};
+    config.layout = useSecondary ? params.explaino_secondary_root_pattern_layout : params.explaino_generated_root_layout;
+    config.count = useSecondary ? params.explaino_secondary_root_pattern_count : params.explaino_generated_root_count;
+    config.seed = useSecondary ? params.explaino_secondary_root_pattern_seed : params.explaino_seed + (view ? static_cast<double>(view->explaino_seed_drift) : 0.0);
+    config.spread = useSecondary ? params.explaino_secondary_root_pattern_spread : params.explaino_root_spread;
+    config.phase = useSecondary ? params.explaino_secondary_root_pattern_phase : (view ? view->explaino_phase : 0.0f);
+    config.phaseStrength = useSecondary ? params.explaino_secondary_root_pattern_phase_strength : (view ? view->explaino_phase_strength : 1.0f);
+    config.seedTween = view ? view->explaino_seed_tween : true;
+    config.useSecondary = useSecondary;
+    return config;
+}
+
+ESCAPE_TIME_COLOR_HD inline bool TryBuildRegularNgonRootPattern(
+        const EscapeGeneratedRootPatternConfig& config, Float2 roots[16], int* outRootCount) {
+    if (config.count < 2 || config.count > 16) return false;
+    const float radius = 0.85f + 0.95f * EscapeTimeColorClamp(config.spread, 0.0f, 1.0f);
+    const float twoPi = 6.28318530717958647692f;
+    const double seed = config.seed * 0.6180339887498949;
+    const float rotation = twoPi * (config.phase * config.phaseStrength + static_cast<float>(seed - floor(seed)));
+    for (int index = 0; index < config.count; ++index) {
+        const float angle = rotation + twoPi * static_cast<float>(index) / static_cast<float>(config.count);
+        roots[index] = {radius * cosf(angle), radius * sinf(angle)};
+    }
+    if (outRootCount) *outRootCount = config.count;
+    return true;
+}
+
+ESCAPE_TIME_COLOR_HD inline bool TryBuildLegacyQuarticRootPattern(
+        FractalType fractalType, const KernelParams& params, const EscapeGeneratedRootPatternConfig& config,
+        Float2 roots[16], int* outRootCount) {
+    const EscapeRootPatternShape shape = EscapeRootPatternShapeForCombinedSeed(config.seed, config.seedTween,
+        config.phase, EscapeTimeColorClamp(config.spread, 0.0f, 1.0f), config.phaseStrength);
+    if (fractalType == FractalType::explaino_mult) {
+        const float halfClusterRadius = EscapeTimeColorClamp(params.explaino_cluster_radius, 0.0f, 2.0f) * 0.5f;
+        roots[0] = {shape.a + halfClusterRadius, shape.b};
+        roots[1] = {shape.a - halfClusterRadius, shape.b};
+        roots[2] = {shape.c, shape.d + halfClusterRadius};
+        roots[3] = {shape.c, shape.d - halfClusterRadius};
+    } else {
+        roots[0] = {shape.a, shape.b};
+        roots[1] = {shape.a, -shape.b};
+        roots[2] = {shape.c, shape.d};
+        roots[3] = {shape.c, -shape.d};
+    }
+    if (outRootCount) *outRootCount = 4;
+    return true;
+}
+
+ESCAPE_TIME_COLOR_HD inline bool TryBuildGeneratedRootPatternList(FractalType fractalType, const KernelParams& params, const ViewState* view, ExplainoRootPatternRef patternRef, Float2 roots[16], int* outRootCount) {
+    if (params.explaino_root_authority != ExplainoRootAuthority::generated) return false;
+    const EscapeGeneratedRootPatternConfig config = EscapeGeneratedRootPatternConfigFromParams(params, view, patternRef);
+    if (config.layout == ExplainoGeneratedRootLayout::regular_ngon_v1) {
+        return TryBuildRegularNgonRootPattern(config, roots, outRootCount);
+    }
+    if (config.useSecondary && config.layout == ExplainoGeneratedRootLayout::legacy_quartic_v1) {
+        return TryBuildLegacyQuarticRootPattern(fractalType, params, config, roots, outRootCount);
+    }
+    return false;
+}
+
 template <typename Complex>
 ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerDistance(
     Complex z,
@@ -982,33 +1102,10 @@ ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerDistance(
     ExplainoRootPatternRef patternRef,
     float* outDistance) {
     float nearestDistanceSquared = 0.0f;
-    const bool useSecondary = patternRef == ExplainoRootPatternRef::secondary;
-    const ExplainoGeneratedRootLayout generatedLayout = useSecondary
-        ? params.explaino_secondary_root_pattern_layout
-        : params.explaino_generated_root_layout;
-    const int generatedCount = useSecondary
-        ? params.explaino_secondary_root_pattern_count
-        : params.explaino_generated_root_count;
-    if (params.explaino_root_authority == ExplainoRootAuthority::generated &&
-        generatedLayout == ExplainoGeneratedRootLayout::regular_ngon_v1 &&
-        generatedCount >= 2 &&
-        generatedCount <= 16) {
-        const int rootCount = generatedCount;
-        const float radius = 0.85f + 0.95f * EscapeTimeColorClamp(params.explaino_root_spread, 0.0f, 1.0f);
-        const float twoPi = 6.28318530717958647692f;
-        const double seedCombined = params.explaino_seed + (view ? static_cast<double>(view->explaino_seed_drift) : 0.0);
-        const double seed = seedCombined * 0.6180339887498949;
-        const float phase = view ? view->explaino_phase : 0.0f;
-        const float rotation = twoPi * (phase + static_cast<float>(seed - floor(seed)));
-        nearestDistanceSquared = 1.0e30f;
-        for (int index = 0; index < rootCount; ++index) {
-            const float angle = rotation + twoPi * static_cast<float>(index) / static_cast<float>(rootCount);
-            const Float2 root{radius * cosf(angle), radius * sinf(angle)};
-            const float d2 = static_cast<float>(BasinDistanceSquaredToRoot(z, root));
-            if (d2 < nearestDistanceSquared) {
-                nearestDistanceSquared = d2;
-            }
-        }
+    Float2 generatedRoots[16]{};
+    int generatedRootCount = 0;
+    if (TryBuildGeneratedRootPatternList(FractalType::explaino_magnet_root_well, params, view, patternRef, generatedRoots, &generatedRootCount)) {
+        nearestDistanceSquared = static_cast<float>(NearestRootDistanceSquaredList(z, generatedRoots, generatedRootCount));
     } else if (params.explaino_root_count > 0) {
         nearestDistanceSquared = static_cast<float>(
             NearestRootDistanceSquaredList(z, params.explaino_roots, params.explaino_root_count));
@@ -1087,39 +1184,10 @@ ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerNearestRootPoint(
     const ViewState* view,
     ExplainoRootPatternRef patternRef,
     Float2* outRoot) {
-    const bool useSecondary = patternRef == ExplainoRootPatternRef::secondary;
-    const ExplainoGeneratedRootLayout generatedLayout = useSecondary
-        ? params.explaino_secondary_root_pattern_layout
-        : params.explaino_generated_root_layout;
-    const int generatedCount = useSecondary
-        ? params.explaino_secondary_root_pattern_count
-        : params.explaino_generated_root_count;
-    if (params.explaino_root_authority == ExplainoRootAuthority::generated &&
-        generatedLayout == ExplainoGeneratedRootLayout::regular_ngon_v1 &&
-        generatedCount >= 2 &&
-        generatedCount <= 16) {
-        const int rootCount = generatedCount;
-        const float radius = 0.85f + 0.95f * EscapeTimeColorClamp(params.explaino_root_spread, 0.0f, 1.0f);
-        const float twoPi = 6.28318530717958647692f;
-        const double seedCombined = params.explaino_seed + (view ? static_cast<double>(view->explaino_seed_drift) : 0.0);
-        const double seed = seedCombined * 0.6180339887498949;
-        const float phase = view ? view->explaino_phase : 0.0f;
-        const float rotation = twoPi * (phase + static_cast<float>(seed - floor(seed)));
-        double bestDistanceSquared = 1.0e30;
-        Float2 bestRoot{radius, 0.0f};
-        for (int index = 0; index < rootCount; ++index) {
-            const float angle = rotation + twoPi * static_cast<float>(index) / static_cast<float>(rootCount);
-            const Float2 root{radius * cosf(angle), radius * sinf(angle)};
-            const double d2 = BasinDistanceSquaredToRoot(z, root);
-            if (d2 < bestDistanceSquared) {
-                bestDistanceSquared = d2;
-                bestRoot = root;
-            }
-        }
-        if (outRoot) {
-            *outRoot = bestRoot;
-        }
-        return true;
+    Float2 generatedRoots[16]{};
+    int generatedRootCount = 0;
+    if (TryBuildGeneratedRootPatternList(FractalType::explaino_magnet_root_well, params, view, patternRef, generatedRoots, &generatedRootCount)) {
+        return TryResolveNearestRootPointList(z, generatedRoots, generatedRootCount, outRoot);
     }
     if (params.explaino_root_count > 0) {
         return TryResolveNearestRootPointList(z, params.explaino_roots, params.explaino_root_count, outRoot);

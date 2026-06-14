@@ -6090,6 +6090,10 @@ int main() {
       "explaino_generated_root_count": 4,
       "explaino_secondary_root_pattern_layout": "regular_ngon_v1",
       "explaino_secondary_root_pattern_count": 11,
+      "explaino_secondary_root_pattern_seed": 3.25,
+      "explaino_secondary_root_pattern_spread": 0.72,
+      "explaino_secondary_root_pattern_phase": 0.33,
+      "explaino_secondary_root_pattern_phase_strength": 0.44,
       "explaino_root_field_pattern_ref": "secondary",
       "explaino_damping": 1.0,
       "explaino_root_count": 4,
@@ -6129,7 +6133,11 @@ int main() {
           }
           if (loadedParams.explaino_secondary_root_pattern_layout != ExplainoGeneratedRootLayout::regular_ngon_v1 ||
               loadedParams.explaino_secondary_root_pattern_count != 11 ||
-              loadedParams.explaino_root_field_pattern_ref != ExplainoRootPatternRef::secondary) {
+              loadedParams.explaino_root_field_pattern_ref != ExplainoRootPatternRef::secondary ||
+              !NearlyEqual(static_cast<float>(loadedParams.explaino_secondary_root_pattern_seed), 3.25f) ||
+              !NearlyEqual(loadedParams.explaino_secondary_root_pattern_spread, 0.72f) ||
+              !NearlyEqual(loadedParams.explaino_secondary_root_pattern_phase, 0.33f) ||
+              !NearlyEqual(loadedParams.explaino_secondary_root_pattern_phase_strength, 0.44f)) {
             std::cerr << "Expected root-field consumer state reload to preserve Color Root Field and dynamics pattern ref for "
                       << rootConsumerIds[index] << "\n";
             return 1;

@@ -200,6 +200,10 @@ void WriteLensSdfReportFields(
         WriteAutomationReportString(out, pattern.source_kind);
         out << ", \"root_count\": " << pattern.root_count;
         out << ", \"requested_generated_root_count\": " << pattern.requested_generated_root_count;
+        out << ", \"seed\": " << pattern.seed;
+        out << ", \"root_spread\": " << pattern.root_spread;
+        out << ", \"phase\": " << pattern.phase;
+        out << ", \"phase_strength\": " << pattern.phase_strength;
         out << ", \"base_root_hash\": ";
         WriteHashOrNull(out, pattern.base_root_hash);
         out << ", \"effective_root_hash\": ";

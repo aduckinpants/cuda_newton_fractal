@@ -2224,6 +2224,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     int explainoGeneratedRootCount = nextParams.explaino_generated_root_count;
     ExplainoGeneratedRootLayout explainoSecondaryRootPatternLayout = nextParams.explaino_secondary_root_pattern_layout;
     int explainoSecondaryRootPatternCount = nextParams.explaino_secondary_root_pattern_count;
+    double explainoSecondaryRootPatternSeed = nextParams.explaino_secondary_root_pattern_seed;
+    double explainoSecondaryRootPatternSpread = nextParams.explaino_secondary_root_pattern_spread;
+    double explainoSecondaryRootPatternPhase = nextParams.explaino_secondary_root_pattern_phase;
+    double explainoSecondaryRootPatternPhaseStrength = nextParams.explaino_secondary_root_pattern_phase_strength;
     ExplainoRootPatternRef explainoRootFieldPatternRef = nextParams.explaino_root_field_pattern_ref;
     double explainoDamping = nextParams.explaino_damping;
     int explainoRootCount = 0;
@@ -2375,6 +2379,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "explaino_mix", &explainoMix, nullptr, outError)) return false;
     if (!GetRequiredNumber(*paramsObject, "explaino_warp_strength", &explainoWarpStrength, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_root_spread", &explainoRootSpread, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_secondary_root_pattern_seed", &explainoSecondaryRootPatternSeed, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_secondary_root_pattern_spread", &explainoSecondaryRootPatternSpread, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_secondary_root_pattern_phase", &explainoSecondaryRootPatternPhase, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_secondary_root_pattern_phase_strength", &explainoSecondaryRootPatternPhaseStrength, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_damping", &explainoDamping, nullptr, outError)) return false;
     if (!ParseIntField(*paramsObject, "explaino_root_count", &explainoRootCount, outError)) return false;
     if (const json_min::Value* generatedRootCountValue = paramsObject->get("explaino_generated_root_count")) {
@@ -2567,6 +2575,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_generated_root_count = explainoGeneratedRootCount;
     nextParams.explaino_secondary_root_pattern_layout = explainoSecondaryRootPatternLayout;
     nextParams.explaino_secondary_root_pattern_count = explainoSecondaryRootPatternCount;
+    nextParams.explaino_secondary_root_pattern_seed = explainoSecondaryRootPatternSeed;
+    nextParams.explaino_secondary_root_pattern_spread = static_cast<float>(explainoSecondaryRootPatternSpread);
+    nextParams.explaino_secondary_root_pattern_phase = static_cast<float>(explainoSecondaryRootPatternPhase);
+    nextParams.explaino_secondary_root_pattern_phase_strength = static_cast<float>(explainoSecondaryRootPatternPhaseStrength);
     nextParams.explaino_root_field_pattern_ref = explainoRootFieldPatternRef;
     nextParams.explaino_damping = static_cast<float>(explainoDamping);
     nextParams.explaino_root_count = explainoRootCount;

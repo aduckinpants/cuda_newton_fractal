@@ -644,6 +644,18 @@ static ViewerUiAutomationRootPatternProbe BuildRootPatternProbe(
     pattern.requested_generated_root_count = patternRef == ExplainoRootPatternRef::secondary
         ? params.explaino_secondary_root_pattern_count
         : params.explaino_generated_root_count;
+    pattern.seed = patternRef == ExplainoRootPatternRef::secondary
+        ? params.explaino_secondary_root_pattern_seed
+        : ExplainoSeedCombined(view, params);
+    pattern.root_spread = patternRef == ExplainoRootPatternRef::secondary
+        ? params.explaino_secondary_root_pattern_spread
+        : params.explaino_root_spread;
+    pattern.phase = patternRef == ExplainoRootPatternRef::secondary
+        ? params.explaino_secondary_root_pattern_phase
+        : view.explaino_phase;
+    pattern.phase_strength = patternRef == ExplainoRootPatternRef::secondary
+        ? params.explaino_secondary_root_pattern_phase_strength
+        : view.explaino_phase_strength;
     ExplainoRootFieldDescriptor descriptor{};
     std::string error;
     if (ResolveExplainoRootPatternDescriptor(view, params, patternRef, &descriptor, &error)) {
@@ -2077,6 +2089,8 @@ struct UiActionFlags {
     bool captureDiagnostic = false;
     bool nextSeed = false;
     bool prevSeed = false;
+    bool colorRootNextSeed = false;
+    bool colorRootPrevSeed = false;
     bool interactionChanged = false;
 };
 
@@ -2124,7 +2138,9 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema,
                     bool isSeedButton = (ctrl.binding.path == "fractal.actions.prev_seed" ||
                                          ctrl.binding.path == "fractal.actions.next_seed" ||
                                          ctrl.binding.path == "fractal.actions.root_pattern.dynamics.prev_seed" ||
-                                         ctrl.binding.path == "fractal.actions.root_pattern.dynamics.next_seed");
+                                         ctrl.binding.path == "fractal.actions.root_pattern.dynamics.next_seed" ||
+                                         ctrl.binding.path == "fractal.actions.root_pattern.color.prev_seed" ||
+                                         ctrl.binding.path == "fractal.actions.root_pattern.color.next_seed");
                     if (isSeedButton && prevWasSeedButton) {
                         ImGui::SameLine();
                     }
@@ -2150,6 +2166,8 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema,
                             ctrl.binding.path == "fractal.actions.root_pattern.dynamics.next_seed") a.nextSeed = true;
                         if (ctrl.binding.path == "fractal.actions.prev_seed" ||
                             ctrl.binding.path == "fractal.actions.root_pattern.dynamics.prev_seed") a.prevSeed = true;
+                        if (ctrl.binding.path == "fractal.actions.root_pattern.color.next_seed") a.colorRootNextSeed = true;
+                        if (ctrl.binding.path == "fractal.actions.root_pattern.color.prev_seed") a.colorRootPrevSeed = true;
                     }
                     if (ctrl.binding.path == "fractal.actions.load_state") {
                         ImGui::SameLine();
@@ -2425,6 +2443,7 @@ static void RenderSweepControls(const SweepPlayerConfig& config, SweepPlayerStat
 static void DispatchUiActions(HWND hwnd,
                               bool resetViewAction, bool resetAllAction, bool loadStateAction,
                               bool nextSeedAction, bool prevSeedAction,
+                              bool colorRootNextSeedAction, bool colorRootPrevSeedAction,
                               ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens,
                               SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
                               SidecarAutoDemoMutationHistory& sidecarMutationHistory,
@@ -2522,6 +2541,16 @@ static void DispatchUiActions(HWND hwnd,
     if (prevSeedAction && SupportsExplainoSeedControls(view.fractal_type)) {
         ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) - 1.0);
         UpdateExplainoPolynomial(view, params, nullptr);
+        dirty = true;
+        interactionChanged = true;
+    }
+    if (colorRootNextSeedAction && UsesExplainoRootLayoutAuthority(view.fractal_type)) {
+        params.explaino_secondary_root_pattern_seed += 1.0;
+        dirty = true;
+        interactionChanged = true;
+    }
+    if (colorRootPrevSeedAction && UsesExplainoRootLayoutAuthority(view.fractal_type)) {
+        params.explaino_secondary_root_pattern_seed -= 1.0;
         dirty = true;
         interactionChanged = true;
     }
@@ -4408,7 +4437,7 @@ static void RunViewerFrame(
 
     const std::string loadedStatePathBeforeActions = currentLoadedStatePath;
     DispatchUiActions(hwnd, actions.resetView, actions.resetAll, actions.loadState,
-        actions.nextSeed, actions.prevSeed, view, params, render, lens,
+        actions.nextSeed, actions.prevSeed, actions.colorRootNextSeed, actions.colorRootPrevSeed, view, params, render, lens,
         sidecarControllerPolicy,
         sidecarMutationHistory, sidecarMutationHistoryValid,
         dirty, actions.interactionChanged,

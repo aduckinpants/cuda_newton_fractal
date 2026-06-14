@@ -587,6 +587,10 @@ void TestRowBuildersAndDefaults() {
             color_pipeline_core::SetColorPipelineParamEnum(&rootProximityRow, "signal.root_pattern_ref", "secondary", &error) &&
             RowEnum(rootProximityRow, "signal.root_pattern_ref", "color_root_field"),
         "TestRowBuildersAndDefaults_RootProximityPatternRefNormalizesLegacyAliases");
+    error.clear();
+    Check(!color_pipeline_core::SetColorPipelineParamEnum(&rootProximityRow, "signal.root_pattern_ref", "not_a_root_field", &error) &&
+            RowEnum(rootProximityRow, "signal.root_pattern_ref", "color_root_field") && !error.empty(),
+        "TestRowBuildersAndDefaults_RootProximityPatternRefRejectsInvalidRefs");
 
     ColorPipelineRowState rootPhaseRow;
     Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "root_phase", 19, &rootPhaseRow, &error),

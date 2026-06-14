@@ -330,7 +330,7 @@ def test_mandelbrot_root_trap_root_phase_source_runtime_actions_change_frame(
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
-def test_explaino_magnet_root_well_scoped_root_controls_and_color_refs(
+def test_magnet_root_well_divergent_dynamics_and_color_root_fields_no_mouse(
     tmp_path: Path,
 ) -> None:
     exe_path = active_runtime_exe()
@@ -342,6 +342,10 @@ def test_explaino_magnet_root_well_scoped_root_controls_and_color_refs(
     params["explaino_generated_root_count"] = 11
     params["explaino_secondary_root_pattern_layout"] = "legacy_quartic_v1"
     params["explaino_secondary_root_pattern_count"] = 4
+    params["explaino_secondary_root_pattern_seed"] = 0.21
+    params["explaino_secondary_root_pattern_spread"] = 0.35
+    params["explaino_secondary_root_pattern_phase"] = 0.12
+    params["explaino_secondary_root_pattern_phase_strength"] = 0.8
     params["explaino_root_field_pattern_ref"] = "dynamics_root_field"
     params["explaino_root_field_trap_strength"] = 1.0
     params["explaino_root_field_trap_scale"] = 1.5
@@ -377,6 +381,8 @@ def test_explaino_magnet_root_well_scoped_root_controls_and_color_refs(
         assert "fractal_control.explaino_root_field_pattern_ref.primary" not in visible_controls, secondary
         assert "fractal_control.explaino_secondary_root_pattern_layout.primary" not in visible_controls, secondary
         assert "fractal_control.explaino_secondary_root_pattern_count.primary" not in visible_controls, secondary
+        assert "fractal_control.color_root_field_seed.primary" in visible_controls, secondary
+        assert "color_root_field_next_seed" in visible_controls, secondary
         assert secondary.get("current_fractal_type") == lane_id, secondary
         assert secondary.get("root_field_consumer_kind") == lane_id, secondary
         assert secondary.get("root_field_consumer_root_count") == 11, secondary
@@ -389,8 +395,14 @@ def test_explaino_magnet_root_well_scoped_root_controls_and_color_refs(
         assert active_root_field.get("layout_kind") == "regular_ngon_v1", active_root_field
         assert _root_pattern(secondary, "dynamics_root_field").get("root_count") == 11, secondary
         assert _root_pattern(secondary, "dynamics_root_field").get("layout_kind") == "regular_ngon_v1", secondary
-        assert _root_pattern(secondary, "color_root_field").get("root_count") == 4, secondary
-        assert _root_pattern(secondary, "color_root_field").get("layout_kind") == "legacy_quartic_v1", secondary
+        color_pattern = _root_pattern(secondary, "color_root_field")
+        assert color_pattern.get("root_count") == 4, secondary
+        assert color_pattern.get("layout_kind") == "legacy_quartic_v1", secondary
+        assert color_pattern.get("seed") == pytest.approx(0.21, abs=1.0e-6), color_pattern
+        assert color_pattern.get("root_spread") == pytest.approx(0.35, abs=1.0e-6), color_pattern
+        assert color_pattern.get("phase") == pytest.approx(0.12, abs=1.0e-6), color_pattern
+        assert color_pattern.get("phase_strength") == pytest.approx(0.8, abs=1.0e-6), color_pattern
+        assert color_pattern.get("base_root_hash") != _root_pattern(secondary, "dynamics_root_field").get("base_root_hash"), secondary
         assert _has_root_pattern_consumer(
             secondary,
             consumer_kind="root_field_consumer",
@@ -404,6 +416,13 @@ def test_explaino_magnet_root_well_scoped_root_controls_and_color_refs(
             pattern_ref="color_root_field",
         ), secondary
         secondary_hash = _require_frame_hash(secondary)
+        secondary_dynamics_hash = _root_pattern(secondary, "dynamics_root_field").get("base_root_hash")
+
+        color_clicked = viewer.click_control("color_root_field_next_seed", timeout_seconds=20.0)
+        assert _root_pattern(color_clicked, "dynamics_root_field").get("base_root_hash") == secondary_dynamics_hash, color_clicked
+        assert _root_pattern(color_clicked, "color_root_field").get("seed") == pytest.approx(1.21, abs=1.0e-6), color_clicked
+        assert _root_pattern(color_clicked, "color_root_field").get("base_root_hash") != color_pattern.get("base_root_hash"), color_clicked
+        assert _require_frame_hash(color_clicked) != secondary_hash, color_clicked
 
         primary_state = json.loads(json.dumps(state))
         primary_params = primary_state["params"]
@@ -412,6 +431,13 @@ def test_explaino_magnet_root_well_scoped_root_controls_and_color_refs(
         assert isinstance(source_rows, list), primary_params
         source_rows[0]["root_pattern_ref"] = "dynamics_root_field"
         primary_state_path = write_state_bundle(tmp_path / "magnet_root_patterns_primary", primary_state)
+
+        color_seed_state = json.loads(json.dumps(state))
+        color_seed_rows = color_seed_state["params"]["color_source_stack"]
+        assert isinstance(color_seed_rows, list), color_seed_state
+        color_seed_rows[0]["root_pattern_ref"] = "color_root_field"
+        color_seed_state["params"]["explaino_secondary_root_pattern_seed"] = 3.21
+        color_seed_state_path = write_state_bundle(tmp_path / "magnet_root_patterns_color_seed", color_seed_state)
         primary = viewer.load_state_json(
             primary_state_path,
             expected_fractal_type=lane_id,
@@ -431,6 +457,21 @@ def test_explaino_magnet_root_well_scoped_root_controls_and_color_refs(
             pattern_ref="dynamics_root_field",
         ), primary
         assert _require_frame_hash(primary) != secondary_hash, primary
+
+        color_seed = viewer.load_state_json(
+            color_seed_state_path,
+            expected_fractal_type=lane_id,
+            timeout_seconds=60.0,
+        )
+        assert _has_root_pattern_consumer(
+            color_seed,
+            consumer_kind="color_source_row",
+            consumer_id="root_proximity",
+            pattern_ref="color_root_field",
+        ), color_seed
+        assert _root_pattern(color_seed, "dynamics_root_field").get("base_root_hash") == _root_pattern(secondary, "dynamics_root_field").get("base_root_hash"), color_seed
+        assert _root_pattern(color_seed, "color_root_field").get("base_root_hash") != color_pattern.get("base_root_hash"), color_seed
+        assert _require_frame_hash(color_seed) != secondary_hash, color_seed
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")

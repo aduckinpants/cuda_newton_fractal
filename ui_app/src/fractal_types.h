@@ -515,6 +515,10 @@ struct KernelParams {
     ExplainoGeneratedRootLayout explaino_secondary_root_pattern_layout{
         ExplainoGeneratedRootLayout::legacy_quartic_v1};
     int explaino_secondary_root_pattern_count{4};
+    double explaino_secondary_root_pattern_seed{0.0};
+    float explaino_secondary_root_pattern_spread{0.5f};
+    float explaino_secondary_root_pattern_phase{0.0f};
+    float explaino_secondary_root_pattern_phase_strength{1.0f};
     ExplainoRootPatternRef explaino_root_field_pattern_ref{ExplainoRootPatternRef::primary};
     float explaino_damping{1.0f};
     float explaino_cluster_radius{0.0f};

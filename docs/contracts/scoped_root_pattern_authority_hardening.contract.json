@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "contract_id": "scoped_root_pattern_authority_hardening",
+  "feature_id": "scoped_root_pattern_authority_hardening",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/scoped_root_pattern_authority_hardening_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "prove Dynamics Root Field and Color Root Field can diverge with distinct hashes",
+    "prove scoped root-pattern controls and actions mutate only their owner scope",
+    "prove root-field consumers and root-aware Color Pipeline rows consume explicit scoped refs",
+    "prove invalid scoped refs fail closed instead of silently falling back",
+    "prove save/load/capture/replay preserves scoped descriptors and consumer refs"
+  ],
+  "forbidden_operator_prompts": [
+    "add new fractal families",
+    "resume SDF work",
+    "add graph editor UI",
+    "add arbitrary root-pattern banks",
+    "add custom N-root coordinate editing",
+    "use physical mouse automation",
+    "treat identical dynamics/color hashes as proof of scoped authority"
+  ],
+  "required_defaults": {
+    "branch": "codex/scoped-root-pattern-authority-hardening",
+    "normal_scope_refs": [
+      "dynamics_root_field",
+      "color_root_field"
+    ],
+    "divergent_demo": {
+      "fractal_type": "explaino_magnet_root_well",
+      "dynamics_layout": "regular_ngon_v1",
+      "dynamics_count": 11,
+      "color_layout": "legacy_quartic_v1",
+      "color_count": 4,
+      "dynamics_consumer_ref": "dynamics_root_field",
+      "color_source_ref": "color_root_field"
+    },
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "silent_invalid_ref_fallback": "forbidden",
+    "shared_backing_storage_claimed_as_divergent": "forbidden",
+    "half_legacy_half_scoped_product_surface": "forbidden",
+    "product_claim_without_runtime_proof": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/scoped_root_pattern_authority_hardening.contract.json --out-json artifacts/validation/scoped_root_pattern_authority_hardening_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label scoped_root_pattern_authority_hardening_plan_sync --log artifacts/scoped_root_pattern_authority_hardening/plan_sync.log -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/scoped_root_pattern_authority_hardening_code_quality.json",
+    "ui_app/build_tests_vsdevcmd.cmd test_schema_binding test_color_pipeline_core test_diagnostics_state_io test_diagnostics_capture test_viewer_ui_automation_report > artifacts/scoped_root_pattern_authority_hardening/native_scoped_root_pattern_hardening.log 2>&1",
+    "ui_app/build_vsdevcmd.cmd > artifacts/scoped_root_pattern_authority_hardening/runtime_publish.log 2>&1",
+    "py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py -q --junitxml artifacts/pytest/scoped_root_pattern_authority_hardening_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/scoped_root_pattern_authority_hardening_PHASED_PLAN.md --out-json artifacts/validation/scoped_root_pattern_authority_hardening_hostile_audit.json",
+    "git diff --check > artifacts/scoped_root_pattern_authority_hardening/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The hardening contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/scoped_root_pattern_authority_hardening_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "divergent_runtime_matrix_green",
+      "description": "Published no-mouse runtime proof passes for divergent Dynamics and Color Root Field routing.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/scoped_root_pattern_authority_hardening_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_root_field_consumers.py::test_magnet_root_well_divergent_dynamics_and_color_root_fields_no_mouse"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/scoped_root_pattern_authority_hardening_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

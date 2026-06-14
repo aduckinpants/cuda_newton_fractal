@@ -1305,6 +1305,44 @@ int main() {
             std::cerr << "Expected Color Root Field Root Count to bind to secondary generated authority\n";
             return 1;
         }
+        if (!ctx.SetEnumId("fractal.root_pattern.color.generated_layout", "legacy_quartic_v1") ||
+            ctx.GetEnumId("fractal.root_pattern.color.generated_layout") != "legacy_quartic_v1" ||
+            params.explaino_secondary_root_pattern_layout != ExplainoGeneratedRootLayout::legacy_quartic_v1) {
+            std::cerr << "Expected scoped Color Root Field layout alias to bind to secondary generated authority\n";
+            return 1;
+        }
+        int* scopedColorRootCount = nullptr;
+        if (!ctx.BindInt("fractal.root_pattern.color.generated_root_count", &scopedColorRootCount) ||
+            scopedColorRootCount != &params.explaino_secondary_root_pattern_count) {
+            std::cerr << "Expected scoped Color Root Field Root Count alias to bind to secondary generated authority\n";
+            return 1;
+        }
+        double* scopedColorSeed = nullptr;
+        float* scopedColorSpread = nullptr;
+        float* scopedColorPhase = nullptr;
+        float* scopedColorPhaseStrength = nullptr;
+        if (!ctx.BindDouble("fractal.root_pattern.color.seed", &scopedColorSeed) ||
+            scopedColorSeed != &params.explaino_secondary_root_pattern_seed ||
+            !ctx.BindFloat("fractal.root_pattern.color.root_spread", &scopedColorSpread) ||
+            scopedColorSpread != &params.explaino_secondary_root_pattern_spread ||
+            !ctx.BindFloat("fractal.root_pattern.color.phase", &scopedColorPhase) ||
+            scopedColorPhase != &params.explaino_secondary_root_pattern_phase ||
+            !ctx.BindFloat("fractal.root_pattern.color.phase_strength", &scopedColorPhaseStrength) ||
+            scopedColorPhaseStrength != &params.explaino_secondary_root_pattern_phase_strength) {
+            std::cerr << "Expected scoped Color Root Field scalar controls to bind to secondary generated authority\n";
+            return 1;
+        }
+        *scopedColorSeed = 2.5;
+        *scopedColorSpread = 0.7f;
+        *scopedColorPhase = 0.25f;
+        *scopedColorPhaseStrength = 0.8f;
+        if (params.explaino_secondary_root_pattern_seed != 2.5 ||
+            !NearlyEqual(params.explaino_secondary_root_pattern_spread, 0.7f) ||
+            !NearlyEqual(params.explaino_secondary_root_pattern_phase, 0.25f) ||
+            !NearlyEqual(params.explaino_secondary_root_pattern_phase_strength, 0.8f)) {
+            std::cerr << "Expected scoped Color Root Field scalar edits to write secondary generated authority\n";
+            return 1;
+        }
         view.fractal_type = FractalType::newton;
         params.poly_kind = PolyKind::z3_minus_1;
         bool customPolyActive = true;

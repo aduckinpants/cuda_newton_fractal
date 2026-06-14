@@ -1,5 +1,7 @@
 #include "diagnostics_capture.h"
 
+#include "explaino_seed.h"
+
 #include "enum_id_utils.h"
 #define COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "color_pipeline_window.h"
@@ -902,6 +904,10 @@ void WriteFindingExplainoCommonControls(FindingControlJsonWriter& writer, const 
     const char* secondaryLayoutId = ExplainoGeneratedRootLayoutId(params.explaino_secondary_root_pattern_layout);
     writer.String("explaino_secondary_root_pattern_layout", secondaryLayoutId ? secondaryLayoutId : "legacy_quartic_v1");
     writer.Int("explaino_secondary_root_pattern_count", params.explaino_secondary_root_pattern_count);
+    writer.Number("explaino_secondary_root_pattern_seed", params.explaino_secondary_root_pattern_seed);
+    writer.Number("explaino_secondary_root_pattern_spread", static_cast<double>(params.explaino_secondary_root_pattern_spread));
+    writer.Number("explaino_secondary_root_pattern_phase", static_cast<double>(params.explaino_secondary_root_pattern_phase));
+    writer.Number("explaino_secondary_root_pattern_phase_strength", static_cast<double>(params.explaino_secondary_root_pattern_phase_strength));
     const char* rootFieldPatternRefId = ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref);
     writer.String("explaino_root_field_pattern_ref", rootFieldPatternRefId ? rootFieldPatternRefId : "dynamics_root_field");
     writer.Number("explaino_damping", static_cast<double>(params.explaino_damping));
@@ -1091,7 +1097,23 @@ void WriteFindingRootPatternJson(
     js << "        \"requested_generated_root_count\": " <<
         (patternRef == ExplainoRootPatternRef::secondary
             ? params.explaino_secondary_root_pattern_count
-            : params.explaino_generated_root_count);
+            : params.explaino_generated_root_count) << ",\n";
+    js << "        \"seed\": " <<
+        (patternRef == ExplainoRootPatternRef::secondary
+            ? params.explaino_secondary_root_pattern_seed
+            : ExplainoSeedCombined(view, params)) << ",\n";
+    js << "        \"root_spread\": " << static_cast<double>(
+        patternRef == ExplainoRootPatternRef::secondary
+            ? params.explaino_secondary_root_pattern_spread
+            : params.explaino_root_spread) << ",\n";
+    js << "        \"phase\": " << static_cast<double>(
+        patternRef == ExplainoRootPatternRef::secondary
+            ? params.explaino_secondary_root_pattern_phase
+            : view.explaino_phase) << ",\n";
+    js << "        \"phase_strength\": " << static_cast<double>(
+        patternRef == ExplainoRootPatternRef::secondary
+            ? params.explaino_secondary_root_pattern_phase_strength
+            : view.explaino_phase_strength);
     if (ResolveExplainoRootPatternDescriptor(view, params, patternRef, &descriptor, &error) &&
         descriptor.active_count > 0) {
         js << ",\n";
@@ -1302,6 +1324,10 @@ std::string BuildStateJson(
     js << "    \"explaino_generated_root_count\": " << params.explaino_generated_root_count << ",\n";
     js << "    \"explaino_secondary_root_pattern_layout\": \"" << (ExplainoGeneratedRootLayoutId(params.explaino_secondary_root_pattern_layout) ? ExplainoGeneratedRootLayoutId(params.explaino_secondary_root_pattern_layout) : "legacy_quartic_v1") << "\",\n";
     js << "    \"explaino_secondary_root_pattern_count\": " << params.explaino_secondary_root_pattern_count << ",\n";
+    js << "    \"explaino_secondary_root_pattern_seed\": " << params.explaino_secondary_root_pattern_seed << ",\n";
+    js << "    \"explaino_secondary_root_pattern_spread\": " << static_cast<double>(params.explaino_secondary_root_pattern_spread) << ",\n";
+    js << "    \"explaino_secondary_root_pattern_phase\": " << static_cast<double>(params.explaino_secondary_root_pattern_phase) << ",\n";
+    js << "    \"explaino_secondary_root_pattern_phase_strength\": " << static_cast<double>(params.explaino_secondary_root_pattern_phase_strength) << ",\n";
     js << "    \"explaino_root_field_pattern_ref\": \"" << (ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref) ? ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref) : "dynamics_root_field") << "\",\n";
     js << "    \"explaino_damping\": " << static_cast<double>(params.explaino_damping) << ",\n";
     const int persistedExplainoRootCount = params.explaino_root_count < 0

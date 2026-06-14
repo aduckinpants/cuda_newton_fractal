@@ -69,6 +69,10 @@ struct ViewerUiAutomationRootPatternProbe {
     std::string source_kind = "none";
     int root_count = 0;
     int requested_generated_root_count = 0;
+    double seed = 0.0;
+    float root_spread = 0.0f;
+    float phase = 0.0f;
+    float phase_strength = 1.0f;
     std::uint64_t base_root_hash = 0;
     std::uint64_t effective_root_hash = 0;
     std::string fail_closed_reason;

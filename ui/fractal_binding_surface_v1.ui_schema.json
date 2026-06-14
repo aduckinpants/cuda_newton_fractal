@@ -1009,6 +1009,78 @@
           "help": "Sets the generated regular N-gon root count for the scoped Dynamics Root Field. Custom roots remain the four-slot editor."
         },
         {
+          "id": "color_root_field_prev_seed",
+          "type": "button",
+          "label": "Color Prev Seed",
+          "binding": { "kind": "action", "path": "fractal.actions.root_pattern.color.prev_seed" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+        },
+        {
+          "id": "color_root_field_next_seed",
+          "type": "button",
+          "label": "Color Next Seed",
+          "binding": { "kind": "action", "path": "fractal.actions.root_pattern.color.next_seed" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+        },
+        {
+          "id": "color_root_field_seed",
+          "type": "slider_double",
+          "label": "Color Seed",
+          "value_type": "double",
+          "ui_min": -10.0, "ui_max": 10.0, "step": 0.001, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.root_pattern.color.seed" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+        },
+        {
+          "id": "color_root_field_root_spread",
+          "type": "slider_float",
+          "label": "Color Root Spread",
+          "value_type": "float",
+          "min": 0.0, "max": 3.0, "step": 0.01, "default": 0.5,
+          "binding": { "kind": "param", "path": "fractal.root_pattern.color.root_spread" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+        },
+        {
+          "id": "color_root_field_phase",
+          "type": "slider_float",
+          "label": "Color Phase",
+          "value_type": "float",
+          "ui_min": -6.283185307179586, "ui_max": 6.283185307179586, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.root_pattern.color.phase" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+        },
+        {
+          "id": "color_root_field_phase_strength",
+          "type": "slider_float",
+          "label": "Color Phase Strength",
+          "value_type": "float",
+          "ui_min": -20.0, "ui_max": 20.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.root_pattern.color.phase_strength" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+        },
+        {
+          "id": "color_root_field_generated_layout",
+          "type": "combo",
+          "label": "Color Generated Layout",
+          "value_type": "enum",
+          "default": "legacy_quartic_v1",
+          "options": [
+            { "id": "legacy_quartic_v1", "label": "Legacy Quartic" },
+            { "id": "regular_ngon_v1", "label": "Regular N-Gon" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.root_pattern.color.generated_layout" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+        },
+        {
+          "id": "color_root_field_generated_root_count",
+          "type": "slider_int",
+          "label": "Color Root Count",
+          "value_type": "int",
+          "min": 2, "max": 16, "step": 1, "default": 4,
+          "binding": { "kind": "param", "path": "fractal.root_pattern.color.generated_root_count" },
+          "visible_if": { "op": "eq", "path": "fractal.root_pattern.color.generated_root_count_active", "value": "true" }
+        },
+        {
           "id": "explaino_custom_root_count",
           "type": "slider_int",
           "label": "Custom Roots",
