@@ -250,21 +250,34 @@ def test_explaino_magnet_root_well_base_magnet_controls_are_visible_and_active(
         assert prev_seed.get("current_fractal_type") == lane_id, prev_seed
         assert _require_root_hash(prev_seed) == baseline_root_hash, prev_seed
 
+        invisible_controls = {
+            "fractal_control.param_anim_target.seed",
+            "fractal_control.param_anim_target.root_spread",
+            "fractal_control.param_anim_target.explaino_phase",
+        }
+        assert invisible_controls.isdisjoint(visible_controls), baseline
+
         edits = [
-            ("fractal_control.magnet_seed_real.primary", 0.35),
-            ("fractal_control.magnet_seed_imag.primary", -0.25),
-            ("fractal_control.magnet_relaxation.primary", 0.65),
-            ("fractal_control.magnet_bailout.primary", 24.0),
+            ("fractal_control.magnet_seed_real.primary", 0.35, "rendered_frame_hash"),
+            ("fractal_control.magnet_seed_imag.primary", -0.25, "rendered_frame_hash"),
+            ("fractal_control.magnet_relaxation.primary", 0.65, "rendered_frame_hash"),
+            ("fractal_control.magnet_bailout.primary", 24.0, "rendered_frame_hash"),
+            ("fractal_control.explaino_root_field_trap_strength.primary", 0.35, "rendered_frame_hash"),
+            ("fractal_control.explaino_root_field_trap_scale.primary", 2.25, "rendered_frame_hash"),
+            ("fractal_control.dynamics_root_field_seed.primary", 0.75, "root_field_consumer_base_root_hash"),
+            ("fractal_control.dynamics_root_field_root_spread.primary", 0.95, "root_field_consumer_base_root_hash"),
+            ("fractal_control.dynamics_root_field_phase.primary", 0.65, "root_field_consumer_base_root_hash"),
+            ("fractal_control.dynamics_root_field_phase_strength.primary", 1.75, "root_field_consumer_base_root_hash"),
         ]
-        edited = baseline
-        for control_id, value in edits:
+        for control_id, value, changed_key in edits:
+            edited = viewer.load_state_json(state_path, expected_fractal_type=lane_id, timeout_seconds=60.0)
+            before_value = edited.get(changed_key)
             edited = viewer.set_control_value(control_id, value, timeout_seconds=30.0)
             assert edited.get("current_fractal_type") == lane_id, edited
             assert edited.get("requested_set_control_id") == control_id, edited
             assert edited.get("set_value_consumed") is True, edited
             assert edited.get("set_value_error") is None, edited
-
-        assert _require_frame_hash(edited) != baseline_hash, edited
+            assert edited.get(changed_key) != before_value, (control_id, edited)
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")

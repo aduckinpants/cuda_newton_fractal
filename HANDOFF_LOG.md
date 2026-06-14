@@ -183,3 +183,5 @@
 - `ck:df802f9f` 2026-06-14 19:50 UTC | score 9 — Scoped root-pattern authority hardening closed: divergent Dynamics/Color Root Field authority is implemented and proven with native/runtime rails.
 - `ck:df802f9f` 2026-06-14 20:11 UTC | score 9 — Scoped root-pattern hardening follow-up: full contracted runtime file exposed stale Color Root expectation; test now mutates scoped Color Root authority explicitly and full runtime proof passes.
 - `ck:df802f9f` 2026-06-14 20:14 UTC | score 9 — Rearward repair: removed stale resume phrase from scoped root-pattern hardening plan after rearward review flagged it.
+- `ck:9c1b1ddd` 2026-06-14 20:26 UTC — session-start | branch=codex/scoped-root-pattern-control-authority-repair | head=c433026 | status=dirty | profile=runtime | intent=Scoped root-pattern control authority repair
+- `ck:9c1b1ddd` 2026-06-14 20:52 UTC | score 9 — Scoped root-pattern control authority repair: removed stale unscoped animation targets from composite root-field lanes and added independent no-mouse sensitivity proof for Magnet Root Well visible controls.

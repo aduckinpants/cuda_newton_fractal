@@ -1143,20 +1143,7 @@ bool ValidateAnimationTargetVisibilityMirrorsControls() {
                 return false;
             }
             const bool optionVisible = HasVisibleEnumOptionForFractal(*animTarget, testCase.option_id, fractalId.value);
-            bool ownerVisible = IsControlVisibleForFractal(*ownerControl, fractalId.value);
-            if (std::strcmp(testCase.option_id, "seed") == 0) {
-                if (const json_min::Value* scopedSeed = FindSchemaControlById(schemaRoot, "dynamics_root_field_seed")) {
-                    ownerVisible = ownerVisible || IsControlVisibleForFractal(*scopedSeed, fractalId.value);
-                }
-            } else if (std::strcmp(testCase.option_id, "root_spread") == 0) {
-                if (const json_min::Value* scopedRootSpread = FindSchemaControlById(schemaRoot, "dynamics_root_field_root_spread")) {
-                    ownerVisible = ownerVisible || IsControlVisibleForFractal(*scopedRootSpread, fractalId.value);
-                }
-            } else if (std::strcmp(testCase.option_id, "explaino_phase") == 0) {
-                if (const json_min::Value* scopedPhase = FindSchemaControlById(schemaRoot, "dynamics_root_field_phase")) {
-                    ownerVisible = ownerVisible || IsControlVisibleForFractal(*scopedPhase, fractalId.value);
-                }
-            }
+            const bool ownerVisible = IsControlVisibleForFractal(*ownerControl, fractalId.value);
             if (optionVisible != ownerVisible) {
                 std::cerr << "Animation target option " << testCase.option_id
                           << " no longer mirrors owner control " << testCase.control_id
