@@ -159,6 +159,19 @@ static bool IsExplainoRootSdfVisibleControl(const UISchemaControl* control, cons
         control->visible_if.value == "explaino_root_sdf";
 }
 
+static bool IsExplainoActiveRootFieldVisibleControl(const UISchemaControl* control, const char* bindingPath) {
+    return control &&
+        control->has_binding &&
+        control->binding.kind == "param" &&
+        control->binding.path == bindingPath &&
+        control->has_visible_if &&
+        control->visible_if.op == "in" &&
+        control->visible_if.path == "fractal.view.fractal_type" &&
+        ContainsCsvToken(control->visible_if.value, "explaino_root_sdf") &&
+        ContainsCsvToken(control->visible_if.value, "explaino_mandelbrot_root_trap") &&
+        ContainsCsvToken(control->visible_if.value, "explaino_magnet_root_well");
+}
+
 static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
     UISchema safeMode = BuildSafeModeSchema();
     const UISchemaPanel* viewPanel = FindPanelById(safeMode, "view");
@@ -531,6 +544,9 @@ static void TestSafeModeSchemaExposesExplainoRootSdfControls() {
     const UISchemaControl* smoothBlend = FindControlById(*fractalPanel, "explaino_root_sdf_smooth_blend");
     const UISchemaControl* generatedLayout = FindControlById(*fractalPanel, "explaino_generated_root_layout");
     const UISchemaControl* generatedCount = FindControlById(*fractalPanel, "explaino_generated_root_count");
+    const UISchemaControl* secondaryLayout = FindControlById(*fractalPanel, "explaino_secondary_root_pattern_layout");
+    const UISchemaControl* secondaryCount = FindControlById(*fractalPanel, "explaino_secondary_root_pattern_count");
+    const UISchemaControl* dynamicsPattern = FindControlById(*fractalPanel, "explaino_root_field_pattern_ref");
     const UISchemaControl* hSource = FindControlById(*fractalPanel, "explaino_root_sdf_h_source");
     const UISchemaControl* hAmplitude = FindControlById(*fractalPanel, "explaino_root_sdf_h_amplitude");
     const UISchemaControl* hFrequency = FindControlById(*fractalPanel, "explaino_root_sdf_h_frequency");
@@ -550,7 +566,7 @@ static void TestSafeModeSchemaExposesExplainoRootSdfControls() {
             smoothBlend->has_ui_min && smoothBlend->ui_min == 0.0 && smoothBlend->has_ui_max && smoothBlend->ui_max == 0.5 &&
             smoothBlend->has_default && smoothBlend->def.is_number() && smoothBlend->def.as_number() == 0.10,
         "TestSafeModeSchemaExposesExplainoRootSdfControls_SmoothBlend");
-    Check(IsExplainoRootSdfVisibleControl(generatedLayout, "fractal.params.explaino_generated_root_layout") &&
+    Check(IsExplainoActiveRootFieldVisibleControl(generatedLayout, "fractal.params.explaino_generated_root_layout") &&
             generatedLayout->type == "combo" &&
             generatedLayout->value_type == "enum" &&
             generatedLayout->has_default && generatedLayout->def.is_string() &&
@@ -569,6 +585,8 @@ static void TestSafeModeSchemaExposesExplainoRootSdfControls() {
             generatedCount->has_visible_if &&
             generatedCount->visible_if.path == "fractal.params.explaino_generated_root_count_active",
         "TestSafeModeSchemaExposesExplainoRootSdfControls_GeneratedCount");
+    Check(!secondaryLayout && !secondaryCount && !dynamicsPattern,
+        "TestSafeModeSchemaExposesExplainoRootSdfControls_NoNormalPatternBControls");
     Check(IsExplainoRootSdfVisibleControl(hSource, "fractal.params.explaino_root_sdf_h_source") &&
             hSource->type == "combo" &&
             hSource->value_type == "enum" &&

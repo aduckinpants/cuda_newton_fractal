@@ -286,12 +286,24 @@ def test_magnet_root_well_pattern_bank_routes_dynamics_and_color_rows_no_mouse(
         command_path=tmp_path / "magnet_root_patterns_command.json",
         open_color_pipeline=True,
     ) as viewer:
-        viewer.wait_for_control("fractal_control.explaino_root_field_pattern_ref.primary", timeout_seconds=30.0)
         secondary = viewer.wait_for_report(timeout_seconds=60.0)
+        visible_controls = {
+            str(control.get("control_id", ""))
+            for control in secondary.get("controls", [])
+            if isinstance(control, dict)
+        }
+        assert "fractal_control.explaino_root_field_pattern_ref.primary" not in visible_controls, secondary
+        assert "fractal_control.explaino_secondary_root_pattern_layout.primary" not in visible_controls, secondary
+        assert "fractal_control.explaino_secondary_root_pattern_count.primary" not in visible_controls, secondary
         assert secondary.get("current_fractal_type") == lane_id, secondary
         assert secondary.get("root_field_consumer_kind") == lane_id, secondary
         assert secondary.get("root_field_consumer_root_count") == 11, secondary
         assert secondary.get("root_field_consumer_root_layout_kind") == "regular_ngon_v1", secondary
+        active_root_field = secondary.get("active_root_field")
+        assert isinstance(active_root_field, dict), secondary
+        assert active_root_field.get("ref") == "primary", active_root_field
+        assert active_root_field.get("root_count") == 11, active_root_field
+        assert active_root_field.get("layout_kind") == "regular_ngon_v1", active_root_field
         assert _root_pattern(secondary, "primary").get("root_count") == 11, secondary
         assert _root_pattern(secondary, "primary").get("layout_kind") == "regular_ngon_v1", secondary
         assert _root_pattern(secondary, "secondary").get("root_count") == 4, secondary
@@ -568,6 +580,11 @@ def test_root_field_consumer_capture_finding_sidecar_and_replay(
     assert isinstance(consumer.get("base_root_hash"), str), consumer
     assert isinstance(consumer.get("effective_root_hash"), str), consumer
     patterns = derived.get("root_patterns")
+    active_root_field = derived.get("active_root_field")
+    assert isinstance(active_root_field, dict), derived
+    assert active_root_field.get("ref") == "primary", active_root_field
+    assert active_root_field.get("root_count") == 5, active_root_field
+    assert active_root_field.get("layout_kind") == "regular_ngon_v1", active_root_field
     assert isinstance(patterns, list), derived
     pattern_by_ref = {pattern.get("ref"): pattern for pattern in patterns if isinstance(pattern, dict)}
     assert pattern_by_ref["primary"].get("root_count") == 5, patterns

@@ -955,30 +955,6 @@
           "help": "Sets the generated regular N-gon root count for ExplainO Root SDF. Custom roots remain the four-slot editor."
         },
         {
-          "id": "explaino_secondary_root_pattern_layout",
-          "type": "combo",
-          "label": "Root Pattern B Layout",
-          "value_type": "enum",
-          "default": "legacy_quartic_v1",
-          "options": [
-            { "id": "legacy_quartic_v1", "label": "Legacy Quartic" },
-            { "id": "regular_ngon_v1", "label": "Regular N-Gon" }
-          ],
-          "binding": { "kind": "param", "path": "fractal.params.explaino_secondary_root_pattern_layout" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
-          "help": "Configures the secondary generated root pattern used by root-aware color rows."
-        },
-        {
-          "id": "explaino_secondary_root_pattern_count",
-          "type": "slider_int",
-          "label": "Root Pattern B Count",
-          "value_type": "int",
-          "min": 2, "max": 16, "step": 1, "default": 4,
-          "binding": { "kind": "param", "path": "fractal.params.explaino_secondary_root_pattern_count" },
-          "visible_if": { "op": "eq", "path": "fractal.params.explaino_secondary_root_pattern_count_active", "value": "true" },
-          "help": "Sets the secondary regular N-gon root count. Pattern B custom coordinate editing is deferred."
-        },
-        {
           "id": "explaino_custom_root_count",
           "type": "slider_int",
           "label": "Custom Roots",
@@ -1266,20 +1242,6 @@
           "binding": { "kind": "param", "path": "fractal.params.explaino_root_field_trap_strength" },
           "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
           "help": "Blends the base smooth-escape signal toward the current ExplainO root-field distance trap. Zero collapses to the base lane."
-        },
-        {
-          "id": "explaino_root_field_pattern_ref",
-          "type": "combo",
-          "label": "Dynamics Root Pattern",
-          "value_type": "enum",
-          "default": "primary",
-          "options": [
-            { "id": "primary", "label": "Pattern A" },
-            { "id": "secondary", "label": "Pattern B" }
-          ],
-          "binding": { "kind": "param", "path": "fractal.params.explaino_root_field_pattern_ref" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
-          "help": "Chooses which ExplainO root pattern drives the root-field consumer dynamics."
         },
         {
           "id": "explaino_root_field_trap_scale",

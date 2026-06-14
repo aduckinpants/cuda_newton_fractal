@@ -764,6 +764,18 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsRootFieldConsumerFractal(Fractal
         fractalType == FractalType::explaino_magnet_root_well;
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr bool UsesExplainoActiveRootField(FractalType fractalType) {
+    return fractalType == FractalType::explaino_root_sdf || IsRootFieldConsumerFractal(fractalType);
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsExplainoAlternateRootPatternState(FractalType fractalType) {
+    return UsesExplainoActiveRootField(fractalType);
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool ShowsExplainoAlternateRootPatternControls(FractalType) {
+    return false;
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr FractalType RootFieldConsumerBaseFractalType(FractalType fractalType) {
     return fractalType == FractalType::explaino_magnet_root_well
         ? FractalType::magnet

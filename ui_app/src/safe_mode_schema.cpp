@@ -562,15 +562,12 @@ std::vector<UISchemaControl> BuildExplainoRootSdfControls() {
     return {
         BuildExplainoGeneratedRootLayoutControl(),
         BuildExplainoGeneratedRootCountControl(),
-        BuildExplainoSecondaryRootPatternLayoutControl(),
-        BuildExplainoSecondaryRootPatternCountControl(),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_radius", "Root SDF Radius", "fractal.params.explaino_root_sdf_radius", 0.001, 2.0, 0.01, 0.6, 0.001, 0.14),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_bridge_width", "Bridge Width", "fractal.params.explaino_root_sdf_bridge_width", 0.0, 2.0, 0.0, 0.4, 0.001, 0.06),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_smooth_blend", "SDF Smooth Blend", "fractal.params.explaino_root_sdf_smooth_blend", 0.0, 2.0, 0.0, 0.5, 0.001, 0.10),
         BuildExplainoRootSdfHSourceControl(),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_h_amplitude", "Root h Amplitude", "fractal.params.explaino_root_sdf_h_amplitude", 0.0, 1.0, 0.0, 0.35, 0.001, 0.0),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_h_frequency", "Root h Frequency", "fractal.params.explaino_root_sdf_h_frequency", 0.1, 16.0, 0.25, 4.0, 0.01, 1.0),
-        BuildExplainoRootFieldPatternRefControl(),
     };
 }
 

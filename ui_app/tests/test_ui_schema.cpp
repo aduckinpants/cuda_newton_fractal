@@ -1089,6 +1089,13 @@ int main() {
                     !VisibleIfIncludesFractalType(ctrl, "magnet")) {
                     foundExplainoRootFieldTrapScale = true;
                 }
+                if ((ctrl.id == "explaino_secondary_root_pattern_layout" ||
+                     ctrl.id == "explaino_secondary_root_pattern_count" ||
+                     ctrl.id == "explaino_root_field_pattern_ref") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    std::cerr << "Pattern B and Dynamics Root Pattern controls must stay out of normal Magnet Root Well UI\n";
+                    return 1;
+                }
                 if (ctrl.id == "color_smooth_escape_interior_strength" && ctrl.type == "slider_float" &&
                     ctrl.has_binding && ctrl.binding.path == "fractal.params.color_smooth_escape_interior_strength" &&
                     ctrl.has_min && ctrl.min == 0.0 && ctrl.has_max && ctrl.max == 1.0 &&

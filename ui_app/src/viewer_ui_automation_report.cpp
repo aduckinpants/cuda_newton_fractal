@@ -188,12 +188,7 @@ void WriteLensSdfReportFields(
         WriteAutomationReportString(out, lensSdfProbe.root_field_consumer_fail_closed_reason);
     }
     out << ",\n";
-    out << "  \"root_patterns\": [";
-    for (std::size_t index = 0; index < lensSdfProbe.root_patterns.size(); ++index) {
-        const ViewerUiAutomationRootPatternProbe& pattern = lensSdfProbe.root_patterns[index];
-        if (index > 0) {
-            out << ", ";
-        }
+    const auto writeRootPatternObject = [&](const ViewerUiAutomationRootPatternProbe& pattern) {
         out << "{";
         out << "\"ref\": ";
         WriteAutomationReportString(out, pattern.ref);
@@ -214,6 +209,27 @@ void WriteLensSdfReportFields(
             WriteAutomationReportString(out, pattern.fail_closed_reason);
         }
         out << "}";
+    };
+    const ViewerUiAutomationRootPatternProbe* activeRootField = nullptr;
+    for (const ViewerUiAutomationRootPatternProbe& pattern : lensSdfProbe.root_patterns) {
+        if (pattern.ref == "primary") {
+            activeRootField = &pattern;
+            break;
+        }
+    }
+    out << "  \"active_root_field\": ";
+    if (activeRootField) {
+        writeRootPatternObject(*activeRootField);
+    } else {
+        out << "null";
+    }
+    out << ",\n";
+    out << "  \"root_patterns\": [";
+    for (std::size_t index = 0; index < lensSdfProbe.root_patterns.size(); ++index) {
+        if (index > 0) {
+            out << ", ";
+        }
+        writeRootPatternObject(lensSdfProbe.root_patterns[index]);
     }
     out << "],\n";
     out << "  \"root_pattern_consumers\": [";

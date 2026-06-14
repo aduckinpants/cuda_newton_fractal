@@ -201,14 +201,14 @@ inline FunctionParamDescriptor MakeColorPipelineSourceBlendWeightParam() {
 }
 
 inline std::vector<UISchemaOption> ColorPipelineRootPatternRefOptions() {
-    return {{"primary", "Pattern A", ""}, {"secondary", "Pattern B", ""}};
+    return {{"primary", "Active Root Field", ""}, {"secondary", "Secondary Root Pattern", ""}};
 }
 
 inline FunctionParamDescriptor MakeColorPipelineRootPatternRefParam() {
     return MakeColorPipelineEnumParam(
         "signal.root_pattern_ref",
-        "Root Pattern",
-        "Choose which ExplainO root pattern this root-aware Source row samples.",
+        "Root Field",
+        "Choose whether this root-aware Source row samples the active root field or an explicit secondary compatibility pattern.",
         ColorPipelineRootPatternRefOptions(),
         "primary");
 }

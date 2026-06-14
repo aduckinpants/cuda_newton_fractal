@@ -319,6 +319,10 @@ void TestLensSdfProbeTimingFields() {
     Check(json.find("\"root_field_consumer_base_root_hash\": \"fnv1a64:0000000000009012\"") != std::string::npos &&
             json.find("\"root_field_consumer_effective_root_hash\": \"fnv1a64:0000000000003456\"") != std::string::npos,
         "automation report writes root-field consumer root hashes");
+    Check(json.find("\"active_root_field\":") != std::string::npos &&
+            json.find("\"ref\": \"primary\"") != std::string::npos &&
+            json.find("\"root_count\": 11") != std::string::npos,
+        "automation report writes Active Root Field alias for the primary root pattern");
     Check(json.find("\"root_patterns\":") != std::string::npos &&
             json.find("\"ref\": \"primary\"") != std::string::npos &&
             json.find("\"root_count\": 11") != std::string::npos &&

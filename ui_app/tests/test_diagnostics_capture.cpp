@@ -615,6 +615,37 @@ void TestFindingFractalStateSidecarIncludesExplainoActiveControls() {
         "finding fractal-state sidecar still omits unrelated Magnet controls for Explaino captures");
 }
 
+void TestFindingFractalStateSidecarIncludesActiveRootFieldAlias() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+
+    view.fractal_type = FractalType::explaino_magnet_root_well;
+    params.explaino_root_authority = ExplainoRootAuthority::generated;
+    params.explaino_generated_root_layout = ExplainoGeneratedRootLayout::regular_ngon_v1;
+    params.explaino_generated_root_count = 7;
+    params.explaino_secondary_root_pattern_layout = ExplainoGeneratedRootLayout::legacy_quartic_v1;
+    params.explaino_secondary_root_pattern_count = 4;
+    params.explaino_root_field_pattern_ref = ExplainoRootPatternRef::secondary;
+
+    const std::string json = BuildFindingFractalStateJson(view, params, render, stats, nullptr, nullptr);
+    const std::size_t activeRootField = json.find("\"active_root_field\"");
+    const std::size_t rootPatterns = json.find("\"root_patterns\"");
+    Check(activeRootField != std::string::npos,
+        "finding fractal-state sidecar records Active Root Field review alias");
+    Check(rootPatterns != std::string::npos && activeRootField < rootPatterns,
+        "finding fractal-state sidecar presents Active Root Field before compatibility pattern slots");
+    const std::string activeBlock = rootPatterns != std::string::npos
+        ? json.substr(activeRootField, rootPatterns - activeRootField)
+        : std::string{};
+    Check(activeBlock.find("\"ref\": \"primary\"") != std::string::npos &&
+          activeBlock.find("\"layout_kind\": \"regular_ngon_v1\"") != std::string::npos &&
+          activeBlock.find("\"root_count\": 7") != std::string::npos,
+        "finding fractal-state sidecar Active Root Field aliases the primary generated root descriptor");
+}
+
 void TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority() {
     ViewState view{};
     KernelParams params{};
@@ -678,6 +709,7 @@ int main() {
     TestFindingFractalStateSidecarSummarizesActiveValuesOnly();
     TestFindingFractalStateSidecarIncludesExplainoActiveControls();
     TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority();
+    TestFindingFractalStateSidecarIncludesActiveRootFieldAlias();
 
     if (g_failed != 0) {
         std::cerr << "test_diagnostics_capture: " << g_failed << " failed\n";

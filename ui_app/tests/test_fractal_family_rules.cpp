@@ -381,6 +381,9 @@ int main() {
                     IsExplainoFamily(pair.value) ||
                     !UsesExplainoRootLayoutAuthority(pair.value) ||
                     !SupportsExplainoSeedControls(pair.value) ||
+                    !UsesExplainoActiveRootField(pair.value) ||
+                    !SupportsExplainoAlternateRootPatternState(pair.value) ||
+                    ShowsExplainoAlternateRootPatternControls(pair.value) ||
                     RootFieldConsumerBaseFractalType(pair.value) == pair.value ||
                     IsFieldPrimarySdfFractal(pair.value)) {
                     std::cerr << "ExplainO root-field consumer lanes should use root-layout authority without joining the legacy Explaino selector registry or SDF field-primary dispatch\n";
@@ -404,6 +407,9 @@ int main() {
                     IsExplainoFamily(pair.value) ||
                     !UsesExplainoRootLayoutAuthority(pair.value) ||
                     !SupportsExplainoSeedControls(pair.value) ||
+                    !UsesExplainoActiveRootField(pair.value) ||
+                    !SupportsExplainoAlternateRootPatternState(pair.value) ||
+                    ShowsExplainoAlternateRootPatternControls(pair.value) ||
                     !IsFieldPrimarySdfFractal(pair.value)) {
                     std::cerr << "ExplainO Root SDF should use root-layout authority without joining the legacy Explaino selector registry\n";
                     return 1;

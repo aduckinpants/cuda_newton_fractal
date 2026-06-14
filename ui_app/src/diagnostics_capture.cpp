@@ -1114,6 +1114,9 @@ void WriteFindingRootPatternDerivedJson(std::ostringstream& js, const ViewState&
     }
 
     js << ",\n";
+    js << "    \"active_root_field\": ";
+    WriteFindingRootPatternJson(js, view, params, "primary", ExplainoRootPatternRef::primary);
+    js << ",\n";
     js << "    \"root_patterns\": [\n";
     WriteFindingRootPatternJson(js, view, params, "primary", ExplainoRootPatternRef::primary);
     js << ",\n";

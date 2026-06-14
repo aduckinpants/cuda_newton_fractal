@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "contract_id": "explaino_root_field_active_ux_repair",
+  "feature_id": "explaino_root_field_active_ux_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_root_field_active_ux_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "repair explaino_magnet_root_well active-root-field UX before upstream merge",
+    "make Active Root Field the normal root-field consumer and root-aware Color Pipeline authority",
+    "hide Pattern B controls from the normal UI while preserving backend/state/report compatibility",
+    "prove Magnet Root Well exposes original Root Well controls plus normal root-layout movement controls",
+    "prove visible controls are consumed by runtime or hidden",
+    "prove with native and no-mouse runtime tests"
+  ],
+  "forbidden_operator_prompts": [
+    "add new fractal lanes",
+    "add new root math",
+    "add graph editor",
+    "add Pattern B custom coordinate editing",
+    "remove Pattern Bank state compatibility",
+    "start SDF optimization work",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/explaino-root-field-active-ux-repair",
+    "source_head": "9648b7c8b6a1661b175d49f4b0cb691a36823201",
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true,
+    "active_root_field_ref": "primary",
+    "secondary_pattern_normal_ui_visibility": "hidden"
+  },
+  "forbidden_defaults": {
+    "secondary_pattern_backend_removal": "forbidden",
+    "global_root_pattern_rewrite": "forbidden",
+    "graph_editor": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_root_field_active_ux_repair.contract.json --out-json artifacts/validation/explaino_root_field_active_ux_repair_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_field_active_ux_plan_sync --log artifacts/explaino_root_field_active_ux_repair/plan_sync.log -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_root_field_active_ux_repair_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_root_field_active_ux_repair_PHASED_PLAN.md --out-json artifacts/validation/explaino_root_field_active_ux_repair_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_field_active_ux_native --log artifacts/explaino_root_field_active_ux_repair/native.log -- cmd /c ui_app\build_tests_vsdevcmd.cmd test_ui_schema test_safe_mode_schema test_schema_binding test_fractal_renderer test_escape_time_coloring",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_root_field_active_ux_runtime_publish --log artifacts/explaino_root_field_active_ux_repair/runtime_publish.log -- cmd /c ui_app\build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py -q --junitxml artifacts/pytest/explaino_root_field_active_ux_runtime.junit.xml",
+    "git diff --check > artifacts/explaino_root_field_active_ux_repair/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The active-root-field UX repair contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_field_active_ux_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_field_active_ux_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_error",
+      "description": "The code quality baseline report has no error findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_root_field_active_ux_repair_code_quality.json",
+      "json_path": "severity_counts.ERROR",
+      "equals": 0
+    }
+  ]
+}
