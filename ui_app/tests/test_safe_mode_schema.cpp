@@ -85,9 +85,10 @@ static bool IsMagnetVisibleControl(const UISchemaControl* control, const char* b
         control->binding.kind == "param" &&
         control->binding.path == bindingPath &&
         control->has_visible_if &&
-        control->visible_if.op == "eq" &&
+        control->visible_if.op == "in" &&
         control->visible_if.path == "fractal.view.fractal_type" &&
-        control->visible_if.value == "magnet";
+        ContainsCsvToken(control->visible_if.value, "magnet") &&
+        ContainsCsvToken(control->visible_if.value, "explaino_magnet_root_well");
 }
 
 static bool IsMultibrotVisibleControl(const UISchemaControl* control, const char* bindingPath) {

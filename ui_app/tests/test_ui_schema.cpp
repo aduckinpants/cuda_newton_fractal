@@ -749,6 +749,8 @@ int main() {
         bool foundCelticEscapeTimeGroup = false;
         bool foundPerpendicularShipEscapeTimeGroup = false;
         bool foundMagnetEscapeTimeGroup = false;
+        bool foundMagnetSeedReal = false;
+        bool foundMagnetSeedImag = false;
         bool foundMagnetRelaxation = false;
         bool foundMagnetBailout = false;
         bool foundFractalTypeDefaultExplainoAll = false;
@@ -1010,14 +1012,30 @@ int main() {
                         if (option.id == "magnet" && option.group == "Escape-Time") foundMagnetEscapeTimeGroup = true;
                     }
                 }
+                if (ctrl.id == "magnet_seed_real" && ctrl.has_binding && ctrl.binding.path == "fractal.params.magnet_seed_real" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "magnet") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    foundMagnetSeedReal = true;
+                }
+                if (ctrl.id == "magnet_seed_imag" && ctrl.has_binding && ctrl.binding.path == "fractal.params.magnet_seed_imag" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "magnet") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    foundMagnetSeedImag = true;
+                }
                 if (ctrl.id == "magnet_relaxation" && ctrl.has_binding && ctrl.binding.path == "fractal.params.magnet_relaxation" &&
                     ctrl.has_min && ctrl.min == 0.05 && ctrl.has_max && ctrl.max == 1.5 &&
-                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "magnet") {
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "magnet") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
                     foundMagnetRelaxation = true;
                 }
                 if (ctrl.id == "magnet_bailout" && ctrl.has_binding && ctrl.binding.path == "fractal.params.magnet_bailout" &&
                     ctrl.has_min && ctrl.min == 2.0 && ctrl.has_max && ctrl.max == 64.0 &&
-                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "magnet") {
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "magnet") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
                     foundMagnetBailout = true;
                 }
                 if (ctrl.id == "explaino_root_sdf_radius" && ctrl.has_binding &&
@@ -1682,8 +1700,8 @@ int main() {
             std::cerr << "Did not find the new escape-time catalog wave options in schema\n";
             return 1;
         }
-        if (!foundMagnetRelaxation || !foundMagnetBailout) {
-            std::cerr << "Did not find Magnet Type I owner controls in schema\n";
+        if (!foundMagnetSeedReal || !foundMagnetSeedImag || !foundMagnetRelaxation || !foundMagnetBailout) {
+            std::cerr << "Did not find Magnet Type I controls on both normal Magnet and ExplainO Magnet Root Well in schema\n";
             return 1;
         }
         if (!foundDualSeedB || !foundDualSeedMix || !foundColoringModeControl || !foundColorGradingControl ||

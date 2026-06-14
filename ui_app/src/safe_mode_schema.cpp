@@ -589,7 +589,7 @@ UISchemaControl BuildMagnetFloatControl(
         step,
         path,
         json_min::Value{defaultValue});
-    SetVisibleForFractalType(&control, "magnet");
+    SetVisibleForFractalTypes(&control, "magnet,explaino_magnet_root_well");
     return control;
 }
 
@@ -677,7 +677,7 @@ UISchemaControl BuildMagnetBailoutControl() {
         0.1,
         "fractal.params.magnet_bailout",
         json_min::Value{12.0});
-    SetVisibleForFractalType(&control, "magnet");
+    SetVisibleForFractalTypes(&control, "magnet,explaino_magnet_root_well");
     return control;
 }
 

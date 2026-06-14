@@ -222,8 +222,8 @@
             { "id": "explaino_julia_c_real", "label": "Explaino Julia C (Real)", "visible_if": { "op": "eq", "path": "fractal.params.explaino_julia_custom_constants_active", "value": true } },
             { "id": "explaino_julia_c_imag", "label": "Explaino Julia C (Imag)", "visible_if": { "op": "eq", "path": "fractal.params.explaino_julia_custom_constants_active", "value": true } },
             { "id": "lambda_real", "label": "Lambda (Real)", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "lambda,explaino_lambda" } },
-            { "id": "magnet_relaxation", "label": "Magnet Relaxation", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
-            { "id": "magnet_bailout", "label": "Magnet Bailout", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
+            { "id": "magnet_relaxation", "label": "Magnet Relaxation", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "magnet,explaino_magnet_root_well" } },
+            { "id": "magnet_bailout", "label": "Magnet Bailout", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "magnet,explaino_magnet_root_well" } },
             { "id": "collatz_transition_strength", "label": "Collatz Transition Strength", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "collatz,explaino_collatz_direct" } },
             { "id": "spider_feedback", "label": "Spider Feedback", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "spider" } },
             { "id": "burning_ship_fold_mix", "label": "Burning Ship Fold Mix", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "burning_ship" } },
@@ -472,7 +472,7 @@
           "value_type": "float",
           "ui_min": -2.0, "ui_max": 2.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.magnet_seed_real" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "magnet,explaino_magnet_root_well" }
         },
         {
           "id": "magnet_seed_imag",
@@ -481,7 +481,7 @@
           "value_type": "float",
           "ui_min": -2.0, "ui_max": 2.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.magnet_seed_imag" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "magnet,explaino_magnet_root_well" }
         },
         {
           "id": "magnet_relaxation",
@@ -490,7 +490,7 @@
           "value_type": "float",
           "min": 0.05, "max": 1.5, "step": 0.01, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.params.magnet_relaxation" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "magnet,explaino_magnet_root_well" }
         },
         {
           "id": "magnet_bailout",
@@ -499,7 +499,7 @@
           "value_type": "float",
           "min": 2.0, "max": 64.0, "step": 0.1, "default": 12.0,
           "binding": { "kind": "param", "path": "fractal.params.magnet_bailout" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "magnet,explaino_magnet_root_well" }
         }
       ]
     },

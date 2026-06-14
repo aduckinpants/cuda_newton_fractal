@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "contract_id": "explaino_magnet_root_well_control_repair",
+  "feature_id": "explaino_magnet_root_well_control_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_magnet_root_well_control_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "repair missing base Magnet controls on explaino_magnet_root_well",
+    "do not treat Pattern B removal as sufficient",
+    "prove visible controls are consumed by runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "add Pattern B normal UI",
+    "redesign ExplainO Warp",
+    "start SDF work",
+    "change root-field math",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/explaino-magnet-root-well-control-repair",
+    "base_lane": "explaino_magnet_root_well",
+    "base_fractal_controls": [
+      "magnet_seed_real",
+      "magnet_seed_imag",
+      "magnet_relaxation",
+      "magnet_bailout"
+    ],
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "pattern_b_normal_ui": "forbidden",
+    "root_field_math_change": "forbidden",
+    "product_claim_without_runtime_proof": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_magnet_root_well_control_repair.contract.json --out-json artifacts/validation/explaino_magnet_root_well_control_repair_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_magnet_root_well_control_repair_plan_sync --log artifacts/explaino_magnet_root_well_control_repair/plan_sync.log -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_magnet_root_well_control_repair_code_quality.json",
+    "ui_app/build_tests_vsdevcmd.cmd test_ui_schema test_safe_mode_schema test_schema_binding",
+    "ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py -q --junitxml artifacts/pytest/explaino_magnet_root_well_control_repair_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_magnet_root_well_control_repair_PHASED_PLAN.md --out-json artifacts/validation/explaino_magnet_root_well_control_repair_hostile_audit.json",
+    "git diff --check > artifacts/explaino_magnet_root_well_control_repair/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The control-repair contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_magnet_root_well_control_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_root_field_consumers_green",
+      "description": "The published no-mouse root-field consumer runtime proof passes.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/explaino_magnet_root_well_control_repair_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_root_field_consumers.py::test_explaino_magnet_root_well_base_magnet_controls_are_visible_and_active"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_magnet_root_well_control_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -106,6 +106,18 @@ def _has_root_pattern_consumer(
     )
 
 
+def _visible_control_ids(payload: dict[str, Any]) -> set[str]:
+    controls = payload.get("controls")
+    assert isinstance(controls, list), payload
+    ids: set[str] = set()
+    for control in controls:
+        assert isinstance(control, dict), control
+        control_id = control.get("control_id")
+        assert isinstance(control_id, str), control
+        ids.add(control_id)
+    return ids
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
 @pytest.mark.parametrize(
     ("lane_id", "base_lane"),
@@ -183,6 +195,58 @@ def test_root_field_consumer_lanes_report_and_mutate_no_mouse(
         assert root_count.get("root_field_consumer_root_count") == 5, root_count
         assert _require_root_hash(root_count) != baseline_root_hash, root_count
         assert _require_frame_hash(root_count) != baseline_hash, root_count
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
+def test_explaino_magnet_root_well_base_magnet_controls_are_visible_and_active(
+    tmp_path: Path,
+) -> None:
+    exe_path = active_runtime_exe()
+    lane_id = "explaino_magnet_root_well"
+    state = _state_for_lane(exe_path, lane_id)
+    state_path = write_state_bundle(tmp_path / "magnet_root_well_base_controls", state)
+
+    expected_controls = {
+        "fractal_control.magnet_seed_real.primary",
+        "fractal_control.magnet_seed_imag.primary",
+        "fractal_control.magnet_relaxation.primary",
+        "fractal_control.magnet_bailout.primary",
+        "fractal_control.explaino_root_field_trap_strength.primary",
+        "fractal_control.explaino_generated_root_layout.primary",
+    }
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "magnet_root_well_base_controls_report.json",
+        command_path=tmp_path / "magnet_root_well_base_controls_command.json",
+    ) as viewer:
+        for control_id in sorted(expected_controls):
+            viewer.wait_for_control(control_id, timeout_seconds=30.0)
+
+        baseline = viewer.wait_for_report(timeout_seconds=60.0)
+        assert baseline.get("current_fractal_type") == lane_id, baseline
+        assert expected_controls.issubset(_visible_control_ids(baseline)), baseline
+        assert "fractal_control.explaino_root_field_pattern_ref.primary" not in _visible_control_ids(baseline), baseline
+        assert "fractal_control.explaino_secondary_root_pattern_layout.primary" not in _visible_control_ids(baseline), baseline
+        assert "fractal_control.explaino_secondary_root_pattern_count.primary" not in _visible_control_ids(baseline), baseline
+        baseline_hash = _require_frame_hash(baseline)
+
+        edits = [
+            ("fractal_control.magnet_seed_real.primary", 0.35),
+            ("fractal_control.magnet_seed_imag.primary", -0.25),
+            ("fractal_control.magnet_relaxation.primary", 0.65),
+            ("fractal_control.magnet_bailout.primary", 24.0),
+        ]
+        edited = baseline
+        for control_id, value in edits:
+            edited = viewer.set_control_value(control_id, value, timeout_seconds=30.0)
+            assert edited.get("current_fractal_type") == lane_id, edited
+            assert edited.get("requested_set_control_id") == control_id, edited
+            assert edited.get("set_value_consumed") is True, edited
+            assert edited.get("set_value_error") is None, edited
+
+        assert _require_frame_hash(edited) != baseline_hash, edited
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")

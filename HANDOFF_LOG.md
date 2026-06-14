@@ -173,3 +173,5 @@
 - `ck:76904bda` 2026-06-14 06:52 UTC | score 93 — Follow-up contract repair for ExplainO Root-Field Active UX: escaped Windows build command paths in JSON so receipt preflight can match executable validation commands.
 - `ck:7a5d0567` 2026-06-14 07:04 UTC — session-start | branch=codex/viewer-host-tooling-hardening | head=b5847ff | status=dirty | profile=native | intent=Viewer Host Tooling Hardening
 - `ck:7a5d0567` 2026-06-14 07:22 UTC | score 4 — Viewer Host Tooling Hardening: hardened patch wrapper path/LF handling, contract command escape validation, receipt command hints, and logged-command timeout reporting; focused workflow tests and validators passed.
+- `ck:42fee3ec` 2026-06-14 11:45 UTC — session-start | branch=codex/explaino-magnet-root-well-control-repair | head=4c57d3d | status=dirty | profile=runtime | intent=ExplainO Magnet Root Well Control Repair
+- `ck:42fee3ec` 2026-06-14 12:31 UTC | score 90 — Repair ExplainO Magnet Root Well control surface: base Magnet controls are visible/active on explaino_magnet_root_well, Pattern B remains hidden, native/schema/animation and no-mouse runtime proof passed.

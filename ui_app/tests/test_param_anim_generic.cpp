@@ -222,6 +222,13 @@ static void test_schema_filters_targets_by_current_fractal() {
     CHECK(!HasVisibleOption(magnetOptions, "ripple_amplitude"), "magnet must not show Explaino axis animation targets");
     CHECK(!HasVisibleOption(magnetOptions, "nova_alpha"), "magnet must not show Nova animation targets");
 
+    view.fractal_type = FractalType::explaino_magnet_root_well;
+    std::vector<const UISchemaOption*> magnetRootWellOptions = ResolveVisibleEnumOptions(*control, ctx);
+    CHECK(HasVisibleOption(magnetRootWellOptions, "magnet_relaxation"), "explaino_magnet_root_well should show Magnet Relaxation animation target");
+    CHECK(HasVisibleOption(magnetRootWellOptions, "magnet_bailout"), "explaino_magnet_root_well should show Magnet Bailout animation target");
+    CHECK(!HasVisibleOption(magnetRootWellOptions, "ripple_amplitude"), "explaino_magnet_root_well must not show unrelated Explaino axis animation targets");
+    CHECK(!HasVisibleOption(magnetRootWellOptions, "nova_alpha"), "explaino_magnet_root_well must not show Nova animation targets");
+
     view.fractal_type = FractalType::explaino_all;
     std::vector<const UISchemaOption*> explainoAllOptions = ResolveVisibleEnumOptions(*control, ctx);
     CHECK(HasVisibleOption(explainoAllOptions, "ripple_amplitude"), "explaino_all should show Ripple axis animation target");
