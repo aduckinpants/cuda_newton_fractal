@@ -9,7 +9,7 @@
 
 ## Current Phase
 
-Phase 4 - Implementation and proof are green; checkpoint, receipts, rearward review, push, and clean-tree closeout remain.
+Closed - implementation, proof, checkpoint, receipts, rearward review, push, and clean-tree closeout are complete for this repair.
 
 ## Phase Checklist
 
@@ -17,7 +17,7 @@ Phase 4 - Implementation and proof are green; checkpoint, receipts, rearward rev
 - [x] Phase 1: Add RED/native/runtime proof that Color Root controls are visible without an active Color Root consumer.
 - [x] Phase 2: Add one shared active Color Root consumer predicate for schema/binding/report tests.
 - [x] Phase 3: Repair schema visibility and no-mouse proof for inactive-vs-active Color Root controls.
-- [ ] Phase 4: Hostile audit, validation, checkpoint, receipts, rearward review, push.
+- [x] Phase 4: Hostile audit, validation, checkpoint, receipts, rearward review, push.
 
 ## Scope Lock
 
@@ -46,8 +46,8 @@ Manual testing shows the scoped `Color Root Field` controls can still appear ine
 | Native validation | done | `test_schema_binding` passed to `artifacts/scoped_color_root_control_authority_repair/native_schema_binding.log`; `test_ui_schema` passed to `artifacts/scoped_color_root_control_authority_repair/native_ui_schema.log`. |
 | Runtime publish | done | `ui_app/build_vsdevcmd.cmd > artifacts/scoped_color_root_control_authority_repair/runtime_publish.log 2>&1` passed. |
 | Published runtime proof | done | Two-test no-mouse proof passed to `artifacts/pytest/scoped_color_root_control_authority_repair_runtime.junit.xml`; it covers hidden inactive Color Root controls and active Color Root sensitivity. |
-| Hostile audit | done | Findings below were repaired; hostile-audit validation is required after this plan update. |
-| Receipts/rearward/push | pending | Required before closeout. |
+| Hostile audit | done | Findings below were repaired and hostile-audit validation passed for the closed repair. |
+| Receipts/rearward/push | done | `b88ed71` has an `ok` rearward-review artifact and is pushed to `origin/codex/scoped-color-root-control-authority-repair`. |
 
 ## Hostile Audit
 

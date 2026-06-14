@@ -187,3 +187,4 @@
 - `ck:9c1b1ddd` 2026-06-14 20:52 UTC | score 9 — Scoped root-pattern control authority repair: removed stale unscoped animation targets from composite root-field lanes and added independent no-mouse sensitivity proof for Magnet Root Well visible controls.
 - `ck:eec1a0a1` 2026-06-14 21:05 UTC — session-start | branch=codex/scoped-color-root-control-authority-repair | head=3c99aa8 | status=dirty | profile=runtime | intent=Scoped Color Root control authority repair
 - `ck:eec1a0a1` 2026-06-14 21:25 UTC | score 9 — Scoped Color Root control authority repair: Color Root Field controls now appear only when an active root-aware Color Pipeline source row consumes color_root_field; inactive controls are hidden and active color-root sensitivity is proven.
+- `ck:eec1a0a1` 2026-06-14 21:43 UTC | score 9 — Scoped Color Root control authority repair plan truth sync: closeout wording now matches pushed/rearward-reviewed state before merge.
