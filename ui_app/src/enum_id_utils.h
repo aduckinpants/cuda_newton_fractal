@@ -83,6 +83,11 @@ inline constexpr EnumIdPair<ExplainoGeneratedRootLayout> kExplainoGeneratedRootL
 };
 
 inline constexpr EnumIdPair<ExplainoRootPatternRef> kExplainoRootPatternRefIds[] = {
+    {ExplainoRootPatternRef::primary, "dynamics_root_field"},
+    {ExplainoRootPatternRef::secondary, "color_root_field"},
+};
+
+inline constexpr EnumIdPair<ExplainoRootPatternRef> kLegacyExplainoRootPatternRefIds[] = {
     {ExplainoRootPatternRef::primary, "primary"},
     {ExplainoRootPatternRef::secondary, "secondary"},
 };
@@ -306,7 +311,18 @@ inline const char* ExplainoRootPatternRefId(ExplainoRootPatternRef value) {
 }
 
 inline bool TryParseExplainoRootPatternRefId(std::string_view id, ExplainoRootPatternRef* outValue) {
-    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kExplainoRootPatternRefIds, outValue);
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kExplainoRootPatternRefIds, outValue) ||
+        enum_id_utils::TryParseEnumId(id, enum_id_utils::kLegacyExplainoRootPatternRefIds, outValue);
+}
+
+inline const char* ExplainoRootPatternRefLabel(ExplainoRootPatternRef value) {
+    switch (value) {
+    case ExplainoRootPatternRef::primary:
+        return "Dynamics Root Field";
+    case ExplainoRootPatternRef::secondary:
+        return "Color Root Field";
+    }
+    return "Unknown Root Field";
 }
 
 inline const char* ExplainoRootSdfHSourceId(ExplainoRootSdfHSource value) {

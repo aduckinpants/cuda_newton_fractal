@@ -505,11 +505,11 @@
               {
                 "path": "signal.root_pattern_ref",
                 "type": "enum",
-                "label": "Root Pattern",
-                "default": "primary",
+                "label": "Root Field",
+                "default": "dynamics_root_field",
                 "options": [
-                  "primary",
-                  "secondary"
+                  "dynamics_root_field",
+                  "color_root_field"
                 ]
               },
               {
@@ -555,11 +555,11 @@
               {
                 "path": "signal.root_pattern_ref",
                 "type": "enum",
-                "label": "Root Pattern",
-                "default": "primary",
+                "label": "Root Field",
+                "default": "dynamics_root_field",
                 "options": [
-                  "primary",
-                  "secondary"
+                  "dynamics_root_field",
+                  "color_root_field"
                 ]
               },
               {

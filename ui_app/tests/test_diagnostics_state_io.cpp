@@ -6130,7 +6130,7 @@ int main() {
           if (loadedParams.explaino_secondary_root_pattern_layout != ExplainoGeneratedRootLayout::regular_ngon_v1 ||
               loadedParams.explaino_secondary_root_pattern_count != 11 ||
               loadedParams.explaino_root_field_pattern_ref != ExplainoRootPatternRef::secondary) {
-            std::cerr << "Expected root-field consumer state reload to preserve Pattern B and dynamics pattern ref for "
+            std::cerr << "Expected root-field consumer state reload to preserve Color Root Field and dynamics pattern ref for "
                       << rootConsumerIds[index] << "\n";
             return 1;
           }

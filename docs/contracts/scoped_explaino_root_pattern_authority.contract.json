@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "contract_id": "scoped_explaino_root_pattern_authority",
+  "feature_id": "scoped_explaino_root_pattern_authority",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/scoped_explaino_root_pattern_authority_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/ui_salt",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "replace Pattern A/B UI vocabulary with scoped role-labelled root-pattern controls",
+    "make root-pattern action controls scoped instead of global on composite root-aware lanes",
+    "migrate current root-field consumers and root-aware Color Pipeline rows to scoped refs",
+    "prove behavior with native and no-mouse runtime tests"
+  ],
+  "forbidden_operator_prompts": [
+    "add graph editor UI",
+    "add unlimited root-pattern banks",
+    "add custom N-root coordinate editing",
+    "add new fractal families",
+    "start SDF work",
+    "introduce Salticid/ui.salt integration",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/scoped-explaino-root-pattern-authority",
+    "normal_scope_refs": [
+      "dynamics_root_field",
+      "color_root_field"
+    ],
+    "legacy_aliases": {
+      "primary": "dynamics_root_field",
+      "secondary": "color_root_field"
+    },
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "pattern_a_b_normal_ui_vocabulary": "forbidden",
+    "global_root_pattern_actions_on_composite_lanes": "forbidden",
+    "half_legacy_half_scoped_product_surface": "forbidden",
+    "product_claim_without_runtime_proof": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/scoped_explaino_root_pattern_authority.contract.json --out-json artifacts/validation/scoped_explaino_root_pattern_authority_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label scoped_explaino_root_pattern_authority_plan_sync --log artifacts/scoped_explaino_root_pattern_authority/plan_sync.log -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/scoped_explaino_root_pattern_authority_code_quality.json",
+    "ui_app/build_tests_vsdevcmd.cmd test_ui_schema test_safe_mode_schema test_schema_binding test_color_pipeline_core test_diagnostics_state_io test_diagnostics_capture test_viewer_ui_automation_report > artifacts/scoped_explaino_root_pattern_authority/native_scoped_root_pattern.log 2>&1",
+    "ui_app/build_vsdevcmd.cmd > artifacts/scoped_explaino_root_pattern_authority/runtime_publish.log 2>&1",
+    "py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py -q --junitxml artifacts/pytest/scoped_explaino_root_pattern_authority_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/scoped_explaino_root_pattern_authority_PHASED_PLAN.md --out-json artifacts/validation/scoped_explaino_root_pattern_authority_hostile_audit.json",
+    "git diff --check > artifacts/scoped_explaino_root_pattern_authority/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The scoped root-pattern authority contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/scoped_explaino_root_pattern_authority_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_root_field_consumers_green",
+      "description": "The published no-mouse root-field consumer runtime proof passes for scoped root-pattern authority.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/scoped_explaino_root_pattern_authority_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_root_field_consumers.py::test_explaino_magnet_root_well_scoped_root_controls_and_color_refs"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/scoped_explaino_root_pattern_authority_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

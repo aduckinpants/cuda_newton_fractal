@@ -180,15 +180,15 @@ def test_root_field_consumer_lanes_report_and_mutate_no_mouse(
         assert _require_frame_hash(scaled) != neutral_hash, scaled
 
         regular = viewer.set_enum_id(
-            "fractal.params.explaino_generated_root_layout",
+            "fractal.root_pattern.dynamics.generated_layout",
             "regular_ngon_v1",
             expected_fractal_type=lane_id,
             timeout_seconds=20.0,
         )
         assert regular.get("root_field_consumer_root_layout_kind") == "regular_ngon_v1", regular
-        viewer.wait_for_control("fractal_control.explaino_generated_root_count.primary", timeout_seconds=20.0)
+        viewer.wait_for_control("fractal_control.dynamics_root_field_generated_root_count.primary", timeout_seconds=20.0)
         root_count = viewer.set_control_value(
-            "fractal_control.explaino_generated_root_count.primary",
+            "fractal_control.dynamics_root_field_generated_root_count.primary",
             5.0,
             timeout_seconds=20.0,
         )
@@ -212,7 +212,9 @@ def test_explaino_magnet_root_well_base_magnet_controls_are_visible_and_active(
         "fractal_control.magnet_relaxation.primary",
         "fractal_control.magnet_bailout.primary",
         "fractal_control.explaino_root_field_trap_strength.primary",
-        "fractal_control.explaino_generated_root_layout.primary",
+        "fractal_control.dynamics_root_field_seed.primary",
+        "dynamics_root_field_prev_seed",
+        "fractal_control.dynamics_root_field_generated_layout.primary",
     }
 
     with PersistentRuntimeViewerAutomation(
@@ -226,11 +228,27 @@ def test_explaino_magnet_root_well_base_magnet_controls_are_visible_and_active(
 
         baseline = viewer.wait_for_report(timeout_seconds=60.0)
         assert baseline.get("current_fractal_type") == lane_id, baseline
-        assert expected_controls.issubset(_visible_control_ids(baseline)), baseline
-        assert "fractal_control.explaino_root_field_pattern_ref.primary" not in _visible_control_ids(baseline), baseline
-        assert "fractal_control.explaino_secondary_root_pattern_layout.primary" not in _visible_control_ids(baseline), baseline
-        assert "fractal_control.explaino_secondary_root_pattern_count.primary" not in _visible_control_ids(baseline), baseline
+        visible_controls = _visible_control_ids(baseline)
+        assert expected_controls.issubset(visible_controls), baseline
+        assert "fractal_control.explaino_root_field_pattern_ref.primary" not in visible_controls, baseline
+        assert "fractal_control.explaino_seed.primary" not in visible_controls, baseline
+        assert "fractal_control.prev_seed.primary" not in visible_controls, baseline
+        assert "fractal_control.next_seed.primary" not in visible_controls, baseline
+        assert "fractal_control.explaino_root_spread.primary" not in visible_controls, baseline
+        assert "fractal_control.explaino_generated_root_layout.primary" not in visible_controls, baseline
+        assert "fractal_control.explaino_secondary_root_pattern_layout.primary" not in visible_controls, baseline
+        assert "fractal_control.explaino_secondary_root_pattern_count.primary" not in visible_controls, baseline
         baseline_hash = _require_frame_hash(baseline)
+        baseline_root_hash = _require_root_hash(baseline)
+
+        next_seed = viewer.click_control("dynamics_root_field_next_seed", timeout_seconds=20.0)
+        assert next_seed.get("current_fractal_type") == lane_id, next_seed
+        assert _require_root_hash(next_seed) != baseline_root_hash, next_seed
+        assert _require_frame_hash(next_seed) != baseline_hash, next_seed
+
+        prev_seed = viewer.click_control("dynamics_root_field_prev_seed", timeout_seconds=20.0)
+        assert prev_seed.get("current_fractal_type") == lane_id, prev_seed
+        assert _require_root_hash(prev_seed) == baseline_root_hash, prev_seed
 
         edits = [
             ("fractal_control.magnet_seed_real.primary", 0.35),
@@ -312,7 +330,7 @@ def test_mandelbrot_root_trap_root_phase_source_runtime_actions_change_frame(
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
-def test_magnet_root_well_pattern_bank_routes_dynamics_and_color_rows_no_mouse(
+def test_explaino_magnet_root_well_scoped_root_controls_and_color_refs(
     tmp_path: Path,
 ) -> None:
     exe_path = active_runtime_exe()
@@ -324,7 +342,7 @@ def test_magnet_root_well_pattern_bank_routes_dynamics_and_color_rows_no_mouse(
     params["explaino_generated_root_count"] = 11
     params["explaino_secondary_root_pattern_layout"] = "legacy_quartic_v1"
     params["explaino_secondary_root_pattern_count"] = 4
-    params["explaino_root_field_pattern_ref"] = "primary"
+    params["explaino_root_field_pattern_ref"] = "dynamics_root_field"
     params["explaino_root_field_trap_strength"] = 1.0
     params["explaino_root_field_trap_scale"] = 1.5
     params["coloring_mode"] = "smooth_escape"
@@ -337,7 +355,7 @@ def test_magnet_root_well_pattern_bank_routes_dynamics_and_color_rows_no_mouse(
             "signal": "root_proximity",
             "proximity_scale": 1.0,
             "proximity_bias": 0.0,
-            "root_pattern_ref": "secondary",
+            "root_pattern_ref": "color_root_field",
             "blend_weight": 1.0,
         }
     ]
@@ -365,24 +383,25 @@ def test_magnet_root_well_pattern_bank_routes_dynamics_and_color_rows_no_mouse(
         assert secondary.get("root_field_consumer_root_layout_kind") == "regular_ngon_v1", secondary
         active_root_field = secondary.get("active_root_field")
         assert isinstance(active_root_field, dict), secondary
-        assert active_root_field.get("ref") == "primary", active_root_field
+        assert active_root_field.get("ref") == "dynamics_root_field", active_root_field
+        assert active_root_field.get("label") == "Dynamics Root Field", active_root_field
         assert active_root_field.get("root_count") == 11, active_root_field
         assert active_root_field.get("layout_kind") == "regular_ngon_v1", active_root_field
-        assert _root_pattern(secondary, "primary").get("root_count") == 11, secondary
-        assert _root_pattern(secondary, "primary").get("layout_kind") == "regular_ngon_v1", secondary
-        assert _root_pattern(secondary, "secondary").get("root_count") == 4, secondary
-        assert _root_pattern(secondary, "secondary").get("layout_kind") == "legacy_quartic_v1", secondary
+        assert _root_pattern(secondary, "dynamics_root_field").get("root_count") == 11, secondary
+        assert _root_pattern(secondary, "dynamics_root_field").get("layout_kind") == "regular_ngon_v1", secondary
+        assert _root_pattern(secondary, "color_root_field").get("root_count") == 4, secondary
+        assert _root_pattern(secondary, "color_root_field").get("layout_kind") == "legacy_quartic_v1", secondary
         assert _has_root_pattern_consumer(
             secondary,
             consumer_kind="root_field_consumer",
             consumer_id=lane_id,
-            pattern_ref="primary",
+            pattern_ref="dynamics_root_field",
         ), secondary
         assert _has_root_pattern_consumer(
             secondary,
             consumer_kind="color_source_row",
             consumer_id="root_proximity",
-            pattern_ref="secondary",
+            pattern_ref="color_root_field",
         ), secondary
         secondary_hash = _require_frame_hash(secondary)
 
@@ -391,7 +410,7 @@ def test_magnet_root_well_pattern_bank_routes_dynamics_and_color_rows_no_mouse(
         assert isinstance(primary_params, dict), primary_state
         source_rows = primary_params["color_source_stack"]
         assert isinstance(source_rows, list), primary_params
-        source_rows[0]["root_pattern_ref"] = "primary"
+        source_rows[0]["root_pattern_ref"] = "dynamics_root_field"
         primary_state_path = write_state_bundle(tmp_path / "magnet_root_patterns_primary", primary_state)
         primary = viewer.load_state_json(
             primary_state_path,
@@ -403,13 +422,13 @@ def test_magnet_root_well_pattern_bank_routes_dynamics_and_color_rows_no_mouse(
             primary,
             consumer_kind="root_field_consumer",
             consumer_id=lane_id,
-            pattern_ref="primary",
+            pattern_ref="dynamics_root_field",
         ), primary
         assert _has_root_pattern_consumer(
             primary,
             consumer_kind="color_source_row",
             consumer_id="root_proximity",
-            pattern_ref="primary",
+            pattern_ref="dynamics_root_field",
         ), primary
         assert _require_frame_hash(primary) != secondary_hash, primary
 
@@ -443,7 +462,7 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
         params["explaino_generated_root_count"] = 11
         params["explaino_secondary_root_pattern_layout"] = "legacy_quartic_v1"
         params["explaino_secondary_root_pattern_count"] = 4
-        params["explaino_root_field_pattern_ref"] = "primary"
+        params["explaino_root_field_pattern_ref"] = "dynamics_root_field"
         params["explaino_root_field_trap_strength"] = 1.0
         params["explaino_root_field_trap_scale"] = 1.5
         params["explaino_seed"] = seed
@@ -466,19 +485,19 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
 
     primary_a_path = write_state_bundle(
         tmp_path / "magnet_primary_ngon_a",
-        configure_state(state, seed=0.13, phase=0.08, spread=0.45, source_pattern_ref="primary"),
+        configure_state(state, seed=0.13, phase=0.08, spread=0.45, source_pattern_ref="dynamics_root_field"),
     )
     primary_b_path = write_state_bundle(
         tmp_path / "magnet_primary_ngon_b",
-        configure_state(state, seed=0.57, phase=0.42, spread=0.92, source_pattern_ref="primary"),
+        configure_state(state, seed=0.57, phase=0.42, spread=0.92, source_pattern_ref="dynamics_root_field"),
     )
     secondary_a_path = write_state_bundle(
         tmp_path / "magnet_secondary_legacy_a",
-        configure_state(state, seed=0.13, phase=0.08, spread=0.45, source_pattern_ref="secondary"),
+        configure_state(state, seed=0.13, phase=0.08, spread=0.45, source_pattern_ref="color_root_field"),
     )
     secondary_b_path = write_state_bundle(
         tmp_path / "magnet_secondary_legacy_b",
-        configure_state(state, seed=0.57, phase=0.42, spread=0.92, source_pattern_ref="secondary"),
+        configure_state(state, seed=0.57, phase=0.42, spread=0.92, source_pattern_ref="color_root_field"),
     )
 
     with PersistentRuntimeViewerAutomation(
@@ -488,7 +507,7 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
         command_path=tmp_path / "magnet_primary_ngon_command.json",
         open_color_pipeline=True,
     ) as viewer:
-        viewer.wait_for_control("fractal_control.explaino_generated_root_layout.primary", timeout_seconds=30.0)
+        viewer.wait_for_control("fractal_control.dynamics_root_field_generated_layout.primary", timeout_seconds=30.0)
         primary_a = viewer.wait_for_report(timeout_seconds=60.0)
         assert primary_a.get("current_fractal_type") == lane_id, primary_a
         assert primary_a.get("root_field_consumer_root_layout_kind") == "regular_ngon_v1", primary_a
@@ -496,7 +515,7 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
             primary_a,
             consumer_kind="color_source_row",
             consumer_id="root_proximity",
-            pattern_ref="primary",
+            pattern_ref="dynamics_root_field",
         ), primary_a
         primary_a_frame = _require_frame_hash(primary_a)
         primary_a_root = _require_root_hash(primary_a)
@@ -510,7 +529,7 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
             primary_b,
             consumer_kind="color_source_row",
             consumer_id="root_proximity",
-            pattern_ref="primary",
+            pattern_ref="dynamics_root_field",
         ), primary_b
         assert _require_root_hash(primary_b) != primary_a_root, primary_b
         assert _require_frame_hash(primary_b) != primary_a_frame, primary_b
@@ -524,7 +543,7 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
             secondary_a,
             consumer_kind="color_source_row",
             consumer_id="root_proximity",
-            pattern_ref="secondary",
+            pattern_ref="color_root_field",
         ), secondary_a
         secondary_a_frame = _require_frame_hash(secondary_a)
 
@@ -537,14 +556,14 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
             secondary_b,
             consumer_kind="color_source_row",
             consumer_id="root_proximity",
-            pattern_ref="secondary",
+            pattern_ref="color_root_field",
         ), secondary_b
         assert _require_root_hash(secondary_b) != _require_root_hash(secondary_a), secondary_b
         assert _has_root_pattern_consumer(
             secondary_b,
             consumer_kind="root_field_consumer",
             consumer_id=lane_id,
-            pattern_ref="primary",
+            pattern_ref="dynamics_root_field",
         ), secondary_b
         assert _require_frame_hash(secondary_b) != secondary_a_frame, secondary_b
 
@@ -568,7 +587,7 @@ def test_root_field_consumer_capture_finding_sidecar_and_replay(
     state["params"]["explaino_generated_root_count"] = 5
     state["params"]["explaino_secondary_root_pattern_layout"] = "legacy_quartic_v1"
     state["params"]["explaino_secondary_root_pattern_count"] = 4
-    state["params"]["explaino_root_field_pattern_ref"] = "primary"
+    state["params"]["explaino_root_field_pattern_ref"] = "dynamics_root_field"
     state["params"]["explaino_root_field_trap_strength"] = 1.0
     state["params"]["explaino_root_field_trap_scale"] = 1.75
     state["params"]["coloring_mode"] = "smooth_escape"
@@ -580,7 +599,7 @@ def test_root_field_consumer_capture_finding_sidecar_and_replay(
             "signal": "root_proximity",
             "proximity_scale": 1.0,
             "proximity_bias": 0.0,
-            "root_pattern_ref": "secondary",
+            "root_pattern_ref": "color_root_field",
             "blend_weight": 1.0,
         }
     ]
@@ -646,28 +665,29 @@ def test_root_field_consumer_capture_finding_sidecar_and_replay(
     patterns = derived.get("root_patterns")
     active_root_field = derived.get("active_root_field")
     assert isinstance(active_root_field, dict), derived
-    assert active_root_field.get("ref") == "primary", active_root_field
+    assert active_root_field.get("ref") == "dynamics_root_field", active_root_field
+    assert active_root_field.get("label") == "Dynamics Root Field", active_root_field
     assert active_root_field.get("root_count") == 5, active_root_field
     assert active_root_field.get("layout_kind") == "regular_ngon_v1", active_root_field
     assert isinstance(patterns, list), derived
     pattern_by_ref = {pattern.get("ref"): pattern for pattern in patterns if isinstance(pattern, dict)}
-    assert pattern_by_ref["primary"].get("root_count") == 5, patterns
-    assert pattern_by_ref["primary"].get("layout_kind") == "regular_ngon_v1", patterns
-    assert pattern_by_ref["secondary"].get("root_count") == 4, patterns
-    assert pattern_by_ref["secondary"].get("layout_kind") == "legacy_quartic_v1", patterns
+    assert pattern_by_ref["dynamics_root_field"].get("root_count") == 5, patterns
+    assert pattern_by_ref["dynamics_root_field"].get("layout_kind") == "regular_ngon_v1", patterns
+    assert pattern_by_ref["color_root_field"].get("root_count") == 4, patterns
+    assert pattern_by_ref["color_root_field"].get("layout_kind") == "legacy_quartic_v1", patterns
     pattern_consumers = derived.get("root_pattern_consumers")
     assert isinstance(pattern_consumers, list), derived
     assert any(
         isinstance(item, dict)
         and item.get("consumer_kind") == "root_field_consumer"
-        and item.get("pattern_ref") == "primary"
+        and item.get("pattern_ref") == "dynamics_root_field"
         for item in pattern_consumers
     ), pattern_consumers
     assert any(
         isinstance(item, dict)
         and item.get("consumer_kind") == "color_source_row"
         and item.get("consumer_id") == "root_proximity"
-        and item.get("pattern_ref") == "secondary"
+        and item.get("pattern_ref") == "color_root_field"
         for item in pattern_consumers
     ), pattern_consumers
 

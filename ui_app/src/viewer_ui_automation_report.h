@@ -63,7 +63,8 @@ struct ViewerUiAutomationLensSdfFieldGroupProbe {
 };
 
 struct ViewerUiAutomationRootPatternProbe {
-    std::string ref = "primary";
+    std::string ref = "dynamics_root_field";
+    std::string label = "Dynamics Root Field";
     std::string layout_kind = "none";
     std::string source_kind = "none";
     int root_count = 0;
@@ -76,7 +77,7 @@ struct ViewerUiAutomationRootPatternProbe {
 struct ViewerUiAutomationRootPatternConsumerProbe {
     std::string consumer_kind = "none";
     std::string consumer_id = "none";
-    std::string pattern_ref = "primary";
+    std::string pattern_ref = "dynamics_root_field";
     std::string fail_closed_reason;
 };
 

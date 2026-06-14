@@ -192,6 +192,8 @@ void WriteLensSdfReportFields(
         out << "{";
         out << "\"ref\": ";
         WriteAutomationReportString(out, pattern.ref);
+        out << ", \"label\": ";
+        WriteAutomationReportString(out, pattern.label);
         out << ", \"layout_kind\": ";
         WriteAutomationReportString(out, pattern.layout_kind);
         out << ", \"source_kind\": ";
@@ -212,7 +214,7 @@ void WriteLensSdfReportFields(
     };
     const ViewerUiAutomationRootPatternProbe* activeRootField = nullptr;
     for (const ViewerUiAutomationRootPatternProbe& pattern : lensSdfProbe.root_patterns) {
-        if (pattern.ref == "primary") {
+        if (pattern.ref == "dynamics_root_field") {
             activeRootField = &pattern;
             break;
         }

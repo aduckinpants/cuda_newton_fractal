@@ -640,10 +640,11 @@ void TestFindingFractalStateSidecarIncludesActiveRootFieldAlias() {
     const std::string activeBlock = rootPatterns != std::string::npos
         ? json.substr(activeRootField, rootPatterns - activeRootField)
         : std::string{};
-    Check(activeBlock.find("\"ref\": \"primary\"") != std::string::npos &&
+    Check(activeBlock.find("\"ref\": \"dynamics_root_field\"") != std::string::npos &&
+          activeBlock.find("\"label\": \"Dynamics Root Field\"") != std::string::npos &&
           activeBlock.find("\"layout_kind\": \"regular_ngon_v1\"") != std::string::npos &&
           activeBlock.find("\"root_count\": 7") != std::string::npos,
-        "finding fractal-state sidecar Active Root Field aliases the primary generated root descriptor");
+        "finding fractal-state sidecar Active Root Field reports the scoped dynamics generated root descriptor");
 }
 
 void TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority() {

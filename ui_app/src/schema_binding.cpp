@@ -129,10 +129,10 @@ bool BindViewFloat(ViewState& view, const std::string& path, float** outPtr) {
     if (path == "fractal.view.zoom") { *outPtr = &view.zoom; return true; }
     if (path == "fractal.view.rotation") { *outPtr = &view.rotation_degrees; return true; }
     if (path == "fractal.view.dive_speed") { *outPtr = &view.dive_speed; return true; }
-    if (path == "fractal.view.explaino_phase") { *outPtr = &view.explaino_phase; return true; }
+    if (path == "fractal.view.explaino_phase" || path == "fractal.root_pattern.dynamics.phase") { *outPtr = &view.explaino_phase; return true; }
     if (path == "fractal.view.explaino_seed_drift") { *outPtr = &view.explaino_seed_drift; return true; }
     if (path == "fractal.view.explaino_seed_rate") { *outPtr = &view.explaino_seed_rate; return true; }
-    if (path == "fractal.view.explaino_phase_strength") { *outPtr = &view.explaino_phase_strength; return true; }
+    if (path == "fractal.view.explaino_phase_strength" || path == "fractal.root_pattern.dynamics.phase_strength") { *outPtr = &view.explaino_phase_strength; return true; }
     if (path == "fractal.view.param_anim_rate") { *outPtr = &view.param_anim_rate; return true; }
     return false;
 }
@@ -563,7 +563,8 @@ bool SetExplainoPatternBankEnum(BindingContext* ctx, const std::string& path, co
     if (!ctx || !ctx->params) {
         return false;
     }
-    if (path == "fractal.params.explaino_generated_root_layout") {
+    if (path == "fractal.params.explaino_generated_root_layout" ||
+        path == "fractal.root_pattern.dynamics.generated_layout") {
         return ParseAndAssignEnumId(
             id,
             &ctx->params->explaino_generated_root_layout,
@@ -725,7 +726,9 @@ bool ApplyDoubleControlEdit(const UISchemaBinding& binding, BindingContext& ctx,
     double nextValue = value;
     ClampNumericValue(&nextValue, range);
 
-    if (binding.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
+    if ((binding.path == "fractal.params.explaino_seed" ||
+         binding.path == "fractal.root_pattern.dynamics.seed") &&
+        ctx.view && ctx.params) {
         ExplainoSeedSetCombined(*ctx.view, *ctx.params, nextValue);
         return true;
     }
@@ -960,7 +963,8 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.explaino_root_authority") {
         return EnumIdOrEmpty(ExplainoRootAuthorityId(params->explaino_root_authority));
     }
-    if (params && path == "fractal.params.explaino_generated_root_layout") {
+    if (params && (path == "fractal.params.explaino_generated_root_layout" ||
+        path == "fractal.root_pattern.dynamics.generated_layout")) {
         return EnumIdOrEmpty(ExplainoGeneratedRootLayoutId(params->explaino_generated_root_layout));
     }
     if (params && path == "fractal.params.explaino_secondary_root_pattern_layout") {
@@ -1103,7 +1107,8 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
             params->explaino_root_authority == ExplainoRootAuthority::custom;
         return true;
     }
-    if (path == "fractal.params.explaino_generated_root_count_active") {
+    if (path == "fractal.params.explaino_generated_root_count_active" ||
+        path == "fractal.root_pattern.dynamics.generated_root_count_active") {
         out = view && params &&
             (view->fractal_type == FractalType::explaino_root_sdf ||
              IsRootFieldConsumerFractal(view->fractal_type)) &&
@@ -1321,7 +1326,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (BindColorPanelFloat(*params, path, outPtr)) return true;
         if (path == "fractal.params.explaino_warp_strength") { *outPtr = &params->explaino_warp_strength; return true; }
         if (path == "fractal.params.explaino_mix") { *outPtr = &params->explaino_mix; return true; }
-        if (path == "fractal.params.explaino_root_spread") { *outPtr = &params->explaino_root_spread; return true; }
+        if (path == "fractal.params.explaino_root_spread" || path == "fractal.root_pattern.dynamics.root_spread") { *outPtr = &params->explaino_root_spread; return true; }
         if (path == "fractal.params.explaino_damping") { *outPtr = &params->explaino_damping; return true; }
         if (path == "fractal.params.explaino_cluster_radius") { *outPtr = &params->explaino_cluster_radius; return true; }
         if (BindExplainoRootSdfFloat(*params, path, outPtr)) return true;
@@ -1362,7 +1367,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
 
 bool BindingContext::BindDouble(const std::string& path, double** outPtr) {
     if (!params) return false;
-    if (path == "fractal.params.explaino_seed") { *outPtr = &params->explaino_seed; return true; }
+    if (path == "fractal.params.explaino_seed" || path == "fractal.root_pattern.dynamics.seed") { *outPtr = &params->explaino_seed; return true; }
     if (path == "fractal.params.explaino_seed_b") { *outPtr = &params->explaino_seed_b; return true; }
     return false;
 }
@@ -1373,7 +1378,7 @@ bool BindingContext::BindInt(const std::string& path, int** outPtr) {
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power; return true; }
         if (path == "fractal.params.explaino_rational_escape_denominator_power") { *outPtr = &params->explaino_rational_escape_denominator_power; return true; }
         if (path == "fractal.params.explaino_root_count") { *outPtr = &params->explaino_root_count; return true; }
-        if (path == "fractal.params.explaino_generated_root_count") { *outPtr = &params->explaino_generated_root_count; return true; }
+        if (path == "fractal.params.explaino_generated_root_count" || path == "fractal.root_pattern.dynamics.generated_root_count") { *outPtr = &params->explaino_generated_root_count; return true; }
         if (path == "fractal.params.explaino_secondary_root_pattern_count") { *outPtr = &params->explaino_secondary_root_pattern_count; return true; }
         if (path == "fractal.params.mcmullen_m") { *outPtr = &params->mcmullen_m; return true; }
         if (path == "fractal.params.mcmullen_n") { *outPtr = &params->mcmullen_n; return true; }
@@ -1581,7 +1586,9 @@ bool ApplyDoubleSchemaDefault(const UISchemaControl& control, BindingContext& ct
         return false;
     }
 
-    if (control.binding.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
+    if ((control.binding.path == "fractal.params.explaino_seed" ||
+         control.binding.path == "fractal.root_pattern.dynamics.seed") &&
+        ctx.view && ctx.params) {
         if (ExplainoSeedCombined(*ctx.view, *ctx.params) == newValue) return false;
         ExplainoSeedSetCombined(*ctx.view, *ctx.params, newValue);
         if (ioDirty) *ioDirty = true;
@@ -1620,7 +1627,9 @@ bool IsKnownActionBindingPath(const std::string& path) {
         path == "fractal.actions.capture_finding" ||
         path == "fractal.actions.capture_diagnostic" ||
         path == "fractal.actions.next_seed" ||
-        path == "fractal.actions.prev_seed";
+        path == "fractal.actions.prev_seed" ||
+        path == "fractal.actions.root_pattern.dynamics.next_seed" ||
+        path == "fractal.actions.root_pattern.dynamics.prev_seed";
 }
 
 bool ValidateEnumBindingPath(const UISchemaControl& control, BindingContext& ctx, std::string* outError) {
@@ -2090,7 +2099,9 @@ bool RenderDoubleControl(
     const double speed = control.has_step ? control.step : 0.001;
     const char* valueFormat = "%.6f";
 
-    if (binding.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
+    if ((binding.path == "fractal.params.explaino_seed" ||
+         binding.path == "fractal.root_pattern.dynamics.seed") &&
+        ctx.view && ctx.params) {
         return RenderExplainoSeedDoubleControl(control, ctx, binding, range, speed, valueFormat, ioDirty, ioInteracted);
     }
 

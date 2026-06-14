@@ -201,16 +201,16 @@ inline FunctionParamDescriptor MakeColorPipelineSourceBlendWeightParam() {
 }
 
 inline std::vector<UISchemaOption> ColorPipelineRootPatternRefOptions() {
-    return {{"primary", "Active Root Field", ""}, {"secondary", "Secondary Root Pattern", ""}};
+    return {{"dynamics_root_field", "Dynamics Root Field", ""}, {"color_root_field", "Color Root Field", ""}};
 }
 
 inline FunctionParamDescriptor MakeColorPipelineRootPatternRefParam() {
     return MakeColorPipelineEnumParam(
         "signal.root_pattern_ref",
         "Root Field",
-        "Choose whether this root-aware Source row samples the active root field or an explicit secondary compatibility pattern.",
+        "Choose which scoped ExplainO root field this root-aware Source row samples.",
         ColorPipelineRootPatternRefOptions(),
-        "primary");
+        "dynamics_root_field");
 }
 
 inline const char* ColorPipelineSdfGateModeId(ColorPipelineSdfGateMode value) {
@@ -2074,9 +2074,16 @@ inline bool TryCopyColorPipelineParamValue(
         if (param.type == "bool") {
             ioValue->bool_value = previousValue.bool_value;
         } else if (param.type == "enum") {
+            std::string enumValue = previousValue.enum_value;
+            if (param.path == "signal.root_pattern_ref") {
+                ExplainoRootPatternRef patternRef{};
+                if (TryParseExplainoRootPatternRefId(enumValue, &patternRef)) {
+                    enumValue = ExplainoRootPatternRefId(patternRef) ? ExplainoRootPatternRefId(patternRef) : enumValue;
+                }
+            }
             bool foundOption = false;
             for (const UISchemaOption& option : param.options) {
-                if (option.id == previousValue.enum_value) {
+                if (option.id == enumValue) {
                     foundOption = true;
                     break;
                 }
@@ -2084,7 +2091,7 @@ inline bool TryCopyColorPipelineParamValue(
             if (!foundOption) {
                 return false;
             }
-            ioValue->enum_value = previousValue.enum_value;
+            ioValue->enum_value = enumValue;
         } else {
             ioValue->number_value = previousValue.number_value;
         }
@@ -2299,7 +2306,16 @@ inline bool SetColorPipelineParamEnum(
     }
     for (ColorPipelineParamState& param : ioRow->parameter_values) {
         if (param.path == path) {
-            param.enum_value = value;
+            if (param.path == "signal.root_pattern_ref") {
+                ExplainoRootPatternRef patternRef{};
+                if (!TryParseExplainoRootPatternRefId(value, &patternRef)) {
+                    if (outError) *outError = std::string("Invalid root-pattern ref '") + value + "'";
+                    return false;
+                }
+                param.enum_value = ExplainoRootPatternRefId(patternRef) ? ExplainoRootPatternRefId(patternRef) : value;
+            } else {
+                param.enum_value = value;
+            }
             return true;
         }
     }

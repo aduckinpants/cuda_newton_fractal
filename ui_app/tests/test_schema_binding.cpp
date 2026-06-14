@@ -8,6 +8,7 @@
 #include "../src/explaino_seed.h"
 #include "../third_party/imgui/imgui.h"
 
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -864,12 +865,12 @@ bool ValidateVisibleControlMatrix() {
         {"explaino_root_sdf_radius", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_radius", "float"},
         {"explaino_root_sdf_bridge_width", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_bridge_width", "float"},
         {"explaino_root_sdf_smooth_blend", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_smooth_blend", "float"},
-        {"explaino_generated_root_layout", FractalType::explaino_root_sdf, "fractal.params.explaino_generated_root_layout", "enum"},
+        {"dynamics_root_field_generated_layout", FractalType::explaino_root_sdf, "fractal.root_pattern.dynamics.generated_layout", "enum"},
         {"explaino_root_sdf_h_source", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_source", "enum"},
         {"explaino_root_sdf_h_amplitude", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_amplitude", "float"},
         {"explaino_root_sdf_h_frequency", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_frequency", "float"},
-        {"explaino_generated_root_layout", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_generated_root_layout", "enum"},
-        {"explaino_generated_root_layout", FractalType::explaino_magnet_root_well, "fractal.params.explaino_generated_root_layout", "enum"},
+        {"dynamics_root_field_generated_layout", FractalType::explaino_mandelbrot_root_trap, "fractal.root_pattern.dynamics.generated_layout", "enum"},
+        {"dynamics_root_field_generated_layout", FractalType::explaino_magnet_root_well, "fractal.root_pattern.dynamics.generated_layout", "enum"},
         {"explaino_root_field_trap_strength", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_root_field_trap_strength", "float"},
         {"explaino_root_field_trap_scale", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_root_field_trap_scale", "float"},
         {"explaino_root_field_trap_strength", FractalType::explaino_magnet_root_well, "fractal.params.explaino_root_field_trap_strength", "float"},
@@ -945,9 +946,9 @@ bool ValidateEnumComboEditMatrix() {
         {"counterfactual_pair_frame", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_frame", "view_relative"},
         {"projection_and_flow_root_family", FractalType::projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
         {"projection_and_flow_root_family", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
-        {"explaino_generated_root_layout", FractalType::explaino_root_sdf, "fractal.params.explaino_generated_root_layout", "regular_ngon_v1"},
-        {"explaino_generated_root_layout", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_generated_root_layout", "regular_ngon_v1"},
-        {"explaino_generated_root_layout", FractalType::explaino_magnet_root_well, "fractal.params.explaino_generated_root_layout", "regular_ngon_v1"},
+        {"dynamics_root_field_generated_layout", FractalType::explaino_root_sdf, "fractal.root_pattern.dynamics.generated_layout", "regular_ngon_v1"},
+        {"dynamics_root_field_generated_layout", FractalType::explaino_mandelbrot_root_trap, "fractal.root_pattern.dynamics.generated_layout", "regular_ngon_v1"},
+        {"dynamics_root_field_generated_layout", FractalType::explaino_magnet_root_well, "fractal.root_pattern.dynamics.generated_layout", "regular_ngon_v1"},
         {"explaino_root_sdf_h_source", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_source", "phase_sine"},
         {"transcendental_func", FractalType::explaino_transcendental, "fractal.params.transcendental_func", "f_cosh"},
     };
@@ -1142,7 +1143,20 @@ bool ValidateAnimationTargetVisibilityMirrorsControls() {
                 return false;
             }
             const bool optionVisible = HasVisibleEnumOptionForFractal(*animTarget, testCase.option_id, fractalId.value);
-            const bool ownerVisible = IsControlVisibleForFractal(*ownerControl, fractalId.value);
+            bool ownerVisible = IsControlVisibleForFractal(*ownerControl, fractalId.value);
+            if (std::strcmp(testCase.option_id, "seed") == 0) {
+                if (const json_min::Value* scopedSeed = FindSchemaControlById(schemaRoot, "dynamics_root_field_seed")) {
+                    ownerVisible = ownerVisible || IsControlVisibleForFractal(*scopedSeed, fractalId.value);
+                }
+            } else if (std::strcmp(testCase.option_id, "root_spread") == 0) {
+                if (const json_min::Value* scopedRootSpread = FindSchemaControlById(schemaRoot, "dynamics_root_field_root_spread")) {
+                    ownerVisible = ownerVisible || IsControlVisibleForFractal(*scopedRootSpread, fractalId.value);
+                }
+            } else if (std::strcmp(testCase.option_id, "explaino_phase") == 0) {
+                if (const json_min::Value* scopedPhase = FindSchemaControlById(schemaRoot, "dynamics_root_field_phase")) {
+                    ownerVisible = ownerVisible || IsControlVisibleForFractal(*scopedPhase, fractalId.value);
+                }
+            }
             if (optionVisible != ownerVisible) {
                 std::cerr << "Animation target option " << testCase.option_id
                           << " no longer mirrors owner control " << testCase.control_id
@@ -1251,37 +1265,44 @@ int main() {
         params.explaino_root_authority = ExplainoRootAuthority::generated;
         params.explaino_secondary_root_pattern_layout = ExplainoGeneratedRootLayout::legacy_quartic_v1;
         params.explaino_secondary_root_pattern_count = 4;
-        if (ctx.GetEnumId("fractal.params.explaino_root_field_pattern_ref") != "primary") {
-            std::cerr << "Expected root-field dynamics pattern ref to default to primary\n";
+        if (ctx.GetEnumId("fractal.params.explaino_root_field_pattern_ref") != "dynamics_root_field") {
+            std::cerr << "Expected root-field dynamics pattern ref to default to Dynamics Root Field\n";
             return 1;
         }
-        if (!ctx.SetEnumId("fractal.params.explaino_root_field_pattern_ref", "secondary") ||
-            ctx.GetEnumId("fractal.params.explaino_root_field_pattern_ref") != "secondary" ||
+        if (!ctx.SetEnumId("fractal.params.explaino_root_field_pattern_ref", "color_root_field") ||
+            ctx.GetEnumId("fractal.params.explaino_root_field_pattern_ref") != "color_root_field" ||
             params.explaino_root_field_pattern_ref != ExplainoRootPatternRef::secondary) {
-            std::cerr << "Expected root-field dynamics pattern ref to bind to KernelParams\n";
+            std::cerr << "Expected root-field dynamics pattern ref to bind to scoped KernelParams ref\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.explaino_root_field_pattern_ref", "primary") ||
+            ctx.GetEnumId("fractal.params.explaino_root_field_pattern_ref") != "dynamics_root_field" ||
+            !ctx.SetEnumId("fractal.params.explaino_root_field_pattern_ref", "secondary") ||
+            ctx.GetEnumId("fractal.params.explaino_root_field_pattern_ref") != "color_root_field") {
+            std::cerr << "Expected legacy root-pattern refs to load as scoped aliases\n";
             return 1;
         }
         if (ctx.GetEnumId("fractal.params.explaino_secondary_root_pattern_layout") != "legacy_quartic_v1") {
-            std::cerr << "Expected Pattern B layout to default to legacy_quartic_v1\n";
+            std::cerr << "Expected Color Root Field layout to default to legacy_quartic_v1\n";
             return 1;
         }
         bool secondaryCountActive = true;
         if (!ctx.GetBoolValue("fractal.params.explaino_secondary_root_pattern_count_active", secondaryCountActive) ||
             secondaryCountActive) {
-            std::cerr << "Expected Pattern B count to hide until Pattern B uses regular_ngon_v1\n";
+            std::cerr << "Expected Color Root Field count to hide until Color Root Field uses regular_ngon_v1\n";
             return 1;
         }
         if (!ctx.SetEnumId("fractal.params.explaino_secondary_root_pattern_layout", "regular_ngon_v1") ||
             ctx.GetEnumId("fractal.params.explaino_secondary_root_pattern_layout") != "regular_ngon_v1" ||
             !ctx.GetBoolValue("fractal.params.explaino_secondary_root_pattern_count_active", secondaryCountActive) ||
             !secondaryCountActive) {
-            std::cerr << "Expected Pattern B regular_ngon_v1 to activate Pattern B count\n";
+            std::cerr << "Expected Color Root Field regular_ngon_v1 to activate Color Root Field count\n";
             return 1;
         }
         int* secondaryRootCount = nullptr;
         if (!ctx.BindInt("fractal.params.explaino_secondary_root_pattern_count", &secondaryRootCount) ||
             secondaryRootCount != &params.explaino_secondary_root_pattern_count) {
-            std::cerr << "Expected Pattern B Root Count to bind to secondary generated authority\n";
+            std::cerr << "Expected Color Root Field Root Count to bind to secondary generated authority\n";
             return 1;
         }
         view.fractal_type = FractalType::newton;

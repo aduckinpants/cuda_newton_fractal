@@ -325,7 +325,7 @@ void WriteColorSourceStackJson(std::ostringstream& js, const KernelParams& param
         js << "        \"stripe_phase\": " << static_cast<double>(sourceEntry.params.stripe_phase) << ",\n";
         js << "        \"proximity_scale\": " << static_cast<double>(sourceEntry.params.proximity_scale) << ",\n";
         js << "        \"proximity_bias\": " << static_cast<double>(sourceEntry.params.proximity_bias) << ",\n";
-        js << "        \"root_pattern_ref\": \"" << (ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) ? ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) : "primary") << "\",\n";
+        js << "        \"root_pattern_ref\": \"" << (ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) ? ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) : "dynamics_root_field") << "\",\n";
         js << "        \"sdf_boundary_width_px\": " << static_cast<double>(sourceEntry.params.sdf_boundary_width_px) << ",\n";
         js << "        \"lens_field_v2_sign_contrast\": " << static_cast<double>(sourceEntry.params.lens_field_v2_sign_contrast) << ",\n";
         js << "        \"sdf_gate\": \"" << (color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) ? color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) : "none") << "\",\n";
@@ -683,7 +683,7 @@ void WriteFindingSourceRowsJson(std::ostringstream& js, const KernelParams& para
         js << "        \"signal_kind\": \"" << CaptureColorSignalKindId(sourceEntry.signal) << "\",\n";
         js << "        \"scale\": " << static_cast<double>(sourceEntry.params.scale) << ",\n";
         js << "        \"bias\": " << static_cast<double>(sourceEntry.params.bias) << ",\n";
-        js << "        \"root_pattern_ref\": \"" << (ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) ? ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) : "primary") << "\",\n";
+        js << "        \"root_pattern_ref\": \"" << (ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) ? ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) : "dynamics_root_field") << "\",\n";
         js << "        \"sdf_boundary_width_px\": " << static_cast<double>(sourceEntry.params.sdf_boundary_width_px) << ",\n";
         js << "        \"lens_field_v2_sign_contrast\": " << static_cast<double>(sourceEntry.params.lens_field_v2_sign_contrast) << ",\n";
         js << "        \"sdf_gate\": \"" << (color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) ? color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) : "none") << "\",\n";
@@ -903,7 +903,7 @@ void WriteFindingExplainoCommonControls(FindingControlJsonWriter& writer, const 
     writer.String("explaino_secondary_root_pattern_layout", secondaryLayoutId ? secondaryLayoutId : "legacy_quartic_v1");
     writer.Int("explaino_secondary_root_pattern_count", params.explaino_secondary_root_pattern_count);
     const char* rootFieldPatternRefId = ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref);
-    writer.String("explaino_root_field_pattern_ref", rootFieldPatternRefId ? rootFieldPatternRefId : "primary");
+    writer.String("explaino_root_field_pattern_ref", rootFieldPatternRefId ? rootFieldPatternRefId : "dynamics_root_field");
     writer.Number("explaino_damping", static_cast<double>(params.explaino_damping));
     writer.Int("explaino_root_count", params.explaino_root_count);
     writer.Raw("explaino_roots", BuildFindingExplainoRootsJson(params));
@@ -1084,7 +1084,10 @@ void WriteFindingRootPatternJson(
     ExplainoRootFieldDescriptor descriptor{};
     std::string error;
     js << "      {\n";
-    js << "        \"ref\": \"" << (refId ? refId : "primary") << "\",\n";
+    js << "        \"ref\": \"" << (refId ? refId : "dynamics_root_field") << "\",\n";
+    js << "        \"label\": ";
+    WriteJsonEscapedString(js, ExplainoRootPatternRefLabel(patternRef));
+    js << ",\n";
     js << "        \"requested_generated_root_count\": " <<
         (patternRef == ExplainoRootPatternRef::secondary
             ? params.explaino_secondary_root_pattern_count
@@ -1115,12 +1118,12 @@ void WriteFindingRootPatternDerivedJson(std::ostringstream& js, const ViewState&
 
     js << ",\n";
     js << "    \"active_root_field\": ";
-    WriteFindingRootPatternJson(js, view, params, "primary", ExplainoRootPatternRef::primary);
+    WriteFindingRootPatternJson(js, view, params, ExplainoRootPatternRefId(ExplainoRootPatternRef::primary), ExplainoRootPatternRef::primary);
     js << ",\n";
     js << "    \"root_patterns\": [\n";
-    WriteFindingRootPatternJson(js, view, params, "primary", ExplainoRootPatternRef::primary);
+    WriteFindingRootPatternJson(js, view, params, ExplainoRootPatternRefId(ExplainoRootPatternRef::primary), ExplainoRootPatternRef::primary);
     js << ",\n";
-    WriteFindingRootPatternJson(js, view, params, "secondary", ExplainoRootPatternRef::secondary);
+    WriteFindingRootPatternJson(js, view, params, ExplainoRootPatternRefId(ExplainoRootPatternRef::secondary), ExplainoRootPatternRef::secondary);
     js << "\n";
     js << "    ],\n";
     js << "    \"root_pattern_consumers\": [";
@@ -1134,7 +1137,7 @@ void WriteFindingRootPatternDerivedJson(std::ostringstream& js, const ViewState&
         js << "      {\n";
         js << "        \"consumer_kind\": \"" << (consumerKind ? consumerKind : "unknown") << "\",\n";
         js << "        \"consumer_id\": \"" << (consumerId ? consumerId : "unknown") << "\",\n";
-        js << "        \"pattern_ref\": \"" << (ExplainoRootPatternRefId(patternRef) ? ExplainoRootPatternRefId(patternRef) : "primary") << "\"\n";
+        js << "        \"pattern_ref\": \"" << (ExplainoRootPatternRefId(patternRef) ? ExplainoRootPatternRefId(patternRef) : "dynamics_root_field") << "\"\n";
         js << "      }";
         wroteConsumer = true;
     };
@@ -1299,7 +1302,7 @@ std::string BuildStateJson(
     js << "    \"explaino_generated_root_count\": " << params.explaino_generated_root_count << ",\n";
     js << "    \"explaino_secondary_root_pattern_layout\": \"" << (ExplainoGeneratedRootLayoutId(params.explaino_secondary_root_pattern_layout) ? ExplainoGeneratedRootLayoutId(params.explaino_secondary_root_pattern_layout) : "legacy_quartic_v1") << "\",\n";
     js << "    \"explaino_secondary_root_pattern_count\": " << params.explaino_secondary_root_pattern_count << ",\n";
-    js << "    \"explaino_root_field_pattern_ref\": \"" << (ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref) ? ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref) : "primary") << "\",\n";
+    js << "    \"explaino_root_field_pattern_ref\": \"" << (ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref) ? ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref) : "dynamics_root_field") << "\",\n";
     js << "    \"explaino_damping\": " << static_cast<double>(params.explaino_damping) << ",\n";
     const int persistedExplainoRootCount = params.explaino_root_count < 0
         ? 0

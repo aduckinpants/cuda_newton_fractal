@@ -186,7 +186,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           },
           "help": "Continuously advances the combined Explaino seed through the existing drift+tween seam."
         },
@@ -824,7 +824,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           },
           "help": "Primary Explaino seed control. The host splits this combined value into the integer seed base and fractional drift."
         },
@@ -856,7 +856,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -867,8 +867,62 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
+        },
+        {
+          "id": "dynamics_root_field_prev_seed",
+          "type": "button",
+          "label": "Dynamics Prev Seed",
+          "binding": { "kind": "action", "path": "fractal.actions.root_pattern.dynamics.prev_seed" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+        },
+        {
+          "id": "dynamics_root_field_next_seed",
+          "type": "button",
+          "label": "Dynamics Next Seed",
+          "binding": { "kind": "action", "path": "fractal.actions.root_pattern.dynamics.next_seed" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+        },
+        {
+          "id": "dynamics_root_field_seed",
+          "type": "slider_double",
+          "label": "Dynamics Seed",
+          "value_type": "double",
+          "ui_min": -10.0, "ui_max": 10.0, "step": 0.001, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.seed" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "help": "Seed for the scoped Dynamics Root Field used by root-field consumer lanes."
+        },
+        {
+          "id": "dynamics_root_field_root_spread",
+          "type": "slider_float",
+          "label": "Dynamics Root Spread",
+          "value_type": "float",
+          "min": 0.0, "max": 3.0, "step": 0.01, "default": 0.5,
+          "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.root_spread" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "help": "Root-spread control for the scoped Dynamics Root Field."
+        },
+        {
+          "id": "dynamics_root_field_phase",
+          "type": "slider_float",
+          "label": "Dynamics Phase",
+          "value_type": "float",
+          "ui_min": -6.283185307179586, "ui_max": 6.283185307179586, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.phase" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "help": "Phase control for the scoped Dynamics Root Field."
+        },
+        {
+          "id": "dynamics_root_field_phase_strength",
+          "type": "slider_float",
+          "label": "Dynamics Phase Strength",
+          "value_type": "float",
+          "ui_min": -20.0, "ui_max": 20.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.phase_strength" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "help": "Phase-strength control for the scoped Dynamics Root Field."
         },
         {
           "id": "explaino_warp_strength",
@@ -894,7 +948,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -908,7 +962,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
 
@@ -931,28 +985,28 @@
           "help": "Switches between generated seed/phase roots and a bounded custom root editor."
         },
         {
-          "id": "explaino_generated_root_layout",
+          "id": "dynamics_root_field_generated_layout",
           "type": "combo",
-          "label": "Generated Layout",
+          "label": "Dynamics Generated Layout",
           "value_type": "enum",
           "default": "legacy_quartic_v1",
           "options": [
             { "id": "legacy_quartic_v1", "label": "Legacy Quartic" },
             { "id": "regular_ngon_v1", "label": "Regular N-Gon" }
           ],
-          "binding": { "kind": "param", "path": "fractal.params.explaino_generated_root_layout" },
+          "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.generated_layout" },
           "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
-          "help": "Chooses the generated root layout used by ExplainO Root SDF without rewriting custom root authority."
+          "help": "Chooses the generated layout for the scoped Dynamics Root Field without rewriting custom root authority."
         },
         {
-          "id": "explaino_generated_root_count",
+          "id": "dynamics_root_field_generated_root_count",
           "type": "slider_int",
-          "label": "Root Count",
+          "label": "Dynamics Root Count",
           "value_type": "int",
           "min": 2, "max": 16, "step": 1, "default": 4,
-          "binding": { "kind": "param", "path": "fractal.params.explaino_generated_root_count" },
-          "visible_if": { "op": "eq", "path": "fractal.params.explaino_generated_root_count_active", "value": "true" },
-          "help": "Sets the generated regular N-gon root count for ExplainO Root SDF. Custom roots remain the four-slot editor."
+          "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.generated_root_count" },
+          "visible_if": { "op": "eq", "path": "fractal.root_pattern.dynamics.generated_root_count_active", "value": "true" },
+          "help": "Sets the generated regular N-gon root count for the scoped Dynamics Root Field. Custom roots remain the four-slot editor."
         },
         {
           "id": "explaino_custom_root_count",
@@ -1263,7 +1317,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -1276,7 +1330,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           },
           "help": "Advanced fractional component of the combined Explaino seed. Usually edit Explaino Seed instead."
         },
@@ -1290,7 +1344,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_collatz_direct,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         }
       ]

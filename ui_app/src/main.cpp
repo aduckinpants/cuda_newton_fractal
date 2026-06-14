@@ -639,7 +639,8 @@ static ViewerUiAutomationRootPatternProbe BuildRootPatternProbe(
     const KernelParams& params,
     ExplainoRootPatternRef patternRef) {
     ViewerUiAutomationRootPatternProbe pattern{};
-    pattern.ref = refId ? refId : "primary";
+    pattern.ref = refId ? refId : "dynamics_root_field";
+    pattern.label = ExplainoRootPatternRefLabel(patternRef);
     pattern.requested_generated_root_count = patternRef == ExplainoRootPatternRef::secondary
         ? params.explaino_secondary_root_pattern_count
         : params.explaino_generated_root_count;
@@ -672,12 +673,12 @@ static void PublishRootPatternProbe(
     }
 
     probe.root_patterns.push_back(BuildRootPatternProbe(
-        "primary",
+        ExplainoRootPatternRefId(ExplainoRootPatternRef::primary),
         view,
         params,
         ExplainoRootPatternRef::primary));
     probe.root_patterns.push_back(BuildRootPatternProbe(
-        "secondary",
+        ExplainoRootPatternRefId(ExplainoRootPatternRef::secondary),
         view,
         params,
         ExplainoRootPatternRef::secondary));
@@ -688,7 +689,7 @@ static void PublishRootPatternProbe(
         consumer.consumer_id = FractalTypeId(view.fractal_type) ? FractalTypeId(view.fractal_type) : "unknown";
         consumer.pattern_ref = ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref)
             ? ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref)
-            : "primary";
+            : "dynamics_root_field";
         probe.root_pattern_consumers.push_back(consumer);
     }
 
@@ -703,7 +704,7 @@ static void PublishRootPatternProbe(
         consumer.consumer_id = ColorSignalId(row.signal) ? ColorSignalId(row.signal) : "unknown";
         consumer.pattern_ref = ExplainoRootPatternRefId(row.params.root_pattern_ref)
             ? ExplainoRootPatternRefId(row.params.root_pattern_ref)
-            : "primary";
+            : "dynamics_root_field";
         probe.root_pattern_consumers.push_back(consumer);
     }
 }
@@ -2121,7 +2122,9 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema,
                         continue;
                     }
                     bool isSeedButton = (ctrl.binding.path == "fractal.actions.prev_seed" ||
-                                         ctrl.binding.path == "fractal.actions.next_seed");
+                                         ctrl.binding.path == "fractal.actions.next_seed" ||
+                                         ctrl.binding.path == "fractal.actions.root_pattern.dynamics.prev_seed" ||
+                                         ctrl.binding.path == "fractal.actions.root_pattern.dynamics.next_seed");
                     if (isSeedButton && prevWasSeedButton) {
                         ImGui::SameLine();
                     }
@@ -2143,8 +2146,10 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema,
                         if (ctrl.binding.path == "fractal.actions.load_state") a.loadState = true;
                         if (ctrl.binding.path == "fractal.actions.capture_finding") a.captureFinding = true;
                         if (ctrl.binding.path == "fractal.actions.capture_diagnostic") a.captureDiagnostic = true;
-                        if (ctrl.binding.path == "fractal.actions.next_seed") a.nextSeed = true;
-                        if (ctrl.binding.path == "fractal.actions.prev_seed") a.prevSeed = true;
+                        if (ctrl.binding.path == "fractal.actions.next_seed" ||
+                            ctrl.binding.path == "fractal.actions.root_pattern.dynamics.next_seed") a.nextSeed = true;
+                        if (ctrl.binding.path == "fractal.actions.prev_seed" ||
+                            ctrl.binding.path == "fractal.actions.root_pattern.dynamics.prev_seed") a.prevSeed = true;
                     }
                     if (ctrl.binding.path == "fractal.actions.load_state") {
                         ImGui::SameLine();

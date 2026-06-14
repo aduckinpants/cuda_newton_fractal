@@ -376,8 +376,8 @@ bool ValidateGeneratedInternalEditorSurface(const UISchema& schema) {
     }
 
     const UISchemaControl* rootAuthority = FindControlById(*fractalPanel, "explaino_root_authority");
-    const UISchemaControl* generatedLayout = FindControlById(*fractalPanel, "explaino_generated_root_layout");
-    const UISchemaControl* generatedCount = FindControlById(*fractalPanel, "explaino_generated_root_count");
+    const UISchemaControl* generatedLayout = FindControlById(*fractalPanel, "dynamics_root_field_generated_layout");
+    const UISchemaControl* generatedCount = FindControlById(*fractalPanel, "dynamics_root_field_generated_root_count");
     const UISchemaControl* rootCount = FindControlById(*fractalPanel, "explaino_custom_root_count");
     const UISchemaControl* root0x = FindControlById(*fractalPanel, "explaino_root_0_x");
     const UISchemaControl* root0y = FindControlById(*fractalPanel, "explaino_root_0_y");
@@ -415,7 +415,7 @@ bool ValidateGeneratedInternalEditorSurface(const UISchema& schema) {
         hasRegularLayout = hasRegularLayout || option.id == "regular_ngon_v1";
     }
     if (generatedLayout->type != "combo" || !generatedLayout->has_binding ||
-        generatedLayout->binding.path != "fractal.params.explaino_generated_root_layout" ||
+        generatedLayout->binding.path != "fractal.root_pattern.dynamics.generated_layout" ||
         !generatedLayout->has_default || !generatedLayout->def.is_string() ||
         generatedLayout->def.as_string() != "legacy_quartic_v1" ||
         !hasLegacyLayout || !hasRegularLayout ||
@@ -424,9 +424,9 @@ bool ValidateGeneratedInternalEditorSurface(const UISchema& schema) {
         return false;
     }
     if (!generatedCount->has_binding ||
-        generatedCount->binding.path != "fractal.params.explaino_generated_root_count" ||
+        generatedCount->binding.path != "fractal.root_pattern.dynamics.generated_root_count" ||
         !generatedCount->has_visible_if ||
-        generatedCount->visible_if.path != "fractal.params.explaino_generated_root_count_active" ||
+        generatedCount->visible_if.path != "fractal.root_pattern.dynamics.generated_root_count_active" ||
         generatedCount->visible_if.op != "eq" ||
         generatedCount->visible_if.value != "true") {
         std::cerr << "Generated Root Count must be gated behind regular generated Root SDF authority\n";
@@ -834,6 +834,11 @@ int main() {
         bool foundExplainoRootSdfHFrequency = false;
         bool foundExplainoRootFieldTrapStrength = false;
         bool foundExplainoRootFieldTrapScale = false;
+        bool foundDynamicsRootFieldSeed = false;
+        bool foundDynamicsRootFieldPrevSeed = false;
+        bool foundDynamicsRootFieldNextSeed = false;
+        bool foundDynamicsRootFieldRootSpread = false;
+        bool foundDynamicsRootFieldGeneratedLayout = false;
 
         if (!LoadAndValidateSchemaFile(schemaPath)) {
             return 1;
@@ -1107,11 +1112,52 @@ int main() {
                     !VisibleIfIncludesFractalType(ctrl, "magnet")) {
                     foundExplainoRootFieldTrapScale = true;
                 }
+                const bool visibleOnCompositeRootAwareLane =
+                    VisibleIfIncludesFractalType(ctrl, "explaino_root_sdf") ||
+                    VisibleIfIncludesFractalType(ctrl, "explaino_mandelbrot_root_trap") ||
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well");
+                if ((ctrl.id == "explaino_seed" || ctrl.id == "prev_seed" || ctrl.id == "next_seed" ||
+                     ctrl.id == "explaino_root_spread" || ctrl.id == "explaino_generated_root_layout") &&
+                    visibleOnCompositeRootAwareLane) {
+                    std::cerr << "Composite root-aware lanes must use scoped root-pattern controls instead of global ExplainO root controls: "
+                              << ctrl.id << "\n";
+                    return 1;
+                }
+                if (ctrl.id == "dynamics_root_field_seed" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.root_pattern.dynamics.seed" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    foundDynamicsRootFieldSeed = true;
+                }
+                if (ctrl.id == "dynamics_root_field_prev_seed" && ctrl.has_binding &&
+                    ctrl.binding.kind == "action" && ctrl.binding.path == "fractal.actions.root_pattern.dynamics.prev_seed" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    foundDynamicsRootFieldPrevSeed = true;
+                }
+                if (ctrl.id == "dynamics_root_field_next_seed" && ctrl.has_binding &&
+                    ctrl.binding.kind == "action" && ctrl.binding.path == "fractal.actions.root_pattern.dynamics.next_seed" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    foundDynamicsRootFieldNextSeed = true;
+                }
+                if (ctrl.id == "dynamics_root_field_root_spread" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.root_pattern.dynamics.root_spread" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    foundDynamicsRootFieldRootSpread = true;
+                }
+                if (ctrl.id == "dynamics_root_field_generated_layout" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.root_pattern.dynamics.generated_layout" &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    foundDynamicsRootFieldGeneratedLayout = true;
+                }
                 if ((ctrl.id == "explaino_secondary_root_pattern_layout" ||
                      ctrl.id == "explaino_secondary_root_pattern_count" ||
                      ctrl.id == "explaino_root_field_pattern_ref") &&
                     VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
-                    std::cerr << "Pattern B and Dynamics Root Pattern controls must stay out of normal Magnet Root Well UI\n";
+                    std::cerr << "Raw alternate-pattern controls must stay out of normal Magnet Root Well UI\n";
                     return 1;
                 }
                 if (ctrl.id == "color_smooth_escape_interior_strength" && ctrl.type == "slider_float" &&
@@ -1644,6 +1690,11 @@ int main() {
             std::cerr << "Did not find the ExplainO root-field consumer trap control surface in schema\n";
             return 1;
         }
+        if (!foundDynamicsRootFieldSeed || !foundDynamicsRootFieldPrevSeed || !foundDynamicsRootFieldNextSeed ||
+            !foundDynamicsRootFieldRootSpread || !foundDynamicsRootFieldGeneratedLayout) {
+            std::cerr << "Did not find scoped Dynamics Root Field controls/actions for composite root-aware lanes in schema\n";
+            return 1;
+        }
         if (!foundFractalTypeExplainoAllFirst) {
             std::cerr << "Did not find Explaino-all as the first Explaino selector entry in schema\n";
             return 1;
@@ -1659,8 +1710,7 @@ int main() {
         if (!foundEpsilonVisibleForExplainoAll || !foundEpsilonVisibleForCounterfactualPair ||
             !foundEpsilonVisibleForExplainoCounterfactualPair || !foundEpsilonVisibleForExplainoProjectionAndFlow ||
             !foundExplainoSeedVisibleForExplainoAll || !foundExplainoSeedVisibleForExplainoCounterfactualPair ||
-            !foundExplainoSeedVisibleForExplainoProjectionAndFlow || !foundExplainoSeedVisibleForExplainoRootSdf ||
-            !foundPrevSeedVisibleForExplainoRootSdf || !foundNextSeedVisibleForExplainoRootSdf ||
+            !foundExplainoSeedVisibleForExplainoProjectionAndFlow ||
             !foundExplainoRootAuthorityVisibleForExplainoRootSdf || !foundExplainoWarpHiddenForExplainoRootSdf) {
             std::cerr << "Did not preserve the existing Explaino family control surface for the canonical Explaino-all identity\n";
             return 1;
