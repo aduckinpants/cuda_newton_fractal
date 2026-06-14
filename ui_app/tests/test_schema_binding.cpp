@@ -1243,6 +1243,43 @@ int main() {
             std::cerr << "Expected custom root authority to hide generated Root Count authority\n";
             return 1;
         }
+        view.fractal_type = FractalType::explaino_magnet_root_well;
+        params.explaino_root_authority = ExplainoRootAuthority::generated;
+        params.explaino_secondary_root_pattern_layout = ExplainoGeneratedRootLayout::legacy_quartic_v1;
+        params.explaino_secondary_root_pattern_count = 4;
+        if (ctx.GetEnumId("fractal.params.explaino_root_field_pattern_ref") != "primary") {
+            std::cerr << "Expected root-field dynamics pattern ref to default to primary\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.explaino_root_field_pattern_ref", "secondary") ||
+            ctx.GetEnumId("fractal.params.explaino_root_field_pattern_ref") != "secondary" ||
+            params.explaino_root_field_pattern_ref != ExplainoRootPatternRef::secondary) {
+            std::cerr << "Expected root-field dynamics pattern ref to bind to KernelParams\n";
+            return 1;
+        }
+        if (ctx.GetEnumId("fractal.params.explaino_secondary_root_pattern_layout") != "legacy_quartic_v1") {
+            std::cerr << "Expected Pattern B layout to default to legacy_quartic_v1\n";
+            return 1;
+        }
+        bool secondaryCountActive = true;
+        if (!ctx.GetBoolValue("fractal.params.explaino_secondary_root_pattern_count_active", secondaryCountActive) ||
+            secondaryCountActive) {
+            std::cerr << "Expected Pattern B count to hide until Pattern B uses regular_ngon_v1\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.explaino_secondary_root_pattern_layout", "regular_ngon_v1") ||
+            ctx.GetEnumId("fractal.params.explaino_secondary_root_pattern_layout") != "regular_ngon_v1" ||
+            !ctx.GetBoolValue("fractal.params.explaino_secondary_root_pattern_count_active", secondaryCountActive) ||
+            !secondaryCountActive) {
+            std::cerr << "Expected Pattern B regular_ngon_v1 to activate Pattern B count\n";
+            return 1;
+        }
+        int* secondaryRootCount = nullptr;
+        if (!ctx.BindInt("fractal.params.explaino_secondary_root_pattern_count", &secondaryRootCount) ||
+            secondaryRootCount != &params.explaino_secondary_root_pattern_count) {
+            std::cerr << "Expected Pattern B Root Count to bind to secondary generated authority\n";
+            return 1;
+        }
         view.fractal_type = FractalType::newton;
         params.poly_kind = PolyKind::z3_minus_1;
         bool customPolyActive = true;
@@ -2438,20 +2475,22 @@ int main() {
         }
         const FunctionDescriptor* coreRootProximityDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_proximity");
         if (!coreRootProximityDescriptor ||
-            coreRootProximityDescriptor->parameters.size() != 3 ||
+            coreRootProximityDescriptor->parameters.size() != 4 ||
             coreRootProximityDescriptor->parameters[0].path != "signal.proximity_scale" ||
             coreRootProximityDescriptor->parameters[1].path != "signal.proximity_bias" ||
-            coreRootProximityDescriptor->parameters[2].path != "signal.blend_weight") {
-            std::cerr << "Expected root_proximity to carry stable proximity-scale, proximity-bias, and blend-weight source parameters\n";
+            coreRootProximityDescriptor->parameters[2].path != "signal.root_pattern_ref" ||
+            coreRootProximityDescriptor->parameters[3].path != "signal.blend_weight") {
+            std::cerr << "Expected root_proximity to carry stable proximity-scale, proximity-bias, root-pattern-ref, and blend-weight source parameters\n";
             return 1;
         }
         const FunctionDescriptor* coreRootPhaseDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_phase");
         if (!coreRootPhaseDescriptor ||
-            coreRootPhaseDescriptor->parameters.size() != 3 ||
+            coreRootPhaseDescriptor->parameters.size() != 4 ||
             coreRootPhaseDescriptor->parameters[0].path != "signal.phase_offset" ||
             coreRootPhaseDescriptor->parameters[1].path != "signal.wrap_cycles" ||
-            coreRootPhaseDescriptor->parameters[2].path != "signal.blend_weight") {
-            std::cerr << "Expected root_phase to carry stable phase-offset, wrap-cycles, and blend-weight source parameters\n";
+            coreRootPhaseDescriptor->parameters[2].path != "signal.root_pattern_ref" ||
+            coreRootPhaseDescriptor->parameters[3].path != "signal.blend_weight") {
+            std::cerr << "Expected root_phase to carry stable phase-offset, wrap-cycles, root-pattern-ref, and blend-weight source parameters\n";
             return 1;
         }
         const FunctionDescriptor* coreRootIndexDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_index");

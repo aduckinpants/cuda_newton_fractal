@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "contract_id": "explaino_pattern_bank_root_refs",
+  "feature_id": "explaino_pattern_bank_root_refs",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_pattern_bank_root_refs_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/ui_salt",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "tools"
+  ],
+  "required_operator_inputs": [
+    "merge completed Wave 3 root_phase branch to master before implementation",
+    "branch codex/explaino-pattern-bank-root-refs from merged master",
+    "add two-slot primary/secondary root-pattern bank only",
+    "preserve Pattern A current behavior",
+    "Pattern B is generated-only in V1",
+    "route root-field consumers through explaino_root_field_pattern_ref",
+    "route root_proximity and root_phase source rows through signal.root_pattern_ref",
+    "prove explaino_magnet_root_well dynamics can use primary regular N roots while Color Pipeline row uses secondary legacy roots",
+    "stop before broader Wave 4, graph editor, arbitrary pattern algebra, or new root-metric source work"
+  ],
+  "forbidden_operator_prompts": [
+    "add unlimited pattern list",
+    "add graph editor",
+    "add arbitrary pattern algebra",
+    "add Pattern B custom coordinate editing",
+    "add root_index pattern refs",
+    "add root adjacency or pair-gap metrics",
+    "add extra root-metric source functions",
+    "start Wave 4 idea work",
+    "add SDF ops or SDF-native lanes",
+    "start perturbation zoom work",
+    "add Salticid adapter or removal work",
+    "use physical mouse automation",
+    "silently substitute primary roots when secondary is explicitly selected and invalid"
+  ],
+  "required_defaults": {
+    "branch": "codex/explaino-pattern-bank-root-refs",
+    "source_head": "5d6a6a17d89294f58f30d5e598e5db01b21c99ae",
+    "pattern_slot_count": 2,
+    "primary_ref": "primary",
+    "secondary_ref": "secondary",
+    "secondary_default_layout": "legacy_quartic_v1",
+    "secondary_default_count": 4,
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "unlimited_patterns": "forbidden",
+    "secondary_custom_roots": "forbidden",
+    "root_index_pattern_ref": "forbidden",
+    "wave4_work": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_pattern_bank_root_refs.contract.json --out-json artifacts/validation/explaino_pattern_bank_root_refs_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_pattern_bank_root_refs_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_pattern_bank_root_refs_PHASED_PLAN.md --out-json artifacts/validation/explaino_pattern_bank_root_refs_hostile_audit.json",
+    "git diff --check > artifacts/explaino_pattern_bank_root_refs/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Pattern Bank V1 contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_pattern_bank_root_refs_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_pattern_bank_root_refs_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "The code quality baseline report has no critical findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_pattern_bank_root_refs_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "code_quality_no_error",
+      "description": "The code quality baseline report has no error findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_pattern_bank_root_refs_code_quality.json",
+      "json_path": "severity_counts.ERROR",
+      "equals": 0
+    }
+  ]
+}

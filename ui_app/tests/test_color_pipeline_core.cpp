@@ -466,6 +466,17 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
         "TestLaneCatalogFiltersRuntimeBackedRows_UnknownLaneFailsClosed");
     Check(color_pipeline_core::FindColorPipelineLaneCatalog("missing") == nullptr,
         "TestLaneCatalogFiltersRuntimeBackedRows_UnknownCatalogMissing");
+
+    const FunctionDescriptor* rootProximity = FindFunction(*source, "root_proximity");
+    const FunctionDescriptor* rootPhase = FindFunction(*source, "root_phase");
+    Check(rootProximity && HasParam(*rootProximity, "signal.root_pattern_ref") &&
+            HasEnumOption(*rootProximity, "signal.root_pattern_ref", "primary") &&
+            HasEnumOption(*rootProximity, "signal.root_pattern_ref", "secondary"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_RootProximityExposesPatternRef");
+    Check(rootPhase && HasParam(*rootPhase, "signal.root_pattern_ref") &&
+            HasEnumOption(*rootPhase, "signal.root_pattern_ref", "primary") &&
+            HasEnumOption(*rootPhase, "signal.root_pattern_ref", "secondary"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_RootPhaseExposesPatternRef");
 }
 
 void TestSourceSignalKindMetadata() {
@@ -560,6 +571,24 @@ void TestRowBuildersAndDefaults() {
             RowNumber(phaseRow, "signal.wrap_cycles", 1.0) &&
             RowNumber(phaseRow, "signal.blend_weight", 1.0),
         "TestRowBuildersAndDefaults_PhaseRowDefaults");
+
+    ColorPipelineRowState rootProximityRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "root_proximity", 18, &rootProximityRow, &error),
+        "TestRowBuildersAndDefaults_RootProximityRowBuilds");
+    Check(RowEnum(rootProximityRow, "signal.root_pattern_ref", "primary"),
+        "TestRowBuildersAndDefaults_RootProximityPatternRefDefaultsPrimary");
+    Check(color_pipeline_core::SetColorPipelineParamEnum(&rootProximityRow, "signal.root_pattern_ref", "secondary", &error) &&
+            RowEnum(rootProximityRow, "signal.root_pattern_ref", "secondary"),
+        "TestRowBuildersAndDefaults_RootProximityPatternRefAcceptsSecondary");
+
+    ColorPipelineRowState rootPhaseRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "root_phase", 19, &rootPhaseRow, &error),
+        "TestRowBuildersAndDefaults_RootPhaseRowBuilds");
+    Check(RowEnum(rootPhaseRow, "signal.root_pattern_ref", "primary"),
+        "TestRowBuildersAndDefaults_RootPhasePatternRefDefaultsPrimary");
+    Check(color_pipeline_core::SetColorPipelineParamEnum(&rootPhaseRow, "signal.root_pattern_ref", "secondary", &error) &&
+            RowEnum(rootPhaseRow, "signal.root_pattern_ref", "secondary"),
+        "TestRowBuildersAndDefaults_RootPhasePatternRefAcceptsSecondary");
 
     ColorPipelineLaneState repeatLane;
     Check(color_pipeline_core::BuildColorPipelineLaneWithSingleRow(*shape, "repeat", 22, &repeatLane, &error),

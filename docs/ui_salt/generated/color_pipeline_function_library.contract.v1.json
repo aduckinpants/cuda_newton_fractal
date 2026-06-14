@@ -503,6 +503,16 @@
                 "default": 0.0
               },
               {
+                "path": "signal.root_pattern_ref",
+                "type": "enum",
+                "label": "Root Pattern",
+                "default": "primary",
+                "options": [
+                  "primary",
+                  "secondary"
+                ]
+              },
+              {
                 "path": "signal.blend_weight",
                 "type": "float",
                 "label": "Blend Weight",
@@ -541,6 +551,16 @@
                 "max": 6.0,
                 "step": 0.01,
                 "default": 1.0
+              },
+              {
+                "path": "signal.root_pattern_ref",
+                "type": "enum",
+                "label": "Root Pattern",
+                "default": "primary",
+                "options": [
+                  "primary",
+                  "secondary"
+                ]
               },
               {
                 "path": "signal.blend_weight",

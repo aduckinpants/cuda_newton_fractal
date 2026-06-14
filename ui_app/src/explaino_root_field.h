@@ -43,3 +43,10 @@ bool ResolveExplainoRootFieldDescriptor(
     const KernelParams& params,
     ExplainoRootFieldDescriptor* outDescriptor,
     std::string* outError = nullptr);
+
+bool ResolveExplainoRootPatternDescriptor(
+    const ViewState& view,
+    const KernelParams& params,
+    ExplainoRootPatternRef patternRef,
+    ExplainoRootFieldDescriptor* outDescriptor,
+    std::string* outError = nullptr);

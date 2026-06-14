@@ -147,6 +147,34 @@ void TestLensSdfProbeTimingFields() {
     probe.root_field_consumer_trap_scale = 1.5f;
     probe.root_field_consumer_base_root_hash = 0x9012ull;
     probe.root_field_consumer_effective_root_hash = 0x3456ull;
+    ViewerUiAutomationRootPatternProbe primaryPattern{};
+    primaryPattern.ref = "primary";
+    primaryPattern.layout_kind = "regular_ngon_v1";
+    primaryPattern.source_kind = "generated";
+    primaryPattern.root_count = 11;
+    primaryPattern.requested_generated_root_count = 11;
+    primaryPattern.base_root_hash = 0xaaa1ull;
+    primaryPattern.effective_root_hash = 0xaaa2ull;
+    probe.root_patterns.push_back(primaryPattern);
+    ViewerUiAutomationRootPatternProbe secondaryPattern{};
+    secondaryPattern.ref = "secondary";
+    secondaryPattern.layout_kind = "legacy_quartic_v1";
+    secondaryPattern.source_kind = "generated";
+    secondaryPattern.root_count = 4;
+    secondaryPattern.requested_generated_root_count = 4;
+    secondaryPattern.base_root_hash = 0xbbb1ull;
+    secondaryPattern.effective_root_hash = 0xbbb2ull;
+    probe.root_patterns.push_back(secondaryPattern);
+    ViewerUiAutomationRootPatternConsumerProbe dynamicsConsumer{};
+    dynamicsConsumer.consumer_kind = "root_field_consumer";
+    dynamicsConsumer.consumer_id = "explaino_magnet_root_well";
+    dynamicsConsumer.pattern_ref = "primary";
+    probe.root_pattern_consumers.push_back(dynamicsConsumer);
+    ViewerUiAutomationRootPatternConsumerProbe rowConsumer{};
+    rowConsumer.consumer_kind = "color_source_row";
+    rowConsumer.consumer_id = "root_phase";
+    rowConsumer.pattern_ref = "secondary";
+    probe.root_pattern_consumers.push_back(rowConsumer);
     probe.explaino_root_sdf_root_count = 4;
     probe.explaino_root_sdf_bridge_count = 2;
     probe.explaino_root_sdf_root_layout_kind = "regular_ngon_v1";
@@ -291,6 +319,19 @@ void TestLensSdfProbeTimingFields() {
     Check(json.find("\"root_field_consumer_base_root_hash\": \"fnv1a64:0000000000009012\"") != std::string::npos &&
             json.find("\"root_field_consumer_effective_root_hash\": \"fnv1a64:0000000000003456\"") != std::string::npos,
         "automation report writes root-field consumer root hashes");
+    Check(json.find("\"root_patterns\":") != std::string::npos &&
+            json.find("\"ref\": \"primary\"") != std::string::npos &&
+            json.find("\"root_count\": 11") != std::string::npos &&
+            json.find("\"base_root_hash\": \"fnv1a64:000000000000aaa1\"") != std::string::npos &&
+            json.find("\"ref\": \"secondary\"") != std::string::npos &&
+            json.find("\"layout_kind\": \"legacy_quartic_v1\"") != std::string::npos,
+        "automation report writes root-pattern authority slots");
+    Check(json.find("\"root_pattern_consumers\":") != std::string::npos &&
+            json.find("\"consumer_kind\": \"root_field_consumer\"") != std::string::npos &&
+            json.find("\"consumer_id\": \"explaino_magnet_root_well\"") != std::string::npos &&
+            json.find("\"consumer_kind\": \"color_source_row\"") != std::string::npos &&
+            json.find("\"pattern_ref\": \"secondary\"") != std::string::npos,
+        "automation report writes explicit root-pattern consumer refs");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {

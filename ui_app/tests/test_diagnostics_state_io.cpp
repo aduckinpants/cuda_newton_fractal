@@ -6088,6 +6088,9 @@ int main() {
       "explaino_root_authority": "generated",
       "explaino_generated_root_layout": "legacy_quartic_v1",
       "explaino_generated_root_count": 4,
+      "explaino_secondary_root_pattern_layout": "regular_ngon_v1",
+      "explaino_secondary_root_pattern_count": 11,
+      "explaino_root_field_pattern_ref": "secondary",
       "explaino_damping": 1.0,
       "explaino_root_count": 4,
       "explaino_root_field_trap_strength": 0.75,
@@ -6121,6 +6124,13 @@ int main() {
               loadedParams.color_pipeline.grading != ColorGradingPreset::escape_default ||
               loadedParams.coloring_mode != ColoringMode::smooth_escape) {
             std::cerr << "Expected root-field consumer state reload to preserve selector and root-proximity pipeline for "
+                      << rootConsumerIds[index] << "\n";
+            return 1;
+          }
+          if (loadedParams.explaino_secondary_root_pattern_layout != ExplainoGeneratedRootLayout::regular_ngon_v1 ||
+              loadedParams.explaino_secondary_root_pattern_count != 11 ||
+              loadedParams.explaino_root_field_pattern_ref != ExplainoRootPatternRef::secondary) {
+            std::cerr << "Expected root-field consumer state reload to preserve Pattern B and dynamics pattern ref for "
                       << rootConsumerIds[index] << "\n";
             return 1;
           }

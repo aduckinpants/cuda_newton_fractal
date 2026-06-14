@@ -325,6 +325,7 @@ void WriteColorSourceStackJson(std::ostringstream& js, const KernelParams& param
         js << "        \"stripe_phase\": " << static_cast<double>(sourceEntry.params.stripe_phase) << ",\n";
         js << "        \"proximity_scale\": " << static_cast<double>(sourceEntry.params.proximity_scale) << ",\n";
         js << "        \"proximity_bias\": " << static_cast<double>(sourceEntry.params.proximity_bias) << ",\n";
+        js << "        \"root_pattern_ref\": \"" << (ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) ? ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) : "primary") << "\",\n";
         js << "        \"sdf_boundary_width_px\": " << static_cast<double>(sourceEntry.params.sdf_boundary_width_px) << ",\n";
         js << "        \"lens_field_v2_sign_contrast\": " << static_cast<double>(sourceEntry.params.lens_field_v2_sign_contrast) << ",\n";
         js << "        \"sdf_gate\": \"" << (color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) ? color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) : "none") << "\",\n";
@@ -682,6 +683,7 @@ void WriteFindingSourceRowsJson(std::ostringstream& js, const KernelParams& para
         js << "        \"signal_kind\": \"" << CaptureColorSignalKindId(sourceEntry.signal) << "\",\n";
         js << "        \"scale\": " << static_cast<double>(sourceEntry.params.scale) << ",\n";
         js << "        \"bias\": " << static_cast<double>(sourceEntry.params.bias) << ",\n";
+        js << "        \"root_pattern_ref\": \"" << (ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) ? ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref) : "primary") << "\",\n";
         js << "        \"sdf_boundary_width_px\": " << static_cast<double>(sourceEntry.params.sdf_boundary_width_px) << ",\n";
         js << "        \"lens_field_v2_sign_contrast\": " << static_cast<double>(sourceEntry.params.lens_field_v2_sign_contrast) << ",\n";
         js << "        \"sdf_gate\": \"" << (color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) ? color_pipeline_core::ColorPipelineSdfGateModeId(sourceEntry.params.sdf_gate) : "none") << "\",\n";
@@ -897,6 +899,11 @@ void WriteFindingExplainoCommonControls(FindingControlJsonWriter& writer, const 
     const char* generatedLayoutId = ExplainoGeneratedRootLayoutId(params.explaino_generated_root_layout);
     writer.String("explaino_generated_root_layout", generatedLayoutId ? generatedLayoutId : "legacy_quartic_v1");
     writer.Int("explaino_generated_root_count", params.explaino_generated_root_count);
+    const char* secondaryLayoutId = ExplainoGeneratedRootLayoutId(params.explaino_secondary_root_pattern_layout);
+    writer.String("explaino_secondary_root_pattern_layout", secondaryLayoutId ? secondaryLayoutId : "legacy_quartic_v1");
+    writer.Int("explaino_secondary_root_pattern_count", params.explaino_secondary_root_pattern_count);
+    const char* rootFieldPatternRefId = ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref);
+    writer.String("explaino_root_field_pattern_ref", rootFieldPatternRefId ? rootFieldPatternRefId : "primary");
     writer.Number("explaino_damping", static_cast<double>(params.explaino_damping));
     writer.Int("explaino_root_count", params.explaino_root_count);
     writer.Raw("explaino_roots", BuildFindingExplainoRootsJson(params));
@@ -1068,6 +1075,94 @@ void WriteFindingExplainoRootSdfDerivedJson(std::ostringstream& js, const ViewSt
     }
 }
 
+void WriteFindingRootPatternJson(
+    std::ostringstream& js,
+    const ViewState& view,
+    const KernelParams& params,
+    const char* refId,
+    ExplainoRootPatternRef patternRef) {
+    ExplainoRootFieldDescriptor descriptor{};
+    std::string error;
+    js << "      {\n";
+    js << "        \"ref\": \"" << (refId ? refId : "primary") << "\",\n";
+    js << "        \"requested_generated_root_count\": " <<
+        (patternRef == ExplainoRootPatternRef::secondary
+            ? params.explaino_secondary_root_pattern_count
+            : params.explaino_generated_root_count);
+    if (ResolveExplainoRootPatternDescriptor(view, params, patternRef, &descriptor, &error) &&
+        descriptor.active_count > 0) {
+        js << ",\n";
+        js << "        \"root_count\": " << descriptor.active_count << ",\n";
+        js << "        \"layout_kind\": \"" << ExplainoRootFieldLayoutKindId(descriptor.layout_kind) << "\",\n";
+        js << "        \"source_kind\": \"" << ExplainoRootFieldSourceKindId(descriptor.source_kind) << "\",\n";
+        js << "        \"base_root_hash\": \"fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << descriptor.base_root_hash << std::dec << std::setfill(' ') << "\",\n";
+        js << "        \"effective_root_hash\": \"fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << descriptor.effective_root_hash << std::dec << std::setfill(' ') << "\",\n";
+        js << "        \"base_roots\": " << BuildFindingRootArrayJson(descriptor.base_roots, descriptor.active_count) << "\n";
+    } else {
+        js << ",\n";
+        js << "        \"root_count\": 0,\n";
+        js << "        \"fail_closed_reason\": ";
+        WriteJsonEscapedString(js, error.empty() ? "root_pattern_descriptor_resolution_failed" : error.c_str());
+        js << "\n";
+    }
+    js << "      }";
+}
+
+void WriteFindingRootPatternDerivedJson(std::ostringstream& js, const ViewState& view, const KernelParams& params) {
+    if (!UsesExplainoRootLayoutAuthority(view.fractal_type)) {
+        return;
+    }
+
+    js << ",\n";
+    js << "    \"root_patterns\": [\n";
+    WriteFindingRootPatternJson(js, view, params, "primary", ExplainoRootPatternRef::primary);
+    js << ",\n";
+    WriteFindingRootPatternJson(js, view, params, "secondary", ExplainoRootPatternRef::secondary);
+    js << "\n";
+    js << "    ],\n";
+    js << "    \"root_pattern_consumers\": [";
+
+    bool wroteConsumer = false;
+    auto writeConsumer = [&](const char* consumerKind, const char* consumerId, ExplainoRootPatternRef patternRef) {
+        if (wroteConsumer) {
+            js << ",";
+        }
+        js << "\n";
+        js << "      {\n";
+        js << "        \"consumer_kind\": \"" << (consumerKind ? consumerKind : "unknown") << "\",\n";
+        js << "        \"consumer_id\": \"" << (consumerId ? consumerId : "unknown") << "\",\n";
+        js << "        \"pattern_ref\": \"" << (ExplainoRootPatternRefId(patternRef) ? ExplainoRootPatternRefId(patternRef) : "primary") << "\"\n";
+        js << "      }";
+        wroteConsumer = true;
+    };
+
+    if (IsRootFieldConsumerFractal(view.fractal_type)) {
+        writeConsumer(
+            "root_field_consumer",
+            FractalTypeId(view.fractal_type) ? FractalTypeId(view.fractal_type) : "unknown",
+            params.explaino_root_field_pattern_ref);
+    }
+
+    const int sourceStackCount = CaptureColorSourceStackCount(params);
+    for (int index = 0; index < sourceStackCount; ++index) {
+        const ColorPipelineSourceStackEntry& row = params.color_source_stack[index];
+        if (row.signal != ColorSignal::root_phase && row.signal != ColorSignal::root_proximity) {
+            continue;
+        }
+        writeConsumer(
+            "color_source_row",
+            CaptureColorSignalId(row.signal),
+            row.params.root_pattern_ref);
+    }
+
+    if (wroteConsumer) {
+        js << "\n";
+        js << "    ]";
+    } else {
+        js << "]";
+    }
+}
+
 void WriteFindingRootFieldConsumerDerivedJson(std::ostringstream& js, const ViewState& view, const KernelParams& params) {
     if (!IsRootFieldConsumerFractal(view.fractal_type)) {
         return;
@@ -1199,6 +1294,9 @@ std::string BuildStateJson(
     js << "    \"explaino_root_authority\": \"" << CaptureExplainoRootAuthorityId(params.explaino_root_authority) << "\",\n";
     js << "    \"explaino_generated_root_layout\": \"" << (ExplainoGeneratedRootLayoutId(params.explaino_generated_root_layout) ? ExplainoGeneratedRootLayoutId(params.explaino_generated_root_layout) : "legacy_quartic_v1") << "\",\n";
     js << "    \"explaino_generated_root_count\": " << params.explaino_generated_root_count << ",\n";
+    js << "    \"explaino_secondary_root_pattern_layout\": \"" << (ExplainoGeneratedRootLayoutId(params.explaino_secondary_root_pattern_layout) ? ExplainoGeneratedRootLayoutId(params.explaino_secondary_root_pattern_layout) : "legacy_quartic_v1") << "\",\n";
+    js << "    \"explaino_secondary_root_pattern_count\": " << params.explaino_secondary_root_pattern_count << ",\n";
+    js << "    \"explaino_root_field_pattern_ref\": \"" << (ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref) ? ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref) : "primary") << "\",\n";
     js << "    \"explaino_damping\": " << static_cast<double>(params.explaino_damping) << ",\n";
     const int persistedExplainoRootCount = params.explaino_root_count < 0
         ? 0
@@ -1333,6 +1431,7 @@ std::string BuildFindingFractalStateJson(
     js << "    \"last_render_ms\": " << static_cast<double>(stats.last_render_ms) << ",\n";
     js << "    \"last_iters_avg\": " << stats.last_iters_avg << ",\n";
     js << "    \"last_pixel_count\": " << stats.last_pixel_count;
+    WriteFindingRootPatternDerivedJson(js, view, params);
     WriteFindingExplainoRootSdfDerivedJson(js, view, params);
     WriteFindingRootFieldConsumerDerivedJson(js, view, params);
     js << "\n";

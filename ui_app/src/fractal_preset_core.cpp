@@ -108,6 +108,8 @@ void WriteSourceStack(std::ostringstream& out, const KernelParams& params) {
         JsonNumber(out, entry.params.scale);
         out << ",\"bias\":";
         JsonNumber(out, entry.params.bias);
+        out << ",\"root_pattern_ref\":";
+        JsonString(out, ExplainoRootPatternRefId(entry.params.root_pattern_ref));
         out << ",\"blend_weight\":";
         JsonNumber(out, entry.params.blend_weight);
         out << ",\"sdf_gate\":";
@@ -194,6 +196,12 @@ bool ParseSourceStack(const json_min::Object& object, KernelParams* outParams, s
         if (GetOptionalNumber(row, "scale", &value)) entry.params.scale = static_cast<float>(value);
         if (GetOptionalNumber(row, "bias", &value)) entry.params.bias = static_cast<float>(value);
         if (GetOptionalNumber(row, "blend_weight", &value)) entry.params.blend_weight = static_cast<float>(value);
+        std::string rootPatternRefId;
+        if (GetString(row, "root_pattern_ref", &rootPatternRefId, nullptr) &&
+            !TryParseExplainoRootPatternRefId(rootPatternRefId, &entry.params.root_pattern_ref)) {
+            if (outError) *outError = "preset_core source_stack root_pattern_ref is unknown";
+            return false;
+        }
         if (GetOptionalNumber(row, "sdf_gate_width_px", &value)) entry.params.sdf_gate_width_px = static_cast<float>(value);
         if (GetOptionalNumber(row, "sdf_boundary_width_px", &value)) entry.params.sdf_boundary_width_px = static_cast<float>(value);
         if (GetOptionalNumber(row, "sdf_sample_step", &value)) entry.params.sdf_sample_step = ClampInt(value, 1, 16);

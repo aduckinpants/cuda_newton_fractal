@@ -79,6 +79,33 @@ def _color_pipeline_number_param(row: dict[str, Any], path: str) -> float:
     raise AssertionError(f"missing color pipeline param {path!r} in row {row!r}")
 
 
+def _root_pattern(report: dict[str, Any], ref: str) -> dict[str, Any]:
+    patterns = report.get("root_patterns")
+    assert isinstance(patterns, list), report
+    for pattern in patterns:
+        if isinstance(pattern, dict) and pattern.get("ref") == ref:
+            return pattern
+    raise AssertionError(f"missing root pattern ref {ref!r}: {report!r}")
+
+
+def _has_root_pattern_consumer(
+    report: dict[str, Any],
+    *,
+    consumer_kind: str,
+    consumer_id: str,
+    pattern_ref: str,
+) -> bool:
+    consumers = report.get("root_pattern_consumers")
+    assert isinstance(consumers, list), report
+    return any(
+        isinstance(consumer, dict)
+        and consumer.get("consumer_kind") == consumer_kind
+        and consumer.get("consumer_id") == consumer_id
+        and consumer.get("pattern_ref") == pattern_ref
+        for consumer in consumers
+    )
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
 @pytest.mark.parametrize(
     ("lane_id", "base_lane"),
@@ -221,6 +248,97 @@ def test_mandelbrot_root_trap_root_phase_source_runtime_actions_change_frame(
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
+def test_magnet_root_well_pattern_bank_routes_dynamics_and_color_rows_no_mouse(
+    tmp_path: Path,
+) -> None:
+    exe_path = active_runtime_exe()
+    lane_id = "explaino_magnet_root_well"
+    state = _state_for_lane(exe_path, lane_id)
+    params = state["params"]
+    assert isinstance(params, dict), state
+    params["explaino_generated_root_layout"] = "regular_ngon_v1"
+    params["explaino_generated_root_count"] = 11
+    params["explaino_secondary_root_pattern_layout"] = "legacy_quartic_v1"
+    params["explaino_secondary_root_pattern_count"] = 4
+    params["explaino_root_field_pattern_ref"] = "primary"
+    params["explaino_root_field_trap_strength"] = 1.0
+    params["explaino_root_field_trap_scale"] = 1.5
+    params["coloring_mode"] = "smooth_escape"
+    params["color_signal"] = "root_proximity"
+    params["color_shape"] = "identity"
+    params["color_palette"] = "explaino_cmap"
+    params["color_grading"] = "escape_default"
+    params["color_source_stack"] = [
+        {
+            "signal": "root_proximity",
+            "proximity_scale": 1.0,
+            "proximity_bias": 0.0,
+            "root_pattern_ref": "secondary",
+            "blend_weight": 1.0,
+        }
+    ]
+    secondary_state_path = write_state_bundle(tmp_path / "magnet_root_patterns_secondary", state)
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=secondary_state_path,
+        report_path=tmp_path / "magnet_root_patterns_report.json",
+        command_path=tmp_path / "magnet_root_patterns_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        viewer.wait_for_control("fractal_control.explaino_root_field_pattern_ref.primary", timeout_seconds=30.0)
+        secondary = viewer.wait_for_report(timeout_seconds=60.0)
+        assert secondary.get("current_fractal_type") == lane_id, secondary
+        assert secondary.get("root_field_consumer_kind") == lane_id, secondary
+        assert secondary.get("root_field_consumer_root_count") == 11, secondary
+        assert secondary.get("root_field_consumer_root_layout_kind") == "regular_ngon_v1", secondary
+        assert _root_pattern(secondary, "primary").get("root_count") == 11, secondary
+        assert _root_pattern(secondary, "primary").get("layout_kind") == "regular_ngon_v1", secondary
+        assert _root_pattern(secondary, "secondary").get("root_count") == 4, secondary
+        assert _root_pattern(secondary, "secondary").get("layout_kind") == "legacy_quartic_v1", secondary
+        assert _has_root_pattern_consumer(
+            secondary,
+            consumer_kind="root_field_consumer",
+            consumer_id=lane_id,
+            pattern_ref="primary",
+        ), secondary
+        assert _has_root_pattern_consumer(
+            secondary,
+            consumer_kind="color_source_row",
+            consumer_id="root_proximity",
+            pattern_ref="secondary",
+        ), secondary
+        secondary_hash = _require_frame_hash(secondary)
+
+        primary_state = json.loads(json.dumps(state))
+        primary_params = primary_state["params"]
+        assert isinstance(primary_params, dict), primary_state
+        source_rows = primary_params["color_source_stack"]
+        assert isinstance(source_rows, list), primary_params
+        source_rows[0]["root_pattern_ref"] = "primary"
+        primary_state_path = write_state_bundle(tmp_path / "magnet_root_patterns_primary", primary_state)
+        primary = viewer.load_state_json(
+            primary_state_path,
+            expected_fractal_type=lane_id,
+            timeout_seconds=60.0,
+        )
+        assert primary.get("root_field_consumer_root_count") == 11, primary
+        assert _has_root_pattern_consumer(
+            primary,
+            consumer_kind="root_field_consumer",
+            consumer_id=lane_id,
+            pattern_ref="primary",
+        ), primary
+        assert _has_root_pattern_consumer(
+            primary,
+            consumer_kind="color_source_row",
+            consumer_id="root_proximity",
+            pattern_ref="primary",
+        ), primary
+        assert _require_frame_hash(primary) != secondary_hash, primary
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
 @pytest.mark.parametrize(
     ("lane_id", "base_lane"),
     [
@@ -237,8 +355,24 @@ def test_root_field_consumer_capture_finding_sidecar_and_replay(
     state = _state_for_lane(exe_path, lane_id)
     state["params"]["explaino_generated_root_layout"] = "regular_ngon_v1"
     state["params"]["explaino_generated_root_count"] = 5
+    state["params"]["explaino_secondary_root_pattern_layout"] = "legacy_quartic_v1"
+    state["params"]["explaino_secondary_root_pattern_count"] = 4
+    state["params"]["explaino_root_field_pattern_ref"] = "primary"
     state["params"]["explaino_root_field_trap_strength"] = 1.0
     state["params"]["explaino_root_field_trap_scale"] = 1.75
+    state["params"]["coloring_mode"] = "smooth_escape"
+    state["params"]["color_signal"] = "root_proximity"
+    state["params"]["color_shape"] = "identity"
+    state["params"]["color_palette"] = "explaino_cmap"
+    state["params"]["color_source_stack"] = [
+        {
+            "signal": "root_proximity",
+            "proximity_scale": 1.0,
+            "proximity_bias": 0.0,
+            "root_pattern_ref": "secondary",
+            "blend_weight": 1.0,
+        }
+    ]
     state_path = write_state_bundle(tmp_path / f"{lane_id}_capture", state)
 
     group = f"pytest_root_field_consumer_{lane_id}_{tmp_path.name}"
@@ -298,6 +432,28 @@ def test_root_field_consumer_capture_finding_sidecar_and_replay(
     assert consumer.get("trap_scale") == pytest.approx(1.75), consumer
     assert isinstance(consumer.get("base_root_hash"), str), consumer
     assert isinstance(consumer.get("effective_root_hash"), str), consumer
+    patterns = derived.get("root_patterns")
+    assert isinstance(patterns, list), derived
+    pattern_by_ref = {pattern.get("ref"): pattern for pattern in patterns if isinstance(pattern, dict)}
+    assert pattern_by_ref["primary"].get("root_count") == 5, patterns
+    assert pattern_by_ref["primary"].get("layout_kind") == "regular_ngon_v1", patterns
+    assert pattern_by_ref["secondary"].get("root_count") == 4, patterns
+    assert pattern_by_ref["secondary"].get("layout_kind") == "legacy_quartic_v1", patterns
+    pattern_consumers = derived.get("root_pattern_consumers")
+    assert isinstance(pattern_consumers, list), derived
+    assert any(
+        isinstance(item, dict)
+        and item.get("consumer_kind") == "root_field_consumer"
+        and item.get("pattern_ref") == "primary"
+        for item in pattern_consumers
+    ), pattern_consumers
+    assert any(
+        isinstance(item, dict)
+        and item.get("consumer_kind") == "color_source_row"
+        and item.get("consumer_id") == "root_proximity"
+        and item.get("pattern_ref") == "secondary"
+        for item in pattern_consumers
+    ), pattern_consumers
 
     replay_a = run_headless_capture(
         str(exe_path),

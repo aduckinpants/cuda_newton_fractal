@@ -1794,6 +1794,45 @@ int main() {
             std::cerr << "Generated regular N-gon root-field consumer distance should use ViewState phase authority\n";
             return 1;
         }
+
+        KernelParams patternParams{};
+        patternParams.explaino_root_authority = ExplainoRootAuthority::generated;
+        patternParams.explaino_generated_root_layout = ExplainoGeneratedRootLayout::regular_ngon_v1;
+        patternParams.explaino_generated_root_count = 11;
+        patternParams.explaino_secondary_root_pattern_layout = ExplainoGeneratedRootLayout::legacy_quartic_v1;
+        patternParams.explaino_secondary_root_pattern_count = 4;
+        patternParams.explaino_root_count = 4;
+        patternParams.explaino_roots[0] = {1.0f, 0.0f};
+        patternParams.explaino_roots[1] = {0.0f, 1.0f};
+        patternParams.explaino_roots[2] = {-1.0f, 0.0f};
+        patternParams.explaino_roots[3] = {0.0f, -1.0f};
+        ViewState patternView{};
+        patternView.fractal_type = FractalType::explaino_magnet_root_well;
+        patternView.explaino_phase = 0.0f;
+        ColorPipelineSourceRuntimeParams primarySource{};
+        primarySource.root_pattern_ref = ExplainoRootPatternRef::primary;
+        primarySource.proximity_scale = 1.0f;
+        primarySource.proximity_bias = 0.0f;
+        primarySource.phase_offset = 0.0f;
+        primarySource.wrap_cycles = 1.0f;
+        ColorPipelineSourceRuntimeParams secondarySource = primarySource;
+        secondarySource.root_pattern_ref = ExplainoRootPatternRef::secondary;
+        const float primaryPhase = ResolveRootPhaseSignal(
+            FractalType::explaino_magnet_root_well,
+            TestComplex{0.55f, 0.7f},
+            patternParams,
+            &patternView,
+            primarySource);
+        const float secondaryPhase = ResolveRootPhaseSignal(
+            FractalType::explaino_magnet_root_well,
+            TestComplex{0.55f, 0.7f},
+            patternParams,
+            &patternView,
+            secondarySource);
+        if (NearlyEqual(primaryPhase, secondaryPhase, 1.0e-5f)) {
+            std::cerr << "root_phase should honor per-row primary versus secondary root pattern refs\n";
+            return 1;
+        }
     }
 
     {

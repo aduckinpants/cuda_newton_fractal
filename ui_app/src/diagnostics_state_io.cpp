@@ -757,6 +757,7 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
     double stripePhase = entry.params.stripe_phase;
     double proximityScale = entry.params.proximity_scale;
     double proximityBias = entry.params.proximity_bias;
+    std::string rootPatternRefId = ExplainoRootPatternRefId(entry.params.root_pattern_ref);
     double sdfBoundaryWidthPx = entry.params.sdf_boundary_width_px;
     double lensFieldV2SignContrast = entry.params.lens_field_v2_sign_contrast;
     std::string sdfGateId = color_pipeline_core::ColorPipelineSdfGateModeId(entry.params.sdf_gate);
@@ -784,6 +785,11 @@ bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
         !GetOptionalNumber(entryValue, "sdf_sample_step", &sdfSampleStepRaw, &hasSdfSampleStep, outError) ||
         !GetOptionalNumber(entryValue, "sdf_field_downsample", &sdfFieldDownsampleRaw, &hasSdfFieldDownsample, outError) ||
         !GetOptionalNumber(entryValue, "blend_weight", &blendWeight, nullptr, outError)) {
+        return false;
+    }
+    if (TryGetOptionalString(entryValue, "root_pattern_ref", &rootPatternRefId) &&
+        !TryParseExplainoRootPatternRefId(rootPatternRefId, &entry.params.root_pattern_ref)) {
+        if (outError) *outError = std::string("Invalid color_source_stack root_pattern_ref id: ") + rootPatternRefId;
         return false;
     }
     if (TryGetOptionalString(entryValue, "sdf_gate", &sdfGateId) &&
@@ -2216,6 +2222,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     ExplainoRootAuthority explainoRootAuthority = nextParams.explaino_root_authority;
     ExplainoGeneratedRootLayout explainoGeneratedRootLayout = nextParams.explaino_generated_root_layout;
     int explainoGeneratedRootCount = nextParams.explaino_generated_root_count;
+    ExplainoGeneratedRootLayout explainoSecondaryRootPatternLayout = nextParams.explaino_secondary_root_pattern_layout;
+    int explainoSecondaryRootPatternCount = nextParams.explaino_secondary_root_pattern_count;
+    ExplainoRootPatternRef explainoRootFieldPatternRef = nextParams.explaino_root_field_pattern_ref;
     double explainoDamping = nextParams.explaino_damping;
     int explainoRootCount = 0;
     double explainoRootSdfRadius = nextParams.explaino_root_sdf_radius;
@@ -2308,6 +2317,28 @@ bool LoadDiagnosticsStateJson(const std::string& text,
                 return false;
             }
         }
+        if (const json_min::Value* secondaryRootPatternLayoutValue = paramsObject->get("explaino_secondary_root_pattern_layout")) {
+            if (!secondaryRootPatternLayoutValue->is_string()) {
+                if (outError) *outError = "Invalid explaino_secondary_root_pattern_layout field";
+                return false;
+            }
+            const std::string secondaryRootPatternLayoutId = secondaryRootPatternLayoutValue->as_string();
+            if (!TryParseExplainoGeneratedRootLayoutId(secondaryRootPatternLayoutId, &explainoSecondaryRootPatternLayout)) {
+                if (outError) *outError = "Unknown explaino_secondary_root_pattern_layout: " + secondaryRootPatternLayoutId;
+                return false;
+            }
+        }
+        if (const json_min::Value* rootFieldPatternRefValue = paramsObject->get("explaino_root_field_pattern_ref")) {
+            if (!rootFieldPatternRefValue->is_string()) {
+                if (outError) *outError = "Invalid explaino_root_field_pattern_ref field";
+                return false;
+            }
+            const std::string rootFieldPatternRefId = rootFieldPatternRefValue->as_string();
+            if (!TryParseExplainoRootPatternRefId(rootFieldPatternRefId, &explainoRootFieldPatternRef)) {
+                if (outError) *outError = "Unknown explaino_root_field_pattern_ref: " + rootFieldPatternRefId;
+                return false;
+            }
+        }
         if (const json_min::Value* rootSdfHSourceValue = paramsObject->get("explaino_root_sdf_h_source")) {
             if (!rootSdfHSourceValue->is_string()) {
                 if (outError) *outError = "Invalid explaino_root_sdf_h_source field";
@@ -2356,6 +2387,17 @@ bool LoadDiagnosticsStateJson(const std::string& text,
             return false;
         }
         explainoGeneratedRootCount = static_cast<int>(generatedRootCountValue->as_number());
+    }
+    if (const json_min::Value* secondaryRootPatternCountValue = paramsObject->get("explaino_secondary_root_pattern_count")) {
+        if (!secondaryRootPatternCountValue->is_number() ||
+            !std::isfinite(secondaryRootPatternCountValue->as_number()) ||
+            std::floor(secondaryRootPatternCountValue->as_number()) != secondaryRootPatternCountValue->as_number() ||
+            secondaryRootPatternCountValue->as_number() < 2.0 ||
+            secondaryRootPatternCountValue->as_number() > 16.0) {
+            if (outError) *outError = "Invalid explaino_secondary_root_pattern_count field";
+            return false;
+        }
+        explainoSecondaryRootPatternCount = static_cast<int>(secondaryRootPatternCountValue->as_number());
     }
     if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_radius", &explainoRootSdfRadius, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_root_sdf_bridge_width", &explainoRootSdfBridgeWidth, nullptr, outError)) return false;
@@ -2523,6 +2565,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_root_authority = explainoRootAuthority;
     nextParams.explaino_generated_root_layout = explainoGeneratedRootLayout;
     nextParams.explaino_generated_root_count = explainoGeneratedRootCount;
+    nextParams.explaino_secondary_root_pattern_layout = explainoSecondaryRootPatternLayout;
+    nextParams.explaino_secondary_root_pattern_count = explainoSecondaryRootPatternCount;
+    nextParams.explaino_root_field_pattern_ref = explainoRootFieldPatternRef;
     nextParams.explaino_damping = static_cast<float>(explainoDamping);
     nextParams.explaino_root_count = explainoRootCount;
     nextParams.explaino_root_sdf_radius = static_cast<float>(explainoRootSdfRadius);

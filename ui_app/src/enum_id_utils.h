@@ -82,6 +82,11 @@ inline constexpr EnumIdPair<ExplainoGeneratedRootLayout> kExplainoGeneratedRootL
     {ExplainoGeneratedRootLayout::regular_ngon_v1, "regular_ngon_v1"},
 };
 
+inline constexpr EnumIdPair<ExplainoRootPatternRef> kExplainoRootPatternRefIds[] = {
+    {ExplainoRootPatternRef::primary, "primary"},
+    {ExplainoRootPatternRef::secondary, "secondary"},
+};
+
 inline constexpr EnumIdPair<ExplainoRootSdfHSource> kExplainoRootSdfHSourceIds[] = {
     {ExplainoRootSdfHSource::none, "none"},
     {ExplainoRootSdfHSource::phase_sine, "phase_sine"},
@@ -294,6 +299,14 @@ inline bool TryParseExplainoGeneratedRootLayoutId(
     std::string_view id,
     ExplainoGeneratedRootLayout* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kExplainoGeneratedRootLayoutIds, outValue);
+}
+
+inline const char* ExplainoRootPatternRefId(ExplainoRootPatternRef value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kExplainoRootPatternRefIds);
+}
+
+inline bool TryParseExplainoRootPatternRefId(std::string_view id, ExplainoRootPatternRef* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kExplainoRootPatternRefIds, outValue);
 }
 
 inline const char* ExplainoRootSdfHSourceId(ExplainoRootSdfHSource value) {

@@ -481,7 +481,10 @@ UISchemaControl BuildExplainoGeneratedRootLayoutControl() {
         {"legacy_quartic_v1", "Legacy Quartic", ""},
         {"regular_ngon_v1", "Regular N-Gon", ""},
     };
-    SetVisibleForFractalType(&control, "explaino_root_sdf");
+    control.has_visible_if = true;
+    control.visible_if = MakeInVisibleIf(
+        "fractal.view.fractal_type",
+        "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well");
     return control;
 }
 
@@ -501,16 +504,73 @@ UISchemaControl BuildExplainoGeneratedRootCountControl() {
     return control;
 }
 
+UISchemaControl BuildExplainoSecondaryRootPatternLayoutControl() {
+    UISchemaControl control = MakeParamControl(
+        "explaino_secondary_root_pattern_layout",
+        "combo",
+        "Root Pattern B Layout",
+        "enum",
+        "fractal.params.explaino_secondary_root_pattern_layout",
+        json_min::Value{std::string("legacy_quartic_v1")});
+    control.options = {
+        {"legacy_quartic_v1", "Legacy Quartic", ""},
+        {"regular_ngon_v1", "Regular N-Gon", ""},
+    };
+    control.has_visible_if = true;
+    control.visible_if = MakeInVisibleIf(
+        "fractal.view.fractal_type",
+        "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well");
+    return control;
+}
+
+UISchemaControl BuildExplainoSecondaryRootPatternCountControl() {
+    UISchemaControl control = MakeRangedParamControl(
+        "explaino_secondary_root_pattern_count",
+        "slider_int",
+        "Root Pattern B Count",
+        "int",
+        2.0,
+        16.0,
+        1.0,
+        "fractal.params.explaino_secondary_root_pattern_count",
+        json_min::Value{4.0});
+    control.has_visible_if = true;
+    control.visible_if = MakeEqVisibleIf("fractal.params.explaino_secondary_root_pattern_count_active", "true");
+    return control;
+}
+
+UISchemaControl BuildExplainoRootFieldPatternRefControl() {
+    UISchemaControl control = MakeParamControl(
+        "explaino_root_field_pattern_ref",
+        "combo",
+        "Dynamics Root Pattern",
+        "enum",
+        "fractal.params.explaino_root_field_pattern_ref",
+        json_min::Value{std::string("primary")});
+    control.options = {
+        {"primary", "Pattern A", ""},
+        {"secondary", "Pattern B", ""},
+    };
+    control.has_visible_if = true;
+    control.visible_if = MakeInVisibleIf(
+        "fractal.view.fractal_type",
+        "explaino_mandelbrot_root_trap,explaino_magnet_root_well");
+    return control;
+}
+
 std::vector<UISchemaControl> BuildExplainoRootSdfControls() {
     return {
         BuildExplainoGeneratedRootLayoutControl(),
         BuildExplainoGeneratedRootCountControl(),
+        BuildExplainoSecondaryRootPatternLayoutControl(),
+        BuildExplainoSecondaryRootPatternCountControl(),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_radius", "Root SDF Radius", "fractal.params.explaino_root_sdf_radius", 0.001, 2.0, 0.01, 0.6, 0.001, 0.14),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_bridge_width", "Bridge Width", "fractal.params.explaino_root_sdf_bridge_width", 0.0, 2.0, 0.0, 0.4, 0.001, 0.06),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_smooth_blend", "SDF Smooth Blend", "fractal.params.explaino_root_sdf_smooth_blend", 0.0, 2.0, 0.0, 0.5, 0.001, 0.10),
         BuildExplainoRootSdfHSourceControl(),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_h_amplitude", "Root h Amplitude", "fractal.params.explaino_root_sdf_h_amplitude", 0.0, 1.0, 0.0, 0.35, 0.001, 0.0),
         BuildExplainoRootSdfFloatControl("explaino_root_sdf_h_frequency", "Root h Frequency", "fractal.params.explaino_root_sdf_h_frequency", 0.1, 16.0, 0.25, 4.0, 0.01, 1.0),
+        BuildExplainoRootFieldPatternRefControl(),
     };
 }
 

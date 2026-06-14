@@ -200,6 +200,19 @@ inline FunctionParamDescriptor MakeColorPipelineSourceBlendWeightParam() {
         1.0);
 }
 
+inline std::vector<UISchemaOption> ColorPipelineRootPatternRefOptions() {
+    return {{"primary", "Pattern A", ""}, {"secondary", "Pattern B", ""}};
+}
+
+inline FunctionParamDescriptor MakeColorPipelineRootPatternRefParam() {
+    return MakeColorPipelineEnumParam(
+        "signal.root_pattern_ref",
+        "Root Pattern",
+        "Choose which ExplainO root pattern this root-aware Source row samples.",
+        ColorPipelineRootPatternRefOptions(),
+        "primary");
+}
+
 inline const char* ColorPipelineSdfGateModeId(ColorPipelineSdfGateMode value) {
     switch (value) {
     case ColorPipelineSdfGateMode::none:
@@ -668,6 +681,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineFloatParam("signal.proximity_scale", "Proximity Scale", "Control how quickly root proximity falls off away from a root.", 0.25, 8.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.proximity_bias", "Proximity Bias", "Shift the root-proximity source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineRootPatternRefParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -678,6 +692,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineFloatParam("signal.phase_offset", "Phase Offset", "Rotate the root-phase signal before downstream palette work.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
                 MakeColorPipelineFloatParam("signal.wrap_cycles", "Wrap Cycles", "Control how many hue cycles appear across one full root-relative rotation.", 0.5, 6.0, 0.01, 1.0),
+                MakeColorPipelineRootPatternRefParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
@@ -2333,8 +2348,18 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
             SetColorPipelineParamNumber(ioRow, "grade.accent_bias", NormalizeImportedColorPipelineNumber(liveParams.color_accent_bias), outError);
     }
     if (ioRow->function_id == "phase_orbit" || ioRow->function_id == "root_phase") {
-        return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", liveParams.color_phase_wrap_cycles, outError);
+        if (!SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) ||
+            !SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", liveParams.color_phase_wrap_cycles, outError)) {
+            return false;
+        }
+        if (ioRow->function_id == "root_phase") {
+            return SetColorPipelineParamEnum(
+                ioRow,
+                "signal.root_pattern_ref",
+                ExplainoRootPatternRefId(liveParams.explaino_root_field_pattern_ref),
+                outError);
+        }
+        return true;
     }
     if (ioRow->function_id == "escape_magnitude") {
         return SetColorPipelineParamNumber(ioRow, "signal.magnitude_scale", liveParams.color_escape_magnitude_scale, outError) &&
@@ -2346,7 +2371,12 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
     }
     if (ioRow->function_id == "root_proximity") {
         return SetColorPipelineParamNumber(ioRow, "signal.proximity_scale", liveParams.color_root_proximity_scale, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", liveParams.color_root_proximity_bias, outError);
+            SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", liveParams.color_root_proximity_bias, outError) &&
+            SetColorPipelineParamEnum(
+                ioRow,
+                "signal.root_pattern_ref",
+                ExplainoRootPatternRefId(liveParams.explaino_root_field_pattern_ref),
+                outError);
     }
     if (ioRow->function_id == "sdf_signed_distance" ||
         ioRow->function_id == "sdf_inside_outside" ||
@@ -2789,6 +2819,18 @@ inline bool ApplySupportedColorPipelineRowParamsToLive(
         }
         assignFloat(&ioParams->color_phase_signal_offset, static_cast<float>(phaseOffset));
         assignFloat(&ioParams->color_phase_wrap_cycles, static_cast<float>(wrapCycles));
+        if (row.function_id == "root_phase") {
+            std::string patternRefId;
+            ExplainoRootPatternRef patternRef{};
+            if (!TryGetColorPipelineParamEnum(row, "signal.root_pattern_ref", &patternRefId, outError) ||
+                !TryParseExplainoRootPatternRefId(patternRefId, &patternRef)) {
+                if (outError && outError->empty()) {
+                    *outError = "Invalid root_phase signal.root_pattern_ref";
+                }
+                return false;
+            }
+            ioParams->explaino_root_field_pattern_ref = patternRef;
+        }
     } else if (row.function_id == "escape_magnitude") {
         double magnitudeScale = 0.0;
         double magnitudeBias = 0.0;
@@ -2814,14 +2856,22 @@ inline bool ApplySupportedColorPipelineRowParamsToLive(
     } else if (row.function_id == "root_proximity") {
         double proximityScale = 0.0;
         double proximityBias = 0.0;
+        std::string patternRefId;
+        ExplainoRootPatternRef patternRef{};
         if (!TryGetColorPipelineParamNumber(row, "signal.proximity_scale", &proximityScale, outError) ||
             !TryGetColorPipelineParamNumber(row, "signal.proximity_bias", &proximityBias, outError) ||
+            !TryGetColorPipelineParamEnum(row, "signal.root_pattern_ref", &patternRefId, outError) ||
             !ValidateColorPipelineParamRange("signal.proximity_scale", proximityScale, 0.25, 8.0, outError) ||
-            !ValidateColorPipelineParamRange("signal.proximity_bias", proximityBias, -1.0, 1.0, outError)) {
+            !ValidateColorPipelineParamRange("signal.proximity_bias", proximityBias, -1.0, 1.0, outError) ||
+            !TryParseExplainoRootPatternRefId(patternRefId, &patternRef)) {
+            if (outError && outError->empty()) {
+                *outError = "Invalid root_proximity signal.root_pattern_ref";
+            }
             return false;
         }
         assignFloat(&ioParams->color_root_proximity_scale, static_cast<float>(proximityScale));
         assignFloat(&ioParams->color_root_proximity_bias, static_cast<float>(proximityBias));
+        ioParams->explaino_root_field_pattern_ref = patternRef;
     } else if (row.function_id == "phase_wheel_palette") {
         double paletteOffset = 0.0;
         if (!TryGetColorPipelineParamNumber(row, "palette.phase_offset", &paletteOffset, outError) ||

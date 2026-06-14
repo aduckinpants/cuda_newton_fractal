@@ -188,6 +188,56 @@ void WriteLensSdfReportFields(
         WriteAutomationReportString(out, lensSdfProbe.root_field_consumer_fail_closed_reason);
     }
     out << ",\n";
+    out << "  \"root_patterns\": [";
+    for (std::size_t index = 0; index < lensSdfProbe.root_patterns.size(); ++index) {
+        const ViewerUiAutomationRootPatternProbe& pattern = lensSdfProbe.root_patterns[index];
+        if (index > 0) {
+            out << ", ";
+        }
+        out << "{";
+        out << "\"ref\": ";
+        WriteAutomationReportString(out, pattern.ref);
+        out << ", \"layout_kind\": ";
+        WriteAutomationReportString(out, pattern.layout_kind);
+        out << ", \"source_kind\": ";
+        WriteAutomationReportString(out, pattern.source_kind);
+        out << ", \"root_count\": " << pattern.root_count;
+        out << ", \"requested_generated_root_count\": " << pattern.requested_generated_root_count;
+        out << ", \"base_root_hash\": ";
+        WriteHashOrNull(out, pattern.base_root_hash);
+        out << ", \"effective_root_hash\": ";
+        WriteHashOrNull(out, pattern.effective_root_hash);
+        out << ", \"fail_closed_reason\": ";
+        if (pattern.fail_closed_reason.empty()) {
+            out << "null";
+        } else {
+            WriteAutomationReportString(out, pattern.fail_closed_reason);
+        }
+        out << "}";
+    }
+    out << "],\n";
+    out << "  \"root_pattern_consumers\": [";
+    for (std::size_t index = 0; index < lensSdfProbe.root_pattern_consumers.size(); ++index) {
+        const ViewerUiAutomationRootPatternConsumerProbe& consumer = lensSdfProbe.root_pattern_consumers[index];
+        if (index > 0) {
+            out << ", ";
+        }
+        out << "{";
+        out << "\"consumer_kind\": ";
+        WriteAutomationReportString(out, consumer.consumer_kind);
+        out << ", \"consumer_id\": ";
+        WriteAutomationReportString(out, consumer.consumer_id);
+        out << ", \"pattern_ref\": ";
+        WriteAutomationReportString(out, consumer.pattern_ref);
+        out << ", \"fail_closed_reason\": ";
+        if (consumer.fail_closed_reason.empty()) {
+            out << "null";
+        } else {
+            WriteAutomationReportString(out, consumer.fail_closed_reason);
+        }
+        out << "}";
+    }
+    out << "],\n";
     out << "  \"explaino_root_sdf_root_count\": " << lensSdfProbe.explaino_root_sdf_root_count << ",\n";
     out << "  \"explaino_root_sdf_bridge_count\": " << lensSdfProbe.explaino_root_sdf_bridge_count << ",\n";
     out << "  \"explaino_root_sdf_root_layout_kind\": ";

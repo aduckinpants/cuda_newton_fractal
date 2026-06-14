@@ -1623,8 +1623,18 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
             SetColorPipelineParamEnum(ioRow, "signal.sdf_field_downsample", fieldDownsampleId.c_str(), outError);
     }
     if (ioRow->function_id == "phase_orbit" || ioRow->function_id == "root_phase") {
-        return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", sourceEntry.params.phase_offset, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", sourceEntry.params.wrap_cycles, outError);
+        if (!SetColorPipelineParamNumber(ioRow, "signal.phase_offset", sourceEntry.params.phase_offset, outError) ||
+            !SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", sourceEntry.params.wrap_cycles, outError)) {
+            return false;
+        }
+        if (ioRow->function_id == "root_phase") {
+            return SetColorPipelineParamEnum(
+                ioRow,
+                "signal.root_pattern_ref",
+                ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref),
+                outError);
+        }
+        return true;
     }
     if (ioRow->function_id == "banded_signal") {
         return SetColorPipelineParamNumber(ioRow, "signal.band_count", static_cast<double>(sourceEntry.params.band_count), outError) &&
@@ -1640,7 +1650,12 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
     }
     if (ioRow->function_id == "root_proximity") {
         return SetColorPipelineParamNumber(ioRow, "signal.proximity_scale", sourceEntry.params.proximity_scale, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", sourceEntry.params.proximity_bias, outError);
+            SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", sourceEntry.params.proximity_bias, outError) &&
+            SetColorPipelineParamEnum(
+                ioRow,
+                "signal.root_pattern_ref",
+                ExplainoRootPatternRefId(sourceEntry.params.root_pattern_ref),
+                outError);
     }
     return true;
 }
@@ -1930,6 +1945,18 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
         }
         entry.params.phase_offset = static_cast<float>(phaseOffset);
         entry.params.wrap_cycles = static_cast<float>(wrapCycles);
+        if (row.function_id == "root_phase") {
+            std::string patternRefId;
+            ExplainoRootPatternRef patternRef{};
+            if (!TryGetColorPipelineParamEnum(row, "signal.root_pattern_ref", &patternRefId, outError) ||
+                !TryParseExplainoRootPatternRefId(patternRefId, &patternRef)) {
+                if (outError && outError->empty()) {
+                    *outError = "Invalid root_phase signal.root_pattern_ref";
+                }
+                return false;
+            }
+            entry.params.root_pattern_ref = patternRef;
+        }
     } else if (row.function_id == "banded_signal") {
         int bandCount = 0;
         double softness = 0.0;
@@ -1966,14 +1993,22 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
     } else if (row.function_id == "root_proximity") {
         double proximityScale = 0.0;
         double proximityBias = 0.0;
+        std::string patternRefId;
+        ExplainoRootPatternRef patternRef{};
         if (!TryGetColorPipelineParamNumber(row, "signal.proximity_scale", &proximityScale, outError) ||
             !TryGetColorPipelineParamNumber(row, "signal.proximity_bias", &proximityBias, outError) ||
+            !TryGetColorPipelineParamEnum(row, "signal.root_pattern_ref", &patternRefId, outError) ||
             !ValidateColorPipelineParamRange("signal.proximity_scale", proximityScale, 0.25, 8.0, outError) ||
-            !ValidateColorPipelineParamRange("signal.proximity_bias", proximityBias, -1.0, 1.0, outError)) {
+            !ValidateColorPipelineParamRange("signal.proximity_bias", proximityBias, -1.0, 1.0, outError) ||
+            !TryParseExplainoRootPatternRefId(patternRefId, &patternRef)) {
+            if (outError && outError->empty()) {
+                *outError = "Invalid root_proximity signal.root_pattern_ref";
+            }
             return false;
         }
         entry.params.proximity_scale = static_cast<float>(proximityScale);
         entry.params.proximity_bias = static_cast<float>(proximityBias);
+        entry.params.root_pattern_ref = patternRef;
     }
 
     *outEntry = entry;

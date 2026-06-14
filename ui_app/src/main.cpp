@@ -633,6 +633,81 @@ static void PublishSdfFieldCapability(
     }
 }
 
+static ViewerUiAutomationRootPatternProbe BuildRootPatternProbe(
+    const char* refId,
+    const ViewState& view,
+    const KernelParams& params,
+    ExplainoRootPatternRef patternRef) {
+    ViewerUiAutomationRootPatternProbe pattern{};
+    pattern.ref = refId ? refId : "primary";
+    pattern.requested_generated_root_count = patternRef == ExplainoRootPatternRef::secondary
+        ? params.explaino_secondary_root_pattern_count
+        : params.explaino_generated_root_count;
+    ExplainoRootFieldDescriptor descriptor{};
+    std::string error;
+    if (ResolveExplainoRootPatternDescriptor(view, params, patternRef, &descriptor, &error)) {
+        pattern.root_count = descriptor.active_count;
+        pattern.layout_kind = ExplainoRootFieldLayoutKindId(descriptor.layout_kind)
+            ? ExplainoRootFieldLayoutKindId(descriptor.layout_kind)
+            : "none";
+        pattern.source_kind = ExplainoRootFieldSourceKindId(descriptor.source_kind)
+            ? ExplainoRootFieldSourceKindId(descriptor.source_kind)
+            : "none";
+        pattern.base_root_hash = descriptor.base_root_hash;
+        pattern.effective_root_hash = descriptor.effective_root_hash;
+    } else {
+        pattern.fail_closed_reason = error.empty() ? "root_pattern_descriptor_resolution_failed" : error;
+    }
+    return pattern;
+}
+
+static void PublishRootPatternProbe(
+    ViewerUiAutomationLensSdfProbe& probe,
+    const ViewState& view,
+    const KernelParams& params) {
+    probe.root_patterns.clear();
+    probe.root_pattern_consumers.clear();
+    if (!UsesExplainoRootLayoutAuthority(view.fractal_type)) {
+        return;
+    }
+
+    probe.root_patterns.push_back(BuildRootPatternProbe(
+        "primary",
+        view,
+        params,
+        ExplainoRootPatternRef::primary));
+    probe.root_patterns.push_back(BuildRootPatternProbe(
+        "secondary",
+        view,
+        params,
+        ExplainoRootPatternRef::secondary));
+
+    if (IsRootFieldConsumerFractal(view.fractal_type)) {
+        ViewerUiAutomationRootPatternConsumerProbe consumer{};
+        consumer.consumer_kind = "root_field_consumer";
+        consumer.consumer_id = FractalTypeId(view.fractal_type) ? FractalTypeId(view.fractal_type) : "unknown";
+        consumer.pattern_ref = ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref)
+            ? ExplainoRootPatternRefId(params.explaino_root_field_pattern_ref)
+            : "primary";
+        probe.root_pattern_consumers.push_back(consumer);
+    }
+
+    const int sourceStackCount = ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count);
+    for (int index = 0; index < sourceStackCount; ++index) {
+        const ColorPipelineSourceStackEntry& row = params.color_source_stack[index];
+        if (row.signal != ColorSignal::root_phase && row.signal != ColorSignal::root_proximity) {
+            continue;
+        }
+        ViewerUiAutomationRootPatternConsumerProbe consumer{};
+        consumer.consumer_kind = "color_source_row";
+        consumer.consumer_id = ColorSignalId(row.signal) ? ColorSignalId(row.signal) : "unknown";
+        consumer.pattern_ref = ExplainoRootPatternRefId(row.params.root_pattern_ref)
+            ? ExplainoRootPatternRefId(row.params.root_pattern_ref)
+            : "primary";
+        probe.root_pattern_consumers.push_back(consumer);
+    }
+}
+
 static bool FractalTypeCanEmitRendererColorSourceSignals(FractalType fractalType) {
     return fractalType != FractalType::generic_equation_pack &&
         fractalType != FractalType::sdf_pack_scene &&
@@ -1335,6 +1410,7 @@ static void DispatchRenderFrame(
     if (UsesExplainoRootLayoutAuthority(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);
     }
+    PublishRootPatternProbe(lensSdfProbe, view, params);
     if (IsRootFieldConsumerFractal(view.fractal_type)) {
         lensSdfProbe.root_field_consumer_active = true;
         lensSdfProbe.root_field_consumer_kind = FractalTypeId(view.fractal_type)

@@ -559,6 +559,31 @@ bool SetProjectionAndFlowRootFamily(BindingContext* ctx, const std::string& id) 
     return true;
 }
 
+bool SetExplainoPatternBankEnum(BindingContext* ctx, const std::string& path, const std::string& id) {
+    if (!ctx || !ctx->params) {
+        return false;
+    }
+    if (path == "fractal.params.explaino_generated_root_layout") {
+        return ParseAndAssignEnumId(
+            id,
+            &ctx->params->explaino_generated_root_layout,
+            TryParseExplainoGeneratedRootLayoutId);
+    }
+    if (path == "fractal.params.explaino_secondary_root_pattern_layout") {
+        return ParseAndAssignEnumId(
+            id,
+            &ctx->params->explaino_secondary_root_pattern_layout,
+            TryParseExplainoGeneratedRootLayoutId);
+    }
+    if (path == "fractal.params.explaino_root_field_pattern_ref") {
+        return ParseAndAssignEnumId(
+            id,
+            &ctx->params->explaino_root_field_pattern_ref,
+            TryParseExplainoRootPatternRefId);
+    }
+    return false;
+}
+
 bool SetColoringMode(BindingContext* ctx, const std::string& id) {
     if (!ctx || !ctx->params) {
         return false;
@@ -938,6 +963,12 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.explaino_generated_root_layout") {
         return EnumIdOrEmpty(ExplainoGeneratedRootLayoutId(params->explaino_generated_root_layout));
     }
+    if (params && path == "fractal.params.explaino_secondary_root_pattern_layout") {
+        return EnumIdOrEmpty(ExplainoGeneratedRootLayoutId(params->explaino_secondary_root_pattern_layout));
+    }
+    if (params && path == "fractal.params.explaino_root_field_pattern_ref") {
+        return EnumIdOrEmpty(ExplainoRootPatternRefId(params->explaino_root_field_pattern_ref));
+    }
     if (params && path == "fractal.params.explaino_root_sdf_h_source") {
         return EnumIdOrEmpty(ExplainoRootSdfHSourceId(params->explaino_root_sdf_h_source));
     }
@@ -1010,8 +1041,8 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     if (params && path == "fractal.params.explaino_root_authority") {
         return SetExplainoRootAuthority(this, id);
     }
-    if (params && path == "fractal.params.explaino_generated_root_layout") {
-        return ParseAndAssignEnumId(id, &params->explaino_generated_root_layout, TryParseExplainoGeneratedRootLayoutId);
+    if (SetExplainoPatternBankEnum(this, path, id)) {
+        return true;
     }
     if (params && path == "fractal.params.explaino_root_sdf_h_source") {
         return ParseAndAssignEnumId(id, &params->explaino_root_sdf_h_source, TryParseExplainoRootSdfHSourceId);
@@ -1078,6 +1109,14 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
              IsRootFieldConsumerFractal(view->fractal_type)) &&
             params->explaino_root_authority == ExplainoRootAuthority::generated &&
             params->explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1;
+        return true;
+    }
+    if (path == "fractal.params.explaino_secondary_root_pattern_count_active") {
+        out = view && params &&
+            (view->fractal_type == FractalType::explaino_root_sdf ||
+             IsRootFieldConsumerFractal(view->fractal_type)) &&
+            params->explaino_root_authority == ExplainoRootAuthority::generated &&
+            params->explaino_secondary_root_pattern_layout == ExplainoGeneratedRootLayout::regular_ngon_v1;
         return true;
     }
     if (path == "fractal.params.poly_coefficients_custom_active") {
@@ -1335,6 +1374,7 @@ bool BindingContext::BindInt(const std::string& path, int** outPtr) {
         if (path == "fractal.params.explaino_rational_escape_denominator_power") { *outPtr = &params->explaino_rational_escape_denominator_power; return true; }
         if (path == "fractal.params.explaino_root_count") { *outPtr = &params->explaino_root_count; return true; }
         if (path == "fractal.params.explaino_generated_root_count") { *outPtr = &params->explaino_generated_root_count; return true; }
+        if (path == "fractal.params.explaino_secondary_root_pattern_count") { *outPtr = &params->explaino_secondary_root_pattern_count; return true; }
         if (path == "fractal.params.mcmullen_m") { *outPtr = &params->mcmullen_m; return true; }
         if (path == "fractal.params.mcmullen_n") { *outPtr = &params->mcmullen_n; return true; }
     }

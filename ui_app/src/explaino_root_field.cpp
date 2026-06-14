@@ -131,9 +131,10 @@ bool TryParseExplainoRootFieldSourceKindId(const std::string& id, ExplainoRootFi
     return false;
 }
 
-bool ResolveExplainoRootFieldDescriptor(
+bool ResolveExplainoRootPatternDescriptor(
     const ViewState& view,
     const KernelParams& params,
+    ExplainoRootPatternRef patternRef,
     ExplainoRootFieldDescriptor* outDescriptor,
     std::string* outError) {
     if (!outDescriptor) {
@@ -146,10 +147,18 @@ bool ResolveExplainoRootFieldDescriptor(
         return true;
     }
 
+    const bool useSecondary = patternRef == ExplainoRootPatternRef::secondary;
+    const ExplainoGeneratedRootLayout generatedLayout = useSecondary
+        ? params.explaino_secondary_root_pattern_layout
+        : params.explaino_generated_root_layout;
+    const int generatedCount = useSecondary
+        ? params.explaino_secondary_root_pattern_count
+        : params.explaino_generated_root_count;
+
     if (params.explaino_root_authority == ExplainoRootAuthority::generated &&
         UsesExplainoRootLayoutAuthority(view.fractal_type) &&
-        params.explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1) {
-        const int count = params.explaino_generated_root_count;
+        generatedLayout == ExplainoGeneratedRootLayout::regular_ngon_v1) {
+        const int count = generatedCount;
         if (count < 2 || count > kExplainoRootFieldMaxRoots) {
             if (outError) *outError = "regular_ngon_v1 generated root count must be in [2, 16]";
             return false;
@@ -206,4 +215,17 @@ bool ResolveExplainoRootFieldDescriptor(
     outDescriptor->base_root_hash = HashRoots(outDescriptor->base_roots, outDescriptor->active_count);
     outDescriptor->effective_root_hash = HashRoots(outDescriptor->effective_roots, outDescriptor->active_count);
     return true;
+}
+
+bool ResolveExplainoRootFieldDescriptor(
+    const ViewState& view,
+    const KernelParams& params,
+    ExplainoRootFieldDescriptor* outDescriptor,
+    std::string* outError) {
+    return ResolveExplainoRootPatternDescriptor(
+        view,
+        params,
+        params.explaino_root_field_pattern_ref,
+        outDescriptor,
+        outError);
 }

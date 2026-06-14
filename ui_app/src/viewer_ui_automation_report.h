@@ -62,6 +62,24 @@ struct ViewerUiAutomationLensSdfFieldGroupProbe {
     float cache_store_ms = 0.0f;
 };
 
+struct ViewerUiAutomationRootPatternProbe {
+    std::string ref = "primary";
+    std::string layout_kind = "none";
+    std::string source_kind = "none";
+    int root_count = 0;
+    int requested_generated_root_count = 0;
+    std::uint64_t base_root_hash = 0;
+    std::uint64_t effective_root_hash = 0;
+    std::string fail_closed_reason;
+};
+
+struct ViewerUiAutomationRootPatternConsumerProbe {
+    std::string consumer_kind = "none";
+    std::string consumer_id = "none";
+    std::string pattern_ref = "primary";
+    std::string fail_closed_reason;
+};
+
 struct ViewerUiAutomationLensSdfProbe {
     bool enabled = false;
     bool valid = false;
@@ -86,6 +104,8 @@ struct ViewerUiAutomationLensSdfProbe {
     std::uint64_t root_field_consumer_base_root_hash = 0;
     std::uint64_t root_field_consumer_effective_root_hash = 0;
     std::string root_field_consumer_fail_closed_reason;
+    std::vector<ViewerUiAutomationRootPatternProbe> root_patterns;
+    std::vector<ViewerUiAutomationRootPatternConsumerProbe> root_pattern_consumers;
     int explaino_root_sdf_root_count = 0;
     int explaino_root_sdf_bridge_count = 0;
     std::string explaino_root_sdf_root_layout_kind = "none";

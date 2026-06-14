@@ -979,13 +979,21 @@ ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerDistance(
     Complex z,
     const KernelParams& params,
     const ViewState* view,
+    ExplainoRootPatternRef patternRef,
     float* outDistance) {
     float nearestDistanceSquared = 0.0f;
+    const bool useSecondary = patternRef == ExplainoRootPatternRef::secondary;
+    const ExplainoGeneratedRootLayout generatedLayout = useSecondary
+        ? params.explaino_secondary_root_pattern_layout
+        : params.explaino_generated_root_layout;
+    const int generatedCount = useSecondary
+        ? params.explaino_secondary_root_pattern_count
+        : params.explaino_generated_root_count;
     if (params.explaino_root_authority == ExplainoRootAuthority::generated &&
-        params.explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1 &&
-        params.explaino_generated_root_count >= 2 &&
-        params.explaino_generated_root_count <= 16) {
-        const int rootCount = params.explaino_generated_root_count;
+        generatedLayout == ExplainoGeneratedRootLayout::regular_ngon_v1 &&
+        generatedCount >= 2 &&
+        generatedCount <= 16) {
+        const int rootCount = generatedCount;
         const float radius = 0.85f + 0.95f * EscapeTimeColorClamp(params.explaino_root_spread, 0.0f, 1.0f);
         const float twoPi = 6.28318530717958647692f;
         const double seedCombined = params.explaino_seed + (view ? static_cast<double>(view->explaino_seed_drift) : 0.0);
@@ -1011,6 +1019,20 @@ ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerDistance(
         *outDistance = sqrtf(fmaxf(nearestDistanceSquared, 0.0f));
     }
     return true;
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerDistance(
+    Complex z,
+    const KernelParams& params,
+    const ViewState* view,
+    float* outDistance) {
+    return TryResolveRootFieldConsumerDistance(
+        z,
+        params,
+        view,
+        params.explaino_root_field_pattern_ref,
+        outDistance);
 }
 
 template <typename Complex>
@@ -1063,12 +1085,20 @@ ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerNearestRootPoint(
     Complex z,
     const KernelParams& params,
     const ViewState* view,
+    ExplainoRootPatternRef patternRef,
     Float2* outRoot) {
+    const bool useSecondary = patternRef == ExplainoRootPatternRef::secondary;
+    const ExplainoGeneratedRootLayout generatedLayout = useSecondary
+        ? params.explaino_secondary_root_pattern_layout
+        : params.explaino_generated_root_layout;
+    const int generatedCount = useSecondary
+        ? params.explaino_secondary_root_pattern_count
+        : params.explaino_generated_root_count;
     if (params.explaino_root_authority == ExplainoRootAuthority::generated &&
-        params.explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1 &&
-        params.explaino_generated_root_count >= 2 &&
-        params.explaino_generated_root_count <= 16) {
-        const int rootCount = params.explaino_generated_root_count;
+        generatedLayout == ExplainoGeneratedRootLayout::regular_ngon_v1 &&
+        generatedCount >= 2 &&
+        generatedCount <= 16) {
+        const int rootCount = generatedCount;
         const float radius = 0.85f + 0.95f * EscapeTimeColorClamp(params.explaino_root_spread, 0.0f, 1.0f);
         const float twoPi = 6.28318530717958647692f;
         const double seedCombined = params.explaino_seed + (view ? static_cast<double>(view->explaino_seed_drift) : 0.0);
@@ -1098,14 +1128,29 @@ ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerNearestRootPoint(
 }
 
 template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline bool TryResolveRootFieldConsumerNearestRootPoint(
+    Complex z,
+    const KernelParams& params,
+    const ViewState* view,
+    Float2* outRoot) {
+    return TryResolveRootFieldConsumerNearestRootPoint(
+        z,
+        params,
+        view,
+        params.explaino_root_field_pattern_ref,
+        outRoot);
+}
+
+template <typename Complex>
 ESCAPE_TIME_COLOR_HD inline bool TryResolveColorPipelineRootPhasePoint(
     FractalType fractalType,
     Complex z,
     const KernelParams& params,
     const ViewState* view,
+    ExplainoRootPatternRef patternRef,
     Float2* outRoot) {
     if (IsRootFieldConsumerFractal(fractalType)) {
-        return TryResolveRootFieldConsumerNearestRootPoint(z, params, view, outRoot);
+        return TryResolveRootFieldConsumerNearestRootPoint(z, params, view, patternRef, outRoot);
     }
     if (fractalType == FractalType::projection_and_flow) {
         const int projectionRootCount =
@@ -1126,6 +1171,22 @@ ESCAPE_TIME_COLOR_HD inline bool TryResolveColorPipelineRootPhasePoint(
 }
 
 template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline bool TryResolveColorPipelineRootPhasePoint(
+    FractalType fractalType,
+    Complex z,
+    const KernelParams& params,
+    const ViewState* view,
+    Float2* outRoot) {
+    return TryResolveColorPipelineRootPhasePoint(
+        fractalType,
+        z,
+        params,
+        view,
+        params.explaino_root_field_pattern_ref,
+        outRoot);
+}
+
+template <typename Complex>
 ESCAPE_TIME_COLOR_HD inline float ResolveRootPhaseSignal(
     FractalType fractalType,
     Complex z,
@@ -1133,7 +1194,7 @@ ESCAPE_TIME_COLOR_HD inline float ResolveRootPhaseSignal(
     const ViewState* view,
     const ColorPipelineSourceRuntimeParams& sourceParams) {
     Float2 root{0.0f, 0.0f};
-    if (!TryResolveColorPipelineRootPhasePoint(fractalType, z, params, view, &root)) {
+    if (!TryResolveColorPipelineRootPhasePoint(fractalType, z, params, view, sourceParams.root_pattern_ref, &root)) {
         return 0.0f;
     }
     const float angle = atan2f(static_cast<float>(z.y) - root.y, static_cast<float>(z.x) - root.x);
@@ -1176,7 +1237,7 @@ ESCAPE_TIME_COLOR_HD inline float ResolveRootFieldConsumerTrapSignal(
         sourceParams,
         params);
     float distance = 0.0f;
-    if (!TryResolveRootFieldConsumerDistance(z, params, view, &distance)) {
+    if (!TryResolveRootFieldConsumerDistance(z, params, view, sourceParams.root_pattern_ref, &distance)) {
         return baseSignal;
     }
     const float sourceScale = EscapeTimeColorClamp(sourceParams.proximity_scale, 0.25f, 8.0f);

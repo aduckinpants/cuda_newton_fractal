@@ -116,6 +116,11 @@ enum class ColorPipelineSdfGateMode : int {
     sdf_outside = 3,
 };
 
+enum class ExplainoRootPatternRef : int {
+    primary = 0,
+    secondary = 1,
+};
+
 struct ColorPipelineSourceRuntimeParams {
     float scale{1.0f};
     float bias{0.0f};
@@ -135,6 +140,7 @@ struct ColorPipelineSourceRuntimeParams {
     float sdf_gate_width_px{2.0f};
     int sdf_sample_step{1};
     int sdf_field_downsample{0};
+    ExplainoRootPatternRef root_pattern_ref{ExplainoRootPatternRef::primary};
     float blend_weight{1.0f};
 };
 
@@ -506,6 +512,10 @@ struct KernelParams {
     ExplainoGeneratedRootLayout explaino_generated_root_layout{
         ExplainoGeneratedRootLayout::legacy_quartic_v1};
     int explaino_generated_root_count{4};
+    ExplainoGeneratedRootLayout explaino_secondary_root_pattern_layout{
+        ExplainoGeneratedRootLayout::legacy_quartic_v1};
+    int explaino_secondary_root_pattern_count{4};
+    ExplainoRootPatternRef explaino_root_field_pattern_ref{ExplainoRootPatternRef::primary};
     float explaino_damping{1.0f};
     float explaino_cluster_radius{0.0f};
     int explaino_root_count{0};
