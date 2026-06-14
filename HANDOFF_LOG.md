@@ -170,3 +170,4 @@
 - `ck:cf40af71` 2026-06-14 04:20 UTC | score 93 — Root-field consumer variation authority proof: primary regular-N ExplainO variation and dual-consumer primary/secondary root refs are now covered by native renderer and published runtime rails.
 - `ck:76904bda` 2026-06-14 04:56 UTC — session-start | branch=codex/explaino-root-field-active-ux-repair | head=9648b7c | status=dirty | profile=runtime | intent=ExplainO Root-Field Active UX Repair
 - `ck:76904bda` 2026-06-14 06:14 UTC | score 93 — Closed ExplainO Root-Field Active UX Repair: hid Pattern B/Dynamics controls from normal Magnet Root Well flow, added Active Root Field report/sidecar alias, preserved secondary compatibility, and validated native plus published no-mouse runtime rails.
+- `ck:76904bda` 2026-06-14 06:52 UTC | score 93 — Follow-up contract repair for ExplainO Root-Field Active UX: escaped Windows build command paths in JSON so receipt preflight can match executable validation commands.
