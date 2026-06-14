@@ -26,7 +26,7 @@ Phase 6 - Implementation and focused proof are green; hostile audit, plan sync, 
 
 ## Scope Lock
 
-This hardening pass may change scoped root-pattern descriptors, schema/binding/report surfaces, root-aware Color Pipeline row routing, tests, and capture/replay sidecars required to prove divergent scoped authority. It must not add new fractal families, resume SDF work, add graph-editor UI, add arbitrary pattern banks, add custom N-root coordinate editing, or use physical mouse automation.
+This hardening pass may change scoped root-pattern descriptors, schema/binding/report surfaces, root-aware Color Pipeline row routing, tests, and capture/replay sidecars required to prove divergent scoped authority. It must not add new fractal families, return to SDF product work, add graph-editor UI, add arbitrary pattern banks, add custom N-root coordinate editing, or use physical mouse automation.
 
 ## Concrete Problem
 
