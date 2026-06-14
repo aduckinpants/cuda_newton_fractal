@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "contract_id": "root_field_consumer_variation_authority",
+  "feature_id": "root_field_consumer_variation_authority",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/root_field_consumer_variation_authority_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "continue from the closed ExplainO Pattern Bank V1 head",
+    "prove the root-field consumer product path receives generated-root variation authority",
+    "prove active primary root-aware rows react to generated N-gon seed/phase/spread variation",
+    "prove or document that root-field consumers and root-aware color rows are separate consumers",
+    "preserve Pattern Bank V1 primary/secondary behavior",
+    "prove explaino_magnet_root_well reacts to normal ExplainO seed/phase/spread controls with regular N roots when the active row points at primary",
+    "stop before a broader global root-pattern campaign"
+  ],
+  "forbidden_operator_prompts": [
+    "add unlimited pattern list",
+    "add graph editor",
+    "add arbitrary pattern algebra",
+    "add Pattern B custom coordinate editing",
+    "add root_index pattern refs",
+    "add extra root-metric source functions",
+    "add new fractal lanes",
+    "start SDF optimization work",
+    "change root-field consumer recurrence math",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/root-field-consumer-variation-authority",
+    "source_head": "3b7bbaf0fd560817389b5bd6992c75de490ccf3f",
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true,
+    "pattern_bank_v1_defaults_and_dual_consumer_model_preserved": true
+  },
+  "forbidden_defaults": {
+    "global_root_pattern_rewrite": "forbidden",
+    "graph_editor": "forbidden",
+    "new_fractal_lanes": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/root_field_consumer_variation_authority.contract.json --out-json artifacts/validation/root_field_consumer_variation_authority_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_field_consumer_variation_plan_sync --log artifacts/root_field_consumer_variation_authority/plan_sync.log -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/root_field_consumer_variation_authority_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/root_field_consumer_variation_authority_PHASED_PLAN.md --out-json artifacts/validation/root_field_consumer_variation_authority_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_field_consumer_variation_native --log artifacts/root_field_consumer_variation_authority/native.log -- cmd /c ui_app\\build_tests_vsdevcmd.cmd test_fractal_renderer test_escape_time_coloring",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_field_consumer_variation_runtime_publish --log artifacts/root_field_consumer_variation_authority/runtime_publish.log -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py -q --junitxml artifacts/pytest/root_field_consumer_variation_runtime.junit.xml",
+    "git diff --check > artifacts/root_field_consumer_variation_authority/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The root-field consumer variation authority contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_field_consumer_variation_authority_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_field_consumer_variation_authority_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "The code quality baseline report has no critical findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_field_consumer_variation_authority_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "code_quality_no_error",
+      "description": "The code quality baseline report has no error findings.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_field_consumer_variation_authority_code_quality.json",
+      "json_path": "severity_counts.ERROR",
+      "equals": 0
+    }
+  ]
+}

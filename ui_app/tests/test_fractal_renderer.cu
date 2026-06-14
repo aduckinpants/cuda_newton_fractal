@@ -379,6 +379,97 @@ void TestMagnetRenderRespondsToVisibleControls() {
     CheckMagnetControlChangesPixels("Magnet render should react to magnet_bailout changes", baselineParams, bailoutParams);
 }
 
+KernelParams BaseMagnetRootWellPatternParams(ExplainoRootPatternRef sourcePatternRef) {
+    KernelParams params = BaseMagnetParams();
+    params.max_iter = 120;
+    params.explaino_root_authority = ExplainoRootAuthority::generated;
+    params.explaino_generated_root_layout = ExplainoGeneratedRootLayout::regular_ngon_v1;
+    params.explaino_generated_root_count = 11;
+    params.explaino_secondary_root_pattern_layout = ExplainoGeneratedRootLayout::legacy_quartic_v1;
+    params.explaino_secondary_root_pattern_count = 4;
+    params.explaino_root_field_pattern_ref = ExplainoRootPatternRef::primary;
+    params.explaino_root_field_trap_strength = 1.0f;
+    params.explaino_root_field_trap_scale = 1.5f;
+    params.explaino_root_spread = 0.55f;
+    params.explaino_seed = 0.13;
+    params.color_pipeline = {ColorSignal::root_proximity, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+    params.color_source_stack_count = 1;
+    params.color_source_stack[0].signal = ColorSignal::root_proximity;
+    params.color_source_stack[0].params.root_pattern_ref = sourcePatternRef;
+    params.color_source_stack[0].params.proximity_scale = 1.0f;
+    params.color_source_stack[0].params.proximity_bias = 0.0f;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    return params;
+}
+
+bool RenderMagnetRootWellPatternPixels(
+    const KernelParams& params,
+    float explainoPhase,
+    std::vector<uint32_t>* outPixels,
+    RenderStats* outStats,
+    const char** outError) {
+    ViewState view{};
+    RenderSettings render{};
+    view.fractal_type = FractalType::explaino_magnet_root_well;
+    view.center_hp_x = -0.08;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 1.13750352375;
+    view.explaino_phase = explainoPhase;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    outPixels->assign(64 * 48, 0u);
+    return RenderFractalCUDA(view, params, render, outPixels->data(), nullptr, outStats, outError);
+}
+
+void TestMagnetRootWellRegularNgonVariationAuthority() {
+    const KernelParams primaryParams = BaseMagnetRootWellPatternParams(ExplainoRootPatternRef::primary);
+    std::vector<uint32_t> primaryPhaseA;
+    std::vector<uint32_t> primaryPhaseB;
+    RenderStats statsA{};
+    RenderStats statsB{};
+    const char* errorA = nullptr;
+    const char* errorB = nullptr;
+
+    const bool primaryAOk = RenderMagnetRootWellPatternPixels(primaryParams, 0.08f, &primaryPhaseA, &statsA, &errorA);
+    Check(primaryAOk, errorA ? errorA : "Magnet Root Well primary phase A render succeeds");
+    const bool primaryBOk = RenderMagnetRootWellPatternPixels(primaryParams, 0.42f, &primaryPhaseB, &statsB, &errorB);
+    Check(primaryBOk, errorB ? errorB : "Magnet Root Well primary phase B render succeeds");
+    if (primaryAOk && primaryBOk) {
+        Check(primaryPhaseA != primaryPhaseB,
+            "Magnet Root Well primary root_proximity row should react to regular-N ExplainO phase variation");
+    }
+    CleanupFractalCUDA();
+
+    const KernelParams secondaryParams = BaseMagnetRootWellPatternParams(ExplainoRootPatternRef::secondary);
+    std::vector<uint32_t> secondaryPhaseA;
+    std::vector<uint32_t> secondaryPhaseB;
+    RenderStats secondaryStatsA{};
+    RenderStats secondaryStatsB{};
+    const char* secondaryErrorA = nullptr;
+    const char* secondaryErrorB = nullptr;
+    const bool secondaryAOk = RenderMagnetRootWellPatternPixels(
+        secondaryParams,
+        0.08f,
+        &secondaryPhaseA,
+        &secondaryStatsA,
+        &secondaryErrorA);
+    Check(secondaryAOk, secondaryErrorA ? secondaryErrorA : "Magnet Root Well secondary phase A render succeeds");
+    const bool secondaryBOk = RenderMagnetRootWellPatternPixels(
+        secondaryParams,
+        0.42f,
+        &secondaryPhaseB,
+        &secondaryStatsB,
+        &secondaryErrorB);
+    Check(secondaryBOk, secondaryErrorB ? secondaryErrorB : "Magnet Root Well secondary phase B render succeeds");
+    if (secondaryAOk && secondaryBOk) {
+        Check(secondaryPhaseA == secondaryPhaseB,
+            "Magnet Root Well secondary legacy row should stay stable under phase-only changes when sampled directly");
+    }
+    CleanupFractalCUDA();
+}
+
 bool RenderJuliaPixels(
     const KernelParams& params,
     std::vector<uint32_t>* outPixels,
@@ -767,6 +858,7 @@ int main() {
     TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors();
     TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible();
     TestMagnetRenderRespondsToVisibleControls();
+    TestMagnetRootWellRegularNgonVariationAuthority();
     TestJuliaRenderRespondsToVisibleControls();
     TestNovaRenderRespondsToPolyC4();
     TestMultibrotRenderRespondsToRealAndImaginaryPower();

@@ -339,6 +339,141 @@ def test_magnet_root_well_pattern_bank_routes_dynamics_and_color_rows_no_mouse(
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
+def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
+    tmp_path: Path,
+) -> None:
+    exe_path = active_runtime_exe()
+    lane_id = "explaino_magnet_root_well"
+    state = _state_for_lane(exe_path, lane_id)
+
+    def configure_state(
+        source: dict[str, Any],
+        *,
+        seed: float,
+        phase: float,
+        spread: float,
+        source_pattern_ref: str,
+    ) -> dict[str, Any]:
+        configured = json.loads(json.dumps(source))
+        configured["fractal_type"] = lane_id
+        view = configured.setdefault("view", {})
+        assert isinstance(view, dict), configured
+        view["explaino_phase"] = phase
+        configured["explaino_phase"] = phase
+        params = configured.setdefault("params", {})
+        assert isinstance(params, dict), configured
+        params["explaino_root_authority"] = "generated"
+        params["explaino_generated_root_layout"] = "regular_ngon_v1"
+        params["explaino_generated_root_count"] = 11
+        params["explaino_secondary_root_pattern_layout"] = "legacy_quartic_v1"
+        params["explaino_secondary_root_pattern_count"] = 4
+        params["explaino_root_field_pattern_ref"] = "primary"
+        params["explaino_root_field_trap_strength"] = 1.0
+        params["explaino_root_field_trap_scale"] = 1.5
+        params["explaino_seed"] = seed
+        params["explaino_root_spread"] = spread
+        params["coloring_mode"] = "smooth_escape"
+        params["color_signal"] = "root_proximity"
+        params["color_shape"] = "identity"
+        params["color_palette"] = "explaino_cmap"
+        params["color_grading"] = "escape_default"
+        params["color_source_stack"] = [
+            {
+                "signal": "root_proximity",
+                "proximity_scale": 1.0,
+                "proximity_bias": 0.0,
+                "root_pattern_ref": source_pattern_ref,
+                "blend_weight": 1.0,
+            }
+        ]
+        return configured
+
+    primary_a_path = write_state_bundle(
+        tmp_path / "magnet_primary_ngon_a",
+        configure_state(state, seed=0.13, phase=0.08, spread=0.45, source_pattern_ref="primary"),
+    )
+    primary_b_path = write_state_bundle(
+        tmp_path / "magnet_primary_ngon_b",
+        configure_state(state, seed=0.57, phase=0.42, spread=0.92, source_pattern_ref="primary"),
+    )
+    secondary_a_path = write_state_bundle(
+        tmp_path / "magnet_secondary_legacy_a",
+        configure_state(state, seed=0.13, phase=0.08, spread=0.45, source_pattern_ref="secondary"),
+    )
+    secondary_b_path = write_state_bundle(
+        tmp_path / "magnet_secondary_legacy_b",
+        configure_state(state, seed=0.57, phase=0.42, spread=0.92, source_pattern_ref="secondary"),
+    )
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=primary_a_path,
+        report_path=tmp_path / "magnet_primary_ngon_report.json",
+        command_path=tmp_path / "magnet_primary_ngon_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        viewer.wait_for_control("fractal_control.explaino_generated_root_layout.primary", timeout_seconds=30.0)
+        primary_a = viewer.wait_for_report(timeout_seconds=60.0)
+        assert primary_a.get("current_fractal_type") == lane_id, primary_a
+        assert primary_a.get("root_field_consumer_root_layout_kind") == "regular_ngon_v1", primary_a
+        assert _has_root_pattern_consumer(
+            primary_a,
+            consumer_kind="color_source_row",
+            consumer_id="root_proximity",
+            pattern_ref="primary",
+        ), primary_a
+        primary_a_frame = _require_frame_hash(primary_a)
+        primary_a_root = _require_root_hash(primary_a)
+
+        primary_b = viewer.load_state_json(
+            primary_b_path,
+            expected_fractal_type=lane_id,
+            timeout_seconds=60.0,
+        )
+        assert _has_root_pattern_consumer(
+            primary_b,
+            consumer_kind="color_source_row",
+            consumer_id="root_proximity",
+            pattern_ref="primary",
+        ), primary_b
+        assert _require_root_hash(primary_b) != primary_a_root, primary_b
+        assert _require_frame_hash(primary_b) != primary_a_frame, primary_b
+
+        secondary_a = viewer.load_state_json(
+            secondary_a_path,
+            expected_fractal_type=lane_id,
+            timeout_seconds=60.0,
+        )
+        assert _has_root_pattern_consumer(
+            secondary_a,
+            consumer_kind="color_source_row",
+            consumer_id="root_proximity",
+            pattern_ref="secondary",
+        ), secondary_a
+        secondary_a_frame = _require_frame_hash(secondary_a)
+
+        secondary_b = viewer.load_state_json(
+            secondary_b_path,
+            expected_fractal_type=lane_id,
+            timeout_seconds=60.0,
+        )
+        assert _has_root_pattern_consumer(
+            secondary_b,
+            consumer_kind="color_source_row",
+            consumer_id="root_proximity",
+            pattern_ref="secondary",
+        ), secondary_b
+        assert _require_root_hash(secondary_b) != _require_root_hash(secondary_a), secondary_b
+        assert _has_root_pattern_consumer(
+            secondary_b,
+            consumer_kind="root_field_consumer",
+            consumer_id=lane_id,
+            pattern_ref="primary",
+        ), secondary_b
+        assert _require_frame_hash(secondary_b) != secondary_a_frame, secondary_b
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
 @pytest.mark.parametrize(
     ("lane_id", "base_lane"),
     [
