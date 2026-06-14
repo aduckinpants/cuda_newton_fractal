@@ -1269,6 +1269,27 @@ int main() {
             std::cerr << "Expected legacy root-pattern refs to load as scoped aliases\n";
             return 1;
         }
+        bool colorRootControlsActive = true;
+        if (!ctx.GetBoolValue("fractal.root_pattern.color.controls_active", colorRootControlsActive) ||
+            colorRootControlsActive) {
+            std::cerr << "Expected Color Root Field controls to hide until an active color source row consumes Color Root Field\n";
+            return 1;
+        }
+        params.color_source_stack_count = 1;
+        params.color_source_stack[0].signal = ColorSignal::root_proximity;
+        params.color_source_stack[0].params.root_pattern_ref = ExplainoRootPatternRef::secondary;
+        if (!ctx.GetBoolValue("fractal.root_pattern.color.controls_active", colorRootControlsActive) ||
+            !colorRootControlsActive) {
+            std::cerr << "Expected Color Root Field controls to show when root_proximity consumes Color Root Field\n";
+            return 1;
+        }
+        params.color_source_stack[0].params.root_pattern_ref = ExplainoRootPatternRef::primary;
+        if (!ctx.GetBoolValue("fractal.root_pattern.color.controls_active", colorRootControlsActive) ||
+            colorRootControlsActive) {
+            std::cerr << "Expected Color Root Field controls to hide when root-aware color rows consume Dynamics Root Field\n";
+            return 1;
+        }
+        params.color_source_stack[0].params.root_pattern_ref = ExplainoRootPatternRef::secondary;
         if (ctx.GetEnumId("fractal.params.explaino_secondary_root_pattern_layout") != "legacy_quartic_v1") {
             std::cerr << "Expected Color Root Field layout to default to legacy_quartic_v1\n";
             return 1;

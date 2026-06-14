@@ -185,3 +185,5 @@
 - `ck:df802f9f` 2026-06-14 20:14 UTC | score 9 — Rearward repair: removed stale resume phrase from scoped root-pattern hardening plan after rearward review flagged it.
 - `ck:9c1b1ddd` 2026-06-14 20:26 UTC — session-start | branch=codex/scoped-root-pattern-control-authority-repair | head=c433026 | status=dirty | profile=runtime | intent=Scoped root-pattern control authority repair
 - `ck:9c1b1ddd` 2026-06-14 20:52 UTC | score 9 — Scoped root-pattern control authority repair: removed stale unscoped animation targets from composite root-field lanes and added independent no-mouse sensitivity proof for Magnet Root Well visible controls.
+- `ck:eec1a0a1` 2026-06-14 21:05 UTC — session-start | branch=codex/scoped-color-root-control-authority-repair | head=3c99aa8 | status=dirty | profile=runtime | intent=Scoped Color Root control authority repair
+- `ck:eec1a0a1` 2026-06-14 21:25 UTC | score 9 — Scoped Color Root control authority repair: Color Root Field controls now appear only when an active root-aware Color Pipeline source row consumes color_root_field; inactive controls are hidden and active color-root sensitivity is proven.

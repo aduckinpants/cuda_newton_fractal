@@ -90,6 +90,22 @@ bool SchemaColorPipelineUsesSdfSource(const KernelParams& params) {
     return IsSchemaSdfSourceSignal(params.color_pipeline.signal);
 }
 
+bool IsSchemaRootAwareColorSignal(ColorSignal signal) {
+    return signal == ColorSignal::root_proximity || signal == ColorSignal::root_phase;
+}
+
+bool SchemaColorPipelineUsesColorRootField(const KernelParams& params) {
+    const int sourceStackCount = std::max(0, std::min(params.color_source_stack_count, kColorPipelineMaxSourceStackCount));
+    for (int index = 0; index < sourceStackCount; ++index) {
+        const ColorPipelineSourceStackEntry& row = params.color_source_stack[index];
+        if (IsSchemaRootAwareColorSignal(row.signal) &&
+            row.params.root_pattern_ref == ExplainoRootPatternRef::secondary) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool BindExplainoRootCoordinate(KernelParams& params, const std::string& path, float** outPtr) {
     if (path == "fractal.params.explaino_roots.0.x") { *outPtr = &params.explaino_roots[0].x; return true; }
     if (path == "fractal.params.explaino_roots.0.y") { *outPtr = &params.explaino_roots[0].y; return true; }
@@ -1118,11 +1134,17 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
             params->explaino_generated_root_layout == ExplainoGeneratedRootLayout::regular_ngon_v1;
         return true;
     }
+    if (path == "fractal.root_pattern.color.controls_active") {
+        out = view && params &&
+            UsesExplainoRootLayoutAuthority(view->fractal_type) &&
+            SchemaColorPipelineUsesColorRootField(*params);
+        return true;
+    }
     if (path == "fractal.params.explaino_secondary_root_pattern_count_active" ||
         path == "fractal.root_pattern.color.generated_root_count_active") {
         out = view && params &&
-            (view->fractal_type == FractalType::explaino_root_sdf ||
-             IsRootFieldConsumerFractal(view->fractal_type)) &&
+            UsesExplainoRootLayoutAuthority(view->fractal_type) &&
+            SchemaColorPipelineUsesColorRootField(*params) &&
             params->explaino_root_authority == ExplainoRootAuthority::generated &&
             params->explaino_secondary_root_pattern_layout == ExplainoGeneratedRootLayout::regular_ngon_v1;
         return true;

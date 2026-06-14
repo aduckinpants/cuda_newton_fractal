@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "contract_id": "scoped_color_root_control_authority_repair",
+  "feature_id": "scoped_color_root_control_authority_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/scoped_color_root_control_authority_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "repair inert Color Root Field controls on scoped root-field lanes",
+    "show Color Root Field controls only when an active root-aware Color Pipeline source row consumes color_root_field",
+    "preserve Dynamics Root Field controls and existing color_root_field state/report compatibility",
+    "prove no-mouse runtime behavior for hidden inactive controls and active color-root sensitivity"
+  ],
+  "forbidden_operator_prompts": [
+    "add new fractal families",
+    "return to SDF product work",
+    "add graph editor UI",
+    "remove color_root_field backend compatibility",
+    "use physical mouse automation",
+    "claim Color Root Field controls are authoritative when no active row consumes them"
+  ],
+  "required_defaults": {
+    "branch": "codex/scoped-color-root-control-authority-repair",
+    "primary_test_lane": "explaino_magnet_root_well",
+    "color_root_controls_visible_only_when_consumed": true,
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "visible_color_root_controls_without_color_consumer": "forbidden",
+    "dynamics_root_controls_hidden_by_color_consumer_policy": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "hash_only_grouped_control_sensitivity": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/scoped_color_root_control_authority_repair.contract.json --out-json artifacts/validation/scoped_color_root_control_authority_repair_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label scoped_color_root_control_authority_repair_plan_sync --log artifacts/scoped_color_root_control_authority_repair/plan_sync.log -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/scoped_color_root_control_authority_repair_code_quality.json",
+    "ui_app/build_tests_vsdevcmd.cmd test_schema_binding > artifacts/scoped_color_root_control_authority_repair/native_schema_binding.log 2>&1",
+    "ui_app/build_tests_vsdevcmd.cmd test_ui_schema > artifacts/scoped_color_root_control_authority_repair/native_ui_schema.log 2>&1",
+    "ui_app/build_vsdevcmd.cmd > artifacts/scoped_color_root_control_authority_repair/runtime_publish.log 2>&1",
+    "py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py::test_magnet_root_well_divergent_dynamics_and_color_root_fields_no_mouse tests/test_fractal_runtime_root_field_consumers.py::test_explaino_magnet_root_well_base_magnet_controls_are_visible_and_active -q --junitxml artifacts/pytest/scoped_color_root_control_authority_repair_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/scoped_color_root_control_authority_repair_PHASED_PLAN.md --out-json artifacts/validation/scoped_color_root_control_authority_repair_hostile_audit.json",
+    "git diff --check > artifacts/scoped_color_root_control_authority_repair/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The scoped color-root control authority repair contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/scoped_color_root_control_authority_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_color_root_authority_green",
+      "description": "Published no-mouse runtime proof passes for active Color Root Field sensitivity and hidden inactive controls.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/scoped_color_root_control_authority_repair_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_root_field_consumers.py::test_magnet_root_well_divergent_dynamics_and_color_root_fields_no_mouse"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/scoped_color_root_control_authority_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

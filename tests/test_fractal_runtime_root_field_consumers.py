@@ -254,6 +254,14 @@ def test_explaino_magnet_root_well_base_magnet_controls_are_visible_and_active(
             "fractal_control.param_anim_target.seed",
             "fractal_control.param_anim_target.root_spread",
             "fractal_control.param_anim_target.explaino_phase",
+            "color_root_field_prev_seed",
+            "color_root_field_next_seed",
+            "fractal_control.color_root_field_seed.primary",
+            "fractal_control.color_root_field_root_spread.primary",
+            "fractal_control.color_root_field_phase.primary",
+            "fractal_control.color_root_field_phase_strength.primary",
+            "fractal_control.color_root_field_generated_layout.primary",
+            "fractal_control.color_root_field_generated_root_count.primary",
         }
         assert invisible_controls.isdisjoint(visible_controls), baseline
 
@@ -395,6 +403,10 @@ def test_magnet_root_well_divergent_dynamics_and_color_root_fields_no_mouse(
         assert "fractal_control.explaino_secondary_root_pattern_layout.primary" not in visible_controls, secondary
         assert "fractal_control.explaino_secondary_root_pattern_count.primary" not in visible_controls, secondary
         assert "fractal_control.color_root_field_seed.primary" in visible_controls, secondary
+        assert "fractal_control.color_root_field_root_spread.primary" in visible_controls, secondary
+        assert "fractal_control.color_root_field_phase.primary" in visible_controls, secondary
+        assert "fractal_control.color_root_field_phase_strength.primary" in visible_controls, secondary
+        assert "fractal_control.color_root_field_generated_layout.primary" in visible_controls, secondary
         assert "color_root_field_next_seed" in visible_controls, secondary
         assert secondary.get("current_fractal_type") == lane_id, secondary
         assert secondary.get("root_field_consumer_kind") == lane_id, secondary
@@ -469,6 +481,22 @@ def test_magnet_root_well_divergent_dynamics_and_color_root_fields_no_mouse(
             consumer_id="root_proximity",
             pattern_ref="dynamics_root_field",
         ), primary
+        primary_visible_controls = {
+            str(control.get("control_id", ""))
+            for control in primary.get("controls", [])
+            if isinstance(control, dict)
+        }
+        inactive_color_controls = {
+            "color_root_field_prev_seed",
+            "color_root_field_next_seed",
+            "fractal_control.color_root_field_seed.primary",
+            "fractal_control.color_root_field_root_spread.primary",
+            "fractal_control.color_root_field_phase.primary",
+            "fractal_control.color_root_field_phase_strength.primary",
+            "fractal_control.color_root_field_generated_layout.primary",
+            "fractal_control.color_root_field_generated_root_count.primary",
+        }
+        assert inactive_color_controls.isdisjoint(primary_visible_controls), primary
         assert _require_frame_hash(primary) != secondary_hash, primary
 
         color_seed = viewer.load_state_json(
