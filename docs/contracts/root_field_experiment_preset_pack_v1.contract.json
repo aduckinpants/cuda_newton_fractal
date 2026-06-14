@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "contract_id": "root_field_experiment_preset_pack_v1",
+  "feature_id": "root_field_experiment_preset_pack_v1",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/root_field_experiment_preset_pack_v1_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/ui_salt",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "tools"
+  ],
+  "required_operator_inputs": [
+    "merge the completed scoped Color Root authority repair into master before starting",
+    "add a bounded V1 preset/demo pack for existing root-field lanes and root-aware Color Pipeline rows",
+    "use existing root-field lanes only: explaino_magnet_root_well, explaino_mandelbrot_root_trap, explaino_root_sdf",
+    "use existing root-aware Color Pipeline rows only: root_phase and root_proximity",
+    "prove presets with native and no-mouse runtime evidence",
+    "stop for replan before heavier SDF engine or Wave 4 substrate work"
+  ],
+  "forbidden_operator_prompts": [
+    "add new fractal enum lanes",
+    "add new recurrence math",
+    "add new SDF operators",
+    "add graph editor UI",
+    "add Salticid programming surface",
+    "start root homotopy Newton",
+    "start SDF gradient-force iteration",
+    "start slime-trace fractal",
+    "start IFS or Flame hybrid substrate work",
+    "use physical mouse automation",
+    "claim unsupported root-field combinations are active presets"
+  ],
+  "required_defaults": {
+    "branch": "codex/root-field-experiment-preset-pack-v1",
+    "source_head": "9786b983a6995dd997e99f6e6f67eff73c27f98e",
+    "selected_pack": "root_field_experiment_preset_pack_v1",
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "forbidden_defaults": {
+    "new_backend_substrate": "forbidden",
+    "wave4_work": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "fake_root_fallback": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/root_field_experiment_preset_pack_v1.contract.json --out-json artifacts/validation/root_field_experiment_preset_pack_v1_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/root_field_experiment_preset_pack_v1_code_quality.json",
+    "ui_app/build_tests_vsdevcmd.cmd test_fractal_preset_core test_color_pipeline_core test_schema_binding test_ui_schema > artifacts/root_field_experiment_preset_pack_v1/native.log 2>&1",
+    "ui_app/build_vsdevcmd.cmd > artifacts/root_field_experiment_preset_pack_v1/runtime_publish.log 2>&1",
+    "py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py tests/test_fractal_runtime_color_pipeline_presets.py -q --junitxml artifacts/pytest/root_field_experiment_preset_pack_v1_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/root_field_experiment_preset_pack_v1_PHASED_PLAN.md --out-json artifacts/validation/root_field_experiment_preset_pack_v1_hostile_audit.json",
+    "git diff --check > artifacts/root_field_experiment_preset_pack_v1/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The root-field experiment preset pack contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_field_experiment_preset_pack_v1_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_preset_pack_green",
+      "description": "Published no-mouse runtime proof passes for the V1 root-field experiment preset pack.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/root_field_experiment_preset_pack_v1_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_root_field_consumers.py::test_root_field_experiment_preset_pack_v1_no_mouse"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_field_experiment_preset_pack_v1_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
+

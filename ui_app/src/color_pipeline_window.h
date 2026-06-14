@@ -140,7 +140,7 @@ inline const char* ColorPipelineWindowBridgeBoundarySummaryText() {
 }
 
 inline const char* ColorPipelineWindowSupportedPresetSummaryText() {
-    return "Available presets: Smooth Escape, Phase Orbit Wheel, SDF Normal Angle Diagnostic, and SDF Normal Angle Beauty.";
+    return "Available presets: Smooth Escape, Phase Orbit Wheel, Root Phase Wheel, Root Proximity Heatmap, SDF Normal Angle Diagnostic, and SDF Normal Angle Beauty.";
 }
 
 inline const char* ColorPipelineWindowFixedPresetHelpText() {

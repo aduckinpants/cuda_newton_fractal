@@ -791,7 +791,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert len(actual["composition_recipe_contract"]["compatibility"]) == 23
     compat_overrides = actual["composition_recipe_contract"]["compat_overrides"]
     compatibility_audit = actual["composition_recipe_contract"]["compatibility_audit"]
-    assert len(compat_overrides) == 18
+    assert len(compat_overrides) == 17
     assert len(compatibility_audit) == 23
     audit_by_key = {
         (row["source"], row["palette"], row["grading"]): row
@@ -801,6 +801,8 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert audit_by_key[("smooth_escape_ramp", "heatmap", "contrast_lift")]["route_case_id"] == "smooth_escape_heatmap"
     assert audit_by_key[("phase_orbit", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
     assert audit_by_key[("root_phase", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
+    assert audit_by_key[("root_proximity", "heatmap", "contrast_lift")]["classification"] == "typed_resolved"
+    assert audit_by_key[("root_proximity", "heatmap", "contrast_lift")]["route_case_id"] == "root_proximity_heatmap"
     assert audit_by_key[("root_index", "root_classic_palette", "basin_default")]["classification"] == "typed_resolved"
     assert audit_by_key[("sdf_normal_angle", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
     assert audit_by_key[("sdf_signed_distance", "heatmap", "contrast_lift")]["classification"] == "runtime_legacy_override"
@@ -821,6 +823,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "smooth_escape_smoothstep_range_heatmap",
         "phase_orbit_wheel",
         "root_phase_wheel",
+        "root_proximity_heatmap",
         "root_classic",
         "sdf_normal_angle_phase_wheel",
         "sdf_signed_distance_normalized_heatmap",
@@ -849,6 +852,8 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert [recipe["id"] for recipe in recipe_v2] == [
         "default_smooth_escape",
         "phase_orbit_wheel",
+        "root_phase_wheel",
+        "root_proximity_heatmap",
         "sdf_normal_angle_diagnostic",
         "sdf_normal_angle_beauty",
     ]

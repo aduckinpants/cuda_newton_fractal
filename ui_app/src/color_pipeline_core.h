@@ -1803,6 +1803,8 @@ inline const std::vector<MaterializedColorPipelineRecipe>& GetHardcodedColorPipe
     static const std::vector<MaterializedColorPipelineRecipe> recipes = {
         {"default_smooth_escape", "Default Smooth Escape", "smooth_escape_ramp", "identity", "heatmap", "contrast_lift", ""},
         {"phase_orbit_wheel", "Phase Orbit Wheel", "phase_orbit", "identity", "phase_wheel_palette", "phase_finish", ""},
+        {"root_phase_wheel", "Root Phase Wheel", "root_phase", "identity", "phase_wheel_palette", "phase_finish", ""},
+        {"root_proximity_heatmap", "Root Proximity Heatmap", "root_proximity", "identity", "heatmap", "contrast_lift", ""},
         {"sdf_normal_angle_diagnostic", "SDF Normal Angle Diagnostic", "sdf_normal_angle", "identity", "phase_wheel_palette", "phase_finish", ""},
         {"sdf_normal_angle_beauty", "SDF Normal Angle Beauty", "sdf_normal_angle", "identity", "phase_wheel_palette", "phase_finish", ""},
     };

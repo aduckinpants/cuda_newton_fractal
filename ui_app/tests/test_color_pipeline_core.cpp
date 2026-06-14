@@ -1082,13 +1082,13 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
     Check(contract.compatibility.size() == 23,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
-    Check(contract.compat_overrides.size() == 18,
+    Check(contract.compat_overrides.size() == 17,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatOverrideCount");
     Check(contract.compatibility_audit.size() == 23,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
-    Check(contract.recipes.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
+    Check(contract.recipes.size() == 6, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.has_recipe_v2, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Present");
-    Check(contract.recipe_v2.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Count");
+    Check(contract.recipe_v2.size() == 6, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Count");
     Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
     Check(contract.sdf_source_capabilities.size() == 6,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfSourceCapabilityCount");
@@ -1109,10 +1109,12 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                 contract.edge_links[2].id == "palette_to_grading",
             "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_EdgeLinkOrder");
     }
-    Check(contract.resolution_cases.size() == 11,
+    Check(contract.resolution_cases.size() == 12,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ResolutionCaseCount");
     const MaterializedColorPipelineCompatibilityAudit* smoothAudit =
         FindCompatibilityAudit(contract, "smooth_escape_ramp", "heatmap", "contrast_lift");
+    const MaterializedColorPipelineCompatibilityAudit* rootProximityAudit =
+        FindCompatibilityAudit(contract, "root_proximity", "heatmap", "contrast_lift");
     const MaterializedColorPipelineCompatibilityAudit* rootAudit =
         FindCompatibilityAudit(contract, "root_index", "root_classic_palette", "basin_default");
     const MaterializedColorPipelineCompatibilityAudit* sdfAudit =
@@ -1123,6 +1125,9 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
             smoothAudit->route_case_id == "smooth_escape_heatmap" &&
             smoothAudit->override_id.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SmoothCompatAuditTypedResolved");
+    Check(rootProximityAudit && rootProximityAudit->classification == "typed_resolved" &&
+            rootProximityAudit->route_case_id == "root_proximity_heatmap",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RootProximityCompatAuditTypedResolved");
     Check(rootAudit && rootAudit->classification == "typed_resolved" &&
             rootAudit->route_case_id == "root_classic",
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RootCompatAuditTypedResolved");
@@ -1300,7 +1305,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
     Check(parity.lane_count == 4 && parity.function_count == 37 &&
-            parity.compatibility_count == 23 && parity.recipe_count == 4 &&
+            parity.compatibility_count == 23 && parity.recipe_count == 6 &&
             parity.taxonomy_group_count == 24 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
@@ -1836,15 +1841,19 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcoded");
     Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("hardcoded"),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcodedAuthority");
-    Check(color_pipeline_core::CountHardcodedColorPipelineRecipes() == 4,
+    Check(color_pipeline_core::CountHardcodedColorPipelineRecipes() == 6,
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeCount");
     Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedFallbackCountIsTruthful");
 
     const std::vector<MaterializedColorPipelineRecipe>& hardcodedRecipes =
         color_pipeline_core::GetHardcodedColorPipelineRecipes();
-    Check(hardcodedRecipes.size() == 4,
+    Check(hardcodedRecipes.size() == 6,
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeVectorCount");
+    Check(color_pipeline_core::FindHardcodedColorPipelineRecipe("root_phase_wheel") != nullptr,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRootPhaseRecipeExists");
+    Check(color_pipeline_core::FindHardcodedColorPipelineRecipe("root_proximity_heatmap") != nullptr,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRootProximityRecipeExists");
     Check(color_pipeline_core::FindHardcodedColorPipelineRecipe("sdf_normal_angle_beauty") != nullptr,
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedBeautyRecipeExists");
     for (const MaterializedColorPipelineRecipe& expectedRecipe : hardcodedRecipes) {

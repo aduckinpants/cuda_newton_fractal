@@ -97,6 +97,7 @@ function(lane="grading", id="balance_void_grade", label="Balance Void Grade", de
 port(function="smooth_escape_ramp", direction="output", id="signal", type="scalar.unit", canonical=True)
 port(function="phase_orbit", direction="output", id="signal", type="phase.radians", canonical=True)
 port(function="root_phase", direction="output", id="signal", type="phase.radians", canonical=True)
+port(function="root_proximity", direction="output", id="signal", type="scalar.unit", canonical=True)
 port(function="root_index", direction="output", id="signal", type="category.root_index", canonical=True)
 port(function="sdf_signed_distance", direction="output", id="signal", type="scalar.sdf_signed_distance", canonical=True)
 port(function="sdf_normal_angle", direction="output", id="signal", type="phase.radians", canonical=True)
@@ -140,6 +141,7 @@ resolution_case(id="smooth_escape_log_compress_heatmap", source="smooth_escape_r
 resolution_case(id="smooth_escape_smoothstep_range_heatmap", source="smooth_escape_ramp", shape="smoothstep_range", palette="heatmap", grading="contrast_lift", expect="resolved")
 resolution_case(id="phase_orbit_wheel", source="phase_orbit", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="resolved")
 resolution_case(id="root_phase_wheel", source="root_phase", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="resolved")
+resolution_case(id="root_proximity_heatmap", source="root_proximity", shape="identity", palette="heatmap", grading="contrast_lift", expect="resolved")
 resolution_case(id="root_classic", source="root_index", shape="identity", palette="root_classic_palette", grading="basin_default", expect="resolved")
 resolution_case(id="sdf_normal_angle_phase_wheel", source="sdf_normal_angle", shape="identity", palette="phase_wheel_palette", grading="phase_finish", expect="resolved")
 resolution_case(id="sdf_signed_distance_normalized_heatmap", source="sdf_signed_distance", shape="bias_gain_curve", palette="heatmap", grading="contrast_lift", expect="resolved", allow_lossy=True, explicit_adapter_consent=True)
@@ -177,7 +179,6 @@ compat_override(id="legacy_banded_signal_banded_heatmap_band_finish", source="ba
 compat_override(id="legacy_escape_magnitude_heatmap_contrast_lift", source="escape_magnitude", palette="heatmap", grading="contrast_lift", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="escape magnitude source route is not yet declared in the typed resolver pilot set", proof="color_pipeline_metadata_parity")
 compat_override(id="legacy_escape_magnitude_explaino_cmap_contrast_lift", source="escape_magnitude", palette="explaino_cmap", grading="contrast_lift", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="escape magnitude Explaino palette route remains a legacy runtime bridge", proof="color_pipeline_metadata_parity")
 compat_override(id="legacy_orbit_stripe_phase_wheel_palette_phase_finish", source="orbit_stripe", palette="phase_wheel_palette", grading="phase_finish", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="orbit stripe phase route is not yet declared in the typed resolver pilot set", proof="color_pipeline_metadata_parity")
-compat_override(id="legacy_root_proximity_heatmap_contrast_lift", source="root_proximity", palette="heatmap", grading="contrast_lift", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="root proximity scalar route is not yet declared in the typed resolver pilot set", proof="color_pipeline_metadata_parity")
 compat_override(id="legacy_root_proximity_explaino_cmap_contrast_lift", source="root_proximity", palette="explaino_cmap", grading="contrast_lift", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="root proximity Explaino palette route remains a legacy runtime bridge", proof="color_pipeline_metadata_parity")
 compat_override(id="legacy_root_index_joy_root_palette_basin_default", source="root_index", palette="joy_root_palette", grading="basin_default", classification="runtime_legacy_override", owner_seam="color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds", reason="joy root palette route lacks a dedicated typed palette signature in the pilot resolver set", proof="color_pipeline_metadata_parity")
 compat_override(id="legacy_sdf_signed_distance_heatmap_contrast_lift", source="sdf_signed_distance", palette="heatmap", grading="contrast_lift", classification="runtime_legacy_override", owner_seam="color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan", reason="signed-distance heatmap support still depends on explicit runtime normalization outside live typed resolver authority", proof="color_pipeline_metadata_parity")
@@ -193,6 +194,8 @@ compat_override(id="legacy_lens_field_v2_distance_explaino_cmap_contrast_lift", 
 
 recipe(id="default_smooth_escape", label="Default Smooth Escape", source="smooth_escape_ramp", shape="identity", palette="heatmap", grading="contrast_lift")
 recipe(id="phase_orbit_wheel", label="Phase Orbit Wheel", source="phase_orbit", shape="identity", palette="phase_wheel_palette", grading="phase_finish")
+recipe(id="root_phase_wheel", label="Root Phase Wheel", source="root_phase", shape="identity", palette="phase_wheel_palette", grading="phase_finish")
+recipe(id="root_proximity_heatmap", label="Root Proximity Heatmap", source="root_proximity", shape="identity", palette="heatmap", grading="contrast_lift")
 recipe(id="sdf_normal_angle_diagnostic", label="SDF Normal Angle Diagnostic", source="sdf_normal_angle", shape="identity", palette="phase_wheel_palette", grading="phase_finish")
 recipe(id="sdf_normal_angle_beauty", label="SDF Normal Angle Beauty", source="sdf_normal_angle", shape="identity", palette="phase_wheel_palette", grading="phase_finish")
 

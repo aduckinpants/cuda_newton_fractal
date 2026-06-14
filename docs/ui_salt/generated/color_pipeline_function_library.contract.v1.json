@@ -523,7 +523,15 @@
               }
             ],
             "signal_kind": "scalar",
-            "typed_signal": "scalar.unit"
+            "typed_signal": "scalar.unit",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.unit",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "root_phase",
@@ -2334,6 +2342,24 @@
         "fail_closed_reason": ""
       },
       {
+        "id": "root_phase_wheel",
+        "label": "Root Phase Wheel",
+        "source": "root_phase",
+        "shape": "identity",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_proximity_heatmap",
+        "label": "Root Proximity Heatmap",
+        "source": "root_proximity",
+        "shape": "identity",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "fail_closed_reason": ""
+      },
+      {
         "id": "sdf_normal_angle_diagnostic",
         "label": "SDF Normal Angle Diagnostic",
         "source": "sdf_normal_angle",
@@ -2496,6 +2522,166 @@
             "edge_id": "palette_to_grading",
             "from_function": "phase_wheel_palette",
             "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette",
+            "to_node": "grading"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_phase_wheel",
+        "label": "Root Phase Wheel",
+        "source_recipe_id": "root_phase_wheel",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": true,
+        "live_authority": "recipe",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source",
+            "lane": "source",
+            "function": "root_phase"
+          },
+          {
+            "id": "shape",
+            "lane": "shape",
+            "function": "identity"
+          },
+          {
+            "id": "palette",
+            "lane": "palette",
+            "function": "phase_wheel_palette"
+          },
+          {
+            "id": "grading",
+            "lane": "grading",
+            "function": "phase_finish"
+          }
+        ],
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_phase",
+            "to_function": "identity",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "phase.radians",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source",
+            "to_node": "shape"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "phase_wheel_palette",
+            "from_type": "phase.radians",
+            "to_type": "phase.radians",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape",
+            "to_node": "palette"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "phase_wheel_palette",
+            "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette",
+            "to_node": "grading"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_proximity_heatmap",
+        "label": "Root Proximity Heatmap",
+        "source_recipe_id": "root_proximity_heatmap",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": true,
+        "live_authority": "recipe",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source",
+            "lane": "source",
+            "function": "root_proximity"
+          },
+          {
+            "id": "shape",
+            "lane": "shape",
+            "function": "identity"
+          },
+          {
+            "id": "palette",
+            "lane": "palette",
+            "function": "heatmap"
+          },
+          {
+            "id": "grading",
+            "lane": "grading",
+            "function": "contrast_lift"
+          }
+        ],
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_proximity",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source",
+            "to_node": "shape"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape",
+            "to_node": "palette"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
             "from_type": "color.linear_rgb",
             "to_type": "color.linear_rgb",
             "output_type": "color.linear_rgb",
@@ -2726,16 +2912,6 @@
         "proof": "color_pipeline_metadata_parity"
       },
       {
-        "id": "legacy_root_proximity_heatmap_contrast_lift",
-        "source": "root_proximity",
-        "palette": "heatmap",
-        "grading": "contrast_lift",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
-        "reason": "root proximity scalar route is not yet declared in the typed resolver pilot set",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
         "id": "legacy_root_proximity_explaino_cmap_contrast_lift",
         "source": "root_proximity",
         "palette": "explaino_cmap",
@@ -2942,10 +3118,10 @@
         "palette": "heatmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_root_proximity_heatmap_contrast_lift",
-        "reason": "root proximity scalar route is not yet declared in the typed resolver pilot set"
+        "classification": "typed_resolved",
+        "route_case_id": "root_proximity_heatmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "root_proximity",
@@ -3532,6 +3708,63 @@
             "edge_id": "palette_to_grading",
             "from_function": "phase_wheel_palette",
             "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_proximity_heatmap",
+        "source": "root_proximity",
+        "shape": "identity",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_proximity",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
             "from_type": "color.linear_rgb",
             "to_type": "color.linear_rgb",
             "output_type": "color.linear_rgb",

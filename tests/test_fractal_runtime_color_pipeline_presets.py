@@ -96,6 +96,8 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
         assert isinstance(base_hash, str), ready_report
         viewer.wait_for_control("color_pipeline.recipe.default_smooth_escape.apply", timeout_seconds=20.0)
         viewer.wait_for_control("color_pipeline.recipe.phase_orbit_wheel.apply", timeout_seconds=20.0)
+        viewer.wait_for_control("color_pipeline.recipe.root_phase_wheel.apply", timeout_seconds=20.0)
+        viewer.wait_for_control("color_pipeline.recipe.root_proximity_heatmap.apply", timeout_seconds=20.0)
         viewer.wait_for_control("color_pipeline.recipe.sdf_normal_angle_diagnostic.apply", timeout_seconds=20.0)
         viewer.wait_for_control("color_pipeline.recipe.sdf_normal_angle_beauty.apply", timeout_seconds=20.0)
         applied = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_diagnostic.apply", timeout_seconds=60.0)

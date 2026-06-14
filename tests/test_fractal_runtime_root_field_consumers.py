@@ -678,6 +678,269 @@ def test_magnet_root_well_primary_ngon_variation_controls_change_frame_no_mouse(
         assert _require_frame_hash(secondary_b) != secondary_a_frame, secondary_b
 
 
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
+def test_root_field_experiment_preset_pack_v1_no_mouse(tmp_path: Path) -> None:
+    exe_path = active_runtime_exe()
+
+    def base_state(lane_id: str) -> dict[str, Any]:
+        state = _state_for_lane(exe_path, lane_id)
+        state.setdefault("params", {})["explaino_root_authority"] = "generated"
+        return state
+
+    def configure_root_fields(
+        state: dict[str, Any],
+        *,
+        dynamics_count: int,
+        dynamics_seed: float,
+        dynamics_phase: float,
+        dynamics_spread: float,
+        color_layout: str = "legacy_quartic_v1",
+        color_count: int = 4,
+        color_seed: float = 0.25,
+        color_phase: float = 0.15,
+        color_spread: float = 0.55,
+    ) -> None:
+        params = state.setdefault("params", {})
+        assert isinstance(params, dict), state
+        view = state.setdefault("view", {})
+        assert isinstance(view, dict), state
+        params["explaino_generated_root_layout"] = "regular_ngon_v1"
+        params["explaino_generated_root_count"] = dynamics_count
+        params["explaino_seed"] = dynamics_seed
+        params["explaino_root_spread"] = dynamics_spread
+        params["explaino_root_field_pattern_ref"] = "dynamics_root_field"
+        params["explaino_secondary_root_pattern_layout"] = color_layout
+        params["explaino_secondary_root_pattern_count"] = color_count
+        params["explaino_secondary_root_pattern_seed"] = color_seed
+        params["explaino_secondary_root_pattern_spread"] = color_spread
+        params["explaino_secondary_root_pattern_phase"] = color_phase
+        params["explaino_secondary_root_pattern_phase_strength"] = 1.0
+        params["explaino_phase"] = dynamics_phase
+        view["explaino_phase"] = dynamics_phase
+        state["explaino_phase"] = dynamics_phase
+
+    magnet = base_state("explaino_magnet_root_well")
+    configure_root_fields(
+        magnet,
+        dynamics_count=9,
+        dynamics_seed=0.31,
+        dynamics_phase=0.17,
+        dynamics_spread=0.82,
+        color_layout="legacy_quartic_v1",
+        color_count=4,
+        color_seed=1.37,
+        color_phase=0.42,
+        color_spread=0.48,
+    )
+    magnet_params = magnet["params"]
+    assert isinstance(magnet_params, dict), magnet
+    magnet_params["explaino_root_field_trap_strength"] = 1.0
+    magnet_params["explaino_root_field_trap_scale"] = 1.35
+    magnet_params["coloring_mode"] = "smooth_escape"
+    magnet_params["color_signal"] = "root_proximity"
+    magnet_params["color_shape"] = "identity"
+    magnet_params["color_palette"] = "explaino_cmap"
+    magnet_params["color_grading"] = "escape_default"
+    magnet_params["color_source_stack"] = [{
+        "signal": "root_proximity",
+        "proximity_scale": 1.25,
+        "proximity_bias": 0.0,
+        "root_pattern_ref": "color_root_field",
+        "blend_weight": 1.0,
+    }]
+    magnet_path = write_state_bundle(tmp_path / "magnet_well_dynamics_color_split", magnet)
+
+    mandelbrot = base_state("explaino_mandelbrot_root_trap")
+    configure_root_fields(
+        mandelbrot,
+        dynamics_count=7,
+        dynamics_seed=0.19,
+        dynamics_phase=0.33,
+        dynamics_spread=0.76,
+    )
+    mandelbrot_params = mandelbrot["params"]
+    assert isinstance(mandelbrot_params, dict), mandelbrot
+    mandelbrot_params["explaino_root_field_trap_strength"] = 0.85
+    mandelbrot_params["explaino_root_field_trap_scale"] = 1.8
+    mandelbrot_path = write_state_bundle(tmp_path / "mandelbrot_root_phase_trap", mandelbrot)
+
+    root_sdf_bridge = base_state("explaino_root_sdf")
+    configure_root_fields(
+        root_sdf_bridge,
+        dynamics_count=8,
+        dynamics_seed=0.44,
+        dynamics_phase=0.21,
+        dynamics_spread=0.74,
+    )
+    bridge_params = root_sdf_bridge["params"]
+    assert isinstance(bridge_params, dict), root_sdf_bridge
+    bridge_params["explaino_root_sdf_radius"] = 0.16
+    bridge_params["explaino_root_sdf_bridge_width"] = 0.09
+    bridge_params["explaino_root_sdf_smooth_blend"] = 0.12
+    bridge_params["color_signal"] = "sdf_signed_distance"
+    bridge_params["color_palette"] = "explaino_cmap"
+    bridge_path = write_state_bundle(tmp_path / "root_sdf_ngon_bridge_showcase", root_sdf_bridge)
+
+    root_sdf_no_bridge = json.loads(json.dumps(root_sdf_bridge))
+    no_bridge_params = root_sdf_no_bridge["params"]
+    assert isinstance(no_bridge_params, dict), root_sdf_no_bridge
+    no_bridge_params["explaino_generated_root_count"] = 12
+    no_bridge_params["explaino_root_sdf_bridge_width"] = 0.0
+    no_bridge_params["explaino_root_sdf_radius"] = 0.12
+    no_bridge_params["explaino_root_sdf_smooth_blend"] = 0.0
+    no_bridge_path = write_state_bundle(tmp_path / "root_sdf_ngon_no_bridge_field", root_sdf_no_bridge)
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=magnet_path,
+        report_path=tmp_path / "root_field_experiment_preset_pack_report.json",
+        command_path=tmp_path / "root_field_experiment_preset_pack_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        viewer.wait_for_control("color_pipeline.recipe.root_phase_wheel.apply", timeout_seconds=30.0)
+        viewer.wait_for_control("color_pipeline.recipe.root_proximity_heatmap.apply", timeout_seconds=30.0)
+
+        magnet_report = viewer.wait_for_report(timeout_seconds=60.0)
+        assert magnet_report.get("current_fractal_type") == "explaino_magnet_root_well", magnet_report
+        assert _root_pattern(magnet_report, "dynamics_root_field").get("root_count") == 9, magnet_report
+        assert _root_pattern(magnet_report, "color_root_field").get("root_count") == 4, magnet_report
+        assert _has_root_pattern_consumer(
+            magnet_report,
+            consumer_kind="root_field_consumer",
+            consumer_id="explaino_magnet_root_well",
+            pattern_ref="dynamics_root_field",
+        ), magnet_report
+        assert _has_root_pattern_consumer(
+            magnet_report,
+            consumer_kind="color_source_row",
+            consumer_id="root_proximity",
+            pattern_ref="color_root_field",
+        ), magnet_report
+        magnet_hash = _require_frame_hash(magnet_report)
+
+        root_recipe = viewer.click_control(
+            "color_pipeline.recipe.root_phase_wheel.apply",
+            timeout_seconds=60.0,
+        )
+        assert root_recipe.get("click_consumed") is True, root_recipe
+        assert "source:root_phase" in root_recipe.get("lane_rows", []), root_recipe
+        assert "palette:phase_wheel_palette" in root_recipe.get("lane_rows", []), root_recipe
+        assert _has_root_pattern_consumer(
+            root_recipe,
+            consumer_kind="color_source_row",
+            consumer_id="root_phase",
+            pattern_ref="dynamics_root_field",
+        ), root_recipe
+        assert _require_frame_hash(root_recipe) != magnet_hash, root_recipe
+
+        proximity_recipe = viewer.click_control(
+            "color_pipeline.recipe.root_proximity_heatmap.apply",
+            timeout_seconds=60.0,
+        )
+        assert proximity_recipe.get("click_consumed") is True, proximity_recipe
+        assert "source:root_proximity" in proximity_recipe.get("lane_rows", []), proximity_recipe
+        assert "palette:heatmap" in proximity_recipe.get("lane_rows", []), proximity_recipe
+        assert _has_root_pattern_consumer(
+            proximity_recipe,
+            consumer_kind="color_source_row",
+            consumer_id="root_proximity",
+            pattern_ref="dynamics_root_field",
+        ), proximity_recipe
+
+        mandelbrot_report = viewer.load_state_json(
+            mandelbrot_path,
+            expected_fractal_type="explaino_mandelbrot_root_trap",
+            timeout_seconds=60.0,
+        )
+        assert mandelbrot_report.get("root_field_consumer_root_count") == 7, mandelbrot_report
+        mandelbrot_phase = viewer.click_control(
+            "color_pipeline.recipe.root_phase_wheel.apply",
+            timeout_seconds=60.0,
+        )
+        assert mandelbrot_phase.get("current_fractal_type") == "explaino_mandelbrot_root_trap", mandelbrot_phase
+        assert "source:root_phase" in mandelbrot_phase.get("lane_rows", []), mandelbrot_phase
+        assert _require_frame_hash(mandelbrot_phase) != _require_frame_hash(mandelbrot_report), mandelbrot_phase
+
+        bridge_report = viewer.load_state_json(
+            bridge_path,
+            expected_fractal_type="explaino_root_sdf",
+            timeout_seconds=60.0,
+        )
+        assert bridge_report.get("explaino_root_sdf_root_count") == 8, bridge_report
+        assert bridge_report.get("explaino_root_sdf_bridge_count") == 8, bridge_report
+        bridge_hash = _require_frame_hash(bridge_report)
+
+        no_bridge_report = viewer.load_state_json(
+            no_bridge_path,
+            expected_fractal_type="explaino_root_sdf",
+            timeout_seconds=60.0,
+        )
+        assert no_bridge_report.get("explaino_root_sdf_root_count") == 12, no_bridge_report
+        assert no_bridge_report.get("explaino_root_sdf_bridge_count") == 0, no_bridge_report
+        assert _require_frame_hash(no_bridge_report) != bridge_hash, no_bridge_report
+
+    group = f"pytest_root_field_experiment_preset_pack_v1_{tmp_path.name}"
+    group_root = RUNTIME_DIR.parent / "findings" / group
+    if group_root.exists():
+        shutil.rmtree(group_root)
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(magnet_path),
+            "--capture-finding",
+            "--finding-group",
+            group,
+            "--finding-why",
+            "root-field experiment preset pack v1 capture proof",
+        ],
+        cwd=str(exe_path.parent),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    finding_state_paths = sorted(group_root.rglob("state.json"))
+    assert len(finding_state_paths) == 1, finding_state_paths
+    finding_state_path = finding_state_paths[0]
+    fractal_state_path = finding_state_path.parent / "fractal-state.json"
+    assert fractal_state_path.exists(), finding_state_path.parent
+    sidecar = json.loads(fractal_state_path.read_text(encoding="utf-8"))
+    capture_context = sidecar.get("capture_context")
+    assert isinstance(capture_context, dict), sidecar
+    assert capture_context.get("fractal_type") == "explaino_magnet_root_well", capture_context
+    derived = sidecar.get("derived_runtime_values")
+    assert isinstance(derived, dict), sidecar
+    pattern_consumers = derived.get("root_pattern_consumers")
+    assert isinstance(pattern_consumers, list), derived
+    assert any(
+        isinstance(item, dict)
+        and item.get("consumer_kind") == "root_field_consumer"
+        and item.get("pattern_ref") == "dynamics_root_field"
+        for item in pattern_consumers
+    ), pattern_consumers
+    assert any(
+        isinstance(item, dict)
+        and item.get("consumer_kind") == "color_source_row"
+        and item.get("consumer_id") == "root_proximity"
+        and item.get("pattern_ref") == "color_root_field"
+        for item in pattern_consumers
+    ), pattern_consumers
+    replay_a = run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(finding_state_path),
+        "--capture-diagnostic",
+    )
+    replay_b = run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(finding_state_path),
+        "--capture-diagnostic",
+    )
+    assert replay_b["frame_hash"] == replay_a["frame_hash"]
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
 @pytest.mark.parametrize(
     ("lane_id", "base_lane"),

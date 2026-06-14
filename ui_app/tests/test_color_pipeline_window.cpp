@@ -689,6 +689,23 @@ void TestRecipeExpansionUsesExistingWindowDraftRows() {
     Check(EnsureColorPipelineWindowInitialized(&state),
         "TestRecipeExpansionUsesExistingWindowDraftRows_Initializes");
 
+    Check(ApplyColorPipelineRecipeToDraft(&state, "root_phase_wheel"),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_AppliesRootPhaseRecipe");
+    const ColorPipelineLaneState* rootPhaseSource = FindLane(state, "source");
+    const ColorPipelineLaneState* rootPhasePalette = FindLane(state, "palette");
+    Check(rootPhaseSource && rootPhaseSource->rows.size() == 1 && rootPhaseSource->rows[0].function_id == "root_phase",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_RootPhaseSourceRecipeRow");
+    Check(rootPhasePalette && rootPhasePalette->rows.size() == 1 && rootPhasePalette->rows[0].function_id == "phase_wheel_palette",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_RootPhasePaletteRecipeRow");
+    Check(ApplyColorPipelineRecipeToDraft(&state, "root_proximity_heatmap"),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_AppliesRootProximityRecipe");
+    const ColorPipelineLaneState* rootProximitySource = FindLane(state, "source");
+    const ColorPipelineLaneState* rootProximityPalette = FindLane(state, "palette");
+    Check(rootProximitySource && rootProximitySource->rows.size() == 1 && rootProximitySource->rows[0].function_id == "root_proximity",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_RootProximitySourceRecipeRow");
+    Check(rootProximityPalette && rootProximityPalette->rows.size() == 1 && rootProximityPalette->rows[0].function_id == "heatmap",
+        "TestRecipeExpansionUsesExistingWindowDraftRows_RootProximityPaletteRecipeRow");
+
     Check(ApplyColorPipelineRecipeToDraft(&state, "sdf_normal_angle_diagnostic"),
         "TestRecipeExpansionUsesExistingWindowDraftRows_AppliesRecipe");
     Check(state.lanes.size() == 4,

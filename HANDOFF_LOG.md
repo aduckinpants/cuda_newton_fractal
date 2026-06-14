@@ -188,3 +188,5 @@
 - `ck:eec1a0a1` 2026-06-14 21:05 UTC — session-start | branch=codex/scoped-color-root-control-authority-repair | head=3c99aa8 | status=dirty | profile=runtime | intent=Scoped Color Root control authority repair
 - `ck:eec1a0a1` 2026-06-14 21:25 UTC | score 9 — Scoped Color Root control authority repair: Color Root Field controls now appear only when an active root-aware Color Pipeline source row consumes color_root_field; inactive controls are hidden and active color-root sensitivity is proven.
 - `ck:eec1a0a1` 2026-06-14 21:43 UTC | score 9 — Scoped Color Root control authority repair plan truth sync: closeout wording now matches pushed/rearward-reviewed state before merge.
+- `ck:502d2612` 2026-06-14 21:58 UTC — session-start | branch=codex/root-field-experiment-preset-pack-v1 | head=9786b98 | status=dirty | profile=runtime | intent=Root field experiment preset pack V1
+- `ck:502d2612` 2026-06-14 23:20 UTC | score 93 — Root field experiment preset pack V1 closed: added root phase/proximity public recipes, no-mouse preset/demo matrix, Capture Finding replay proof, hostile audit repair, and exact native/runtime validation.
