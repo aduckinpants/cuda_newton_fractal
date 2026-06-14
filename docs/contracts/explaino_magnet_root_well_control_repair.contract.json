@@ -47,8 +47,8 @@
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_magnet_root_well_control_repair.contract.json --out-json artifacts/validation/explaino_magnet_root_well_control_repair_contract.json",
     "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_magnet_root_well_control_repair_plan_sync --log artifacts/explaino_magnet_root_well_control_repair/plan_sync.log -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_magnet_root_well_control_repair_code_quality.json",
-    "ui_app/build_tests_vsdevcmd.cmd test_ui_schema test_safe_mode_schema test_schema_binding",
-    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/build_tests_vsdevcmd.cmd test_ui_schema test_safe_mode_schema test_schema_binding > artifacts/explaino_magnet_root_well_control_repair/native_schema_binding.log 2>&1",
+    "ui_app/build_vsdevcmd.cmd > artifacts/explaino_magnet_root_well_control_repair/runtime_publish.log 2>&1",
     "py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py -q --junitxml artifacts/pytest/explaino_magnet_root_well_control_repair_runtime.junit.xml",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_magnet_root_well_control_repair_PHASED_PLAN.md --out-json artifacts/validation/explaino_magnet_root_well_control_repair_hostile_audit.json",
     "git diff --check > artifacts/explaino_magnet_root_well_control_repair/diff_check.log 2>&1"
