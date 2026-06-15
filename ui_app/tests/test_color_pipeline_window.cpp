@@ -674,6 +674,12 @@ void TestPresetWorkflowTruthSurface() {
     const std::string beautyRecipeControlId = BuildColorPipelineRecipeApplyControlId("sdf_normal_angle_beauty");
     Check(beautyRecipeControlId == "color_pipeline.recipe.sdf_normal_angle_beauty.apply",
         "TestPresetWorkflowTruthSurface_BeautyRecipeApplyControlIdIsStable");
+    const std::string selectRecipeControlId = BuildColorPipelineRecipeSelectControlId("sdf_normal_angle_diagnostic");
+    Check(selectRecipeControlId == "color_pipeline.recipe.sdf_normal_angle_diagnostic.select",
+        "TestPresetWorkflowTruthSurface_RecipeSelectControlIdIsStable");
+    Check(std::string(BuildColorPipelineRecipeSelectorControlId()) == "color_pipeline.recipe.selector" &&
+            std::string(BuildColorPipelineRecipeApplySelectedControlId()) == "color_pipeline.recipe.apply_selected",
+        "TestPresetWorkflowTruthSurface_CompactRecipeSelectorControlIdsAreStable");
     Check(std::string(ColorPipelineWindowDraftRecipesIntroText()).find("Draft") == std::string::npos,
         "TestPresetWorkflowTruthSurface_IntroDoesNotLeakDraftAsProductWorkflow");
     Check(std::string(ColorPipelineWindowBridgeBoundarySummaryText()).find("Live bridge") == std::string::npos,

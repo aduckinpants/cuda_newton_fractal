@@ -190,3 +190,5 @@
 - `ck:eec1a0a1` 2026-06-14 21:43 UTC | score 9 — Scoped Color Root control authority repair plan truth sync: closeout wording now matches pushed/rearward-reviewed state before merge.
 - `ck:502d2612` 2026-06-14 21:58 UTC — session-start | branch=codex/root-field-experiment-preset-pack-v1 | head=9786b98 | status=dirty | profile=runtime | intent=Root field experiment preset pack V1
 - `ck:502d2612` 2026-06-14 23:20 UTC | score 93 — Root field experiment preset pack V1 closed: added root phase/proximity public recipes, no-mouse preset/demo matrix, Capture Finding replay proof, hostile audit repair, and exact native/runtime validation.
+- `ck:2c0040ce` 2026-06-14 23:30 UTC — session-start | branch=codex/root-field-preset-dropdown-repair | head=3797041 | status=dirty | profile=runtime | intent=Root field preset dropdown repair
+- `ck:2c0040ce` 2026-06-15 00:02 UTC | score 93 — Root field preset dropdown repair closed: replaced the growing recipe button strip with a compact Recipe selector plus Apply button, preserved virtual recipe automation, repaired stale no-mouse proof, and validated native/runtime rails.

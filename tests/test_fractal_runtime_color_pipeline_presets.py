@@ -94,14 +94,30 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
         ready_report = viewer.wait_for_report(timeout_seconds=30.0)
         base_hash = ready_report.get("rendered_frame_hash")
         assert isinstance(base_hash, str), ready_report
-        viewer.wait_for_control("color_pipeline.recipe.default_smooth_escape.apply", timeout_seconds=20.0)
-        viewer.wait_for_control("color_pipeline.recipe.phase_orbit_wheel.apply", timeout_seconds=20.0)
-        viewer.wait_for_control("color_pipeline.recipe.root_phase_wheel.apply", timeout_seconds=20.0)
-        viewer.wait_for_control("color_pipeline.recipe.root_proximity_heatmap.apply", timeout_seconds=20.0)
-        viewer.wait_for_control("color_pipeline.recipe.sdf_normal_angle_diagnostic.apply", timeout_seconds=20.0)
-        viewer.wait_for_control("color_pipeline.recipe.sdf_normal_angle_beauty.apply", timeout_seconds=20.0)
-        applied = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_diagnostic.apply", timeout_seconds=60.0)
-        beauty = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_beauty.apply", timeout_seconds=60.0)
+        viewer.wait_for_control("color_pipeline.recipe.selector", timeout_seconds=20.0)
+        viewer.wait_for_control("color_pipeline.recipe.apply_selected", timeout_seconds=20.0)
+        controls_report = viewer.wait_for_report(timeout_seconds=20.0)
+        visible_controls = {
+            control.get("control_id")
+            for control in controls_report.get("controls", [])
+            if isinstance(control, dict)
+        }
+        for recipe_id in (
+            "default_smooth_escape",
+            "phase_orbit_wheel",
+            "root_phase_wheel",
+            "root_proximity_heatmap",
+            "sdf_normal_angle_diagnostic",
+            "sdf_normal_angle_beauty",
+        ):
+            assert f"color_pipeline.recipe.{recipe_id}.apply" not in visible_controls, controls_report
+
+        selected = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_diagnostic.select", timeout_seconds=60.0)
+        assert selected.get("click_consumed") is True, selected
+        applied = viewer.click_control("color_pipeline.recipe.apply_selected", timeout_seconds=60.0)
+        selected_beauty = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_beauty.select", timeout_seconds=60.0)
+        assert selected_beauty.get("click_consumed") is True, selected_beauty
+        beauty = viewer.click_control("color_pipeline.recipe.apply_selected", timeout_seconds=60.0)
         viewer.wait_for_control(
             "color_pipeline.source.sdf_normal_angle.signal.sdf_gate_width_px.primary",
             timeout_seconds=20.0,
@@ -111,8 +127,13 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
             2.0,
             timeout_seconds=60.0,
         )
+        selected_diagnostic_again = viewer.click_control(
+            "color_pipeline.recipe.sdf_normal_angle_diagnostic.select",
+            timeout_seconds=60.0,
+        )
+        assert selected_diagnostic_again.get("click_consumed") is True, selected_diagnostic_again
         diagnostic_again = viewer.click_control(
-            "color_pipeline.recipe.sdf_normal_angle_diagnostic.apply",
+            "color_pipeline.recipe.apply_selected",
             timeout_seconds=60.0,
         )
 

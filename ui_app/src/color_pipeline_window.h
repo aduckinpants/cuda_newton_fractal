@@ -49,6 +49,7 @@ struct ColorPipelineWindowState {
     bool ui_automation_set_consumed = false;
     std::string ui_automation_set_error;
     std::uint64_t next_row_id = 1;
+    std::string selected_recipe_id;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
     std::vector<std::string> validation_messages;
@@ -125,6 +126,18 @@ inline std::string BuildColorPipelineSdfFieldDownsampleControlId() {
 
 inline std::string BuildColorPipelineRecipeApplyControlId(const std::string& recipeId) {
     return std::string("color_pipeline.recipe.") + recipeId + ".apply";
+}
+
+inline std::string BuildColorPipelineRecipeSelectControlId(const std::string& recipeId) {
+    return std::string("color_pipeline.recipe.") + recipeId + ".select";
+}
+
+inline const char* BuildColorPipelineRecipeSelectorControlId() {
+    return "color_pipeline.recipe.selector";
+}
+
+inline const char* BuildColorPipelineRecipeApplySelectedControlId() {
+    return "color_pipeline.recipe.apply_selected";
 }
 
 inline const char* ColorPipelineWindowDraftRecipesIntroText() {
@@ -4559,18 +4572,29 @@ inline void RenderColorPipelineRecipePresetControls(
     if (recipes.empty()) {
         return;
     }
-    ImGui::TextDisabled(ColorPipelineWindowSupportedPresetSummaryText());
-    for (std::size_t index = 0; index < recipes.size(); ++index) {
-        const MaterializedColorPipelineRecipe& recipe = recipes[index];
-        const std::string controlId = BuildColorPipelineRecipeApplyControlId(recipe.id);
-        if (index > 0) {
-            ImGui::SameLine();
+
+    const MaterializedColorPipelineRecipe* selectedRecipe = nullptr;
+    for (const MaterializedColorPipelineRecipe& recipe : recipes) {
+        if (recipe.id == ioState->selected_recipe_id) {
+            selectedRecipe = &recipe;
+            break;
         }
-        ImGui::PushID(recipe.id.c_str());
-        const bool clicked = ImGui::Button(recipe.label.c_str());
-        NoteColorPipelineUiAutomationRect(ioState, controlId.c_str());
-        const bool automationClicked = ConsumeColorPipelineAutomationClick(ioState, controlId);
-        if (clicked || automationClicked) {
+    }
+    if (!selectedRecipe) {
+        ioState->selected_recipe_id = recipes.front().id;
+        selectedRecipe = &recipes.front();
+    }
+
+    for (const MaterializedColorPipelineRecipe& recipe : recipes) {
+        const std::string selectControlId = BuildColorPipelineRecipeSelectControlId(recipe.id);
+        if (ConsumeColorPipelineAutomationClick(ioState, selectControlId)) {
+            ioState->selected_recipe_id = recipe.id;
+            selectedRecipe = &recipe;
+        }
+        const std::string applyControlId = BuildColorPipelineRecipeApplyControlId(recipe.id);
+        if (ConsumeColorPipelineAutomationClick(ioState, applyControlId)) {
+            ioState->selected_recipe_id = recipe.id;
+            selectedRecipe = &recipe;
             ApplyColorPipelineRecipePresetToLive(
                 ioState,
                 recipe.id.c_str(),
@@ -4579,7 +4603,41 @@ inline void RenderColorPipelineRecipePresetControls(
                 ioDirty,
                 ioInteraction);
         }
-        ImGui::PopID();
+    }
+
+    ImGui::TextDisabled(ColorPipelineWindowSupportedPresetSummaryText());
+    ImGui::PushItemWidth(260.0f);
+    const char* previewLabel = selectedRecipe ? selectedRecipe->label.c_str() : "Choose Recipe";
+    const bool comboOpen = ImGui::BeginCombo("Recipe", previewLabel);
+    NoteColorPipelineUiAutomationRect(ioState, BuildColorPipelineRecipeSelectorControlId());
+    if (comboOpen) {
+        for (const MaterializedColorPipelineRecipe& recipe : recipes) {
+            const bool selected = recipe.id == ioState->selected_recipe_id;
+            if (ImGui::Selectable(recipe.label.c_str(), selected)) {
+                ioState->selected_recipe_id = recipe.id;
+                selectedRecipe = &recipe;
+            }
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    const bool clicked = ImGui::Button("Apply Recipe");
+    NoteColorPipelineUiAutomationRect(ioState, BuildColorPipelineRecipeApplySelectedControlId());
+    const bool automationClicked = ConsumeColorPipelineAutomationClick(
+        ioState,
+        BuildColorPipelineRecipeApplySelectedControlId());
+    if ((clicked || automationClicked) && selectedRecipe) {
+        ApplyColorPipelineRecipePresetToLive(
+            ioState,
+            selectedRecipe->id.c_str(),
+            liveFractalType,
+            liveParams,
+            ioDirty,
+            ioInteraction);
     }
 }
 

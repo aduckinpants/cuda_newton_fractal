@@ -798,8 +798,19 @@ def test_root_field_experiment_preset_pack_v1_no_mouse(tmp_path: Path) -> None:
         command_path=tmp_path / "root_field_experiment_preset_pack_command.json",
         open_color_pipeline=True,
     ) as viewer:
-        viewer.wait_for_control("color_pipeline.recipe.root_phase_wheel.apply", timeout_seconds=30.0)
-        viewer.wait_for_control("color_pipeline.recipe.root_proximity_heatmap.apply", timeout_seconds=30.0)
+        viewer.wait_for_control("color_pipeline.recipe.selector", timeout_seconds=30.0)
+        viewer.wait_for_control("color_pipeline.recipe.apply_selected", timeout_seconds=30.0)
+
+        def apply_recipe(recipe_id: str) -> dict[str, Any]:
+            selected = viewer.click_control(
+                f"color_pipeline.recipe.{recipe_id}.select",
+                timeout_seconds=60.0,
+            )
+            assert selected.get("click_consumed") is True, selected
+            return viewer.click_control(
+                "color_pipeline.recipe.apply_selected",
+                timeout_seconds=60.0,
+            )
 
         magnet_report = viewer.wait_for_report(timeout_seconds=60.0)
         assert magnet_report.get("current_fractal_type") == "explaino_magnet_root_well", magnet_report
@@ -819,10 +830,7 @@ def test_root_field_experiment_preset_pack_v1_no_mouse(tmp_path: Path) -> None:
         ), magnet_report
         magnet_hash = _require_frame_hash(magnet_report)
 
-        root_recipe = viewer.click_control(
-            "color_pipeline.recipe.root_phase_wheel.apply",
-            timeout_seconds=60.0,
-        )
+        root_recipe = apply_recipe("root_phase_wheel")
         assert root_recipe.get("click_consumed") is True, root_recipe
         assert "source:root_phase" in root_recipe.get("lane_rows", []), root_recipe
         assert "palette:phase_wheel_palette" in root_recipe.get("lane_rows", []), root_recipe
@@ -834,10 +842,7 @@ def test_root_field_experiment_preset_pack_v1_no_mouse(tmp_path: Path) -> None:
         ), root_recipe
         assert _require_frame_hash(root_recipe) != magnet_hash, root_recipe
 
-        proximity_recipe = viewer.click_control(
-            "color_pipeline.recipe.root_proximity_heatmap.apply",
-            timeout_seconds=60.0,
-        )
+        proximity_recipe = apply_recipe("root_proximity_heatmap")
         assert proximity_recipe.get("click_consumed") is True, proximity_recipe
         assert "source:root_proximity" in proximity_recipe.get("lane_rows", []), proximity_recipe
         assert "palette:heatmap" in proximity_recipe.get("lane_rows", []), proximity_recipe
@@ -854,10 +859,7 @@ def test_root_field_experiment_preset_pack_v1_no_mouse(tmp_path: Path) -> None:
             timeout_seconds=60.0,
         )
         assert mandelbrot_report.get("root_field_consumer_root_count") == 7, mandelbrot_report
-        mandelbrot_phase = viewer.click_control(
-            "color_pipeline.recipe.root_phase_wheel.apply",
-            timeout_seconds=60.0,
-        )
+        mandelbrot_phase = apply_recipe("root_phase_wheel")
         assert mandelbrot_phase.get("current_fractal_type") == "explaino_mandelbrot_root_trap", mandelbrot_phase
         assert "source:root_phase" in mandelbrot_phase.get("lane_rows", []), mandelbrot_phase
         assert _require_frame_hash(mandelbrot_phase) != _require_frame_hash(mandelbrot_report), mandelbrot_phase

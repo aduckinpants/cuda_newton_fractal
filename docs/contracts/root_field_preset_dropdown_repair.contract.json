@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "contract_id": "root_field_preset_dropdown_repair",
+  "feature_id": "root_field_preset_dropdown_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/root_field_preset_dropdown_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "replace the massive linear Color Pipeline preset button row with a compact selector/dropdown flow",
+    "preserve root-field preset recipe functionality",
+    "prove no-mouse preset automation remains green"
+  ],
+  "forbidden_operator_prompts": [
+    "add graph editor UI",
+    "add new Color Pipeline functions",
+    "add new fractal enum lanes",
+    "add new SDF operators",
+    "use physical mouse automation",
+    "remove the root-field preset recipes"
+  ],
+  "required_defaults": {
+    "branch": "codex/root-field-preset-dropdown-repair",
+    "source_head": "3797041eb86bde913acffa505719628be93f6858",
+    "runtime_publish_required_before_viewer_visible_closeout": true,
+    "published_runtime_proof_required_before_viewer_visible_closeout": true
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/root_field_preset_dropdown_repair.contract.json --out-json artifacts/validation/root_field_preset_dropdown_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/root_field_preset_dropdown_repair_code_quality.json",
+    "ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window test_color_pipeline_core > artifacts/root_field_preset_dropdown_repair/native.log 2>&1",
+    "ui_app/build_vsdevcmd.cmd > artifacts/root_field_preset_dropdown_repair/runtime_publish.log 2>&1",
+    "py -3.14 -m pytest tests/test_fractal_runtime_color_pipeline_presets.py tests/test_fractal_runtime_root_field_consumers.py::test_root_field_experiment_preset_pack_v1_no_mouse -q --junitxml artifacts/pytest/root_field_preset_dropdown_repair_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/root_field_preset_dropdown_repair_PHASED_PLAN.md --out-json artifacts/validation/root_field_preset_dropdown_repair_hostile_audit.json",
+    "git diff --check > artifacts/root_field_preset_dropdown_repair/diff_check.log 2>&1"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The root-field preset dropdown repair contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_field_preset_dropdown_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_preset_selector_green",
+      "description": "Published no-mouse runtime proof passes after replacing the linear preset row.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/root_field_preset_dropdown_repair_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_field_preset_dropdown_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ],
+  "forbidden_defaults": {
+    "graph_ui": "forbidden",
+    "new_backend_substrate": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "remove_root_field_recipes": "forbidden"
+  }
+}
