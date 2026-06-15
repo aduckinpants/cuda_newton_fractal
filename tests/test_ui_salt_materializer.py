@@ -860,8 +860,8 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     recipe_by_id = {recipe["id"]: recipe for recipe in recipe_v2}
     for recipe in recipe_v2:
         assert recipe["ui_projection"] == "linear_color_stack"
-        assert recipe["shadow_only"] is True
-        assert recipe["live_authority"] == "recipe"
+        assert recipe["shadow_only"] is False
+        assert recipe["live_authority"] == "recipe_v2_graph"
         assert recipe["status"] == "resolved"
         assert recipe["fail_closed_reason"] == ""
         assert recipe["source_recipe_id"] == recipe["id"]

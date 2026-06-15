@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "contract_id": "composition_architecture_convergence",
+  "feature_id": "composition_architecture_convergence",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/composition_architecture_convergence_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/composition_architecture_convergence.contract.json",
+    "docs/notes/composition_architecture_convergence_PHASED_PLAN.md",
+    "docs/ui_salt/color_pipeline_function_library.ui.salt",
+    "docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "tools/viewer_host_materialize_ui_salt.py",
+    "tests/test_ui_salt_materializer.py",
+    "tests/test_fractal_runtime_color_pipeline_presets.py",
+    "tests/test_fractal_runtime_ui_salt_contract.py",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_metadata_contract.h",
+    "ui_app/src/color_pipeline_metadata_contract.cpp",
+    "ui_app/src/color_pipeline_metadata_parity.cpp",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/main.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "merge the closed root-field preset dropdown repair into master before opening this campaign",
+    "create a checked-in convergence plan and contract for Wave 4 graph UI, SDF field/source composition, and Color Pipeline composition authority",
+    "implement Slice A only by promoting existing recipe_v2 graph metadata into a non-UI recipe-application authority seam",
+    "keep visible Color Pipeline UI unchanged",
+    "add and prove a temporary fallback/kill switch to legacy recipe tuple authority",
+    "publish the runtime and prove no-mouse recipe application remains green"
+  ],
+  "forbidden_operator_prompts": [
+    "add visible graph editor UI",
+    "render arbitrary graph recipes",
+    "add new Color Pipeline functions",
+    "add new SDF operators",
+    "add new fractal lanes or SDF field producers",
+    "switch live authored row-stack execution to graph authority",
+    "import or run Salticid as a viewer runtime dependency",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/composition-architecture-convergence",
+    "source_head": "d0e901bf9e4b5d2461513dd30634ab7628fc602c",
+    "slice_kind": "recipe_v2_graph_authority_switch",
+    "ui_layout_frozen": true,
+    "graph_ui_deferred": true,
+    "recipe_v2_live_authority_for_recipes": true,
+    "legacy_recipe_fallback_switch_required": true,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "salticid_runtime_dependency": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "graph_ui_replacement": "forbidden",
+    "arbitrary_graph_recipe_rendering": "forbidden",
+    "new_function_library_entries": "forbidden",
+    "new_sdf_ops": "forbidden",
+    "new_fractal_family": "forbidden",
+    "new_sdf_field_producer": "forbidden",
+    "row_stack_graph_runtime_switch": "forbidden",
+    "runtime_salticid_dependency": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/composition_architecture_convergence.contract.json --out-json artifacts/validation/composition_architecture_convergence_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/composition_architecture_convergence_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label composition_architecture_convergence_native --log artifacts/logs/composition_architecture_convergence_native.log --out-json artifacts/validation/composition_architecture_convergence_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label composition_architecture_convergence_runtime_publish --log artifacts/logs/composition_architecture_convergence_runtime_publish.log --out-json artifacts/validation/composition_architecture_convergence_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_color_pipeline_presets.py tests/test_fractal_runtime_ui_salt_contract.py::test_published_runtime_consumes_staged_ui_salt_contract -q --junitxml artifacts/pytest/composition_architecture_convergence_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/composition_architecture_convergence_PHASED_PLAN.md --out-json artifacts/validation/composition_architecture_convergence_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label composition_architecture_convergence_diff_check --log artifacts/logs/composition_architecture_convergence_diff_check.log --out-json artifacts/validation/composition_architecture_convergence_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The composition architecture convergence contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/composition_architecture_convergence_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "native_recipe_v2_graph_authority_ok",
+      "description": "Focused native Color Pipeline rails pass with recipe_v2 graph authority enabled and fallback covered.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/composition_architecture_convergence_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_publish_ok",
+      "description": "The viewer runtime publishes successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/composition_architecture_convergence_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_recipe_dropdown_ok",
+      "description": "Published no-mouse recipe preset runtime proof passes through the unchanged dropdown/apply UI.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/composition_architecture_convergence_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/composition_architecture_convergence_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
+

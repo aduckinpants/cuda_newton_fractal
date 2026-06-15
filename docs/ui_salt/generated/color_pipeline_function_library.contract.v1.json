@@ -2384,8 +2384,8 @@
         "label": "Default Smooth Escape",
         "source_recipe_id": "default_smooth_escape",
         "ui_projection": "linear_color_stack",
-        "shadow_only": true,
-        "live_authority": "recipe",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
         "status": "resolved",
         "nodes": [
           {
@@ -2464,8 +2464,8 @@
         "label": "Phase Orbit Wheel",
         "source_recipe_id": "phase_orbit_wheel",
         "ui_projection": "linear_color_stack",
-        "shadow_only": true,
-        "live_authority": "recipe",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
         "status": "resolved",
         "nodes": [
           {
@@ -2544,8 +2544,8 @@
         "label": "Root Phase Wheel",
         "source_recipe_id": "root_phase_wheel",
         "ui_projection": "linear_color_stack",
-        "shadow_only": true,
-        "live_authority": "recipe",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
         "status": "resolved",
         "nodes": [
           {
@@ -2624,8 +2624,8 @@
         "label": "Root Proximity Heatmap",
         "source_recipe_id": "root_proximity_heatmap",
         "ui_projection": "linear_color_stack",
-        "shadow_only": true,
-        "live_authority": "recipe",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
         "status": "resolved",
         "nodes": [
           {
@@ -2704,8 +2704,8 @@
         "label": "SDF Normal Angle Diagnostic",
         "source_recipe_id": "sdf_normal_angle_diagnostic",
         "ui_projection": "linear_color_stack",
-        "shadow_only": true,
-        "live_authority": "recipe",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
         "status": "resolved",
         "nodes": [
           {
@@ -2784,8 +2784,8 @@
         "label": "SDF Normal Angle Beauty",
         "source_recipe_id": "sdf_normal_angle_beauty",
         "ui_projection": "linear_color_stack",
-        "shadow_only": true,
-        "live_authority": "recipe",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
         "status": "resolved",
         "nodes": [
           {

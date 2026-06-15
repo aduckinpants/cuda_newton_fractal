@@ -53,9 +53,9 @@ def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> N
     assert report["typed_compatibility_pilot_authority"] == "typed_resolver_pilot"
     assert report["companion_suggestion_authority"] == "materialized_json"
     assert report["active_companion_suggestion_count"] == 20
-    assert report["recipe_count"] == 4
-    assert report["recipe_expansion_authority"] == "materialized_json"
-    assert report["active_recipe_count"] == 4
+    assert report["recipe_count"] == 6
+    assert report["recipe_expansion_authority"] == "recipe_v2_graph"
+    assert report["active_recipe_count"] == 6
     assert report["taxonomy_group_count"] == 24
     assert report["lane_taxonomy_groups"]["source"] == [
         "escape",

@@ -1300,13 +1300,13 @@ bool ValidateMaterializedRecipeV2(
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
                 "' has unsupported ui_projection");
         }
-        if (!recipe.shadow_only) {
+        if (recipe.shadow_only) {
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
-                "' must be shadow_only");
+                "' must be live recipe_v2_graph authority");
         }
-        if (recipe.live_authority != "recipe") {
+        if (recipe.live_authority != "recipe_v2_graph") {
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
-                "' must keep recipe live_authority");
+                "' must use recipe_v2_graph live_authority");
         }
         if (recipe.status != "resolved" && recipe.status != "fail_closed") {
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +

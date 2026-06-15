@@ -752,8 +752,8 @@ def _build_recipe_v2_shadow(
         "label": recipe["label"],
         "source_recipe_id": recipe_id,
         "ui_projection": "linear_color_stack",
-        "shadow_only": True,
-        "live_authority": "recipe",
+        "shadow_only": False,
+        "live_authority": "recipe_v2_graph",
         "status": resolved["status"],
         "nodes": [
             {"id": node_id, "lane": lane, "function": function_id}

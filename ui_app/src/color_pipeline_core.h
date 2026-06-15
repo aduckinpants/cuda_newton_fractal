@@ -1114,6 +1114,7 @@ struct ColorPipelineMetadataCatalogStorage {
     std::vector<MaterializedColorPipelineCompatibilityAudit> compatibility_audit;
     std::vector<MaterializedColorPipelineResolutionCase> resolution_cases;
     std::vector<MaterializedColorPipelineRecipe> recipes;
+    std::vector<MaterializedColorPipelineRecipeV2> recipe_v2;
 };
 
 struct ColorPipelineCompatibilityRouteExplanation {
@@ -1140,6 +1141,23 @@ inline bool IsColorPipelineTypedCompatibilityPilotEnabled() {
 
 inline void SetColorPipelineTypedCompatibilityPilotEnabledForTests(bool enabled) {
     MutableColorPipelineTypedCompatibilityPilotEnabledStorage() = enabled;
+}
+
+inline bool& MutableColorPipelineRecipeGraphFallbackEnabledStorage() {
+    static bool enabled = false;
+    return enabled;
+}
+
+inline bool IsColorPipelineRecipeGraphFallbackEnabledForTests() {
+    return MutableColorPipelineRecipeGraphFallbackEnabledStorage();
+}
+
+inline void SetColorPipelineRecipeGraphFallbackEnabledForTests(bool enabled) {
+    MutableColorPipelineRecipeGraphFallbackEnabledStorage() = enabled;
+}
+
+inline const char* ColorPipelineRecipeGraphFallbackSwitchId() {
+    return "color_pipeline.recipe_v2.force_legacy_recipe_tuple";
 }
 
 inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
@@ -1470,6 +1488,9 @@ inline bool TryInstallColorPipelineMetadataCatalog(
     candidate.compatibility_audit = contract.compatibility_audit;
     candidate.resolution_cases = contract.resolution_cases;
     candidate.recipes = contract.recipes;
+    candidate.recipe_v2 = contract.has_recipe_v2
+        ? contract.recipe_v2
+        : std::vector<MaterializedColorPipelineRecipeV2>{};
 
     ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
     storage = std::move(candidate);
@@ -1483,6 +1504,7 @@ inline bool TryInstallColorPipelineMetadataCatalog(
 inline void ClearColorPipelineMetadataCatalogForTests() {
     MutableColorPipelineMetadataCatalogStorage() = ColorPipelineMetadataCatalogStorage{};
     SetColorPipelineTypedCompatibilityPilotEnabledForTests(true);
+    SetColorPipelineRecipeGraphFallbackEnabledForTests(false);
 }
 
 inline bool IsColorPipelineMetadataCatalogActive() {
@@ -1988,8 +2010,22 @@ inline bool IsColorPipelineMetadataRecipeExpansionActive() {
     return storage.active && !storage.recipes.empty();
 }
 
+inline bool IsColorPipelineRecipeV2GraphAuthorityActive() {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    return storage.active && !storage.recipe_v2.empty() &&
+        !IsColorPipelineRecipeGraphFallbackEnabledForTests();
+}
+
 inline std::string ColorPipelineRecipeExpansionAuthorityId() {
-    return IsColorPipelineMetadataRecipeExpansionActive() ? "materialized_json" : "hardcoded";
+    if (IsColorPipelineRecipeV2GraphAuthorityActive()) {
+        return "recipe_v2_graph";
+    }
+    if (IsColorPipelineMetadataRecipeExpansionActive()) {
+        return IsColorPipelineRecipeGraphFallbackEnabledForTests()
+            ? "materialized_json_legacy_recipe_tuple"
+            : "materialized_json";
+    }
+    return "hardcoded";
 }
 
 inline const std::vector<MaterializedColorPipelineRecipe>& GetActiveColorPipelineRecipes() {
@@ -2006,6 +2042,20 @@ inline int CountActiveColorPipelineRecipes() {
 inline const MaterializedColorPipelineRecipe* FindActiveColorPipelineRecipe(
     const std::string& recipeId) {
     return FindColorPipelineRecipeInRows(GetActiveColorPipelineRecipes(), recipeId);
+}
+
+inline const MaterializedColorPipelineRecipeV2* FindActiveColorPipelineRecipeV2(
+    const std::string& recipeId) {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    if (!storage.active) {
+        return nullptr;
+    }
+    for (const MaterializedColorPipelineRecipeV2& recipe : storage.recipe_v2) {
+        if (recipe.id == recipeId) {
+            return &recipe;
+        }
+    }
+    return nullptr;
 }
 
 inline const std::vector<ColorPipelineLaneCatalog>& GetColorPipelineLaneCatalogs() {
@@ -2186,6 +2236,90 @@ inline bool BuildColorPipelineLaneWithSingleRow(
     return true;
 }
 
+inline bool TryProjectColorPipelineRecipeV2ToLanes(
+    const MaterializedColorPipelineRecipeV2& recipe,
+    std::vector<ColorPipelineLaneState>* outLanes,
+    std::string* outError = nullptr) {
+    if (outLanes) {
+        outLanes->clear();
+    }
+    auto fail = [outError](const std::string& message) {
+        if (outError) {
+            *outError = message;
+        }
+        return false;
+    };
+    if (!outLanes) {
+        return fail("Color Pipeline recipe_v2 projection requires output lanes");
+    }
+    if (recipe.ui_projection != "linear_color_stack") {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has unsupported ui_projection");
+    }
+    if (recipe.shadow_only) {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' is still marked shadow_only");
+    }
+    if (recipe.live_authority != "recipe_v2_graph") {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' is not live recipe_v2_graph authority");
+    }
+    if (recipe.status == "fail_closed") {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' failed closed: " + recipe.fail_closed_reason);
+    }
+    if (recipe.status != "resolved") {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid status");
+    }
+
+    static const char* const kExpectedLanes[] = {"source", "shape", "palette", "grading"};
+    if (recipe.nodes.size() != 4) {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' does not have four linear projection nodes");
+    }
+    if (recipe.edges.size() != 3) {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' does not have three linear projection edges");
+    }
+
+    std::vector<ColorPipelineLaneState> lanes;
+    lanes.reserve(4);
+    for (std::size_t index = 0; index < 4; ++index) {
+        const MaterializedColorPipelineRecipeV2Node& node = recipe.nodes[index];
+        if (node.id != kExpectedLanes[index] || node.lane != kExpectedLanes[index]) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid linear node order");
+        }
+        const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(node.lane);
+        if (!catalog) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' references missing lane: " + node.lane);
+        }
+        ColorPipelineLaneState lane;
+        if (!BuildColorPipelineLaneWithSingleRow(
+                *catalog,
+                node.function.c_str(),
+                static_cast<std::uint64_t>(index + 1),
+                &lane,
+                outError)) {
+            return false;
+        }
+        lanes.push_back(std::move(lane));
+    }
+
+    for (std::size_t index = 0; index < 3; ++index) {
+        const MaterializedColorPipelineRecipeV2Edge& edge = recipe.edges[index];
+        if (edge.from_node != kExpectedLanes[index] || edge.to_node != kExpectedLanes[index + 1]) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid linear edge order");
+        }
+        if (edge.from_function != recipe.nodes[index].function ||
+            edge.to_function != recipe.nodes[index + 1].function) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' edge functions do not match projection nodes");
+        }
+        if (edge.status != "direct" && edge.status != "adapted") {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid edge status");
+        }
+    }
+
+    *outLanes = std::move(lanes);
+    if (outError) {
+        outError->clear();
+    }
+    return true;
+}
+
 inline bool TryBuildColorPipelineRecipeLanes(
     const std::string& recipeId,
     std::vector<ColorPipelineLaneState>* outLanes,
@@ -2196,6 +2330,19 @@ inline bool TryBuildColorPipelineRecipeLanes(
     if (recipeId.empty() || !outLanes) {
         if (outError) *outError = "Color Pipeline recipe expansion requires a recipe id and output lanes";
         return false;
+    }
+
+    if (IsColorPipelineRecipeV2GraphAuthorityActive()) {
+        const MaterializedColorPipelineRecipeV2* recipeV2 = FindActiveColorPipelineRecipeV2(recipeId);
+        if (recipeV2) {
+            return TryProjectColorPipelineRecipeV2ToLanes(*recipeV2, outLanes, outError);
+        }
+        if (FindActiveColorPipelineRecipe(recipeId)) {
+            if (outError) {
+                *outError = std::string("Missing recipe_v2 graph metadata for Color Pipeline recipe: ") + recipeId;
+            }
+            return false;
+        }
     }
 
     const MaterializedColorPipelineRecipe* recipe = FindActiveColorPipelineRecipe(recipeId);

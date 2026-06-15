@@ -1414,11 +1414,11 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
             Check(recipeV2->source_recipe_id == recipe.id &&
                     recipeV2->label == recipe.label &&
                     recipeV2->ui_projection == "linear_color_stack" &&
-                    recipeV2->shadow_only &&
-                    recipeV2->live_authority == "recipe" &&
+                    !recipeV2->shadow_only &&
+                    recipeV2->live_authority == "recipe_v2_graph" &&
                     recipeV2->status == "resolved" &&
                     recipeV2->fail_closed_reason.empty(),
-                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2ShadowMetadata");
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2LiveAuthorityMetadata");
             Check(recipeV2->nodes.size() == 4 && recipeV2->edges.size() == 3,
                 "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2LinearProjectionShape");
             if (recipeV2->nodes.size() == 4) {
@@ -1884,8 +1884,11 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
         (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Install: ") + error).c_str());
     Check(color_pipeline_core::IsColorPipelineMetadataRecipeExpansionActive(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_MetadataActive");
-    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("materialized_json"),
+    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("recipe_v2_graph"),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Authority");
+    Check(std::string(color_pipeline_core::ColorPipelineRecipeGraphFallbackSwitchId()) ==
+            std::string("color_pipeline.recipe_v2.force_legacy_recipe_tuple"),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackSwitchId");
     Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Count");
 
@@ -1929,6 +1932,31 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
         }
     }
 
+    color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(true);
+    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() ==
+            std::string("materialized_json_legacy_recipe_tuple"),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackAuthority");
+    std::vector<ColorPipelineLaneState> fallbackLanes;
+    error.clear();
+    Check(color_pipeline_core::TryBuildColorPipelineRecipeLanes(
+            "default_smooth_escape",
+            &fallbackLanes,
+            &error),
+        (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackBuildRecipeLanes: ") + error).c_str());
+    Check(fallbackLanes.size() == 4 &&
+            fallbackLanes[0].rows.size() == 1 &&
+            fallbackLanes[0].rows[0].function_id == "smooth_escape_ramp" &&
+            fallbackLanes[1].rows.size() == 1 &&
+            fallbackLanes[1].rows[0].function_id == "identity" &&
+            fallbackLanes[2].rows.size() == 1 &&
+            fallbackLanes[2].rows[0].function_id == "heatmap" &&
+            fallbackLanes[3].rows.size() == 1 &&
+            fallbackLanes[3].rows[0].function_id == "contrast_lift",
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackTuple");
+    color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(false);
+    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("recipe_v2_graph"),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackRestoresGraphAuthority");
+
     std::vector<ColorPipelineLaneState> rejectedLanes;
     error.clear();
     Check(!color_pipeline_core::TryBuildColorPipelineRecipeLanes("missing_recipe", &rejectedLanes, &error) &&
@@ -1938,6 +1966,44 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
     Check(!color_pipeline_core::IsColorPipelineMetadataRecipeExpansionActive(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_ClearRestoresHardcoded");
+}
+
+
+void TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    const std::string path = ResolveMaterializedContractPath();
+    Check(LoadColorPipelineMaterializedContractJson(path, &contract, &error),
+        (std::string("TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_Loads: ") + error).c_str());
+    Check(color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error),
+        (std::string("TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_Install: ") + error).c_str());
+
+    const MaterializedColorPipelineRecipeV2* baseRecipe = FindRecipeV2(contract, "default_smooth_escape");
+    Check(baseRecipe != nullptr,
+        "TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_BaseRecipeExists");
+    if (!baseRecipe) {
+        color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+        return;
+    }
+
+    std::vector<ColorPipelineLaneState> lanes;
+    MaterializedColorPipelineRecipeV2 shadowRecipe = *baseRecipe;
+    shadowRecipe.shadow_only = true;
+    error.clear();
+    Check(!color_pipeline_core::TryProjectColorPipelineRecipeV2ToLanes(shadowRecipe, &lanes, &error) &&
+            lanes.empty() && error.find("shadow_only") != std::string::npos,
+        "TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_ShadowOnlyRejected");
+
+    MaterializedColorPipelineRecipeV2 mismatchedEdgeRecipe = *baseRecipe;
+    mismatchedEdgeRecipe.edges[0].from_function = "heatmap";
+    error.clear();
+    Check(!color_pipeline_core::TryProjectColorPipelineRecipeV2ToLanes(mismatchedEdgeRecipe, &lanes, &error) &&
+            lanes.empty() && error.find("edge functions do not match") != std::string::npos,
+        "TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_EdgeFunctionMismatchRejected");
+
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
 }
 
 void TestMaterializedContractLoaderRejectsTamperedJson() {
@@ -2397,6 +2463,7 @@ int main() {
     TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup();
     TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions();
     TestMaterializedUiSaltMetadataCanOwnRecipeExpansion();
+    TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph();
     TestMaterializedContractLoaderRejectsTamperedJson();
 
     std::printf("test_color_pipeline_core: passed=%d failed=%d\n", g_passed, g_failed);
