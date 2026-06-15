@@ -2518,11 +2518,7 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
             return false;
         }
         if (ioRow->function_id == "root_phase") {
-            return SetColorPipelineParamEnum(
-                ioRow,
-                "signal.root_pattern_ref",
-                ExplainoRootPatternRefId(liveParams.explaino_root_field_pattern_ref),
-                outError);
+            return true;
         }
         return true;
     }
@@ -2536,12 +2532,7 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
     }
     if (ioRow->function_id == "root_proximity") {
         return SetColorPipelineParamNumber(ioRow, "signal.proximity_scale", liveParams.color_root_proximity_scale, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", liveParams.color_root_proximity_bias, outError) &&
-            SetColorPipelineParamEnum(
-                ioRow,
-                "signal.root_pattern_ref",
-                ExplainoRootPatternRefId(liveParams.explaino_root_field_pattern_ref),
-                outError);
+            SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", liveParams.color_root_proximity_bias, outError);
     }
     if (ioRow->function_id == "sdf_signed_distance" ||
         ioRow->function_id == "sdf_inside_outside" ||

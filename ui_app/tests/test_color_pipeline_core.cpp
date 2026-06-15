@@ -750,6 +750,41 @@ void TestImportAndApplySupportedParams() {
             RowNumber(phaseOrbitRow, "signal.phase_offset", 0.75) && RowNumber(phaseOrbitRow, "signal.wrap_cycles", 2.5),
         "TestImportAndApplySupportedParams_PhaseOrbitImportsLiveValues");
 
+    KernelParams importedRootAwareParams;
+    importedRootAwareParams.color_phase_signal_offset = 0.625f;
+    importedRootAwareParams.color_phase_wrap_cycles = 3.5f;
+    importedRootAwareParams.color_root_proximity_scale = 2.25f;
+    importedRootAwareParams.color_root_proximity_bias = -0.375f;
+    importedRootAwareParams.explaino_root_field_pattern_ref = ExplainoRootPatternRef::secondary;
+
+    ColorPipelineRowState rootPhaseImportedRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "root_phase", 310, &rootPhaseImportedRow) &&
+            color_pipeline_core::ImportSupportedColorPipelineParamsFromLive(&rootPhaseImportedRow, importedRootAwareParams) &&
+            RowNumber(rootPhaseImportedRow, "signal.phase_offset", 0.625) &&
+            RowNumber(rootPhaseImportedRow, "signal.wrap_cycles", 3.5) &&
+            RowEnum(rootPhaseImportedRow, "signal.root_pattern_ref", "dynamics_root_field"),
+        "TestImportAndApplySupportedParams_RootPhaseImportKeepsDefaultDynamicsRootField");
+    ColorPipelineRowState rootPhaseExplicitColorRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "root_phase", 311, &rootPhaseExplicitColorRow) &&
+            color_pipeline_core::SetColorPipelineParamEnum(&rootPhaseExplicitColorRow, "signal.root_pattern_ref", "color_root_field") &&
+            color_pipeline_core::ImportSupportedColorPipelineParamsFromLive(&rootPhaseExplicitColorRow, importedRootAwareParams) &&
+            RowEnum(rootPhaseExplicitColorRow, "signal.root_pattern_ref", "color_root_field"),
+        "TestImportAndApplySupportedParams_RootPhaseImportPreservesExplicitColorRootField");
+
+    ColorPipelineRowState rootProximityImportedRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "root_proximity", 312, &rootProximityImportedRow) &&
+            color_pipeline_core::ImportSupportedColorPipelineParamsFromLive(&rootProximityImportedRow, importedRootAwareParams) &&
+            RowNumber(rootProximityImportedRow, "signal.proximity_scale", 2.25) &&
+            RowNumber(rootProximityImportedRow, "signal.proximity_bias", -0.375) &&
+            RowEnum(rootProximityImportedRow, "signal.root_pattern_ref", "dynamics_root_field"),
+        "TestImportAndApplySupportedParams_RootProximityImportKeepsDefaultDynamicsRootField");
+    ColorPipelineRowState rootProximityExplicitColorRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "root_proximity", 313, &rootProximityExplicitColorRow) &&
+            color_pipeline_core::SetColorPipelineParamEnum(&rootProximityExplicitColorRow, "signal.root_pattern_ref", "color_root_field") &&
+            color_pipeline_core::ImportSupportedColorPipelineParamsFromLive(&rootProximityExplicitColorRow, importedRootAwareParams) &&
+            RowEnum(rootProximityExplicitColorRow, "signal.root_pattern_ref", "color_root_field"),
+        "TestImportAndApplySupportedParams_RootProximityImportPreservesExplicitColorRootField");
+
     ColorPipelineRowState heatmapRow;
     Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*palette, "heatmap", 32, &heatmapRow) &&
             color_pipeline_core::SetColorPipelineParamNumber(&heatmapRow, "palette.cycle_scale", 2.0) &&

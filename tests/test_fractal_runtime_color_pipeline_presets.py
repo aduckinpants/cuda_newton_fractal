@@ -221,6 +221,78 @@ def test_color_pipeline_source_stack_graph_receipt_is_reported_no_mouse(tmp_path
     assert isinstance(unsupported, list), receipt
 
 
+def _graph_source_root_pattern_ref(report: dict[str, object]) -> str:
+    receipt = report.get("color_pipeline_graph_receipt")
+    assert isinstance(receipt, dict), report
+    nodes = receipt.get("nodes")
+    assert isinstance(nodes, list), receipt
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        if node.get("id") == "source.0":
+            value = node.get("root_pattern_ref")
+            assert isinstance(value, str), node
+            return value
+    raise AssertionError(f"source.0 node missing from receipt: {receipt!r}")
+
+
+def test_color_pipeline_root_pattern_authority_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline root-pattern authority runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_magnet_root_well",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    poisoned_state = json.loads(json.dumps(neutral_capture["state"]))
+    params = poisoned_state.get("params")
+    assert isinstance(params, dict), poisoned_state
+    params["explaino_root_field_pattern_ref"] = "color_root_field"
+    state_path = write_state_bundle(
+        tmp_path / "color_pipeline_root_pattern_authority_seed",
+        poisoned_state,
+    )
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "color_pipeline_root_pattern_authority_report.json",
+        command_path=tmp_path / "color_pipeline_root_pattern_authority_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        viewer.wait_for_control("color_pipeline.recipe.selector", timeout_seconds=20.0)
+        selected_phase = viewer.click_control("color_pipeline.recipe.root_phase_wheel.select", timeout_seconds=60.0)
+        assert selected_phase.get("click_consumed") is True, selected_phase
+        applied_phase = viewer.click_control("color_pipeline.recipe.apply_selected", timeout_seconds=60.0)
+        selected_proximity = viewer.click_control("color_pipeline.recipe.root_proximity_heatmap.select", timeout_seconds=60.0)
+        assert selected_proximity.get("click_consumed") is True, selected_proximity
+        applied_proximity = viewer.click_control("color_pipeline.recipe.apply_selected", timeout_seconds=60.0)
+
+    assert applied_phase.get("click_consumed") is True, applied_phase
+    assert "source:root_phase" in applied_phase.get("lane_rows", []), applied_phase
+    assert _graph_source_root_pattern_ref(applied_phase) == "dynamics_root_field"
+    phase_params = applied_phase.get("params")
+    if isinstance(phase_params, dict):
+        source_stack = phase_params.get("color_source_stack")
+        assert isinstance(source_stack, list) and source_stack, applied_phase
+        assert source_stack[0].get("root_pattern_ref") == "dynamics_root_field", applied_phase
+
+    assert applied_proximity.get("click_consumed") is True, applied_proximity
+    assert "source:root_proximity" in applied_proximity.get("lane_rows", []), applied_proximity
+    assert _graph_source_root_pattern_ref(applied_proximity) == "dynamics_root_field"
+    proximity_params = applied_proximity.get("params")
+    if isinstance(proximity_params, dict):
+        source_stack = proximity_params.get("color_source_stack")
+        assert isinstance(source_stack, list) and source_stack, applied_proximity
+        assert source_stack[0].get("root_pattern_ref") == "dynamics_root_field", applied_proximity
+
+
 def test_non_sdf_source_rows_do_not_alias_smooth_escape_no_mouse(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Color Pipeline source-row runtime regression is Windows-only")
