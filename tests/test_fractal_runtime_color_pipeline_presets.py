@@ -154,6 +154,73 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
     assert diagnostic_again.get("rendered_frame_hash") == applied.get("rendered_frame_hash"), diagnostic_again
 
 
+
+def test_color_pipeline_source_stack_graph_receipt_is_reported_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline graph receipt runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    )
+    state_path = write_state_bundle(
+        tmp_path / "color_pipeline_graph_receipt_seed",
+        json.loads(json.dumps(neutral_capture["state"])),
+    )
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "color_pipeline_graph_receipt_report.json",
+        command_path=tmp_path / "color_pipeline_graph_receipt_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        viewer.wait_for_control("color_pipeline.recipe.selector", timeout_seconds=20.0)
+        selected = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_beauty.select", timeout_seconds=60.0)
+        assert selected.get("click_consumed") is True, selected
+        applied = viewer.click_control("color_pipeline.recipe.apply_selected", timeout_seconds=60.0)
+
+    assert applied.get("click_consumed") is True, applied
+    receipt = applied.get("color_pipeline_graph_receipt")
+    assert isinstance(receipt, dict), applied
+    assert receipt.get("schema_id") == "viewer.color_pipeline_graph_receipt.v1", receipt
+    assert receipt.get("execution_authority") == "linear_row_stack", receipt
+    assert receipt.get("ui_projection") == "linear_color_stack", receipt
+    assert receipt.get("source_stack_kind") == "sdf_only", receipt
+    nodes = receipt.get("nodes")
+    assert isinstance(nodes, list), receipt
+    node_by_id = {
+        node.get("id"): node
+        for node in nodes
+        if isinstance(node, dict)
+    }
+    assert node_by_id.get("source.0", {}).get("function_id") == "sdf_normal_angle", receipt
+    assert node_by_id.get("source.1", {}).get("function_id") == "lens_field_v2_distance", receipt
+    assert node_by_id.get("shape.0", {}).get("function_id") == "identity", receipt
+    assert node_by_id.get("palette.0", {}).get("function_id") == "phase_wheel_palette", receipt
+    source_0 = node_by_id["source.0"]
+    assert source_0.get("enabled") is True and source_0.get("active_execution") is True, source_0
+    assert source_0.get("sdf_applicator") == "boundary_band", source_0
+    assert source_0.get("sdf_field_downsample") in {"0", "1", "2", "4", "8", "16"}, source_0
+    edges = receipt.get("edges")
+    assert isinstance(edges, list), receipt
+    edge_ids = {
+        edge.get("id")
+        for edge in edges
+        if isinstance(edge, dict)
+    }
+    assert "source.0->source.1" in edge_ids, receipt
+    assert "source.1->shape.0" in edge_ids, receipt
+    unsupported = receipt.get("unsupported_routes")
+    assert isinstance(unsupported, list), receipt
+
+
 def test_non_sdf_source_rows_do_not_alias_smooth_escape_no_mouse(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Color Pipeline source-row runtime regression is Windows-only")

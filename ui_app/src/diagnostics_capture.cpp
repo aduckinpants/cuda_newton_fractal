@@ -6,6 +6,7 @@
 #define COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "color_pipeline_window.h"
 #undef COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "color_pipeline_graph_receipt.h"
 #include "explaino_root_sdf_field.h"
 #include "fractal_family_rules.h"
 #include "render_capture_guard.h"
@@ -632,6 +633,14 @@ void WriteColorPipelineDraftJson(std::ostringstream& js, const ColorPipelineWind
     js << "  }";
 }
 
+void WriteColorPipelineGraphReceiptObjectJson(
+    std::ostringstream& js,
+    const ColorPipelineWindowState& state,
+    const std::string& sourceStackKind) {
+    color_pipeline_graph_receipt::WriteColorPipelineGraphReceiptJson(
+        js, state.lanes, state.validation_messages, sourceStackKind);
+}
+
 void WriteLensStateJson(std::ostringstream& js, const LensSettings& lens) {
     const char* overlayModeId = LensSdfOverlayModeId(lens.sdf_overlay_mode);
     js << "  \"lens\": {\n";
@@ -672,6 +681,23 @@ bool FindingCaptureUsesSdfField(const KernelParams& params) {
         }
     }
     return false;
+}
+
+std::string FindingSourceStackKind(const KernelParams& params) {
+    const int sourceStackCount = CaptureColorSourceStackCount(params);
+    if (sourceStackCount <= 0) {
+        return FindingColorSignalUsesSdfField(params.color_pipeline.signal) ? "sdf_only" : "non_sdf_only";
+    }
+    bool hasSdf = false;
+    bool hasNonSdf = false;
+    for (int index = 0; index < sourceStackCount; ++index) {
+        if (FindingColorSignalUsesSdfField(params.color_source_stack[index].signal)) {
+            hasSdf = true;
+        } else {
+            hasNonSdf = true;
+        }
+    }
+    return hasSdf && hasNonSdf ? "mixed" : (hasSdf ? "sdf_only" : "non_sdf_only");
 }
 
 void WriteFindingSourceRowsJson(std::ostringstream& js, const KernelParams& params) {
@@ -1479,6 +1505,13 @@ std::string BuildFindingFractalStateJson(
     WriteFindingShapeRowsJson(js, params);
     WriteFindingPaletteRowsJson(js, params);
     WriteFindingGradingRowsJson(js, params);
+    if (HasSerializableColorPipelineDraft(colorPipelineWindow)) {
+        js << ",\n";
+        js << "    \"graph_receipt\": ";
+        WriteColorPipelineGraphReceiptObjectJson(
+            js, *colorPipelineWindow, FindingSourceStackKind(params));
+        js << "\n";
+    }
     js << "  }";
     if (HasSerializableColorPipelineDraft(colorPipelineWindow)) {
         js << ",\n";

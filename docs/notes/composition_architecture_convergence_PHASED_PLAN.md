@@ -5,12 +5,12 @@
 - [x] Merge the closed root-field preset dropdown repair into `master` before opening this campaign.
 - [x] Join Wave 4 graph UI, SDF field/source composition, and Color Pipeline recipe/composition authority into one checked-in implementation order.
 - [x] Preserve the current linear Color Pipeline UI as the visible projection for now.
-- [ ] Implement Slice A by promoting existing `recipe_v2` graph metadata into one safe non-UI recipe-application authority seam.
-- [ ] Prove parity, fallback, runtime behavior, hostile audit, receipts, push, and stop before visible graph UI or broader SDF product growth.
+- [x] Implement Slice A by promoting existing `recipe_v2` graph metadata into one safe non-UI recipe-application authority seam.
+- [x] Prove parity, fallback, runtime behavior, hostile audit, receipts, push, and stop before visible graph UI or broader SDF product growth.
 
 ## Current Phase
 
-Phase 5 - recipe_v2 graph projection, fallback, native proof, and published no-mouse runtime proof are green; hostile audit and checkpoint closure are in progress.
+Slice A closed at `418d0a8`: recipe_v2 graph projection, fallback, native proof, published no-mouse runtime proof, hostile audit, receipts, rearward review, and push are complete. Slice B/C specs remain as follow-up planning surfaces only.
 
 ## Phase Checklist
 
@@ -22,7 +22,7 @@ Phase 5 - recipe_v2 graph projection, fallback, native proof, and published no-m
 - [x] Phase 2: Add RED/native parity coverage for graph-projected recipe lanes and fallback authority.
 - [x] Phase 3: Implement recipe application through `recipe_v2` graph projection with legacy fallback switch.
 - [x] Phase 4: Run focused native and published no-mouse runtime proof.
-- [ ] Phase 5: Hostile audit, checkpoint, receipts, rearward review, push, clean tree, and stop for replan.
+- [x] Phase 5: Hostile audit, checkpoint, receipts, rearward review, push, clean tree, and stop for replan.
 
 ## Scope Lock
 
@@ -94,12 +94,12 @@ Decision-complete follow-up target after Slice B:
 | --- | --- | --- |
 | Source repair merge | done | `master` fast-forwarded and pushed from `9786b98` to `d0e901b`. |
 | Branch | done | `codex/composition-architecture-convergence`. |
-| Plan/contract | in progress | This plan and `docs/contracts/composition_architecture_convergence.contract.json`. |
+| Plan/contract | done | `docs/contracts/composition_architecture_convergence.contract.json`; Slice A closed at `418d0a8`. |
 | Active lock | done | `viewer_host_begin_work_slice.py`, checkpoint `ck:8c00bebb`. |
 | Native proof | done | `composition_architecture_convergence_native`: `test_color_pipeline_core` passed 3325/0 and `test_color_pipeline_window` passed 433/0. |
 | Runtime proof | done | `tests/test_fractal_runtime_color_pipeline_presets.py` plus `test_published_runtime_consumes_staged_ui_salt_contract` passed 4/4 after runtime publish. |
-| Hostile audit | pending | Required before checkpoint. |
-| Receipts/rearward/push | pending | Required before closeout. |
+| Hostile audit | done | See audit passes and findings below. |
+| Receipts/rearward/push | done | Slice A checkpointed and pushed at `418d0a8`; rearward review artifact is `ok`. |
 
 ## Hostile Audit
 
@@ -142,5 +142,5 @@ Required questions:
 
 ## Stop Point
 
-Stop after Slice A is graph-authoritative, validated, hostile-audited, checkpointed, pushed, and clean. Preplanned sliced work is exhausted at that point except for the checked-in Slice B/C specs; stop for replan before visible graph UI, arbitrary graph rendering, or broader SDF product growth.
+Slice A is graph-authoritative, validated, hostile-audited, checkpointed, pushed, and clean at `418d0a8`. Preplanned sliced work for this plan is exhausted except for the checked-in Slice B/C specs; start any implementation from a new checked-in plan/contract.
 

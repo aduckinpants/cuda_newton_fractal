@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "../src/color_pipeline_graph_receipt.h"
 #include "../src/viewer_ui_automation_report.h"
 
 namespace {
@@ -343,6 +344,140 @@ void TestLensSdfProbeTimingFields() {
         "automation report writes explicit scoped root-pattern consumer refs");
 }
 
+
+void TestColorPipelineGraphReceiptBuilderReportsLinearStackTruth() {
+    ColorPipelineLaneState sourceLane{};
+    sourceLane.lane_id = "source";
+    sourceLane.label = "Source";
+    ColorPipelineRowState smoothRow{};
+    smoothRow.ui_row_id = 10;
+    smoothRow.enabled = true;
+    smoothRow.function_id = "smooth_escape_ramp";
+    smoothRow.parameter_values.push_back({"signal.blend_weight", "float", 1.0, false, ""});
+    sourceLane.rows.push_back(smoothRow);
+
+    ColorPipelineRowState sdfRow{};
+    sdfRow.ui_row_id = 11;
+    sdfRow.enabled = false;
+    sdfRow.function_id = "sdf_signed_distance";
+    sdfRow.parameter_values.push_back({"signal.sdf_gate", "enum", 0.0, false, "sdf_inside"});
+    sdfRow.parameter_values.push_back({"signal.sdf_gate_width_px", "float", 4.0, false, ""});
+    sdfRow.parameter_values.push_back({"signal.sdf_field_downsample", "enum", 0.0, false, "4"});
+    sdfRow.parameter_values.push_back({"signal.root_pattern_ref", "enum", 0.0, false, "color_root_field"});
+    sdfRow.parameter_values.push_back({"signal.blend_weight", "float", 0.35, false, ""});
+    sourceLane.rows.push_back(sdfRow);
+
+    ColorPipelineLaneState shapeLane{};
+    shapeLane.lane_id = "shape";
+    shapeLane.label = "Shape";
+    ColorPipelineRowState shapeRow{};
+    shapeRow.ui_row_id = 12;
+    shapeRow.enabled = true;
+    shapeRow.function_id = "identity";
+    shapeLane.rows.push_back(shapeRow);
+
+    const std::vector<ColorPipelineLaneState> lanes = {sourceLane, shapeLane};
+    const std::vector<std::string> messages = {"Selected Source / Shape / Palette recipe is draft-only"};
+    const std::string json = color_pipeline_graph_receipt::BuildColorPipelineGraphReceiptJson(lanes, messages, "mixed");
+    Check(json.find("\"schema_id\": \"viewer.color_pipeline_graph_receipt.v1\"") != std::string::npos,
+        "graph receipt declares schema id");
+    Check(json.find("\"execution_authority\": \"linear_row_stack\"") != std::string::npos &&
+            json.find("\"ui_projection\": \"linear_color_stack\"") != std::string::npos,
+        "graph receipt declares report-only linear authority");
+    Check(json.find("\"source_stack_kind\": \"mixed\"") != std::string::npos,
+        "graph receipt reports source stack kind");
+    Check(json.find("\"id\": \"source.0\"") != std::string::npos &&
+            json.find("\"id\": \"source.1\"") != std::string::npos &&
+            json.find("\"id\": \"shape.0\"") != std::string::npos,
+        "graph receipt emits stable row node ids");
+    Check(json.find("\"function_id\": \"sdf_signed_distance\"") != std::string::npos &&
+            json.find("\"enabled\": false") != std::string::npos &&
+            json.find("\"active_execution\": false") != std::string::npos &&
+            json.find("\"fail_closed_reason\": \"row disabled\"") != std::string::npos,
+        "graph receipt reports disabled rows without claiming execution");
+    Check(json.find("\"sdf_applicator\": \"sdf_inside\"") != std::string::npos &&
+            json.find("\"sdf_gate_width_px\": 4") != std::string::npos &&
+            json.find("\"sdf_field_downsample\": \"4\"") != std::string::npos &&
+            json.find("\"root_pattern_ref\": \"color_root_field\"") != std::string::npos &&
+            json.find("\"blend_weight\": 0.35") != std::string::npos,
+        "graph receipt preserves SDF applicator, downsample, root ref, and blend params");
+    Check(json.find("source.0->source.1") == std::string::npos &&
+            json.find("source.0->shape.0") != std::string::npos,
+        "graph receipt active edges skip disabled rows and preserve lane projection");
+    Check(json.find("\"unsupported_routes\":") != std::string::npos &&
+            json.find("draft-only") != std::string::npos,
+        "graph receipt carries unsupported route diagnostics");
+}
+
+void TestAutomationReportIncludesColorPipelineGraphReceipt() {
+    const std::filesystem::path reportPath =
+        std::filesystem::temp_directory_path() / "test_viewer_ui_automation_graph_receipt.json";
+    ColorPipelineWindowState colorPipelineWindow{};
+    colorPipelineWindow.initialized = true;
+    ColorPipelineLaneState sourceLane{};
+    sourceLane.lane_id = "source";
+    ColorPipelineRowState row{};
+    row.ui_row_id = 21;
+    row.function_id = "sdf_normal_angle";
+    row.parameter_values.push_back({"signal.sdf_gate", "enum", 0.0, false, "boundary_band"});
+    row.parameter_values.push_back({"signal.sdf_field_downsample", "enum", 0.0, false, "8"});
+    sourceLane.rows.push_back(row);
+    colorPipelineWindow.lanes.push_back(sourceLane);
+    colorPipelineWindow.validation_messages.push_back("unsupported_source_for_producer");
+
+    ViewerUiAutomationLensSdfProbe probe{};
+    probe.source_stack_kind = "sdf_only";
+    ViewState view{};
+    RenderSettings render{};
+    RenderStats stats{};
+    ViewerRenderPacingDecision pacing{};
+    ViewerUiAutomationFrameProbe frameProbe{};
+    ViewerUiAutomationEnumCommandReport enumReport{};
+    HWND hwnd = CreateWindowExA(
+        0,
+        "STATIC",
+        "automation-report-graph-test",
+        WS_OVERLAPPED,
+        0,
+        0,
+        1,
+        1,
+        nullptr,
+        nullptr,
+        GetModuleHandleA(nullptr),
+        nullptr);
+    Check(hwnd != nullptr, "automation graph receipt test creates a valid window handle");
+    WriteColorPipelineUiAutomationReport(
+        reportPath.string(),
+        hwnd,
+        {},
+        colorPipelineWindow,
+        nullptr,
+        nullptr,
+        view,
+        render,
+        stats,
+        pacing,
+        frameProbe,
+        probe,
+        enumReport,
+        19);
+    if (hwnd) {
+        DestroyWindow(hwnd);
+    }
+    std::ifstream in(reportPath, std::ios::binary);
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    const std::string json = buffer.str();
+    Check(json.find("\"color_pipeline_graph_receipt\":") != std::string::npos &&
+            json.find("\"schema_id\": \"viewer.color_pipeline_graph_receipt.v1\"") != std::string::npos &&
+            json.find("\"source_stack_kind\": \"sdf_only\"") != std::string::npos &&
+            json.find("\"id\": \"source.0\"") != std::string::npos &&
+            json.find("\"function_id\": \"sdf_normal_angle\"") != std::string::npos &&
+            json.find("unsupported_source_for_producer") != std::string::npos,
+        "automation report emits color_pipeline_graph_receipt with row and unsupported-route truth");
+}
+
 void TestRenderPacingProbeReportsTimingAndDecision() {
     RenderSettings render{};
     render.resolution = {2048, 1536};
@@ -391,6 +526,8 @@ int main() {
     TestVisibleControlLookupAndFailClosedErrors();
     TestLensSdfProbeDefaults();
     TestLensSdfProbeTimingFields();
+    TestColorPipelineGraphReceiptBuilderReportsLinearStackTruth();
+    TestAutomationReportIncludesColorPipelineGraphReceipt();
     TestRenderPacingProbeReportsTimingAndDecision();
     TestRenderedFrameProbeHash();
     if (g_failed != 0) {

@@ -1,5 +1,6 @@
 #include "viewer_ui_automation_report.h"
 
+#include "color_pipeline_graph_receipt.h"
 #include "enum_id_utils.h"
 
 #include <cmath>
@@ -799,6 +800,13 @@ void WriteColorPipelineUiAutomationReport(
     const ViewerUiAutomationRenderPacingProbe pacingProbe = BuildViewerUiAutomationRenderPacingProbe(render, stats, renderPacing);
     WriteRenderPacingAndFrameReportFields(out, pacingProbe, frameProbe);
     WriteLensSdfReportFields(out, lensSdfProbe);
+    out << "  \"color_pipeline_graph_receipt\": ";
+    color_pipeline_graph_receipt::WriteColorPipelineGraphReceiptJson(
+        out,
+        colorPipelineWindow.lanes,
+        colorPipelineWindow.validation_messages,
+        lensSdfProbe.source_stack_kind);
+    out << ",\n";
     out << "  \"lane_rows\": [";
     bool firstLaneRow = true;
     for (const ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {

@@ -1,5 +1,9 @@
 #include "diagnostics_capture.h"
 #include "fractal_family_rules.h"
+#include "../src/color_pipeline_core.h"
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "../src/color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 
 #include <filesystem>
 #include <fstream>
@@ -570,6 +574,54 @@ void TestFindingFractalStateSidecarSummarizesActiveValuesOnly() {
         "finding fractal-state sidecar explains omitted inactive groups");
 }
 
+
+void TestFindingFractalStateSidecarIncludesColorPipelineGraphReceipt() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+
+    view.fractal_type = FractalType::julia;
+    params.color_source_stack_count = 2;
+    params.color_source_stack[0].signal = ColorSignal::smooth_escape;
+    params.color_source_stack[1].signal = ColorSignal::sdf_signed_distance;
+
+    ColorPipelineWindowState colorWindow{};
+    colorWindow.initialized = true;
+    ColorPipelineLaneState sourceLane{};
+    sourceLane.lane_id = "source";
+    ColorPipelineRowState row{};
+    row.ui_row_id = 31;
+    row.function_id = "sdf_signed_distance";
+    row.parameter_values.push_back({"signal.sdf_gate", "enum", 0.0, false, "sdf_outside"});
+    row.parameter_values.push_back({"signal.sdf_gate_width_px", "float", 3.5, false, ""});
+    row.parameter_values.push_back({"signal.sdf_field_downsample", "enum", 0.0, false, "4"});
+    row.parameter_values.push_back({"signal.blend_weight", "float", 0.5, false, ""});
+    sourceLane.rows.push_back(row);
+    colorWindow.lanes.push_back(sourceLane);
+
+    const std::string json = BuildFindingFractalStateJson(view, params, render, stats, &colorWindow, nullptr);
+    Check(json.find("\"color_pipeline\":") != std::string::npos &&
+          json.find("\"graph_receipt\":") != std::string::npos &&
+          json.find("\"schema_id\": \"viewer.color_pipeline_graph_receipt.v1\"") != std::string::npos,
+        "finding fractal-state sidecar emits color pipeline graph receipt");
+    Check(json.find("\"source_stack_kind\": \"mixed\"") != std::string::npos &&
+          json.find("\"id\": \"source.0\"") != std::string::npos &&
+          json.find("\"function_id\": \"sdf_signed_distance\"") != std::string::npos,
+        "finding graph receipt records mixed stack classification and source row node");
+    Check(json.find("\"sdf_applicator\": \"sdf_outside\"") != std::string::npos &&
+          json.find("\"sdf_gate_width_px\": 3.5") != std::string::npos &&
+          json.find("\"sdf_field_downsample\": \"4\"") != std::string::npos &&
+          json.find("\"blend_weight\": 0.5") != std::string::npos,
+        "finding graph receipt preserves SDF applicator, gate width, downsample, and blend weight");
+    const std::size_t graphReceipt = json.find("\"graph_receipt\"");
+    Check(graphReceipt != std::string::npos && json.rfind("],\n", graphReceipt) != std::string::npos,
+        "finding graph receipt is comma-separated after grading rows as valid JSON");
+    Check(json.find("\"color_pipeline_draft\"") != std::string::npos,
+        "finding sidecar still emits the existing draft block separately for compatibility");
+}
+
 void TestFindingFractalStateSidecarIncludesExplainoActiveControls() {
     ViewState view{};
     KernelParams params{};
@@ -708,6 +760,7 @@ int main() {
     TestRejectsMismatchedPixelCount();
     TestLastBundleAndSidecarOverloads();
     TestFindingFractalStateSidecarSummarizesActiveValuesOnly();
+    TestFindingFractalStateSidecarIncludesColorPipelineGraphReceipt();
     TestFindingFractalStateSidecarIncludesExplainoActiveControls();
     TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority();
     TestFindingFractalStateSidecarIncludesActiveRootFieldAlias();
