@@ -71,6 +71,7 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::julia: return "julia";
     case FractalType::burning_ship: return "burning_ship";
     case FractalType::multibrot: return "multibrot";
+    case FractalType::explaino_multibrot_root_trap: return "explaino_multibrot_root_trap";
     case FractalType::phoenix: return "phoenix";
     case FractalType::explaino: return "explaino";
     case FractalType::explaino_all: return "explaino_all";

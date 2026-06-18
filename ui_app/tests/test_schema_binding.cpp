@@ -17,7 +17,7 @@
 
 namespace {
 
-constexpr std::size_t kExpectedFractalCount = 50;
+constexpr std::size_t kExpectedFractalCount = 51;
 
 struct ImGuiTestContext {
     ImGuiContext* context = nullptr;
@@ -836,6 +836,8 @@ bool ValidateVisibleControlMatrix() {
         {"lambda_imag", FractalType::lambda_map, "fractal.params.lambda_imag", "float"},
         {"multibrot_power_float", FractalType::multibrot, "fractal.params.multibrot_power_float", "float"},
         {"multibrot_power_imag", FractalType::multibrot, "fractal.params.multibrot_power_imag", "float"},
+        {"multibrot_power_float", FractalType::explaino_multibrot_root_trap, "fractal.params.multibrot_power_float", "float"},
+        {"multibrot_power_imag", FractalType::explaino_multibrot_root_trap, "fractal.params.multibrot_power_imag", "float"},
         {"burning_ship_fold_mix", FractalType::burning_ship, "fractal.params.burning_ship_fold_mix", "float"},
         {"celtic_abs_mix", FractalType::celtic_mandelbrot, "fractal.params.celtic_abs_mix", "float"},
         {"perpendicular_fold_mix", FractalType::perpendicular_burning_ship, "fractal.params.perpendicular_fold_mix", "float"},
@@ -871,10 +873,13 @@ bool ValidateVisibleControlMatrix() {
         {"explaino_root_sdf_h_frequency", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_frequency", "float"},
         {"dynamics_root_field_generated_layout", FractalType::explaino_mandelbrot_root_trap, "fractal.root_pattern.dynamics.generated_layout", "enum"},
         {"dynamics_root_field_generated_layout", FractalType::explaino_magnet_root_well, "fractal.root_pattern.dynamics.generated_layout", "enum"},
+        {"dynamics_root_field_generated_layout", FractalType::explaino_multibrot_root_trap, "fractal.root_pattern.dynamics.generated_layout", "enum"},
         {"explaino_root_field_trap_strength", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_root_field_trap_strength", "float"},
         {"explaino_root_field_trap_scale", FractalType::explaino_mandelbrot_root_trap, "fractal.params.explaino_root_field_trap_scale", "float"},
         {"explaino_root_field_trap_strength", FractalType::explaino_magnet_root_well, "fractal.params.explaino_root_field_trap_strength", "float"},
         {"explaino_root_field_trap_scale", FractalType::explaino_magnet_root_well, "fractal.params.explaino_root_field_trap_scale", "float"},
+        {"explaino_root_field_trap_strength", FractalType::explaino_multibrot_root_trap, "fractal.params.explaino_root_field_trap_strength", "float"},
+        {"explaino_root_field_trap_scale", FractalType::explaino_multibrot_root_trap, "fractal.params.explaino_root_field_trap_scale", "float"},
         {"counterfactual_pair_root_family", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "enum"},
         {"counterfactual_pair_root_family", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "enum"},
         {"counterfactual_pair_frame", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_frame", "enum"},
@@ -949,6 +954,7 @@ bool ValidateEnumComboEditMatrix() {
         {"dynamics_root_field_generated_layout", FractalType::explaino_root_sdf, "fractal.root_pattern.dynamics.generated_layout", "regular_ngon_v1"},
         {"dynamics_root_field_generated_layout", FractalType::explaino_mandelbrot_root_trap, "fractal.root_pattern.dynamics.generated_layout", "regular_ngon_v1"},
         {"dynamics_root_field_generated_layout", FractalType::explaino_magnet_root_well, "fractal.root_pattern.dynamics.generated_layout", "regular_ngon_v1"},
+        {"dynamics_root_field_generated_layout", FractalType::explaino_multibrot_root_trap, "fractal.root_pattern.dynamics.generated_layout", "regular_ngon_v1"},
         {"explaino_root_sdf_h_source", FractalType::explaino_root_sdf, "fractal.params.explaino_root_sdf_h_source", "phase_sine"},
         {"transcendental_func", FractalType::explaino_transcendental, "fractal.params.transcendental_func", "f_cosh"},
     };

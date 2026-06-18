@@ -744,6 +744,7 @@ int main() {
         bool foundFractalTypeExplainoCounterfactualPairGroup = false;
         bool foundFractalTypeExplainoMandelbrotRootTrapExperimentGroup = false;
         bool foundFractalTypeExplainoMagnetRootWellExperimentGroup = false;
+        bool foundFractalTypeExplainoMultibrotRootTrapExperimentGroup = false;
         bool foundFractalTypeExplainoAllFirst = false;
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
@@ -878,13 +879,15 @@ int main() {
                     ctrl.binding.path == "fractal.params.multibrot_power_float" &&
                     ctrl.has_min && ctrl.min == 0.01 && ctrl.has_max && ctrl.max == 32.0 &&
                     ctrl.has_ui_min && ctrl.ui_min == 0.01 && ctrl.has_ui_max && ctrl.ui_max == 12.0 &&
-                    ctrl.logarithmic && VisibleIfIncludesFractalType(ctrl, "multibrot")) {
+                    ctrl.logarithmic && VisibleIfIncludesFractalType(ctrl, "multibrot") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap")) {
                     foundMultibrotPowerFloat = true;
                 }
                 if (ctrl.id == "multibrot_power_imag" && ctrl.type == "slider_float" && ctrl.has_binding &&
                     ctrl.binding.path == "fractal.params.multibrot_power_imag" &&
                     ctrl.has_min && ctrl.min == -4.0 && ctrl.has_max && ctrl.max == 4.0 &&
                     !ctrl.logarithmic && VisibleIfIncludesFractalType(ctrl, "multibrot") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap") &&
                     !VisibleIfIncludesFractalType(ctrl, "mandelbrot")) {
                     foundMultibrotPowerImag = true;
                 }
@@ -1008,6 +1011,7 @@ int main() {
                         if (option.id == "explaino_counterfactual_pair" && option.group == "Explaino") foundFractalTypeExplainoCounterfactualPairGroup = true;
                         if (option.id == "explaino_mandelbrot_root_trap" && option.group == "Explaino Experiments") foundFractalTypeExplainoMandelbrotRootTrapExperimentGroup = true;
                         if (option.id == "explaino_magnet_root_well" && option.group == "Explaino Experiments") foundFractalTypeExplainoMagnetRootWellExperimentGroup = true;
+                        if (option.id == "explaino_multibrot_root_trap" && option.group == "Explaino Experiments") foundFractalTypeExplainoMultibrotRootTrapExperimentGroup = true;
                         if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
                             foundFractalTypeExplainoAllFirst = option.id == "explaino_all";
                         }
@@ -1097,7 +1101,9 @@ int main() {
                     ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
                     VisibleIfIncludesFractalType(ctrl, "explaino_mandelbrot_root_trap") &&
                     VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap") &&
                     !VisibleIfIncludesFractalType(ctrl, "mandelbrot") &&
+                    !VisibleIfIncludesFractalType(ctrl, "multibrot") &&
                     !VisibleIfIncludesFractalType(ctrl, "magnet")) {
                     foundExplainoRootFieldTrapStrength = true;
                 }
@@ -1108,14 +1114,17 @@ int main() {
                     ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
                     VisibleIfIncludesFractalType(ctrl, "explaino_mandelbrot_root_trap") &&
                     VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap") &&
                     !VisibleIfIncludesFractalType(ctrl, "mandelbrot") &&
+                    !VisibleIfIncludesFractalType(ctrl, "multibrot") &&
                     !VisibleIfIncludesFractalType(ctrl, "magnet")) {
                     foundExplainoRootFieldTrapScale = true;
                 }
                 const bool visibleOnCompositeRootAwareLane =
                     VisibleIfIncludesFractalType(ctrl, "explaino_root_sdf") ||
                     VisibleIfIncludesFractalType(ctrl, "explaino_mandelbrot_root_trap") ||
-                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well");
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") ||
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap");
                 if ((ctrl.id == "explaino_seed" || ctrl.id == "prev_seed" || ctrl.id == "next_seed" ||
                      ctrl.id == "explaino_root_spread" || ctrl.id == "explaino_generated_root_layout") &&
                     visibleOnCompositeRootAwareLane) {
@@ -1126,37 +1135,43 @@ int main() {
                 if (ctrl.id == "dynamics_root_field_seed" && ctrl.has_binding &&
                     ctrl.binding.path == "fractal.root_pattern.dynamics.seed" &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
-                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap")) {
                     foundDynamicsRootFieldSeed = true;
                 }
                 if (ctrl.id == "dynamics_root_field_prev_seed" && ctrl.has_binding &&
                     ctrl.binding.kind == "action" && ctrl.binding.path == "fractal.actions.root_pattern.dynamics.prev_seed" &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
-                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap")) {
                     foundDynamicsRootFieldPrevSeed = true;
                 }
                 if (ctrl.id == "dynamics_root_field_next_seed" && ctrl.has_binding &&
                     ctrl.binding.kind == "action" && ctrl.binding.path == "fractal.actions.root_pattern.dynamics.next_seed" &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
-                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap")) {
                     foundDynamicsRootFieldNextSeed = true;
                 }
                 if (ctrl.id == "dynamics_root_field_root_spread" && ctrl.has_binding &&
                     ctrl.binding.path == "fractal.root_pattern.dynamics.root_spread" &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
-                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap")) {
                     foundDynamicsRootFieldRootSpread = true;
                 }
                 if (ctrl.id == "dynamics_root_field_generated_layout" && ctrl.has_binding &&
                     ctrl.binding.path == "fractal.root_pattern.dynamics.generated_layout" &&
                     ctrl.has_visible_if && ctrl.visible_if.op == "in" &&
-                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap")) {
                     foundDynamicsRootFieldGeneratedLayout = true;
                 }
                 if ((ctrl.id == "explaino_secondary_root_pattern_layout" ||
                      ctrl.id == "explaino_secondary_root_pattern_count" ||
                      ctrl.id == "explaino_root_field_pattern_ref") &&
-                    VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well")) {
+                    (VisibleIfIncludesFractalType(ctrl, "explaino_magnet_root_well") ||
+                     VisibleIfIncludesFractalType(ctrl, "explaino_multibrot_root_trap"))) {
                     std::cerr << "Raw alternate-pattern controls must stay out of normal Magnet Root Well UI\n";
                     return 1;
                 }
@@ -1677,7 +1692,8 @@ int main() {
             !foundFractalTypeSdfGroup || !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
             !foundFractalTypeExplainoProjectionAndFlowGroup || !foundFractalTypeExplainoCounterfactualPairGroup ||
             !foundFractalTypeExplainoRootSdfGroup || !foundFractalTypeExplainoMandelbrotRootTrapExperimentGroup ||
-            !foundFractalTypeExplainoMagnetRootWellExperimentGroup) {
+            !foundFractalTypeExplainoMagnetRootWellExperimentGroup ||
+            !foundFractalTypeExplainoMultibrotRootTrapExperimentGroup) {
             std::cerr << "Did not find grouped fractal selector categories including the canonical Explaino-all entry in schema\n";
             return 1;
         }
@@ -1919,7 +1935,9 @@ int main() {
             !multibrotPowerReal->has_ui_min || multibrotPowerReal->ui_min != 0.01 ||
             !multibrotPowerReal->has_ui_max || multibrotPowerReal->ui_max != 12.0 ||
             !multibrotPowerReal->logarithmic ||
-            !multibrotPowerReal->has_visible_if || multibrotPowerReal->visible_if.value != "multibrot") {
+            !multibrotPowerReal->has_visible_if || multibrotPowerReal->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*multibrotPowerReal, "multibrot") ||
+            !VisibleIfIncludesFractalType(*multibrotPowerReal, "explaino_multibrot_root_trap")) {
             std::cerr << "Safe-mode schema Multibrot real exponent control drifted from the bounded owner seam\n";
             return 1;
         }
@@ -1928,7 +1946,9 @@ int main() {
             multibrotPowerImag->def.as_number() != 0.0 ||
             !multibrotPowerImag->has_min || multibrotPowerImag->min != -4.0 ||
             !multibrotPowerImag->has_max || multibrotPowerImag->max != 4.0 ||
-            !multibrotPowerImag->has_visible_if || multibrotPowerImag->visible_if.value != "multibrot") {
+            !multibrotPowerImag->has_visible_if || multibrotPowerImag->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*multibrotPowerImag, "multibrot") ||
+            !VisibleIfIncludesFractalType(*multibrotPowerImag, "explaino_multibrot_root_trap")) {
             std::cerr << "Safe-mode schema Multibrot imaginary exponent control drifted from the bounded owner seam\n";
             return 1;
         }

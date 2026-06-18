@@ -39,6 +39,7 @@
             { "id": "explaino_root_sdf", "label": "ExplainO Root SDF", "group": "SDF" },
             { "id": "explaino_mandelbrot_root_trap", "label": "ExplainO Mandelbrot Root Trap", "group": "Explaino Experiments" },
             { "id": "explaino_magnet_root_well", "label": "ExplainO Magnet Root Well", "group": "Explaino Experiments" },
+            { "id": "explaino_multibrot_root_trap", "label": "ExplainO Multibrot Root Trap", "group": "Explaino Experiments" },
             { "id": "explaino_all", "label": "Explaino-all", "group": "Explaino" },
             { "id": "explaino_y", "label": "Explaino Y", "group": "Explaino" },
             { "id": "explaino_fp", "label": "Explaino FP", "group": "Explaino" },
@@ -216,7 +217,7 @@
             { "id": "mix", "label": "Mix", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_dual" } },
             { "id": "nova_alpha", "label": "Nova Alpha", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "nova,explaino_nova" } },
             { "id": "phoenix_p_real", "label": "Phoenix P (Real)", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "phoenix,explaino_phoenix,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension" } },
-            { "id": "multibrot_power", "label": "Multibrot Power", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot" } },
+            { "id": "multibrot_power", "label": "Multibrot Power", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "multibrot,explaino_multibrot_root_trap" } },
             { "id": "julia_c_real", "label": "Julia C (Real)", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "julia" } },
             { "id": "julia_c_imag", "label": "Julia C (Imag)", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "julia" } },
             { "id": "explaino_julia_c_real", "label": "Explaino Julia C (Real)", "visible_if": { "op": "eq", "path": "fractal.params.explaino_julia_custom_constants_active", "value": true } },
@@ -261,7 +262,7 @@
           "min": 0.01, "max": 32.0, "ui_min": 0.01, "ui_max": 12.0, "step": 0.01, "default": 3.0,
           "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.params.multibrot_power_float" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "multibrot,explaino_multibrot_root_trap" },
           "help": "Real component a in z_{n+1} = z_n^(a+bi) + c using the principal branch. The slider covers 0.01..12; typed input and automation may set up to 32."
         },
         {
@@ -271,7 +272,7 @@
           "value_type": "float",
           "min": -4.0, "max": 4.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.multibrot_power_imag" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "multibrot,explaino_multibrot_root_trap" },
           "help": "Imaginary component b in z_{n+1} = z_n^(a+bi) + c. Zero preserves the existing real-exponent Multibrot path."
         },
         {
@@ -875,14 +876,14 @@
           "type": "button",
           "label": "Dynamics Prev Seed",
           "binding": { "kind": "action", "path": "fractal.actions.root_pattern.dynamics.prev_seed" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap" }
         },
         {
           "id": "dynamics_root_field_next_seed",
           "type": "button",
           "label": "Dynamics Next Seed",
           "binding": { "kind": "action", "path": "fractal.actions.root_pattern.dynamics.next_seed" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap" }
         },
         {
           "id": "dynamics_root_field_seed",
@@ -891,7 +892,7 @@
           "value_type": "double",
           "ui_min": -10.0, "ui_max": 10.0, "step": 0.001, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.seed" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap" },
           "help": "Seed for the scoped Dynamics Root Field used by root-field consumer lanes."
         },
         {
@@ -901,7 +902,7 @@
           "value_type": "float",
           "min": 0.0, "max": 3.0, "step": 0.01, "default": 0.5,
           "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.root_spread" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap" },
           "help": "Root-spread control for the scoped Dynamics Root Field."
         },
         {
@@ -911,7 +912,7 @@
           "value_type": "float",
           "ui_min": -6.283185307179586, "ui_max": 6.283185307179586, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.phase" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap" },
           "help": "Phase control for the scoped Dynamics Root Field."
         },
         {
@@ -921,7 +922,7 @@
           "value_type": "float",
           "ui_min": -20.0, "ui_max": 20.0, "step": 0.01, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.phase_strength" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap" },
           "help": "Phase-strength control for the scoped Dynamics Root Field."
         },
         {
@@ -980,7 +981,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_rational,explaino_collatz,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_rational,explaino_collatz,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap"
           },
           "help": "Switches between generated seed/phase roots and a bounded custom root editor."
         },
@@ -995,7 +996,7 @@
             { "id": "regular_ngon_v1", "label": "Regular N-Gon" }
           ],
           "binding": { "kind": "param", "path": "fractal.root_pattern.dynamics.generated_layout" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap" },
           "help": "Chooses the generated layout for the scoped Dynamics Root Field without rewriting custom root authority."
         },
         {
@@ -1366,7 +1367,7 @@
           "value_type": "float",
           "min": 0.0, "ui_min": 0.0, "ui_max": 1.0, "max": 2.0, "step": 0.001, "default": 0.75,
           "binding": { "kind": "param", "path": "fractal.params.explaino_root_field_trap_strength" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap" },
           "help": "Blends the base smooth-escape signal toward the current ExplainO root-field distance trap. Zero collapses to the base lane."
         },
         {
@@ -1376,7 +1377,7 @@
           "value_type": "float",
           "min": 0.05, "ui_min": 0.25, "ui_max": 4.0, "max": 16.0, "step": 0.01, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.params.explaino_root_field_trap_scale" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_mandelbrot_root_trap,explaino_magnet_root_well" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap" },
           "help": "Scales root-field distance before trap coloring."
         },
         {

@@ -97,9 +97,10 @@ static bool IsMultibrotVisibleControl(const UISchemaControl* control, const char
         control->binding.kind == "param" &&
         control->binding.path == bindingPath &&
         control->has_visible_if &&
-        control->visible_if.op == "eq" &&
+        control->visible_if.op == "in" &&
         control->visible_if.path == "fractal.view.fractal_type" &&
-        control->visible_if.value == "multibrot";
+        ContainsCsvToken(control->visible_if.value, "multibrot") &&
+        ContainsCsvToken(control->visible_if.value, "explaino_multibrot_root_trap");
 }
 
 static bool IsJuliaVisibleControl(const UISchemaControl* control, const char* bindingPath) {
@@ -170,7 +171,8 @@ static bool IsExplainoActiveRootFieldVisibleControl(const UISchemaControl* contr
         control->visible_if.path == "fractal.view.fractal_type" &&
         ContainsCsvToken(control->visible_if.value, "explaino_root_sdf") &&
         ContainsCsvToken(control->visible_if.value, "explaino_mandelbrot_root_trap") &&
-        ContainsCsvToken(control->visible_if.value, "explaino_magnet_root_well");
+        ContainsCsvToken(control->visible_if.value, "explaino_magnet_root_well") &&
+        ContainsCsvToken(control->visible_if.value, "explaino_multibrot_root_trap");
 }
 
 static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {

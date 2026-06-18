@@ -229,6 +229,15 @@ static void test_schema_filters_targets_by_current_fractal() {
     CHECK(!HasVisibleOption(magnetRootWellOptions, "ripple_amplitude"), "explaino_magnet_root_well must not show unrelated Explaino axis animation targets");
     CHECK(!HasVisibleOption(magnetRootWellOptions, "nova_alpha"), "explaino_magnet_root_well must not show Nova animation targets");
 
+    view.fractal_type = FractalType::explaino_multibrot_root_trap;
+    std::vector<const UISchemaOption*> multibrotRootTrapOptions = ResolveVisibleEnumOptions(*control, ctx);
+    CHECK(HasVisibleOption(multibrotRootTrapOptions, "multibrot_power"), "explaino_multibrot_root_trap should show Multibrot real-power animation target");
+    CHECK(!HasVisibleOption(multibrotRootTrapOptions, "magnet_relaxation"), "explaino_multibrot_root_trap must not show Magnet animation targets");
+    CHECK(!HasVisibleOption(multibrotRootTrapOptions, "seed"), "explaino_multibrot_root_trap must not expose unscoped ExplainO seed animation target");
+    CHECK(!HasVisibleOption(multibrotRootTrapOptions, "root_spread"), "explaino_multibrot_root_trap must not expose unscoped ExplainO root-spread animation target");
+    CHECK(!HasVisibleOption(multibrotRootTrapOptions, "ripple_amplitude"), "explaino_multibrot_root_trap must not show unrelated Explaino axis animation targets");
+    CHECK(!HasVisibleOption(multibrotRootTrapOptions, "nova_alpha"), "explaino_multibrot_root_trap must not show Nova animation targets");
+
     view.fractal_type = FractalType::explaino_all;
     std::vector<const UISchemaOption*> explainoAllOptions = ResolveVisibleEnumOptions(*control, ctx);
     CHECK(HasVisibleOption(explainoAllOptions, "ripple_amplitude"), "explaino_all should show Ripple axis animation target");
@@ -247,8 +256,8 @@ static void test_schema_filters_targets_by_current_fractal() {
 
     view.fractal_type = FractalType::explaino_root_sdf;
     std::vector<const UISchemaOption*> rootSdfOptions = ResolveVisibleEnumOptions(*control, ctx);
-    CHECK(HasVisibleOption(rootSdfOptions, "seed"), "explaino_root_sdf should show the seed animation target");
-    CHECK(HasVisibleOption(rootSdfOptions, "root_spread"), "explaino_root_sdf should show root-layout animation targets");
+    CHECK(!HasVisibleOption(rootSdfOptions, "seed"), "explaino_root_sdf must not expose unscoped ExplainO seed animation target");
+    CHECK(!HasVisibleOption(rootSdfOptions, "root_spread"), "explaino_root_sdf must not expose unscoped ExplainO root-spread animation target");
     CHECK(!HasVisibleOption(rootSdfOptions, "warp_strength"), "explaino_root_sdf must not show dead Warp animation target");
     CHECK(!HasVisibleOption(rootSdfOptions, "magnet_relaxation"), "explaino_root_sdf must not show Magnet animation targets");
 }

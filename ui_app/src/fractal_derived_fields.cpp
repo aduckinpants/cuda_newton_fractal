@@ -693,6 +693,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         break;
     case FractalType::julia:
     case FractalType::multibrot:
+    case FractalType::explaino_multibrot_root_trap:
         ApplyEscapeTimePresetDefaults(view.fractal_type, params, 1000, 1.4f);
         break;
     case FractalType::lambda_map:

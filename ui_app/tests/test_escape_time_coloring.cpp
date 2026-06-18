@@ -1738,6 +1738,72 @@ int main() {
             return 1;
         }
 
+        rootConsumerParams.color_pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        rootConsumerParams.explaino_root_field_trap_strength = 0.0f;
+        rootConsumerParams.explaino_root_field_trap_scale = 1.0f;
+        struct MultibrotPowerCase {
+            float real;
+            float imag;
+            const char* label;
+        };
+        const MultibrotPowerCase multibrotPowerCases[] = {
+            {3.0f, 0.0f, "integer default"},
+            {1.5f, 0.0f, "non-integer below two"},
+            {16.0f, 0.0f, "above old UI cap"},
+            {2.5f, 0.65f, "complex exponent"},
+        };
+        for (const MultibrotPowerCase& powerCase : multibrotPowerCases) {
+            baselineParams.multibrot_power_float = powerCase.real;
+            baselineParams.multibrot_power_imag = powerCase.imag;
+            rootConsumerParams.multibrot_power_float = powerCase.real;
+            rootConsumerParams.multibrot_power_imag = powerCase.imag;
+            const TestColor multibrotBase = MakeEscapeTimeBaseColor<TestColor>(
+                FractalType::multibrot,
+                ColoringMode::smooth_escape,
+                true,
+                19,
+                120,
+                TestComplex{-0.35f, 0.2f},
+                baselineParams);
+            const TestColor multibrotNeutral = MakeEscapeTimeBaseColor<TestColor>(
+                FractalType::explaino_multibrot_root_trap,
+                ColoringMode::smooth_escape,
+                true,
+                19,
+                120,
+                TestComplex{-0.35f, 0.2f},
+                rootConsumerParams);
+            if (!Equals(multibrotBase, multibrotNeutral)) {
+                std::cerr << "ExplainO Multibrot Root Trap should collapse exactly to baseline Multibrot color at zero trap strength for "
+                          << powerCase.label << "\n";
+                return 1;
+            }
+        }
+        rootConsumerParams.multibrot_power_float = 1.5f;
+        rootConsumerParams.multibrot_power_imag = 0.0f;
+        rootConsumerParams.explaino_root_field_trap_strength = 1.0f;
+        const TestColor multibrotTrapped = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_multibrot_root_trap,
+            ColoringMode::smooth_escape,
+            true,
+            19,
+            120,
+            TestComplex{-0.35f, 0.2f},
+            rootConsumerParams);
+        rootConsumerParams.explaino_root_field_trap_strength = 0.0f;
+        const TestColor multibrotNeutral = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::explaino_multibrot_root_trap,
+            ColoringMode::smooth_escape,
+            true,
+            19,
+            120,
+            TestComplex{-0.35f, 0.2f},
+            rootConsumerParams);
+        if (Equals(multibrotNeutral, multibrotTrapped)) {
+            std::cerr << "ExplainO Multibrot Root Trap should react to nonzero trap strength\n";
+            return 1;
+        }
+
         rootConsumerParams.explaino_root_field_trap_strength = 0.0f;
         rootConsumerParams.color_pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
         const TestColor magnetBase = MakeEscapeTimeBaseColor<TestColor>(

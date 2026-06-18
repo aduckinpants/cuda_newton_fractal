@@ -965,6 +965,7 @@ void WriteFindingCoreFractalControls(FindingControlJsonWriter& writer, FractalTy
         writer.Number("julia_c_imag", static_cast<double>(params.julia_c_imag));
         break;
     case FractalType::multibrot:
+    case FractalType::explaino_multibrot_root_trap:
         writer.Number("multibrot_power_float", static_cast<double>(params.multibrot_power_float));
         writer.Number("multibrot_power_imag", static_cast<double>(params.multibrot_power_imag));
         break;
