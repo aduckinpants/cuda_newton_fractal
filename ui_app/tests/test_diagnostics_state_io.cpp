@@ -6050,12 +6050,14 @@ int main() {
         const char* rootConsumerIds[] = {
             "explaino_mandelbrot_root_trap",
             "explaino_magnet_root_well",
+            "explaino_multibrot_root_trap",
         };
         const FractalType expectedTypes[] = {
             FractalType::explaino_mandelbrot_root_trap,
             FractalType::explaino_magnet_root_well,
+            FractalType::explaino_multibrot_root_trap,
         };
-        for (std::size_t index = 0; index < 2; ++index) {
+        for (std::size_t index = 0; index < 3; ++index) {
           std::string stateJson = std::string(R"({
       "state_version": 3,
       "fractal_type": ")") + rootConsumerIds[index] + R"(",

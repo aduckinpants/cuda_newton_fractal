@@ -146,6 +146,8 @@ void TestLensSdfProbeTimingFields() {
     probe.root_field_consumer_requested_generated_root_count = 5;
     probe.root_field_consumer_trap_strength = 0.75f;
     probe.root_field_consumer_trap_scale = 1.5f;
+    probe.root_field_consumer_multibrot_power_float = 2.5f;
+    probe.root_field_consumer_multibrot_power_imag = 0.65f;
     probe.root_field_consumer_base_root_hash = 0x9012ull;
     probe.root_field_consumer_effective_root_hash = 0x3456ull;
     ViewerUiAutomationRootPatternProbe primaryPattern{};
@@ -322,6 +324,9 @@ void TestLensSdfProbeTimingFields() {
     Check(json.find("\"root_field_consumer_base_root_hash\": \"fnv1a64:0000000000009012\"") != std::string::npos &&
             json.find("\"root_field_consumer_effective_root_hash\": \"fnv1a64:0000000000003456\"") != std::string::npos,
         "automation report writes root-field consumer root hashes");
+    Check(json.find("\"root_field_consumer_multibrot_power_float\": 2.5") != std::string::npos &&
+            json.find("\"root_field_consumer_multibrot_power_imag\": 0.649") != std::string::npos,
+        "automation report writes Multibrot exponent values for root-field consumers");
     Check(json.find("\"active_root_field\":") != std::string::npos &&
             json.find("\"ref\": \"dynamics_root_field\"") != std::string::npos &&
             json.find("\"label\": \"Dynamics Root Field\"") != std::string::npos &&

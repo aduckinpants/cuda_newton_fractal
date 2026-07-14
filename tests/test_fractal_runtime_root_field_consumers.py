@@ -124,6 +124,7 @@ def _visible_control_ids(payload: dict[str, Any]) -> set[str]:
     [
         ("explaino_mandelbrot_root_trap", "mandelbrot"),
         ("explaino_magnet_root_well", "magnet"),
+        ("explaino_multibrot_root_trap", "multibrot"),
     ],
 )
 def test_root_field_consumer_lanes_report_and_mutate_no_mouse(
@@ -195,6 +196,74 @@ def test_root_field_consumer_lanes_report_and_mutate_no_mouse(
         assert root_count.get("root_field_consumer_root_count") == 5, root_count
         assert _require_root_hash(root_count) != baseline_root_hash, root_count
         assert _require_frame_hash(root_count) != baseline_hash, root_count
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
+def test_explaino_multibrot_root_trap_exponent_controls_are_visible_and_active(
+    tmp_path: Path,
+) -> None:
+    exe_path = active_runtime_exe()
+    lane_id = "explaino_multibrot_root_trap"
+    state = _state_for_lane(exe_path, lane_id)
+    state_path = write_state_bundle(tmp_path / "multibrot_root_trap_exponent_controls", state)
+
+    expected_controls = {
+        "fractal_control.multibrot_power_float.primary",
+        "fractal_control.multibrot_power_imag.primary",
+        "fractal_control.explaino_root_field_trap_strength.primary",
+        "fractal_control.explaino_root_field_trap_scale.primary",
+        "fractal_control.dynamics_root_field_seed.primary",
+        "dynamics_root_field_prev_seed",
+        "fractal_control.dynamics_root_field_generated_layout.primary",
+    }
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "multibrot_root_trap_exponent_controls_report.json",
+        command_path=tmp_path / "multibrot_root_trap_exponent_controls_command.json",
+    ) as viewer:
+        for control_id in sorted(expected_controls):
+            viewer.wait_for_control(control_id, timeout_seconds=30.0)
+
+        baseline = viewer.wait_for_report(timeout_seconds=60.0)
+        assert baseline.get("current_fractal_type") == lane_id, baseline
+        assert baseline.get("root_field_consumer_base_fractal_type") == "multibrot", baseline
+        assert baseline.get("root_field_consumer_multibrot_power_float") == pytest.approx(3.0), baseline
+        assert baseline.get("root_field_consumer_multibrot_power_imag") == pytest.approx(0.0), baseline
+        visible_controls = _visible_control_ids(baseline)
+        assert expected_controls.issubset(visible_controls), baseline
+        assert "fractal_control.explaino_seed.primary" not in visible_controls, baseline
+        assert "fractal_control.prev_seed.primary" not in visible_controls, baseline
+        assert "fractal_control.next_seed.primary" not in visible_controls, baseline
+        baseline_hash = _require_frame_hash(baseline)
+
+        low_real = viewer.set_control_value(
+            "fractal_control.multibrot_power_float.primary",
+            1.5,
+            timeout_seconds=20.0,
+        )
+        assert low_real.get("current_fractal_type") == lane_id, low_real
+        assert low_real.get("root_field_consumer_multibrot_power_float") == pytest.approx(1.5), low_real
+        assert _require_frame_hash(low_real) != baseline_hash, low_real
+
+        high_real = viewer.set_control_value(
+            "fractal_control.multibrot_power_float.primary",
+            16.0,
+            timeout_seconds=20.0,
+        )
+        assert high_real.get("current_fractal_type") == lane_id, high_real
+        assert high_real.get("root_field_consumer_multibrot_power_float") == pytest.approx(16.0), high_real
+        assert _require_frame_hash(high_real) != _require_frame_hash(low_real), high_real
+
+        complex_power = viewer.set_control_value(
+            "fractal_control.multibrot_power_imag.primary",
+            0.75,
+            timeout_seconds=20.0,
+        )
+        assert complex_power.get("current_fractal_type") == lane_id, complex_power
+        assert complex_power.get("root_field_consumer_multibrot_power_imag") == pytest.approx(0.75), complex_power
+        assert _require_frame_hash(complex_power) != _require_frame_hash(high_real), complex_power
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only viewer runtime")
@@ -949,6 +1018,7 @@ def test_root_field_experiment_preset_pack_v1_no_mouse(tmp_path: Path) -> None:
     [
         ("explaino_mandelbrot_root_trap", "mandelbrot"),
         ("explaino_magnet_root_well", "magnet"),
+        ("explaino_multibrot_root_trap", "multibrot"),
     ],
 )
 def test_root_field_consumer_capture_finding_sidecar_and_replay(

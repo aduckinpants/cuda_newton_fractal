@@ -122,6 +122,7 @@ inline constexpr bool FractalCatalogSupportsSampleProbe(FractalType fractalType)
     case FractalType::julia:
     case FractalType::burning_ship:
     case FractalType::multibrot:
+    case FractalType::explaino_multibrot_root_trap:
     case FractalType::phoenix:
     case FractalType::explaino:
     case FractalType::explaino_all:
@@ -210,6 +211,7 @@ inline constexpr FractalCatalogViewDefaults FractalCatalogViewDefaultsFor(Fracta
     case FractalType::perpendicular_burning_ship:
         return {{-1.785f, -0.012f}, 18.0f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
     case FractalType::multibrot:
+    case FractalType::explaino_multibrot_root_trap:
         return {{-0.15f, 0.75f}, 4.5f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
     case FractalType::multicorn:
         return {{-0.3f, 0.0f}, 1.5f, 0.0f, DefaultAutoMaxIterForFractal(fractalType)};
@@ -282,6 +284,9 @@ inline constexpr FractalCatalogEntry kFractalCatalog[] = {
     FRACTAL_CATALOG_ENTRY(generic_equation_pack, "generic_equation_pack", "Generic Equation Pack", custom, generic_equation_pack, custom_workbench_region, custom_workbench, generic_equation_pack),
     FRACTAL_CATALOG_ENTRY(sdf_pack_scene, "sdf_pack_scene", "SDF Pack Scene", sdf, sdf_pack_scene, custom_workbench_region, custom_workbench, sdf_pack_scene),
     FRACTAL_CATALOG_ENTRY(explaino_root_sdf, "explaino_root_sdf", "ExplainO Root SDF", sdf, explaino_root_sdf, explaino_family_region, explaino_family, field_primary_sdf),
+    FRACTAL_CATALOG_ENTRY(explaino_mandelbrot_root_trap, "explaino_mandelbrot_root_trap", "ExplainO Mandelbrot Root Trap", explaino, mandelbrot, escape_tuned_region, escape_direct, native_2d_formula),
+    FRACTAL_CATALOG_ENTRY(explaino_magnet_root_well, "explaino_magnet_root_well", "ExplainO Magnet Root Well", explaino, magnet, escape_tuned_region, escape_direct, native_2d_formula),
+    FRACTAL_CATALOG_ENTRY(explaino_multibrot_root_trap, "explaino_multibrot_root_trap", "ExplainO Multibrot Root Trap", explaino, multibrot, escape_tuned_region, escape_direct, native_2d_formula),
 };
 
 #undef FRACTAL_CATALOG_ENTRY

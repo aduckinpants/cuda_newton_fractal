@@ -923,7 +923,8 @@ ESCAPE_TIME_COLOR_HD inline float ComputeEscapeTimeNu(
     const KernelParams& params) {
     const float logZn = logf(fmaxf(magnitude, 1.0e-12f));
     float denom = logf(2.0f);
-    if (fractalType == FractalType::multibrot && params.multibrot_power_float > 1.0f) {
+    const FractalType directFractalType = RootFieldConsumerBaseFractalType(fractalType);
+    if (directFractalType == FractalType::multibrot && params.multibrot_power_float > 1.0f) {
         denom = logf(params.multibrot_power_float);
     }
     return static_cast<float>(iteration) + 1.0f - logf(fmaxf(logZn / denom, 1.0e-12f)) / denom;

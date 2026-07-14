@@ -334,7 +334,7 @@ UISchemaControl BuildMultibrotRealPowerControl() {
     control.has_ui_min = true;
     control.has_ui_max = true;
     control.logarithmic = true;
-    SetVisibleForFractalType(&control, "multibrot");
+    SetVisibleForFractalTypes(&control, "multibrot,explaino_multibrot_root_trap");
     return control;
 }
 
@@ -349,7 +349,7 @@ UISchemaControl BuildMultibrotImagPowerControl() {
         0.01,
         "fractal.params.multibrot_power_imag",
         json_min::Value{0.0});
-    SetVisibleForFractalType(&control, "multibrot");
+    SetVisibleForFractalTypes(&control, "multibrot,explaino_multibrot_root_trap");
     return control;
 }
 
@@ -484,7 +484,7 @@ UISchemaControl BuildExplainoGeneratedRootLayoutControl() {
     control.has_visible_if = true;
     control.visible_if = MakeInVisibleIf(
         "fractal.view.fractal_type",
-        "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well");
+        "explaino_root_sdf,explaino_mandelbrot_root_trap,explaino_magnet_root_well,explaino_multibrot_root_trap");
     return control;
 }
 

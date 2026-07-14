@@ -235,7 +235,8 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("explaino_root_field_trap_scale must be finite and in [0.05,16]", outError);
         }
     }
-    if (view.fractal_type == FractalType::multibrot) {
+    if (view.fractal_type == FractalType::multibrot ||
+        view.fractal_type == FractalType::explaino_multibrot_root_trap) {
         if (!std::isfinite(params.multibrot_power_float) ||
             params.multibrot_power_float < 0.01f ||
             params.multibrot_power_float > 32.0f) {

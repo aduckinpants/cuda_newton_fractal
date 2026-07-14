@@ -176,6 +176,10 @@ void WriteLensSdfReportFields(
         lensSdfProbe.root_field_consumer_trap_strength << ",\n";
     out << "  \"root_field_consumer_trap_scale\": " << std::setprecision(12) <<
         lensSdfProbe.root_field_consumer_trap_scale << ",\n";
+    out << "  \"root_field_consumer_multibrot_power_float\": " << std::setprecision(12) <<
+        lensSdfProbe.root_field_consumer_multibrot_power_float << ",\n";
+    out << "  \"root_field_consumer_multibrot_power_imag\": " << std::setprecision(12) <<
+        lensSdfProbe.root_field_consumer_multibrot_power_imag << ",\n";
     out << "  \"root_field_consumer_base_root_hash\": ";
     WriteHashOrNull(out, lensSdfProbe.root_field_consumer_base_root_hash);
     out << ",\n";

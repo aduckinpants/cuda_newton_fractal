@@ -195,6 +195,15 @@ int main() {
             std::cerr << "Multibrot step should use the imaginary exponent instead of silently falling back to the old real-only power\n";
             return 1;
         }
+        EscapeTimeDirectState<Cx> baselineState{{1.0f, 2.0f}, {3.0f, 4.0f}, {0.0f, 0.0f}};
+        EscapeTimeDirectState<Cx> rootTrapState = baselineState;
+        StepEscapeTimeDirectState(FractalType::multibrot, 2.5f, 0.5f, 3, {0.0f, 0.0f}, {0.0f, 0.0f}, &baselineState);
+        StepEscapeTimeDirectState(FractalType::explaino_multibrot_root_trap, 2.5f, 0.5f, 3, {0.0f, 0.0f}, {0.0f, 0.0f}, &rootTrapState);
+        if (!NearlyEqualCx(baselineState.z, rootTrapState.z, 1.0e-6f) ||
+            !NearlyEqualCx(baselineState.c, rootTrapState.c, 1.0e-6f)) {
+            std::cerr << "ExplainO Multibrot Root Trap should reuse the exact Multibrot direct formula recurrence\n";
+            return 1;
+        }
     }
 
     {

@@ -97,6 +97,11 @@ static void TestConcreteEnumIdWrappers() {
     Check(TryParseFractalTypeId("explaino_magnet_root_well", &fractalType) &&
             fractalType == FractalType::explaino_magnet_root_well,
         "TestConcreteEnumIdWrappers_FractalTypeExplainoMagnetRootWellParse");
+    Check(std::string_view(FractalTypeId(FractalType::explaino_multibrot_root_trap)) == "explaino_multibrot_root_trap",
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoMultibrotRootTrapLookup");
+    Check(TryParseFractalTypeId("explaino_multibrot_root_trap", &fractalType) &&
+            fractalType == FractalType::explaino_multibrot_root_trap,
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoMultibrotRootTrapParse");
     Check(std::string_view(FractalTypeId(FractalType::generic_equation_pack)) == "generic_equation_pack",
         "TestConcreteEnumIdWrappers_FractalTypeGenericEquationPackLookup");
     Check(TryParseFractalTypeId("generic_equation_pack", &fractalType) && fractalType == FractalType::generic_equation_pack,

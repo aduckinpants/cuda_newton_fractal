@@ -106,6 +106,8 @@ struct ViewerUiAutomationLensSdfProbe {
     int root_field_consumer_requested_generated_root_count = 0;
     float root_field_consumer_trap_strength = 0.0f;
     float root_field_consumer_trap_scale = 1.0f;
+    float root_field_consumer_multibrot_power_float = 0.0f;
+    float root_field_consumer_multibrot_power_imag = 0.0f;
     std::uint64_t root_field_consumer_base_root_hash = 0;
     std::uint64_t root_field_consumer_effective_root_hash = 0;
     std::string root_field_consumer_fail_closed_reason;

@@ -41,7 +41,7 @@ bool ExplainoLegacyProjectionSmoothEscapeStaysFast(
 }
 
 double AutoStandardThresholdLog2(FractalType fractalType) {
-    switch (fractalType) {
+    switch (RootFieldConsumerBaseFractalType(fractalType)) {
     case FractalType::julia:
     case FractalType::explaino_julia:
         return 16.0;

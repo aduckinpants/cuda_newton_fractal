@@ -136,6 +136,7 @@ ESCAPE_TIME_DIRECT_HD inline constexpr bool UsesSharedEscapeTimeDirectFormula(Fr
         fractalType == FractalType::julia ||
         fractalType == FractalType::burning_ship ||
         fractalType == FractalType::multibrot ||
+        fractalType == FractalType::explaino_multibrot_root_trap ||
         fractalType == FractalType::phoenix ||
         fractalType == FractalType::multicorn ||
         fractalType == FractalType::lambda_map ||
@@ -144,6 +145,16 @@ ESCAPE_TIME_DIRECT_HD inline constexpr bool UsesSharedEscapeTimeDirectFormula(Fr
         fractalType == FractalType::spider ||
         fractalType == FractalType::celtic_mandelbrot ||
         fractalType == FractalType::perpendicular_burning_ship;
+}
+
+ESCAPE_TIME_DIRECT_HD inline constexpr FractalType EscapeTimeDirectBaseFractalType(FractalType fractalType) {
+    return fractalType == FractalType::explaino_mandelbrot_root_trap
+        ? FractalType::mandelbrot
+        : (fractalType == FractalType::explaino_magnet_root_well
+            ? FractalType::magnet
+            : (fractalType == FractalType::explaino_multibrot_root_trap
+                ? FractalType::multibrot
+                : fractalType));
 }
 
 template <typename Complex>
@@ -155,9 +166,7 @@ ESCAPE_TIME_DIRECT_HD inline EscapeTimeDirectState<Complex> InitEscapeTimeDirect
     using Scalar = decltype(coord.x);
 
     EscapeTimeDirectState<Complex> state{};
-    const FractalType directFractalType = fractalType == FractalType::explaino_mandelbrot_root_trap
-        ? FractalType::mandelbrot
-        : (fractalType == FractalType::explaino_magnet_root_well ? FractalType::magnet : fractalType);
+    const FractalType directFractalType = EscapeTimeDirectBaseFractalType(fractalType);
     if (directFractalType == FractalType::julia) {
         state.z = coord;
         state.c = juliaConst;
@@ -216,9 +225,7 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     Complex c = ioState->c;
     Complex zPrev = ioState->z_prev;
 
-    const FractalType directFractalType = fractalType == FractalType::explaino_mandelbrot_root_trap
-        ? FractalType::mandelbrot
-        : (fractalType == FractalType::explaino_magnet_root_well ? FractalType::magnet : fractalType);
+    const FractalType directFractalType = EscapeTimeDirectBaseFractalType(fractalType);
 
     if (directFractalType == FractalType::spider) {
         const Complex z2 = EscapeTimeDirectMul(z, z);

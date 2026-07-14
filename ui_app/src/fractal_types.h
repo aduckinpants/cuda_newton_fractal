@@ -295,6 +295,7 @@ enum class FractalType : int {
     explaino_root_sdf = 47,
     explaino_mandelbrot_root_trap = 48,
     explaino_magnet_root_well = 49,
+    explaino_multibrot_root_trap = 50,
 };
 
 enum class CounterfactualPairRootFamily : int {

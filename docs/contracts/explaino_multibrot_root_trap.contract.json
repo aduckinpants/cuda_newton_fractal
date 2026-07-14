@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "contract_id": "explaino_multibrot_root_trap",
+  "feature_id": "root_field_consumer_wave_followup",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_multibrot_root_trap_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/explaino_multibrot_root_trap.contract.json",
+    "docs/notes/explaino_multibrot_root_trap_PHASED_PLAN.md",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "merge the Color Pipeline root-pattern authority repair to master before starting this slice",
+    "add exactly one new experimental selector: explaino_multibrot_root_trap",
+    "preserve existing Multibrot real and complex exponent behavior",
+    "prove zero-strength parity against baseline multibrot for integer, non-integer, above-old-cap, and complex exponent cases",
+    "prove visible Multibrot and root-field controls are active through no-mouse published-runtime tests",
+    "publish the runtime and prove capture/replay determinism before closeout"
+  ],
+  "forbidden_operator_prompts": [
+    "add adapter-library expansion",
+    "add graph UI",
+    "add SDF operator work",
+    "add perturbation work",
+    "add more root-field consumers",
+    "change Multibrot recurrence semantics",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "branch": "codex/explaino-multibrot-root-trap",
+    "base_fractal": "multibrot",
+    "new_selector": "explaino_multibrot_root_trap",
+    "real_power_hard_range": "[0.01,32]",
+    "real_power_ui_range": "[0.01,12]",
+    "imag_power_range": "[-4,4]",
+    "trap_zero_strength_matches_baseline": true,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "extra_fractal_lanes": "forbidden",
+    "adapter_expansion": "forbidden",
+    "sdf_operator_work": "forbidden",
+    "graph_ui": "forbidden",
+    "perturbation_work": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_multibrot_root_trap.contract.json --out-json artifacts/validation/explaino_multibrot_root_trap_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_multibrot_root_trap_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_multibrot_root_trap_native --log artifacts/logs/explaino_multibrot_root_trap_native.log --out-json artifacts/validation/explaino_multibrot_root_trap_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_family_rules test_diagnostics_state_io test_fractal_runtime_validation test_escape_time_coloring test_fractal_renderer test_schema_binding test_ui_schema test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_multibrot_root_trap_runtime_publish --log artifacts/logs/explaino_multibrot_root_trap_runtime_publish.log --out-json artifacts/validation/explaino_multibrot_root_trap_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_root_field_consumers.py -q -k multibrot --junitxml artifacts/pytest/explaino_multibrot_root_trap_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_multibrot_root_trap_PHASED_PLAN.md --out-json artifacts/validation/explaino_multibrot_root_trap_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_multibrot_root_trap_diff_check --log artifacts/logs/explaino_multibrot_root_trap_diff_check.log --out-json artifacts/validation/explaino_multibrot_root_trap_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The ExplainO Multibrot Root Trap contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_multibrot_root_trap_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "native_multibrot_root_trap_ok",
+      "description": "Focused native rails prove selector, schema, validation, direct formula parity, and report surfaces.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_multibrot_root_trap_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_publish_ok",
+      "description": "The viewer runtime publishes successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_multibrot_root_trap_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_multibrot_root_trap_ok",
+      "description": "Published no-mouse runtime proof covers selector identity, exponent controls, root controls, trap sensitivity, and capture/replay.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/explaino_multibrot_root_trap_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_root_field_consumers.py::test_explaino_multibrot_root_trap_exponent_controls_are_visible_and_active"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_multibrot_root_trap_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

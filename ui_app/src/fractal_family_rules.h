@@ -747,7 +747,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool UsesExplainoRootLayoutAuthority(Fr
     return IsExplainoFamily(fractalType) ||
         fractalType == FractalType::explaino_root_sdf ||
         fractalType == FractalType::explaino_mandelbrot_root_trap ||
-        fractalType == FractalType::explaino_magnet_root_well;
+        fractalType == FractalType::explaino_magnet_root_well ||
+        fractalType == FractalType::explaino_multibrot_root_trap;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsExplainoSeedControls(FractalType fractalType) {
@@ -761,7 +762,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsFieldPrimarySdfFractal(FractalTy
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsRootFieldConsumerFractal(FractalType fractalType) {
     return fractalType == FractalType::explaino_mandelbrot_root_trap ||
-        fractalType == FractalType::explaino_magnet_root_well;
+        fractalType == FractalType::explaino_magnet_root_well ||
+        fractalType == FractalType::explaino_multibrot_root_trap;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool UsesExplainoActiveRootField(FractalType fractalType) {
@@ -777,11 +779,13 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool ShowsExplainoAlternateRootPatternC
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr FractalType RootFieldConsumerBaseFractalType(FractalType fractalType) {
-    return fractalType == FractalType::explaino_magnet_root_well
-        ? FractalType::magnet
-        : (fractalType == FractalType::explaino_mandelbrot_root_trap
-            ? FractalType::mandelbrot
-            : fractalType);
+    switch (fractalType) {
+    case FractalType::explaino_magnet_root_well: return FractalType::magnet;
+    case FractalType::explaino_multibrot_root_trap: return FractalType::multibrot;
+    case FractalType::explaino_mandelbrot_root_trap: return FractalType::mandelbrot;
+    default: break;
+    }
+    return fractalType;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsProjectionAndFlowCarrier(FractalType fractalType) {
@@ -807,10 +811,11 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType 
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fractalType) {
+    fractalType = RootFieldConsumerBaseFractalType(fractalType);
     return fractalType == FractalType::nova || fractalType == FractalType::mandelbrot ||
-        fractalType == FractalType::explaino_mandelbrot_root_trap ||
         fractalType == FractalType::julia || fractalType == FractalType::burning_ship ||
-        fractalType == FractalType::multibrot || fractalType == FractalType::phoenix ||
+        fractalType == FractalType::multibrot ||
+        fractalType == FractalType::phoenix ||
         fractalType == FractalType::explaino_nova || fractalType == FractalType::explaino_julia ||
         fractalType == FractalType::multicorn || fractalType == FractalType::collatz ||
         fractalType == FractalType::mcmullen || fractalType == FractalType::lambda_map ||
@@ -887,6 +892,7 @@ struct LensMaskSemanticsDescriptor {
     X(magnet, FractalType::magnet, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
     X(explaino_mandelbrot_root_trap, FractalType::explaino_mandelbrot_root_trap, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
     X(explaino_magnet_root_well, FractalType::explaino_magnet_root_well, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
+    X(explaino_multibrot_root_trap, FractalType::explaino_multibrot_root_trap, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
     X(generic_equation_pack, FractalType::generic_equation_pack, LensMaskPartition::escape_interior_membership, "escape_interior_membership", "Escape/Interior Membership") \
     X(sdf_pack_scene, FractalType::sdf_pack_scene, LensMaskPartition::sdf_field_membership, "sdf_field_membership", "SDF Field Membership") \
     X(explaino_root_sdf, FractalType::explaino_root_sdf, LensMaskPartition::sdf_field_membership, "sdf_field_membership", "SDF Field Membership")

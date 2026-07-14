@@ -1436,6 +1436,10 @@ static void DispatchRenderFrame(
         lensSdfProbe.root_field_consumer_requested_generated_root_count = params.explaino_generated_root_count;
         lensSdfProbe.root_field_consumer_trap_strength = params.explaino_root_field_trap_strength;
         lensSdfProbe.root_field_consumer_trap_scale = params.explaino_root_field_trap_scale;
+        if (baseFractalType == FractalType::multibrot) {
+            lensSdfProbe.root_field_consumer_multibrot_power_float = params.multibrot_power_float;
+            lensSdfProbe.root_field_consumer_multibrot_power_imag = params.multibrot_power_imag;
+        }
         ExplainoRootFieldDescriptor rootFieldDescriptor{};
         std::string rootFieldError;
         if (ResolveExplainoRootFieldDescriptor(view, params, &rootFieldDescriptor, &rootFieldError)) {
