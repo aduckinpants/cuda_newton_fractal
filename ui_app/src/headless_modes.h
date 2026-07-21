@@ -62,6 +62,9 @@ int RunDescribeParameterSurfaceMode(bool toStdout, const std::string& jsonPath,
     const std::vector<std::string>& schemaCandidates);
 
 // Returns 0 on success, 1 on error.
+int RunDescribeFractalCatalogMode(bool toStdout, const std::string& jsonPath);
+
+// Returns 0 on success, 1 on error.
 int RunDescribeExplainoAxisRegistryMode(bool toStdout, const std::string& jsonPath);
 
 // Returns 0 on success, 1 on error.

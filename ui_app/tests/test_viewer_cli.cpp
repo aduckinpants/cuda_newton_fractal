@@ -34,6 +34,8 @@ static void TestDefaultsNoArgs() {
     Check(!cli.capture_diagnostic_only, "TestDefaultsNoArgs_CaptureDiag");
     Check(!cli.capture_finding_only, "TestDefaultsNoArgs_CaptureFinding");
     Check(!cli.describe_functions, "TestDefaultsNoArgs_DescribeFunctions");
+    Check(!cli.describe_fractal_catalog, "TestDefaultsNoArgs_DescribeFractalCatalog");
+    Check(!cli.have_describe_fractal_catalog_json, "TestDefaultsNoArgs_DescribeFractalCatalogJson");
     Check(!cli.describe_explaino_axis_registry, "TestDefaultsNoArgs_DescribeExplainoAxisRegistry");
     Check(!cli.have_diagnostics_out_dir, "TestDefaultsNoArgs_DiagnosticsOutDir");
     Check(!cli.have_diagnostics_out_dir_alias, "TestDefaultsNoArgs_DiagnosticsOutDirAlias");
@@ -247,6 +249,28 @@ static void TestDescribeFunctionsJson() {
     Check(rc == 0, "TestDescribeFunctionsJson_ReturnCode");
     Check(cli.have_describe_functions_json, "TestDescribeFunctionsJson_Have");
     Check(cli.describe_functions_json_path == "out.json", "TestDescribeFunctionsJson_Path");
+}
+
+static void TestDescribeFractalCatalog() {
+    ViewerCliArgs cli{};
+    const int rc = ParseViewerCli(Args({"--describe-fractal-catalog"}), &cli);
+    Check(rc == 0, "TestDescribeFractalCatalog_ReturnCode");
+    Check(cli.describe_fractal_catalog, "TestDescribeFractalCatalog_Flag");
+    Check(ValidateViewerCliModeConflicts(cli), "TestDescribeFractalCatalog_ModeValid");
+}
+
+static void TestDescribeFractalCatalogJson() {
+    ViewerCliArgs cli{};
+    const int rc = ParseViewerCli(Args({"--describe-fractal-catalog-json", "catalog.json"}), &cli);
+    Check(rc == 0, "TestDescribeFractalCatalogJson_ReturnCode");
+    Check(cli.have_describe_fractal_catalog_json, "TestDescribeFractalCatalogJson_Have");
+    Check(cli.describe_fractal_catalog_json_path == "catalog.json", "TestDescribeFractalCatalogJson_Path");
+    Check(ValidateViewerCliModeConflicts(cli), "TestDescribeFractalCatalogJson_ModeValid");
+}
+
+static void TestDescribeFractalCatalogJsonMissingValue() {
+    ViewerCliArgs cli{};
+    Check(ParseViewerCli(Args({"--describe-fractal-catalog-json"}), &cli) != 0, "TestDescribeFractalCatalogJsonMissingValue_Fails");
 }
 
 static void TestExploreRecommendJson() {
@@ -760,6 +784,9 @@ int main() {
     TestSampleSessionConflictsWithSampleRequest();
     TestDescribeFunctionsJson();
     TestDescribeFunctionsJsonMissingValue();
+    TestDescribeFractalCatalog();
+    TestDescribeFractalCatalogJson();
+    TestDescribeFractalCatalogJsonMissingValue();
     TestLoadStateJson();
     TestUiAutomationReportFlags();
     TestEquationPackWorkbenchPackJsonMissingValue();

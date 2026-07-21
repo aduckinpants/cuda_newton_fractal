@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "claims": [
+    {
+      "claim_id": "explaino_all.math_summary.0",
+      "selector": "explaino_all",
+      "description_field": "math_summary",
+      "sentence_index": 0,
+      "claim_text": "ExplainO All is the canonical public ExplainO selector: neutral registry axes resolve to the baseline ExplainO runtime, while any active registered axis keeps the canonical composed branch.",
+      "source_file": "ui_app/src/fractal_family_rules.h",
+      "source_symbol": "ResolveExplainoRuntimeFractalType",
+      "classification": "direct",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_all.recurrence_or_field_model.0",
+      "selector": "explaino_all",
+      "description_field": "recurrence_or_field_model",
+      "sentence_index": 0,
+      "claim_text": "The composed branch evaluates a degree-four real-coefficient polynomial and its derivative, forms a Newton step, and can combine alternating coefficient sets, vortex rotation, a perpendicular ripple kick, tension and balance-field biases, adaptive damping, and an optional Phoenix memory term.",
+      "source_file": "ui_app/src/fractal_sample_device.inl",
+      "source_symbol": "FractalSample canonical ExplainO composed branch",
+      "classification": "editorial_paraphrase",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_all.state_order.0",
+      "selector": "explaino_all",
+      "description_field": "state_order",
+      "sentence_index": 0,
+      "claim_text": "With a neutral Phoenix coefficient the update depends on the current complex state; with a nonzero Phoenix coefficient it also uses the previous state and is second-order in the stored orbit state.",
+      "source_file": "ui_app/src/fractal_sample_device.inl",
+      "source_symbol": "FractalSample canonical ExplainO zPrev update",
+      "classification": "derived",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_all.termination_or_classification.0",
+      "selector": "explaino_all",
+      "description_field": "termination_or_classification",
+      "sentence_index": 0,
+      "claim_text": "The branch tests polynomial residual against epsilon, rescales states outside radius four, resets and stops on nonfinite state, and otherwise classifies an unconverged result at the best recorded iteration by snapping to the nearest available root.",
+      "source_file": "ui_app/src/fractal_sample_device.inl",
+      "source_symbol": "FractalSample canonical ExplainO termination",
+      "classification": "editorial_paraphrase",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_all.interpretation_notes.0",
+      "selector": "explaino_all",
+      "description_field": "interpretation_notes",
+      "sentence_index": 0,
+      "claim_text": "The selector names a configurable family composition, so serialized nonzero axes identify enabled recurrence terms but do not by themselves prove which term is visually dominant in a captured frame.",
+      "source_file": "ui_app/src/fractal_sample_device.inl",
+      "source_symbol": "FractalSample canonical ExplainO composed terms",
+      "classification": "derived",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_magnet_root_well.math_summary.0",
+      "selector": "explaino_magnet_root_well",
+      "description_field": "math_summary",
+      "sentence_index": 0,
+      "claim_text": "ExplainO Magnet Root Well is a root-field coloring consumer whose orbit dynamics use the engine's Magnet Type-I base recurrence.",
+      "source_file": "ui_app/src/fractal_family_rules.h",
+      "source_symbol": "RootFieldConsumerBaseFractalType",
+      "classification": "direct",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_magnet_root_well.recurrence_or_field_model.0",
+      "selector": "explaino_magnet_root_well",
+      "description_field": "recurrence_or_field_model",
+      "sentence_index": 0,
+      "claim_text": "For each pixel the coordinate is the recurrence parameter c and the configured Magnet seed is the initial z.",
+      "source_file": "ui_app/src/escape_time_direct_formulas.h",
+      "source_symbol": "InitEscapeTimeDirectState",
+      "classification": "direct",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_magnet_root_well.recurrence_or_field_model.1",
+      "selector": "explaino_magnet_root_well",
+      "description_field": "recurrence_or_field_model",
+      "sentence_index": 1,
+      "claim_text": "The squared rational update ((z^2 - 1 + c) / (2z - 2 + c))^2 is blended from the prior z by relaxation clamped to the interval 0.05 through 1.5.",
+      "source_file": "ui_app/src/escape_time_direct_formulas.h",
+      "source_symbol": "StepEscapeTimeDirectState",
+      "classification": "editorial_paraphrase",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_magnet_root_well.state_order.0",
+      "selector": "explaino_magnet_root_well",
+      "description_field": "state_order",
+      "sentence_index": 0,
+      "claim_text": "The Magnet update is first-order in z for fixed pixel coordinate, seed, and relaxation; root-pattern data is consumed later by coloring rather than fed back into the base recurrence.",
+      "source_file": "ui_app/src/escape_time_direct_formulas.h",
+      "source_symbol": "StepEscapeTimeDirectState",
+      "classification": "derived",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_magnet_root_well.termination_or_classification.0",
+      "selector": "explaino_magnet_root_well",
+      "description_field": "termination_or_classification",
+      "sentence_index": 0,
+      "claim_text": "Iteration converges when the squared distance from z to the unit attractor falls below epsilon squared, and otherwise stops on the configured Magnet bailout, a nonfinite state, or the iteration limit.",
+      "source_file": "ui_app/src/fractal_sample_device.inl",
+      "source_symbol": "FractalSample shared direct escape-time iteration",
+      "classification": "editorial_paraphrase",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_magnet_root_well.interpretation_notes.0",
+      "selector": "explaino_magnet_root_well",
+      "description_field": "interpretation_notes",
+      "sentence_index": 0,
+      "claim_text": "Root-field distance and nearest-root signals can shape coloring around configured, generated, or fallback unit roots.",
+      "source_file": "ui_app/src/escape_time_coloring.h",
+      "source_symbol": "TryResolveRootFieldConsumerDistance",
+      "classification": "direct",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "explaino_magnet_root_well.interpretation_notes.1",
+      "selector": "explaino_magnet_root_well",
+      "description_field": "interpretation_notes",
+      "sentence_index": 1,
+      "claim_text": "Those coloring signals are downstream of the Magnet recurrence, and continuous proximity alone does not establish discrete basins.",
+      "source_file": "ui_app/src/fractal_sample_device.inl",
+      "source_symbol": "FractalSample result then escape_time_coloring consumption",
+      "classification": "derived",
+      "review_disposition": "accepted"
+    },
+    {
+      "claim_id": "historical.explaino_all.generic_blend",
+      "selector": "explaino_all",
+      "description_field": "math_summary",
+      "sentence_index": 0,
+      "claim_text": "Historical prose characterized ExplainO All as a generic blend of variants.",
+      "source_file": "historical/fractal_catalog_current.json",
+      "source_symbol": "entries[name=explaino_all]",
+      "classification": "editorial_paraphrase",
+      "review_disposition": "superseded"
+    }
+  ]
+}
