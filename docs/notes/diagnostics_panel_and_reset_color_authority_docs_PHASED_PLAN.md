@@ -11,7 +11,7 @@
 
 ## Current Phase
 
-Phase 6 - hostile audit, validation receipts, contract proof receipt, rearward review, push, clean tree, and stop.
+Complete - Phase 6 hostile audit, receipts, rearward review, push, and clean-tree closure are proven.
 
 ## Phase Checklist
 
@@ -22,7 +22,7 @@ Phase 6 - hostile audit, validation receipts, contract proof receipt, rearward r
 - [x] Phase 3: write the Engineering Diagnostics Panel research/specification report.
 - [x] Phase 4: research the Reset All / Color Pipeline authority mismatch.
 - [x] Phase 5: write the Reset All / Color Pipeline bug report.
-- [ ] Phase 6: hostile audit, validation receipts, contract proof receipt, rearward review, push, clean tree, and stop.
+- [x] Phase 6: hostile audit, validation receipts, contract proof receipt, rearward review, push, clean tree, and stop.
 
 ## Scope
 
@@ -53,6 +53,9 @@ Out of scope:
 | Slice lock | `viewer_host_begin_work_slice.py` opened `ck:47331aa6`. |
 | Engineering Diagnostics spec | `docs/notes/engineering_diagnostics_panel_RESEARCH_SPEC.md`. |
 | Reset All bug report | `docs/notes/reset_all_color_pipeline_authority_bug_REPORT.md`. |
+| Validation receipt | `artifacts/hooks/viewer_host_validation_receipts/c770cef7ab1a05fcb1c4b74482042cb98c0c671c.json`. |
+| Contract proof receipt | `artifacts/hooks/viewer_host_contract_proof_receipts/c770cef7ab1a05fcb1c4b74482042cb98c0c671c.json`. |
+| Rearward review | `artifacts/hooks/viewer_host_rearward_review/c770cef7ab1a05fcb1c4b74482042cb98c0c671c.json` reports `ok`. |
 
 ## Hostile Audit
 
