@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-07-21",
+  "review_source": {
+    "identity": "explaino novelty analysis historical editorial catalog",
+    "path": "D:/salt-output/explaino_novelty_analysis/20260612_000000_viewer_host_fractal_math_refresh_packet_doc_update_working/fractal_catalog_current.json",
+    "sha256": "cf5446b7d899f9a467186fc5d514e80b2d6de72c3992dca3830d7f7b91169d1d",
+    "production_dependency": false
+  },
+  "observed": {
+    "live_selector_count": 51,
+    "historical_entry_count": 48,
+    "matched_historical_entries": 48,
+    "unmatched_historical_entries": [],
+    "duplicate_or_ambiguous_mappings": [],
+    "live_selectors_without_historical_seeds": [
+      "explaino_mandelbrot_root_trap",
+      "explaino_magnet_root_well",
+      "explaino_multibrot_root_trap"
+    ]
+  },
+  "alias_corrections": [
+    {
+      "historical_selector": "lambda_map",
+      "live_selector": "lambda",
+      "reason": "The live kFractalCatalog selector is lambda; lambda_map is the C++ enum/family identity, not the public selector."
+    }
+  ],
+  "editorial_review": {
+    "accepted_as_seed_then_rewritten_from_current_evidence": [
+      "explaino_all"
+    ],
+    "reviewed_without_historical_seed": [
+      "explaino_magnet_root_well"
+    ],
+    "rejected_as_runtime_authority": "all historical entries",
+    "not_reviewed_in_this_campaign": 47
+  },
+  "mapping_groups": [
+    {
+      "result": "exact_live_selector_match",
+      "historical_selectors": [
+        "newton", "nova", "mandelbrot", "julia", "burning_ship", "multibrot", "phoenix", "explaino",
+        "explaino_y", "explaino_fp", "explaino_nova", "explaino_halley", "explaino_dual", "explaino_mult",
+        "explaino_phoenix", "explaino_transcendental", "explaino_inertial", "explaino_julia", "explaino_rational",
+        "multicorn", "halley", "collatz", "explaino_collatz", "mcmullen", "explaino_lambda",
+        "explaino_rational_escape", "spider", "celtic_mandelbrot", "perpendicular_burning_ship", "explaino_joy",
+        "explaino_fold", "explaino_bell", "explaino_ripple", "explaino_splice", "explaino_vortex", "explaino_tension",
+        "explaino_balance_void", "explaino_all", "counterfactual_pair", "explaino_counterfactual_pair",
+        "projection_and_flow", "explaino_projection_and_flow", "magnet", "generic_equation_pack",
+        "explaino_collatz_direct", "sdf_pack_scene", "explaino_root_sdf"
+      ],
+      "count": 47
+    },
+    {
+      "result": "corrected_alias_match",
+      "historical_selectors": ["lambda_map"],
+      "live_selectors": ["lambda"],
+      "count": 1
+    }
+  ],
+  "disposition_rules": {
+    "current_engine_source_and_tests_override_historical_wording": true,
+    "historical_prose_compiled_or_loaded_at_runtime": false,
+    "only_two_reviewed_descriptions_block_this_campaign": [
+      "explaino_all",
+      "explaino_magnet_root_well"
+    ]
+  }
+}

@@ -2834,6 +2834,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
                                        const std::string& exeDir) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool describeParameterSurface = cli.describe_parameter_surface || cli.have_describe_parameter_surface_json;
+    const bool describeFractalCatalog = cli.describe_fractal_catalog || cli.have_describe_fractal_catalog_json;
     const bool describeExplainoAxisRegistry = cli.describe_explaino_axis_registry || cli.have_describe_explaino_axis_registry_json;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
@@ -2842,7 +2843,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     if (validateUiSaltContract) {
         if (!cli.validate_ui_salt_contract || cli.sample_session || cli.any_sample_mode_arg ||
                 cli.describe_functions || cli.have_describe_functions_json ||
-                describeParameterSurface || describeExplainoAxisRegistry ||
+                describeParameterSurface || describeFractalCatalog || describeExplainoAxisRegistry ||
                 exploreRecommend || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer ||
                 cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
             std::fprintf(stderr, "--validate-ui-salt-contract is mutually exclusive with other headless verbs and required for UI-Salt contract paths\n");
@@ -2853,7 +2854,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
 
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
-            describeParameterSurface || describeExplainoAxisRegistry ||
+            describeParameterSurface || describeFractalCatalog || describeExplainoAxisRegistry ||
             exploreRecommend || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer ||
             cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
             std::fprintf(stderr, "--sample-session is mutually exclusive with other headless verbs\n");
@@ -2863,7 +2864,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     }
 
     if (cli.any_sample_mode_arg) {
-        if (exploreRecommend || describeParameterSurface || describeExplainoAxisRegistry || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
+        if (exploreRecommend || describeParameterSurface || describeFractalCatalog || describeExplainoAxisRegistry || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
             std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend, --describe-parameter-surface, --describe-explaino-axis-registry, --flashlight-probe, runtime-walk headless, and runtime-walk viewer load verbs\n");
             return 1;
         }
@@ -2871,7 +2872,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     }
 
     if (cli.describe_functions || cli.have_describe_functions_json) {
-        if (exploreRecommend || describeParameterSurface || describeExplainoAxisRegistry ||
+        if (exploreRecommend || describeParameterSurface || describeFractalCatalog || describeExplainoAxisRegistry ||
                 cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
                 cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
             std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
@@ -2883,7 +2884,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     }
 
     if (describeParameterSurface) {
-        if (exploreRecommend || describeExplainoAxisRegistry ||
+        if (exploreRecommend || describeFractalCatalog || describeExplainoAxisRegistry ||
                 cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
                 cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
             std::fprintf(stderr, "--describe-parameter-surface is mutually exclusive with other headless verbs\n");
@@ -2894,8 +2895,20 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
             BuildViewerSchemaCandidates(exeDir));
     }
 
+    if (describeFractalCatalog) {
+        if (exploreRecommend || describeExplainoAxisRegistry ||
+                cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
+                cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
+            std::fprintf(stderr, "--describe-fractal-catalog is mutually exclusive with other headless verbs\n");
+            return 1;
+        }
+        return RunDescribeFractalCatalogMode(
+            cli.describe_fractal_catalog,
+            cli.have_describe_fractal_catalog_json ? cli.describe_fractal_catalog_json_path : std::string());
+    }
+
     if (describeExplainoAxisRegistry) {
-        if (exploreRecommend ||
+        if (exploreRecommend || describeFractalCatalog ||
                 cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
                 cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
             std::fprintf(stderr, "--describe-explaino-axis-registry is mutually exclusive with other headless verbs\n");

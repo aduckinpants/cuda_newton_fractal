@@ -1,7 +1,10 @@
 #include "headless_modes.h"
 
+#define NOMINMAX
 #include <Windows.h>
 
+#include <fcntl.h>
+#include <io.h>
 #include <algorithm>
 #include <cerrno>
 #include <cctype>
@@ -22,6 +25,7 @@
 #include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_window.h"
 #include "enum_id_utils.h"
+#include "fractal_descriptive_catalog.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "fractal_parameter_surface_descriptor.h"
@@ -1013,6 +1017,36 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath) {
     }
     std::fprintf(stderr, "%s\n", error.c_str());
     return 1;
+}
+
+int RunDescribeFractalCatalogMode(bool toStdout, const std::string& jsonPath) {
+    if (!toStdout && jsonPath.empty()) {
+        std::fprintf(stderr, "describe-fractal-catalog mode requires an output sink\n");
+        return 1;
+    }
+    const std::string json = BuildFractalDescriptiveCatalogJson();
+    if (toStdout) {
+        if (_setmode(_fileno(stdout), _O_BINARY) == -1) {
+            std::fprintf(stderr, "failed to set descriptive catalog stdout to binary mode\n");
+            return 1;
+        }
+        if (std::fwrite(json.data(), 1, json.size(), stdout) != json.size()) {
+            std::fprintf(stderr, "failed to write descriptive catalog JSON to stdout\n");
+            return 1;
+        }
+        if (std::fflush(stdout) != 0) {
+            std::fprintf(stderr, "failed to flush descriptive catalog JSON to stdout\n");
+            return 1;
+        }
+    }
+    if (!jsonPath.empty()) {
+        std::string error;
+        if (!WriteFractalDescriptiveCatalogJsonFile(jsonPath, &error)) {
+            std::fprintf(stderr, "%s\n", error.c_str());
+            return 1;
+        }
+    }
+    return 0;
 }
 
 int RunDescribeExplainoAxisRegistryMode(bool toStdout, const std::string& jsonPath) {

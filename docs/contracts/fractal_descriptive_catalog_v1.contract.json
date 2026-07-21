@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "contract_id": "fractal_descriptive_catalog_v1",
+  "feature_id": "fractal_descriptive_catalog_v1",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/fractal_descriptive_catalog_v1_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/fractal_descriptive_catalog_v1_PHASED_PLAN.md",
+    "docs/contracts/fractal_descriptive_catalog_v1.contract.json",
+    "docs",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "tests",
+    ".vscode/tasks.json",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "export an engine-owned deterministic fractal descriptive catalog",
+    "review only explaino_all and explaino_magnet_root_well in this campaign",
+    "keep the live catalog authoritative for identity, order, and existing flags",
+    "ground every reviewed sentence in current engine evidence",
+    "publish from exact merged master before state-tool integration"
+  ],
+  "forbidden_operator_prompts": [
+    "change fractal formulas or samplers",
+    "change rendering or UI behavior",
+    "change state serialization, deserialization, or loading",
+    "change Color Pipeline behavior",
+    "change parameter applicability",
+    "rename selectors or change flag taxonomy",
+    "make runtime depend on documentation or the historical side folder"
+  ],
+  "required_defaults": {
+    "schema_version": 1,
+    "entry_order": "kFractalCatalog",
+    "reviewed_selectors": [
+      "explaino_all",
+      "explaino_magnet_root_well"
+    ],
+    "other_description_status": "unavailable",
+    "volatile_provenance_in_export": false,
+    "runtime_ledger_dependency": false,
+    "file_parent_creation": false,
+    "temporary_suffix": ".tmp"
+  },
+  "forbidden_defaults": {
+    "formula_change": "forbidden",
+    "rendering_change": "forbidden",
+    "state_contract_change": "forbidden",
+    "parameter_surface_change": "forbidden",
+    "selector_or_flag_taxonomy_change": "forbidden",
+    "historical_catalog_runtime_fallback": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_descriptive_catalog_v1.contract.json --out-json artifacts/validation/fractal_descriptive_catalog_v1_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_descriptive_catalog_focused_native --log artifacts/logs/fractal_descriptive_catalog_focused_native.log --out-json artifacts/validation/fractal_descriptive_catalog_focused_native.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_descriptive_catalog",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_descriptive_catalog_viewer_cli --log artifacts/logs/fractal_descriptive_catalog_viewer_cli.log --out-json artifacts/validation/fractal_descriptive_catalog_viewer_cli.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_cli",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_descriptive_catalog_full_native --log artifacts/logs/fractal_descriptive_catalog_full_native.log --out-json artifacts/validation/fractal_descriptive_catalog_full_native.json --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_descriptive_catalog_runtime_publish --log artifacts/logs/fractal_descriptive_catalog_runtime_publish.log --out-json artifacts/validation/fractal_descriptive_catalog_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_descriptive_catalog_runtime_pytest --log artifacts/logs/fractal_descriptive_catalog_runtime_pytest.log --out-json artifacts/validation/fractal_descriptive_catalog_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_descriptive_catalog_cli.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_descriptive_catalog_public_catalog_smoke --log artifacts/logs/fractal_descriptive_catalog_public_catalog_smoke.log --out-json artifacts/validation/fractal_descriptive_catalog_public_catalog_smoke.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/reality_toolkit/scripts/run_fractal_catalog_smoke.py --strict --out-dir artifacts/fractal_catalog_smoke_profile",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/fractal_descriptive_catalog_v1_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_descriptive_catalog_diff_check --log artifacts/logs/fractal_descriptive_catalog_diff_check.log --out-json artifacts/validation/fractal_descriptive_catalog_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_descriptive_catalog_v1_PHASED_PLAN.md --out-json artifacts/validation/fractal_descriptive_catalog_v1_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The descriptive catalog V1 contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_descriptive_catalog_v1_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The descriptive catalog V1 hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_descriptive_catalog_v1_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

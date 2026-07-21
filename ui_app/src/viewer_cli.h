@@ -18,6 +18,7 @@ struct ViewerCliArgs {
     bool capture_finding_only = false;
     bool describe_functions = false;
     bool describe_parameter_surface = false;
+    bool describe_fractal_catalog = false;
     bool describe_explaino_axis_registry = false;
     bool validate_ui_salt_contract = false;
 
@@ -47,6 +48,10 @@ struct ViewerCliArgs {
     // Describe parameter surface
     bool have_describe_parameter_surface_json = false;
     std::string describe_parameter_surface_json_path;
+
+    // Describe fractal catalog
+    bool have_describe_fractal_catalog_json = false;
+    std::string describe_fractal_catalog_json_path;
 
     // Describe Explaino-axis registry
     bool have_describe_explaino_axis_registry_json = false;
@@ -174,6 +179,7 @@ struct ViewerCliArgs {
 inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool describeParameterSurface = cli.describe_parameter_surface || cli.have_describe_parameter_surface_json;
+    const bool describeFractalCatalog = cli.describe_fractal_catalog || cli.have_describe_fractal_catalog_json;
     const bool describeExplainoAxisRegistry = cli.describe_explaino_axis_registry || cli.have_describe_explaino_axis_registry_json;
     const bool validateUiSaltContract = cli.validate_ui_salt_contract || cli.have_ui_salt_contract_json || cli.have_ui_salt_contract_report_json;
     const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
@@ -187,11 +193,12 @@ inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (validateUiSaltContract && !cli.validate_ui_salt_contract) return false;
     if (validateUiSaltContract && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only ||
-            exploreRecommend || describeParameterSurface || describeExplainoAxisRegistry || flashlightProbe ||
+            exploreRecommend || describeParameterSurface || describeFractalCatalog || describeExplainoAxisRegistry || flashlightProbe ||
             runtimeWalk || runtimeWalkViewer || cli.sample_session || cli.any_sample_mode_arg)) return false;
-    if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || describeParameterSurface || describeExplainoAxisRegistry || validateUiSaltContract)) return false;
-    if (describeParameterSurface && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || describeExplainoAxisRegistry || validateUiSaltContract || flashlightProbe || runtimeWalk || runtimeWalkViewer || cli.any_sample_mode_arg)) return false;
-    if (describeExplainoAxisRegistry && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || validateUiSaltContract || flashlightProbe || runtimeWalk || runtimeWalkViewer || cli.any_sample_mode_arg)) return false;
+    if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || describeParameterSurface || describeFractalCatalog || describeExplainoAxisRegistry || validateUiSaltContract)) return false;
+    if (describeParameterSurface && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || describeFractalCatalog || describeExplainoAxisRegistry || validateUiSaltContract || flashlightProbe || runtimeWalk || runtimeWalkViewer || cli.any_sample_mode_arg)) return false;
+    if (describeFractalCatalog && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || describeParameterSurface || describeExplainoAxisRegistry || validateUiSaltContract || flashlightProbe || runtimeWalk || runtimeWalkViewer || cli.sample_session || cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json)) return false;
+    if (describeExplainoAxisRegistry && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || describeFractalCatalog || validateUiSaltContract || flashlightProbe || runtimeWalk || runtimeWalkViewer || cli.any_sample_mode_arg)) return false;
     if (flashlightProbe && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || describeExplainoAxisRegistry || validateUiSaltContract)) return false;
     if (runtimeWalk && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || describeExplainoAxisRegistry || validateUiSaltContract || flashlightProbe || runtimeWalkViewer)) return false;
     return true;
