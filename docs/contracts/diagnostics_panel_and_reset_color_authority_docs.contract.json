@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "contract_id": "diagnostics_panel_and_reset_color_authority_docs",
+  "feature_id": "docs_maintenance_holdover",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/diagnostics_panel_and_reset_color_authority_docs_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/diagnostics_panel_and_reset_color_authority_docs.contract.json",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "merge the current explaino_multibrot_root_trap branch upstream before documentation work",
+    "write an Engineering Diagnostics Panel research/specification report",
+    "write a Reset All / Color Pipeline state-authority bug report",
+    "do not implement either future work item"
+  ],
+  "forbidden_operator_prompts": [
+    "implement the Engineering Diagnostics Panel",
+    "fix the Reset All / Color Pipeline defect",
+    "add UI controls",
+    "add runtime probes",
+    "modify production behavior",
+    "edit salticid-cuda from this repo"
+  ],
+  "required_defaults": {
+    "branch": "codex/diagnostics-panel-reset-authority-docs",
+    "docs_only": true,
+    "engineering_panel_implementation": false,
+    "reset_bug_repair": false
+  },
+  "forbidden_defaults": {
+    "production_code_changes": "forbidden",
+    "runtime_probe_implementation": "forbidden",
+    "ui_changes": "forbidden",
+    "bug_repair": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/diagnostics_panel_and_reset_color_authority_docs.contract.json --out-json artifacts/validation/diagnostics_panel_and_reset_color_authority_docs_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/diagnostics_panel_and_reset_color_authority_docs_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label diagnostics_panel_and_reset_color_authority_docs_diff_check --log artifacts/logs/diagnostics_panel_and_reset_color_authority_docs_diff_check.log --out-json artifacts/validation/diagnostics_panel_and_reset_color_authority_docs_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/diagnostics_panel_and_reset_color_authority_docs_PHASED_PLAN.md --out-json artifacts/validation/diagnostics_panel_and_reset_color_authority_docs_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The docs-only contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/diagnostics_panel_and_reset_color_authority_docs_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/diagnostics_panel_and_reset_color_authority_docs_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
