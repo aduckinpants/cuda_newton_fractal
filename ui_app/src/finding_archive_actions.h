@@ -32,6 +32,12 @@ RenderSettings BuildFindingArchiveCaptureRenderForSource(
     const RenderSettings& render,
     const Int2& sourceResolution);
 
+bool WriteFindingViewportFactsSidecar(
+    const std::filesystem::path& findingDir,
+    const ViewState& view,
+    const RenderSettings& render,
+    std::string* outError);
+
 std::wstring BuildArchiveScriptCommandLine(
     const std::filesystem::path& pythonLauncher,
     const std::filesystem::path& scriptPath,
@@ -41,7 +47,8 @@ std::wstring BuildArchiveScriptCommandLine(
     const std::string& findingId,
     const std::string& why,
     const std::string& reproCommand,
-    const std::filesystem::path& fractalStateJsonPath = {});
+    const std::filesystem::path& fractalStateJsonPath = {},
+    const std::filesystem::path& fractalViewportFactsJsonPath = {});
 
 bool CaptureAndArchiveFindingBundle(
     const std::string& exeDir,

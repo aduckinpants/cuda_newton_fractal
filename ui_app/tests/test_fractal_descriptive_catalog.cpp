@@ -36,6 +36,23 @@ const json_min::Value* FindEntry(const json_min::Array& entries, const std::stri
     return nullptr;
 }
 
+const std::set<std::string>& ExpectedReviewedSelectors() {
+    static const std::set<std::string> selectors = {
+        "newton", "nova", "mandelbrot", "julia", "burning_ship",
+        "multibrot", "phoenix", "explaino", "explaino_all", "explaino_y",
+        "explaino_fp", "explaino_nova", "explaino_halley", "explaino_dual", "explaino_mult",
+        "explaino_phoenix", "explaino_transcendental", "explaino_inertial", "explaino_julia", "explaino_rational",
+        "multicorn", "halley", "collatz", "explaino_collatz", "explaino_collatz_direct",
+        "mcmullen", "lambda", "explaino_lambda", "explaino_rational_escape", "spider",
+        "celtic_mandelbrot", "perpendicular_burning_ship", "explaino_joy", "explaino_fold", "explaino_bell",
+        "explaino_ripple", "explaino_splice", "explaino_vortex", "explaino_tension", "explaino_balance_void",
+        "counterfactual_pair", "explaino_counterfactual_pair", "projection_and_flow", "explaino_projection_and_flow", "magnet",
+        "generic_equation_pack", "sdf_pack_scene", "explaino_root_sdf", "explaino_mandelbrot_root_trap", "explaino_magnet_root_well",
+        "explaino_multibrot_root_trap",
+    };
+    return selectors;
+}
+
 bool TestSchemaCoverageAndDeterminism() {
     const std::string first = BuildFractalDescriptiveCatalogJson();
     const std::string second = BuildFractalDescriptiveCatalogJson();
@@ -91,7 +108,9 @@ bool TestSchemaCoverageAndDeterminism() {
         if (!Expect(capabilityFlags && capabilityFlags->is_array(), "capability_flags must be an ordered string array")) return false;
         if (!Expect(runtimeFlags && runtimeFlags->is_array(), "runtime_flags must be an ordered string array")) return false;
         if (!Expect(status && status->is_string() && description, "description status and value are required")) return false;
+        const bool expectedReviewed = ExpectedReviewedSelectors().count(selector->as_string()) != 0;
         if (status->as_string() == "reviewed") {
+            if (!Expect(expectedReviewed, "unexpected selector was reviewed in this bounded family batch")) return false;
             ++reviewedCount;
             if (!Expect(description->is_object(), "reviewed descriptions must be objects")) return false;
             for (const char* field : {"math_summary", "recurrence_or_field_model", "state_order", "termination_or_classification", "interpretation_notes"}) {
@@ -101,13 +120,70 @@ bool TestSchemaCoverageAndDeterminism() {
             const auto* refs = description->get("source_refs");
             if (!Expect(refs && refs->is_array() && !refs->as_array().empty(), "reviewed source_refs must be nonempty")) return false;
         } else {
+            if (!Expect(!expectedReviewed, "expected reviewed selector remained unavailable")) return false;
             if (!Expect(status->as_string() == "unavailable" && description->is_null(), "unreviewed entries must fail softly as unavailable/null")) return false;
         }
     }
-    if (!Expect(reviewedCount == 2, "exactly two selectors are reviewed in this campaign")) return false;
+    if (!Expect(reviewedCount == ExpectedReviewedSelectors().size(), "reviewed count must match the bounded ExplainO and composed-analysis batch")) return false;
     if (!Expect(FindEntry(entries, "explaino_all")->get("description_status")->as_string() == "reviewed", "explaino_all must be reviewed")) return false;
     if (!Expect(FindEntry(entries, "explaino_magnet_root_well")->get("description_status")->as_string() == "reviewed", "explaino_magnet_root_well must be reviewed")) return false;
     if (!Expect(FindEntry(entries, "lambda") != nullptr && FindEntry(entries, "lambda_map") == nullptr, "live lambda identity must remain lambda")) return false;
+
+    const auto* julia = FindEntry(entries, "julia");
+    const auto* spider = FindEntry(entries, "spider");
+    const auto* collatz = FindEntry(entries, "collatz");
+    const auto* mcmullen = FindEntry(entries, "mcmullen");
+    const auto* magnet = FindEntry(entries, "magnet");
+    if (!Expect(julia && julia->get("description")->get("recurrence_or_field_model")->as_string().find("serialized Julia constant") != std::string::npos,
+            "Julia prose must identify the configured constant rather than generic shared-state values")) return false;
+    if (!Expect(spider && spider->get("description")->get("state_order")->as_string().find("augmented state pair") != std::string::npos,
+            "Spider prose must describe first-order augmented state honestly")) return false;
+    if (!Expect(collatz && collatz->get("description")->get("source_refs")->as_array()[1].as_string().find("StepCollatzEscapeState") != std::string::npos,
+            "Collatz prose must cite the Collatz step rather than another specialized formula")) return false;
+    if (!Expect(mcmullen && mcmullen->get("description")->get("recurrence_or_field_model")->as_string().find("negative integer power") != std::string::npos,
+            "McMullen prose must retain its rational negative-power term")) return false;
+    if (!Expect(magnet && magnet->get("description")->get("termination_or_classification")->as_string().find("epsilon squared") != std::string::npos,
+            "Magnet prose must identify the engine's unit-attractor residual test")) return false;
+
+    const auto* explainoJulia = FindEntry(entries, "explaino_julia");
+    const auto* rationalEscape = FindEntry(entries, "explaino_rational_escape");
+    const auto* balanceVoid = FindEntry(entries, "explaino_balance_void");
+    const auto* counterfactual = FindEntry(entries, "explaino_counterfactual_pair");
+    const auto* projection = FindEntry(entries, "projection_and_flow");
+    const auto* explainoPhoenix = FindEntry(entries, "explaino_phoenix");
+    const auto* genericPack = FindEntry(entries, "generic_equation_pack");
+    const auto* sdfPack = FindEntry(entries, "sdf_pack_scene");
+    const auto* rootSdf = FindEntry(entries, "explaino_root_sdf");
+    const auto* mandelbrotTrap = FindEntry(entries, "explaino_mandelbrot_root_trap");
+    const auto* multibrotTrap = FindEntry(entries, "explaino_multibrot_root_trap");
+    if (!Expect(explainoJulia && explainoJulia->get("description")->get("recurrence_or_field_model")->as_string().find("configured custom ExplainO Julia constant") != std::string::npos,
+            "ExplainO Julia prose must include the custom-constant authority path")) return false;
+    if (!Expect(rationalEscape && rationalEscape->get("description")->get("recurrence_or_field_model")->as_string().find("1 through 6") != std::string::npos,
+            "Rational Escape prose must follow the serialized denominator power")) return false;
+    if (!Expect(balanceVoid && balanceVoid->get("description")->get("state_order")->as_string().find("first-order") != std::string::npos &&
+            balanceVoid->get("description")->get("state_order")->as_string().find("Phoenix") == std::string::npos,
+            "Balance Void must not inherit Phoenix memory from a different ExplainO branch")) return false;
+    if (!Expect(counterfactual && counterfactual->get("description")->get("termination_or_classification")->as_string().find("different-root basin swap") != std::string::npos,
+            "counterfactual prose must retain the engine's distinct-root class")) return false;
+    if (!Expect(projection && projection->get("description")->get("interpretation_notes")->as_string().find("peak and final projection pressure") != std::string::npos,
+            "projection prose must describe the actual transient-pressure statistic")) return false;
+    if (!Expect(explainoPhoenix && explainoPhoenix->get("description")->get("state_order")->as_string().find("when that memory term is active") != std::string::npos,
+            "Phoenix-family state order must be conditional on configured memory")) return false;
+    if (!Expect(genericPack && genericPack->get("description")->get("recurrence_or_field_model")->as_string().find("attached pack authority") != std::string::npos &&
+            genericPack->get("description")->get("interpretation_notes")->as_string().find("without the exact loaded pack") != std::string::npos,
+            "programmable pack prose must preserve its exact loaded-authority boundary")) return false;
+    if (!Expect(sdfPack && sdfPack->get("description")->get("state_order")->as_string().find("field-primary") != std::string::npos &&
+            sdfPack->get("description")->get("recurrence_or_field_model")->as_string().find("no universal complex recurrence") != std::string::npos,
+            "SDF pack prose must not invent an orbit recurrence")) return false;
+    if (!Expect(rootSdf && rootSdf->get("description")->get("recurrence_or_field_model")->as_string().find("root circles and bridge capsules") != std::string::npos &&
+            rootSdf->get("description")->get("recurrence_or_field_model")->as_string().find("phase-sine modulation") != std::string::npos,
+            "root SDF prose must name the current field construction")) return false;
+    if (!Expect(mandelbrotTrap && mandelbrotTrap->get("description")->get("recurrence_or_field_model")->as_string().find("does not feed back") != std::string::npos &&
+            mandelbrotTrap->get("description")->get("interpretation_notes")->as_string().find("does not by itself establish discrete root basins") != std::string::npos,
+            "Mandelbrot root-trap prose must separate base recurrence from downstream field coloring")) return false;
+    if (!Expect(multibrotTrap && multibrotTrap->get("description")->get("recurrence_or_field_model")->as_string().find("configured principal complex power") != std::string::npos &&
+            multibrotTrap->get("description")->get("interpretation_notes")->as_string().find("downstream coloring signal") != std::string::npos,
+            "Multibrot root-trap prose must separate powered orbit dynamics from downstream field coloring")) return false;
 
     for (const char* forbidden : {"\"generated_at\":", "\"timestamp\":", "\"branch\":", "\"commit\":", "C:\\\\", "D:\\\\"}) {
         if (!Expect(first.find(forbidden) == std::string::npos, std::string("volatile provenance field leaked: ") + forbidden)) return false;
@@ -204,7 +280,7 @@ bool TestSentenceEvidenceLedger() {
         }
         const auto* selector = pair.second->get("selector");
         const bool reviewedSelector = selector && selector->is_string() &&
-            (selector->as_string() == "explaino_all" || selector->as_string() == "explaino_magnet_root_well");
+            ExpectedReviewedSelectors().count(selector->as_string()) != 0;
         if (reviewedSelector && disposition && disposition->is_string() && disposition->as_string() == "accepted") {
             if (!Expect(usedClaims.count(pair.first) == 1, "accepted reviewed evidence is not mapped to exactly one current sentence: " + pair.first)) return false;
         }

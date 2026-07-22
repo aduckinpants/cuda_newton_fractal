@@ -8,6 +8,7 @@
 #include <shellapi.h>
 
 #include <filesystem>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -943,6 +944,7 @@ int main() {
         const fs::path diagnosticsDir = R"(D:\salt fractal\cuda_newton_fractal_clone\runtime\diagnostics\last)";
         const fs::path outRoot = R"(D:\salt fractal\cuda_newton_fractal_clone\findings\manual capture\2026-04-05)";
         const fs::path fractalStateJson = R"(D:\salt fractal\cuda_newton_fractal_clone\runtime\diagnostics\last\fractal-state.json)";
+        const fs::path viewportFactsJson = R"(D:\salt fractal\cuda_newton_fractal_clone\runtime\diagnostics\last\fractal-viewport-facts.json)";
         const std::string findingId = "235959_999__julia";
         const std::string why = "Sidecar capture.";
         const std::string reproCommand =
@@ -957,11 +959,14 @@ int main() {
             findingId,
             why,
             reproCommand,
-            fractalStateJson);
+            fractalStateJson,
+            viewportFactsJson);
         const std::vector<std::wstring> argv = ParseWindowsCommandLine(commandLine);
 
         bool sawFractalStateArg = false;
         bool sawFractalStatePath = false;
+        bool sawViewportFactsArg = false;
+        bool sawViewportFactsPath = false;
         for (std::size_t i = 0; i < argv.size(); ++i) {
             if (argv[i] == L"--fractal-state-json") {
                 sawFractalStateArg = true;
@@ -969,9 +974,44 @@ int main() {
                     sawFractalStatePath = true;
                 }
             }
+            if (argv[i] == L"--fractal-viewport-facts-json") {
+                sawViewportFactsArg = true;
+                if (i + 1 < argv.size() && argv[i + 1] == viewportFactsJson.wstring()) {
+                    sawViewportFactsPath = true;
+                }
+            }
         }
         if (!sawFractalStateArg || !sawFractalStatePath) {
             std::cerr << "Expected archive script command line to pass explicit fractal-state.json source path\n";
+            return 1;
+        }
+        if (!sawViewportFactsArg || !sawViewportFactsPath) {
+            std::cerr << "Expected archive script command line to pass explicit fractal-viewport-facts.json source path\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path findingDir = tempRoot / "viewport_facts_sidecar";
+        fs::create_directories(findingDir);
+        ViewState view{};
+        view.fractal_type = FractalType::mcmullen;
+        view.center_hp_x = 0.667589;
+        view.center_hp_y = -0.042984;
+        view.log2_zoom = std::log2(97.0);
+        view.rotation_degrees = 12.5f;
+        RenderSettings render{};
+        render.resolution = {1600, 900};
+        std::string error;
+        if (!WriteFindingViewportFactsSidecar(findingDir, view, render, &error)) {
+            std::cerr << "Expected finding viewport facts sidecar write to succeed: " << error << "\n";
+            return 1;
+        }
+        std::string json;
+        if (!ReadTextFile(findingDir / "fractal-viewport-facts.json", &json) ||
+                json.find("\"selected_fractal_type\": \"mcmullen\"") == std::string::npos ||
+                json.find("\"mapping_id\": \"cuda_fractal_renderer_pixel_center_v1\"") == std::string::npos) {
+            std::cerr << "Expected finding viewport facts sidecar to contain exact selector and mapping identity\n";
             return 1;
         }
     }

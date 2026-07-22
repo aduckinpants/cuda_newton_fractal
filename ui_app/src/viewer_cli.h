@@ -19,6 +19,7 @@ struct ViewerCliArgs {
     bool describe_functions = false;
     bool describe_parameter_surface = false;
     bool describe_fractal_catalog = false;
+    bool describe_viewport_facts = false;
     bool describe_explaino_axis_registry = false;
     bool validate_ui_salt_contract = false;
 
@@ -52,6 +53,10 @@ struct ViewerCliArgs {
     // Describe fractal catalog
     bool have_describe_fractal_catalog_json = false;
     std::string describe_fractal_catalog_json_path;
+
+    // Describe exact viewport geometry for one loaded state
+    bool have_describe_viewport_facts_json = false;
+    std::string describe_viewport_facts_json_path;
 
     // Describe Explaino-axis registry
     bool have_describe_explaino_axis_registry_json = false;
@@ -181,6 +186,7 @@ inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool describeParameterSurface = cli.describe_parameter_surface || cli.have_describe_parameter_surface_json;
     const bool describeFractalCatalog = cli.describe_fractal_catalog || cli.have_describe_fractal_catalog_json;
+    const bool describeViewportFacts = cli.describe_viewport_facts || cli.have_describe_viewport_facts_json;
     const bool describeExplainoAxisRegistry = cli.describe_explaino_axis_registry || cli.have_describe_explaino_axis_registry_json;
     const bool validateUiSaltContract = cli.validate_ui_salt_contract || cli.have_ui_salt_contract_json || cli.have_ui_salt_contract_report_json;
     const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
@@ -188,6 +194,11 @@ inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
     const bool colorPipelineHeadlessProof = !cli.color_pipeline_headless_proof.actions.empty();
     const bool loadedDraftIdentityOverride = cli.have_fractal_type || cli.have_explaino_seed || cli.sweep_config.enabled;
+    const bool viewportStateMutation = cli.apply_loaded_color_pipeline_draft ||
+        colorPipelineHeadlessProof || loadedDraftIdentityOverride ||
+        cli.have_explaino_seed_b || cli.have_explaino_mix || cli.have_explaino_phase ||
+        cli.have_explaino_warp_strength || cli.have_explaino_seed_drift ||
+        cli.have_lambda_real || cli.have_lambda_imag || cli.have_width || cli.have_height;
     if (cli.have_runtime_walk_viewer_request_json && cli.have_runtime_walk_viewer_fits_path) return false;
     if (cli.have_diagnostics_out_dir && !cli.capture_diagnostic_only) return false;
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
@@ -196,6 +207,12 @@ inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
         return false;
     }
     if (colorPipelineHeadlessProof && !(cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
+    if (describeViewportFacts && (!cli.have_load_state_json || viewportStateMutation ||
+            cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only ||
+            exploreRecommend || describeParameterSurface || describeFractalCatalog ||
+            describeExplainoAxisRegistry || validateUiSaltContract || flashlightProbe ||
+            runtimeWalk || runtimeWalkViewer || cli.sample_session || cli.any_sample_mode_arg ||
+            cli.describe_functions || cli.have_describe_functions_json)) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (validateUiSaltContract && !cli.validate_ui_salt_contract) return false;
     if (validateUiSaltContract && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only ||

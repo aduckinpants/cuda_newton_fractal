@@ -103,6 +103,18 @@ def test_archive_finding_bundle_writes_png_state_fractal_state_and_sidecar(tmp_p
         ),
         encoding="utf-8",
     )
+    viewport_facts_source = tmp_path / "capture-fractal-viewport-facts.json"
+    viewport_facts_source.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "mapping_id": "cuda_fractal_renderer_pixel_center_v1",
+                "selected_fractal_type": "nova",
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
     output_dir = tmp_path / "findings" / "nova_escape_default"
     archive_finding_bundle(
@@ -112,17 +124,20 @@ def test_archive_finding_bundle_writes_png_state_fractal_state_and_sidecar(tmp_p
         why="Nova renders through the escape-time path after the rules fix.",
         repro_command="fractal_ui.exe --capture-diagnostic --fractal-type nova",
         fractal_state_json_path=fractal_state_source,
+        fractal_viewport_facts_json_path=viewport_facts_source,
     )
 
     png_path = output_dir / "frame.png"
     state_path = output_dir / "state.json"
     fractal_state_path = output_dir / "fractal-state.json"
+    viewport_facts_path = output_dir / "fractal-viewport-facts.json"
     sidecar_path = output_dir / "finding.md"
     json_path = output_dir / "finding.json"
 
     assert png_path.exists()
     assert state_path.exists()
     assert fractal_state_path.exists()
+    assert viewport_facts_path.exists()
     assert sidecar_path.exists()
     assert json_path.exists()
 
@@ -138,10 +153,13 @@ def test_archive_finding_bundle_writes_png_state_fractal_state_and_sidecar(tmp_p
     assert "escape-time path" in sidecar_text
     assert "--fractal-type nova" in sidecar_text
     assert "fractal-state.json" in sidecar_text
+    assert "fractal-viewport-facts.json" in sidecar_text
 
     metadata = json.loads(json_path.read_text(encoding="utf-8"))
     assert metadata["finding_id"] == "nova_escape_default"
     assert metadata["fractal_type"] == "nova"
     assert metadata["state_file"] == "state.json"
     assert metadata["fractal_state_file"] == "fractal-state.json"
+    assert metadata["fractal_viewport_facts_file"] == "fractal-viewport-facts.json"
     assert json.loads(fractal_state_path.read_text(encoding="utf-8"))["schema_id"] == "viewer.finding_fractal_state.v1"
+    assert json.loads(viewport_facts_path.read_text(encoding="utf-8"))["mapping_id"] == "cuda_fractal_renderer_pixel_center_v1"

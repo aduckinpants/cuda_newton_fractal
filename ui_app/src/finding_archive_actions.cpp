@@ -1,4 +1,5 @@
 #include "finding_archive_actions.h"
+#include "fractal_viewport_facts.h"
 
 #include "enum_id_utils.h"
 
@@ -284,6 +285,7 @@ bool RunArchiveScript(
     const std::string& why,
     const std::string& reproCommand,
     const std::filesystem::path& fractalStateJsonPath,
+    const std::filesystem::path& fractalViewportFactsJsonPath,
     std::string* outError) {
     const std::filesystem::path resolvedRepoRoot = repoRoot.empty() ? ResolveRepoRoot({}) : repoRoot;
     if (resolvedRepoRoot.empty()) {
@@ -311,7 +313,8 @@ bool RunArchiveScript(
         findingId,
         why,
         reproCommand,
-        fractalStateJsonPath);
+        fractalStateJsonPath,
+        fractalViewportFactsJsonPath);
 
     SECURITY_ATTRIBUTES sa{};
     sa.nLength = sizeof(sa);
@@ -435,7 +438,8 @@ std::wstring BuildArchiveScriptCommandLine(
     const std::string& findingId,
     const std::string& why,
     const std::string& reproCommand,
-    const std::filesystem::path& fractalStateJsonPath) {
+    const std::filesystem::path& fractalStateJsonPath,
+    const std::filesystem::path& fractalViewportFactsJsonPath) {
     std::wstring commandLine;
     AppendCommandLineArg(&commandLine, pythonLauncher.wstring());
     AppendCommandLineArg(&commandLine, L"-3.14");
@@ -455,6 +459,10 @@ std::wstring BuildArchiveScriptCommandLine(
     if (!fractalStateJsonPath.empty()) {
         AppendCommandLineArg(&commandLine, L"--fractal-state-json");
         AppendCommandLineArg(&commandLine, fractalStateJsonPath.wstring());
+    }
+    if (!fractalViewportFactsJsonPath.empty()) {
+        AppendCommandLineArg(&commandLine, L"--fractal-viewport-facts-json");
+        AppendCommandLineArg(&commandLine, fractalViewportFactsJsonPath.wstring());
     }
     return commandLine;
 }
@@ -499,6 +507,22 @@ RenderSettings BuildFindingArchiveCaptureRenderForSource(
     captureRender.benchmark = true;
     captureRender.sample_tier = SampleTier::standard;
     return captureRender;
+}
+
+bool WriteFindingViewportFactsSidecar(
+    const std::filesystem::path& findingDir,
+    const ViewState& view,
+    const RenderSettings& render,
+    std::string* outError) {
+    if (findingDir.empty()) {
+        if (outError) *outError = "Finding viewport facts require a finding directory.";
+        return false;
+    }
+    return WriteFractalViewportFactsJsonFile(
+        (findingDir / "fractal-viewport-facts.json").string(),
+        view,
+        render,
+        outError);
 }
 
 bool CaptureAndArchiveFindingBundle(
@@ -716,6 +740,7 @@ bool CaptureAndArchiveFindingBundleWithLens(
     const std::string reproCommand = reproRuntimePath.string() + " --load-state-json " + (identity.output_dir / "state.json").string() + " --capture-diagnostic";
     const std::filesystem::path repoRoot = ResolveRepoRoot(std::filesystem::path(exeDir));
     const std::filesystem::path fractalStatePath = std::filesystem::path(capture.output_dir) / "fractal-state.json";
+    const std::filesystem::path viewportFactsPath = std::filesystem::path(capture.output_dir) / "fractal-viewport-facts.json";
     std::string fractalStateError;
     if (!WriteFindingFractalStateJsonFile(
             fractalStatePath.string(),
@@ -730,7 +755,12 @@ bool CaptureAndArchiveFindingBundleWithLens(
         return false;
     }
 
-    if (!RunArchiveScript(repoRoot, capture.output_dir, identity.out_root, identity.finding_id, why, reproCommand, fractalStatePath, outError)) {
+    if (!WriteFindingViewportFactsSidecar(capture.output_dir, view, render, outError)) {
+        return false;
+    }
+
+    if (!RunArchiveScript(repoRoot, capture.output_dir, identity.out_root, identity.finding_id, why, reproCommand,
+            fractalStatePath, viewportFactsPath, outError)) {
         return false;
     }
 

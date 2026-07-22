@@ -2625,6 +2625,15 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     }
     const ColorPipelineHeadlessProofConfig& colorPipelineHeadlessProofConfig = cli.color_pipeline_headless_proof;
 
+    const bool describeViewportFacts = cli.describe_viewport_facts || cli.have_describe_viewport_facts_json;
+    if (describeViewportFacts) {
+        return RunDescribeViewportFactsMode(
+            cli.describe_viewport_facts,
+            cli.have_describe_viewport_facts_json ? cli.describe_viewport_facts_json_path : std::string(),
+            view,
+            render);
+    }
+
     if (exploreRecommend) {
         if (HasSidecarHeadlessProofActions(sidecarHeadlessProofConfig)) {
             std::fprintf(stderr, "--explore-recommend / --explore-recommend-json are mutually exclusive with sidecar proof mutation verbs\n");

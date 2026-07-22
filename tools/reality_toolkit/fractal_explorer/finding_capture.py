@@ -101,6 +101,7 @@ def _write_sidecar(
     repro_command: str,
     fractal_type: str | None,
     fractal_state_file: str | None = None,
+    fractal_viewport_facts_file: str | None = None,
 ) -> None:
     lines = [
         f"# Fractal Finding: {finding_id}",
@@ -126,6 +127,8 @@ def _write_sidecar(
     ])
     if fractal_state_file:
         lines.append(f"- {fractal_state_file}")
+    if fractal_viewport_facts_file:
+        lines.append(f"- {fractal_viewport_facts_file}")
     lines.extend([
         "- finding.json",
         "",
@@ -161,6 +164,7 @@ def archive_finding_bundle(
     why: str,
     repro_command: str,
     fractal_state_json_path: Path | None = None,
+    fractal_viewport_facts_json_path: Path | None = None,
     overwrite: bool = False,
 ) -> Path:
     validate_finding_id(finding_id)
@@ -175,6 +179,8 @@ def archive_finding_bundle(
         raise FileNotFoundError(f"Missing state.json in {diagnostics_dir}")
     if fractal_state_json_path is not None and not fractal_state_json_path.exists():
         raise FileNotFoundError(f"Missing fractal-state sidecar: {fractal_state_json_path}")
+    if fractal_viewport_facts_json_path is not None and not fractal_viewport_facts_json_path.exists():
+        raise FileNotFoundError(f"Missing fractal viewport facts sidecar: {fractal_viewport_facts_json_path}")
 
     if output_dir.exists():
         if not overwrite:
@@ -185,6 +191,7 @@ def archive_finding_bundle(
     frame_png_path = output_dir / "frame.png"
     archived_state_path = output_dir / "state.json"
     archived_fractal_state_path = output_dir / "fractal-state.json"
+    archived_viewport_facts_path = output_dir / "fractal-viewport-facts.json"
     sidecar_path = output_dir / "finding.md"
     metadata_path = output_dir / "finding.json"
 
@@ -192,6 +199,8 @@ def archive_finding_bundle(
     shutil.copy2(state_json_path, archived_state_path)
     if fractal_state_json_path is not None:
         shutil.copy2(fractal_state_json_path, archived_fractal_state_path)
+    if fractal_viewport_facts_json_path is not None:
+        shutil.copy2(fractal_viewport_facts_json_path, archived_viewport_facts_path)
 
     state_data = _load_state_data(state_json_path)
     fractal_type = state_data.get("fractal_type") if isinstance(state_data, dict) else None
@@ -207,6 +216,8 @@ def archive_finding_bundle(
     }
     if fractal_state_json_path is not None:
         metadata["fractal_state_file"] = archived_fractal_state_path.name
+    if fractal_viewport_facts_json_path is not None:
+        metadata["fractal_viewport_facts_file"] = archived_viewport_facts_path.name
 
     _write_sidecar(
         sidecar_path,
@@ -215,6 +226,7 @@ def archive_finding_bundle(
         repro_command=repro_command,
         fractal_type=metadata["fractal_type"],
         fractal_state_file=metadata.get("fractal_state_file") if isinstance(metadata.get("fractal_state_file"), str) else None,
+        fractal_viewport_facts_file=metadata.get("fractal_viewport_facts_file") if isinstance(metadata.get("fractal_viewport_facts_file"), str) else None,
     )
     metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
