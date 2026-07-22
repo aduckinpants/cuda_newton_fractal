@@ -36,6 +36,16 @@ const json_min::Value* FindEntry(const json_min::Array& entries, const std::stri
     return nullptr;
 }
 
+const std::set<std::string>& ExpectedReviewedSelectors() {
+    static const std::set<std::string> selectors = {
+        "newton", "nova", "mandelbrot", "julia", "burning_ship", "multibrot", "phoenix",
+        "multicorn", "halley", "collatz", "mcmullen", "lambda", "spider",
+        "celtic_mandelbrot", "perpendicular_burning_ship", "magnet",
+        "explaino_all", "explaino_magnet_root_well",
+    };
+    return selectors;
+}
+
 bool TestSchemaCoverageAndDeterminism() {
     const std::string first = BuildFractalDescriptiveCatalogJson();
     const std::string second = BuildFractalDescriptiveCatalogJson();
@@ -91,7 +101,9 @@ bool TestSchemaCoverageAndDeterminism() {
         if (!Expect(capabilityFlags && capabilityFlags->is_array(), "capability_flags must be an ordered string array")) return false;
         if (!Expect(runtimeFlags && runtimeFlags->is_array(), "runtime_flags must be an ordered string array")) return false;
         if (!Expect(status && status->is_string() && description, "description status and value are required")) return false;
+        const bool expectedReviewed = ExpectedReviewedSelectors().count(selector->as_string()) != 0;
         if (status->as_string() == "reviewed") {
+            if (!Expect(expectedReviewed, "unexpected selector was reviewed in this bounded family batch")) return false;
             ++reviewedCount;
             if (!Expect(description->is_object(), "reviewed descriptions must be objects")) return false;
             for (const char* field : {"math_summary", "recurrence_or_field_model", "state_order", "termination_or_classification", "interpretation_notes"}) {
@@ -101,13 +113,30 @@ bool TestSchemaCoverageAndDeterminism() {
             const auto* refs = description->get("source_refs");
             if (!Expect(refs && refs->is_array() && !refs->as_array().empty(), "reviewed source_refs must be nonempty")) return false;
         } else {
+            if (!Expect(!expectedReviewed, "expected reviewed selector remained unavailable")) return false;
             if (!Expect(status->as_string() == "unavailable" && description->is_null(), "unreviewed entries must fail softly as unavailable/null")) return false;
         }
     }
-    if (!Expect(reviewedCount == 2, "exactly two selectors are reviewed in this campaign")) return false;
+    if (!Expect(reviewedCount == ExpectedReviewedSelectors().size(), "reviewed count must match the bounded direct-family batch")) return false;
     if (!Expect(FindEntry(entries, "explaino_all")->get("description_status")->as_string() == "reviewed", "explaino_all must be reviewed")) return false;
     if (!Expect(FindEntry(entries, "explaino_magnet_root_well")->get("description_status")->as_string() == "reviewed", "explaino_magnet_root_well must be reviewed")) return false;
     if (!Expect(FindEntry(entries, "lambda") != nullptr && FindEntry(entries, "lambda_map") == nullptr, "live lambda identity must remain lambda")) return false;
+
+    const auto* julia = FindEntry(entries, "julia");
+    const auto* spider = FindEntry(entries, "spider");
+    const auto* collatz = FindEntry(entries, "collatz");
+    const auto* mcmullen = FindEntry(entries, "mcmullen");
+    const auto* magnet = FindEntry(entries, "magnet");
+    if (!Expect(julia && julia->get("description")->get("recurrence_or_field_model")->as_string().find("serialized Julia constant") != std::string::npos,
+            "Julia prose must identify the configured constant rather than generic shared-state values")) return false;
+    if (!Expect(spider && spider->get("description")->get("state_order")->as_string().find("augmented state pair") != std::string::npos,
+            "Spider prose must describe first-order augmented state honestly")) return false;
+    if (!Expect(collatz && collatz->get("description")->get("source_refs")->as_array()[1].as_string().find("StepCollatzEscapeState") != std::string::npos,
+            "Collatz prose must cite the Collatz step rather than another specialized formula")) return false;
+    if (!Expect(mcmullen && mcmullen->get("description")->get("recurrence_or_field_model")->as_string().find("negative integer power") != std::string::npos,
+            "McMullen prose must retain its rational negative-power term")) return false;
+    if (!Expect(magnet && magnet->get("description")->get("termination_or_classification")->as_string().find("epsilon squared") != std::string::npos,
+            "Magnet prose must identify the engine's unit-attractor residual test")) return false;
 
     for (const char* forbidden : {"\"generated_at\":", "\"timestamp\":", "\"branch\":", "\"commit\":", "C:\\\\", "D:\\\\"}) {
         if (!Expect(first.find(forbidden) == std::string::npos, std::string("volatile provenance field leaked: ") + forbidden)) return false;
@@ -204,7 +233,7 @@ bool TestSentenceEvidenceLedger() {
         }
         const auto* selector = pair.second->get("selector");
         const bool reviewedSelector = selector && selector->is_string() &&
-            (selector->as_string() == "explaino_all" || selector->as_string() == "explaino_magnet_root_well");
+            ExpectedReviewedSelectors().count(selector->as_string()) != 0;
         if (reviewedSelector && disposition && disposition->is_string() && disposition->as_string() == "accepted") {
             if (!Expect(usedClaims.count(pair.first) == 1, "accepted reviewed evidence is not mapped to exactly one current sentence: " + pair.first)) return false;
         }

@@ -38,7 +38,26 @@ def test_descriptive_catalog_stdout_is_deterministic_and_complete() -> None:
     assert "lambda_map" not in selectors
 
     reviewed = [entry for entry in catalog["entries"] if entry["description_status"] == "reviewed"]
-    assert [entry["selector_id"] for entry in reviewed] == ["explaino_all", "explaino_magnet_root_well"]
+    assert [entry["selector_id"] for entry in reviewed] == [
+        "newton",
+        "nova",
+        "mandelbrot",
+        "julia",
+        "burning_ship",
+        "multibrot",
+        "phoenix",
+        "explaino_all",
+        "multicorn",
+        "halley",
+        "collatz",
+        "mcmullen",
+        "lambda",
+        "spider",
+        "celtic_mandelbrot",
+        "perpendicular_burning_ship",
+        "magnet",
+        "explaino_magnet_root_well",
+    ]
     for entry in catalog["entries"]:
         if entry["description_status"] == "unavailable":
             assert entry["description"] is None

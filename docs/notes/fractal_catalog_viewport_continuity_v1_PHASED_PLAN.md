@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 2 - review and ground the direct native fractal families.
+Phase 3 - review and ground the ExplainO and composed-analysis families.
 
 ## Phase Checklist
 
 - [x] Phase 0 - locked this engine-native plan and contract from exact clean master.
 - [x] Phase 1 - add deterministic engine-owned viewport facts with focused RED/GREEN proof.
-- [ ] Phase 2 - review and ground the direct native fractal families.
+- [x] Phase 2 - review and ground the direct native fractal families.
 - [ ] Phase 3 - review and ground the ExplainO and composed-analysis families.
 - [ ] Phase 4 - review and ground custom, SDF, and root-field consumer selectors; prove zero unavailable rows.
 - [ ] Phase 5 - publish, run all mandatory rails, complete hostile audit, checkpoint, push, and stop at the engine merge-approval boundary.
@@ -233,6 +233,10 @@ The engine feature stops at a clean pushed pull request. This plan and the overn
 - Viewport RED receipts: `artifacts/validation/fractal_viewport_facts_red.json`, `fractal_viewport_cli_red.json`, and `fractal_viewport_finding_sidecar_red.json` record the expected pre-implementation failures.
 - Focused GREEN receipts: `artifacts/validation/fractal_viewport_facts_green.json`, `fractal_viewport_cli_green.json`, `fractal_viewport_finding_sidecar_green.json`, `fractal_viewport_shared_mapping.json`, `fractal_viewport_phase1_repairs_fast.json`, and `fractal_viewport_renderer_exact_parity.json` cover the module, CLI, archive sidecar, and renderer-resident mapping.
 - Full Phase 1 validation: `artifacts/validation/fractal_viewport_phase1_full_native_final.json`, `fractal_viewport_phase1_publish.json`, and `fractal_viewport_phase1_runtime.json` prove the completed native suite, published build, and published-runtime CLI.
+- Phase 1 checkpoint: `598c1b9` records the renderer-resident viewport mapping, deterministic export, finding archive sidecar, and exact proof rails.
+- Phase 2 RED/GREEN: `artifacts/validation/fractal_catalog_direct_families_red.json` records the expected unavailable-selector failure; `fractal_catalog_direct_families_green.json` proves the bounded direct-family coverage and sentence-ledger joins.
+- Phase 2 coverage: 18 live selectors are now reviewed in catalog order, including the two pre-existing reviewed entries; 80 newly accepted sentence claims were checked against current repository-relative source symbols.
+- Phase 2 full and published-runtime proof: `fractal_catalog_viewport_full_native.json`, `fractal_catalog_viewport_runtime_publish.json`, and `fractal_catalog_viewport_runtime_pytest.json` prove the full native suite, canonical runtime publish, and 8/8 runtime catalog/viewport checks.
 - PR and clean-tree proof: pending.
 - Slice lock: `ck:ae7df1e6`; `fractal_catalog_viewport_continuity_v1` is the active locked contract.
 - Phase 0 proof: contract validator, phased-plan sync, 43 workflow-tool tests, and `git diff --check` passed.
@@ -254,9 +258,9 @@ Audit questions:
 
 ## Audit Passes
 
-- [x] Pass 1 - hostile implementation and renderer-parity audit after Phase 1 GREEN.
-- [x] Pass 2 - re-read the repaired state after the first real Phase 1 finding and confirmed the archive-sidecar ownership fix.
-- [x] Pass 3 - no additional workflow mistake found in the final clean re-audit before the Phase 1 checkpoint.
+- [x] Pass 1 - hostile current-source and sentence-ledger audit found and repaired inherited Collatz, Spider, Magnet, Julia, and termination wording errors before Phase 2 GREEN.
+- [x] Pass 2 - re-read the repaired state against the current recurrence and termination symbols; the compiled overlay, accepted ledger claims, and public source references agree.
+- [x] Pass 3 - no additional workflow mistake found in the final clean re-audit after the published-runtime expectation repair.
 
 ## Audit Findings
 
@@ -265,6 +269,11 @@ Audit questions:
 - [x] The first capture integration wrote viewport facts after the archive script, which could leave a published finding whose metadata omitted the required sidecar. The repair now generates the exact bytes before archival and passes them through the established archive transaction, metadata, and readable artifact list.
 - [x] The first shared mapping refactor used a higher-precision degree conversion and removed the renderer's center-add/subtract operation order. Although mathematically cleaner, both could change rotated or deep-zoom pixels. The final shared mapping preserves the historical `CUDART_PI_F / 180.0f` value, rotation branch, and arithmetic order exactly; the renderer-resident rail remains green.
 - [x] The active contract initially omitted the existing Reality Toolkit archive paths required by the accepted finding-sidecar contract. The contract was revised narrowly to include `tools/reality_toolkit`, revalidated, and explicitly re-locked before those paths changed.
+- [x] Historical prose initially misbound Collatz to the McMullen step symbol, described Spider as second-order rather than first-order in augmented `(z,c)` state, and overstated termination behavior. Current source and tests replaced those claims before they entered the compiled overlay.
+- [x] Julia now names the configured serialized constant, Magnet names its unit-attractor epsilon-squared residual, and McMullen retains the negative-power term; direct-family wording does not infer visible contribution from configuration alone.
+- [x] The first published-runtime Phase 2 run exposed a stale Python expectation for only the two pre-campaign reviewed entries. The repaired test now asserts all 18 reviewed selectors in exact live catalog order and passes 8/8 against the published executable.
+- [x] The first attempt to repair that Python expectation bypassed the required patch wrapper. It was caught immediately, reverted before testing, and reapplied through `viewer_host_apply_repo_patch.py`; the final diff contains only wrapper-authorized mutation.
+- [x] Existing `explaino_all` and `explaino_magnet_root_well` prose remained byte-for-byte unchanged while the new direct-family overlay was added; the runtime still has no dependency on the evidence ledger or historical files.
 
 ## Notes
 

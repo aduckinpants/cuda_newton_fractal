@@ -73,6 +73,29 @@ constexpr const char* kMagnetRootWellSourceRefs[] = {
     "ui_app/src/escape_time_coloring.h#TryResolveRootFieldConsumerDistance",
 };
 
+#define FRACTAL_REVIEWED_DESCRIPTION(enum_name, selector, math_summary, recurrence, state_order, termination, interpretation, ref0, ref1, ref2, ref3) \
+    constexpr FractalDescriptionSentence k##enum_name##MathSummary[] = {{selector ".math_summary.0", math_summary}}; \
+    constexpr FractalDescriptionSentence k##enum_name##Recurrence[] = {{selector ".recurrence_or_field_model.0", recurrence}}; \
+    constexpr FractalDescriptionSentence k##enum_name##StateOrder[] = {{selector ".state_order.0", state_order}}; \
+    constexpr FractalDescriptionSentence k##enum_name##Termination[] = {{selector ".termination_or_classification.0", termination}}; \
+    constexpr FractalDescriptionSentence k##enum_name##Interpretation[] = {{selector ".interpretation_notes.0", interpretation}}; \
+    constexpr FractalDescriptionField k##enum_name##Fields[] = { \
+        {"math_summary", k##enum_name##MathSummary, ArraySize(k##enum_name##MathSummary)}, \
+        {"recurrence_or_field_model", k##enum_name##Recurrence, ArraySize(k##enum_name##Recurrence)}, \
+        {"state_order", k##enum_name##StateOrder, ArraySize(k##enum_name##StateOrder)}, \
+        {"termination_or_classification", k##enum_name##Termination, ArraySize(k##enum_name##Termination)}, \
+        {"interpretation_notes", k##enum_name##Interpretation, ArraySize(k##enum_name##Interpretation)}, \
+    }; \
+    constexpr const char* k##enum_name##SourceRefs[] = {ref0, ref1, ref2, ref3}; \
+    constexpr FractalReviewedDescription k##enum_name##Description = { \
+        FractalType::enum_name, selector, k##enum_name##Fields, ArraySize(k##enum_name##Fields), \
+        k##enum_name##SourceRefs, ref3 ? 4u : (ref2 ? 3u : (ref1 ? 2u : 1u)), \
+    };
+
+#include "fractal_descriptive_catalog_entries.inc"
+
+#undef FRACTAL_REVIEWED_DESCRIPTION
+
 constexpr FractalReviewedDescription kReviewedDescriptions[] = {
     {
         FractalType::explaino_all,
@@ -90,6 +113,10 @@ constexpr FractalReviewedDescription kReviewedDescriptions[] = {
         kMagnetRootWellSourceRefs,
         ArraySize(kMagnetRootWellSourceRefs),
     },
+#define FRACTAL_REVIEWED_DESCRIPTION(enum_name, selector, math_summary, recurrence, state_order, termination, interpretation, ref0, ref1, ref2, ref3) \
+    k##enum_name##Description,
+#include "fractal_descriptive_catalog_entries.inc"
+#undef FRACTAL_REVIEWED_DESCRIPTION
 };
 
 const char* CategoryId(FractalCatalogCategory value) {
