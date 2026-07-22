@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "contract_id": "fractal_catalog_viewport_continuity_v1",
+  "feature_id": "fractal_catalog_viewport_continuity_v1",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/fractal_catalog_viewport_continuity_v1_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/fractal_catalog_viewport_continuity_v1_PHASED_PLAN.md",
+    "docs/contracts/fractal_catalog_viewport_continuity_v1.contract.json",
+    "docs/contracts/color_pipeline_loaded_draft_apply.contract.json",
+    "docs/fractal_descriptive_catalog_evidence.v1.json",
+    "docs/notes/fractal_descriptive_catalog_historical_audit_v1.json",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "review every shipped fractal selector through current engine evidence",
+    "keep the live catalog authoritative for identity order and existing flags",
+    "expose exact renderer-owned viewport geometry through a central reusable module",
+    "write the same viewport facts beside captured findings and through headless CLI",
+    "stop at a clean pushed engine pull request pending separate merge approval"
+  ],
+  "forbidden_operator_prompts": [
+    "change fractal formulas samplers termination or rendering pixels",
+    "change state JSON semantics parameter applicability or Color Pipeline behavior",
+    "change selector family capability or runtime flag taxonomy",
+    "invent automatic feature detection camera movement or aesthetic scoring",
+    "make runtime depend on docs the evidence ledger or historical side folder",
+    "merge the CUDA engine pull request without separate user approval"
+  ],
+  "required_defaults": {
+    "descriptive_schema_version": 1,
+    "viewport_facts_schema_version": 1,
+    "viewport_mapping_id": "cuda_fractal_renderer_pixel_center_v1",
+    "catalog_entry_order": "kFractalCatalog",
+    "all_live_descriptions_reviewed": true,
+    "runtime_ledger_dependency": false,
+    "historical_runtime_fallback": false,
+    "automatic_camera_mutation": false,
+    "finding_sidecar_name": "fractal-viewport-facts.json"
+  },
+  "forbidden_defaults": {
+    "unavailable_live_selector_at_close": "forbidden",
+    "formula_or_render_change": "forbidden",
+    "state_contract_change": "forbidden",
+    "parameter_or_color_pipeline_change": "forbidden",
+    "taxonomy_change": "forbidden",
+    "state_tool_edit_before_merged_publication": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_catalog_viewport_continuity_v1.contract.json --out-json artifacts/validation/fractal_catalog_viewport_continuity_v1_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_viewport_focused_catalog --log artifacts/logs/fractal_catalog_viewport_focused_catalog.log --out-json artifacts/validation/fractal_catalog_viewport_focused_catalog.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_descriptive_catalog",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_viewport_focused_viewport --log artifacts/logs/fractal_catalog_viewport_focused_viewport.log --out-json artifacts/validation/fractal_catalog_viewport_focused_viewport.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_viewport_facts",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_viewport_viewer_cli --log artifacts/logs/fractal_catalog_viewport_viewer_cli.log --out-json artifacts/validation/fractal_catalog_viewport_viewer_cli.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_cli",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_viewport_full_native --log artifacts/logs/fractal_catalog_viewport_full_native.log --out-json artifacts/validation/fractal_catalog_viewport_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_viewport_runtime_publish --log artifacts/logs/fractal_catalog_viewport_runtime_publish.log --out-json artifacts/validation/fractal_catalog_viewport_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_viewport_runtime_pytest --log artifacts/logs/fractal_catalog_viewport_runtime_pytest.log --out-json artifacts/validation/fractal_catalog_viewport_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_descriptive_catalog_cli.py tests/test_fractal_viewport_facts_cli.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/fractal_catalog_viewport_continuity_v1_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_viewport_diff_check --log artifacts/logs/fractal_catalog_viewport_diff_check.log --out-json artifacts/validation/fractal_catalog_viewport_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_catalog_viewport_continuity_v1_PHASED_PLAN.md --out-json artifacts/validation/fractal_catalog_viewport_continuity_v1_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The all-selector descriptive catalog and viewport continuity contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_catalog_viewport_continuity_v1_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The all-selector descriptive catalog and viewport continuity hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_catalog_viewport_continuity_v1_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
