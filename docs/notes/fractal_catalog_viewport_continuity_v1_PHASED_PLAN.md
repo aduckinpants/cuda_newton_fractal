@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - publish, run all mandatory rails, complete hostile audit, checkpoint, push, and stop at the engine merge-approval boundary.
+Implementation complete - closure checkpoint, push, and ready PR stop at the separate engine merge-approval boundary.
 
 ## Phase Checklist
 
@@ -11,15 +11,15 @@ Phase 5 - publish, run all mandatory rails, complete hostile audit, checkpoint, 
 - [x] Phase 2 - review and ground the direct native fractal families.
 - [x] Phase 3 - review and ground the ExplainO and composed-analysis families.
 - [x] Phase 4 - review and ground custom, SDF, and root-field consumer selectors; prove zero unavailable rows.
-- [ ] Phase 5 - publish, run all mandatory rails, complete hostile audit, checkpoint, push, and stop at the engine merge-approval boundary.
+- [x] Phase 5 - publish, run all mandatory rails, complete hostile audit, checkpoint, push, and stop at the engine merge-approval boundary.
 
 ## Explicit User Asks
 
-- [open] Cover every shipped fractal selector, not only McMullen.
-- [open] Give downstream exploratory agents enough engine-owned mathematical context to reason about dynamics changes without treating every serialized value as active.
-- [open] Add exact engine-owned viewport geometry so high-zoom dynamics changes can be paired with deliberate same-window, feature-tracking, or transition-survey camera intent.
-- [open] Keep the work central, reusable, and API-surfaced rather than adding a one-off state-tool workaround.
-- [open] Advance to the furthest clean review-ready checkpoint allowed overnight, but do not merge the CUDA engine pull request without separate user approval.
+- [x] Cover every shipped fractal selector, not only McMullen.
+- [x] Give downstream exploratory agents enough engine-owned mathematical context to reason about dynamics changes without treating every serialized value as active.
+- [x] Add exact engine-owned viewport geometry so high-zoom dynamics changes can be paired with deliberate same-window, feature-tracking, or transition-survey camera intent.
+- [x] Keep the work central, reusable, and API-surfaced rather than adding a one-off state-tool workaround.
+- [x] Advance to the furthest clean review-ready checkpoint allowed overnight, but do not merge the CUDA engine pull request without separate user approval.
 
 ## Starting Authority
 
@@ -245,7 +245,10 @@ The engine feature stops at a clean pushed pull request. This plan and the overn
 - Phase 4 RED/GREEN: `artifacts/validation/fractal_catalog_special_families_red.json` records the expected unavailable-selector failure; `fractal_catalog_special_families_green.json` proves all 51 live selectors reviewed with special-family authority-boundary assertions.
 - Phase 4 coverage: 258 ledger records cover the complete live catalog; all 25 claims for the five newly reviewed custom/SDF/root-field selectors resolve to current source files and symbols.
 - Phase 4 full and published-runtime proof: `fractal_catalog_viewport_full_native.json`, `fractal_catalog_viewport_runtime_publish.json`, and `fractal_catalog_viewport_runtime_pytest.json` prove the full native suite, canonical runtime publish, and 8/8 runtime checks with zero unavailable live rows.
-- PR and clean-tree proof: pending.
+- Phase 4 checkpoint: `a6f3c48d49ee0295c7b9f3aa560661d55d6cf6aa` is the exact all-selector product commit used for final publication.
+- Final published executable: `D:\\salt-fractal\\cuda_newton_fractal_clone\\runtime\\fractal_ui.exe`, SHA-256 `6ac9ae7987942112c96986b96e7bafef489ab196ac6addb8f4ac9fad2b343a8e`.
+- Final deterministic catalog: SHA-256 `8038ab867cd40dd4af6ca5b26aca11cd5e7c6b6a28816b00f7d4afdb4a4909fd`; 51 live entries, 51 reviewed, zero unavailable.
+- Ready PR creation follows the final closure commit; merge remains explicitly unauthorized until separate user approval.
 - Slice lock: `ck:ae7df1e6`; `fractal_catalog_viewport_continuity_v1` is the active locked contract.
 - Phase 0 proof: contract validator, phased-plan sync, 43 workflow-tool tests, and `git diff --check` passed.
 
@@ -291,6 +294,8 @@ Audit questions:
 - [x] ExplainO Root SDF names the current root-circle, bridge-capsule, and phase-sine field construction without claiming an orbit recurrence or visible symmetry from serialized roots alone.
 - [x] Mandelbrot and Multibrot root-trap selectors distinguish their base orbit dynamics from downstream root-field coloring, and continuous root proximity is not promoted into discrete basin evidence.
 - [x] The published runtime now exports all 51 live catalog rows as reviewed in exact `kFractalCatalog` order, with zero unavailable shipped selectors and unchanged V1 schema/flag taxonomy.
+- [x] Final closure reran focused catalog/viewport/CLI rails, the complete native helper suite, canonical publication, and the 8/8 published-runtime lane from the exact all-selector product checkpoint.
+- [x] Runtime and catalog hashes were captured independently so the state-tool handoff can bind both executable identity and deterministic catalog content after the authorized merge.
 
 ## Notes
 
