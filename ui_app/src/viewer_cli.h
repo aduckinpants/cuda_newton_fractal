@@ -148,6 +148,7 @@ struct ViewerCliArgs {
     // State loading
     bool have_load_state_json = false;
     std::string load_state_json;
+    bool apply_loaded_color_pipeline_draft = false;
 
     // Headless advanced-color proof overrides
     ColorPipelineHeadlessProofConfig color_pipeline_headless_proof;
@@ -186,9 +187,14 @@ inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
     const bool colorPipelineHeadlessProof = !cli.color_pipeline_headless_proof.actions.empty();
+    const bool loadedDraftIdentityOverride = cli.have_fractal_type || cli.have_explaino_seed || cli.sweep_config.enabled;
     if (cli.have_runtime_walk_viewer_request_json && cli.have_runtime_walk_viewer_fits_path) return false;
     if (cli.have_diagnostics_out_dir && !cli.capture_diagnostic_only) return false;
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
+    if (cli.apply_loaded_color_pipeline_draft &&
+            (!cli.have_load_state_json || colorPipelineHeadlessProof || loadedDraftIdentityOverride)) {
+        return false;
+    }
     if (colorPipelineHeadlessProof && !(cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (validateUiSaltContract && !cli.validate_ui_salt_contract) return false;
