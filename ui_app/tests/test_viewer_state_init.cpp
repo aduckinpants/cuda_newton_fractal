@@ -1,7 +1,12 @@
 #include "../src/viewer_state_init.h"
 #include "../src/viewer_cli.h"
+#include "../src/color_pipeline_loaded_draft.h"
 #include "../src/fractal_types.h"
 #include "../src/fractal_family_rules.h"
+
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "../src/color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 
 #include <cstdint>
 
@@ -16,6 +21,27 @@ static SidecarAutoDemoControllerPolicy gLoadedControllerPolicyStub{};
 static bool gLoadStateHasMutationHistory = false;
 static SidecarAutoDemoMutationHistory gLoadedMutationHistoryStub{};
 static bool gLoadStateHasExplicitExplainoRoots = false;
+
+static int gApplyLoadedColorPipelineDraftCallCount = 0;
+
+bool ApplyLoadedColorPipelineDraftToRuntime(
+    ColorPipelineWindowState*,
+    FractalType,
+    KernelParams* ioParams,
+    ColorPipelineLoadedDraftApplyResult* outResult,
+    std::string* outError) {
+    ++gApplyLoadedColorPipelineDraftCallCount;
+    if (ioParams) {
+        ioParams->color_saturation = 0.25f;
+    }
+    if (outResult) {
+        outResult->changed = true;
+    }
+    if (outError) {
+        outError->clear();
+    }
+    return true;
+}
 
 bool DiagnosticsStateFileHasExplicitExplainoRoots(const std::string&, bool* outHasExplicitExplainoRoots, std::string*) {
     if (outHasExplicitExplainoRoots) *outHasExplicitExplainoRoots = gLoadStateHasExplicitExplainoRoots;
@@ -500,6 +526,50 @@ static void TestLegacyLoadStateResetsControllerPolicy() {
     CHECK("LegacyLoadStatePolicy_ResetsControllerPolicy", ControllerPoliciesMatch(controllerPolicy, SidecarAutoDemoControllerPolicy{}));
 }
 
+static void TestExplicitLoadedColorPipelineDraftApplicationUsesCentralOperation() {
+    ViewerCliArgs cli{};
+    cli.have_load_state_json = true;
+    cli.load_state_json = "state.json";
+    cli.apply_loaded_color_pipeline_draft = true;
+
+    gLoadStateShouldSucceed = true;
+    gLoadStateHasExplicitExplainoRoots = true;
+    gApplyLoadedColorPipelineDraftCallCount = 0;
+
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    ColorPipelineWindowState colorPipelineWindow{};
+    bool dirty = false;
+    std::string resolvedPath;
+
+    const int rc = ApplyCliOverrides(
+        cli,
+        view,
+        params,
+        render,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        &colorPipelineWindow,
+        &resolvedPath,
+        &dirty);
+
+    CHECK("LoadedDraftApply_ReturnCode", rc == 0);
+    CHECK("LoadedDraftApply_CentralOperationCalled", gApplyLoadedColorPipelineDraftCallCount == 1);
+    CHECK("LoadedDraftApply_ChangedRuntime", std::fabs(params.color_saturation - 0.25f) < 0.001f);
+    CHECK("LoadedDraftApply_Dirty", dirty);
+
+    cli.apply_loaded_color_pipeline_draft = false;
+    gApplyLoadedColorPipelineDraftCallCount = 0;
+    CHECK("LoadedDraftApply_NoFlagReturnsSuccess",
+        ApplyCliOverrides(cli, view, params, render, &dirty) == 0);
+    CHECK("LoadedDraftApply_NoFlagDoesNotCall", gApplyLoadedColorPipelineDraftCallCount == 0);
+}
+
 int main() {
     TestDefaultsNoChange();
     TestFractalTypeOverride();
@@ -517,6 +587,7 @@ int main() {
     TestLoadStateReturnsPersistedOrientationBaseline();
     TestFractalOverrideClearsLoadedOrientationBaseline();
     TestLegacyLoadStateResetsControllerPolicy();
+    TestExplicitLoadedColorPipelineDraftApplicationUsesCentralOperation();
     printf("test_viewer_state_init: %d passed, %d failed\n", gPass, gFail);
     return gFail > 0 ? 1 : 0;
 }

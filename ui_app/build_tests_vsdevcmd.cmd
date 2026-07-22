@@ -122,6 +122,7 @@ if /I "%FOCUSED_TEST%"=="test_ui_schema" call :focused_test_ui_schema & exit /b
 if /I "%FOCUSED_TEST%"=="test_safe_mode_schema" call :focused_test_safe_mode_schema & exit /b
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_core" call :focused_test_color_pipeline_core & exit /b
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_window" call :focused_test_color_pipeline_window & exit /b
+if /I "%FOCUSED_TEST%"=="test_color_pipeline_loaded_draft" call :focused_test_color_pipeline_loaded_draft & exit /b
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_field_groups" call :focused_test_color_pipeline_sdf_field_groups & exit /b
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess" call :focused_test_color_pipeline_sdf_postprocess & exit /b
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess_cuda" call :focused_test_color_pipeline_sdf_postprocess_cuda & exit /b
@@ -341,6 +342,11 @@ if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\json_min.cpp .\tests\test_color_pipeline_window.cpp ^
   /Fe:"%TESTROOT%\test_color_pipeline_window.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\color_pipeline_loaded_draft.cpp .\tests\test_color_pipeline_loaded_draft.cpp ^
+  /Fe:"%TESTROOT%\test_color_pipeline_loaded_draft.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
@@ -983,6 +989,14 @@ if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_color_pipeline_window.exe" || exit /b 1
 exit /b 0
 
+:focused_test_color_pipeline_loaded_draft
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\color_pipeline_loaded_draft.cpp .\tests\test_color_pipeline_loaded_draft.cpp ^
+  /Fe:"%TESTROOT%\test_color_pipeline_loaded_draft.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_color_pipeline_loaded_draft.exe" || exit /b 1
+exit /b 0
+
 :focused_test_color_pipeline_sdf_field_groups
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_color_pipeline_sdf_field_groups.cpp ^
@@ -1235,6 +1249,8 @@ call :run_test "%TESTROOT%\test_schema_binding.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_color_pipeline_core.exe" || exit /b 1
 
 call :run_test "%TESTROOT%\test_color_pipeline_window.exe" || exit /b 1
+
+call :run_test "%TESTROOT%\test_color_pipeline_loaded_draft.exe" || exit /b 1
 
 call :run_test "%TESTROOT%\test_color_pipeline_sdf_postprocess.exe" || exit /b 1
 

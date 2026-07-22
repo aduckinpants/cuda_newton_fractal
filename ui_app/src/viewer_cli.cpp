@@ -407,6 +407,7 @@ static bool TryParseColorPipelineActionSpecs(
 
 static bool TryParseHeadlessProofArgs(const std::vector<std::string>& args, ViewerCliArgs* out) {
     if (!TryStr(args, "--load-state-json", &out->have_load_state_json, &out->load_state_json)) return false;
+    out->apply_loaded_color_pipeline_draft = HasArg(args, "--apply-loaded-color-pipeline-draft");
 
     std::vector<std::string> colorPipelineActionSpecs;
     if (!TryGetArgValues(args, "--color-pipeline-action", &colorPipelineActionSpecs)) return false;

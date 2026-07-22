@@ -418,6 +418,39 @@ static void TestLoadStateJson() {
     Check(cli.load_state_json == "state.json", "TestLoadStateJson_Path");
 }
 
+static void TestApplyLoadedColorPipelineDraftParsesWithLoadedState() {
+    ViewerCliArgs cli{};
+    const int rc = ParseViewerCli(Args({
+        "--load-state-json", "state.json",
+        "--apply-loaded-color-pipeline-draft",
+    }), &cli);
+    Check(rc == 0, "TestApplyLoadedColorPipelineDraft_Parse");
+    Check(cli.apply_loaded_color_pipeline_draft,
+        "TestApplyLoadedColorPipelineDraft_Flag");
+    Check(ValidateViewerCliModeConflicts(cli),
+        "TestApplyLoadedColorPipelineDraft_ModeValid");
+}
+
+static void TestApplyLoadedColorPipelineDraftRequiresLoadedState() {
+    ViewerCliArgs cli{};
+    const int rc = ParseViewerCli(Args({"--apply-loaded-color-pipeline-draft"}), &cli);
+    Check(rc == 0, "TestApplyLoadedColorPipelineDraftRequiresLoadedState_Parse");
+    Check(!ValidateViewerCliModeConflicts(cli),
+        "TestApplyLoadedColorPipelineDraftRequiresLoadedState_ModeInvalid");
+}
+
+static void TestApplyLoadedColorPipelineDraftRejectsActionMixing() {
+    ViewerCliArgs cli{};
+    const int rc = ParseViewerCli(Args({
+        "--load-state-json", "state.json",
+        "--apply-loaded-color-pipeline-draft",
+        "--color-pipeline-action", "select_function:source:0:root_proximity",
+    }), &cli);
+    Check(rc == 0, "TestApplyLoadedColorPipelineDraftRejectsActionMixing_Parse");
+    Check(!ValidateViewerCliModeConflicts(cli),
+        "TestApplyLoadedColorPipelineDraftRejectsActionMixing_ModeInvalid");
+}
+
 static void TestUiAutomationReportFlags() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({
@@ -788,6 +821,9 @@ int main() {
     TestDescribeFractalCatalogJson();
     TestDescribeFractalCatalogJsonMissingValue();
     TestLoadStateJson();
+    TestApplyLoadedColorPipelineDraftParsesWithLoadedState();
+    TestApplyLoadedColorPipelineDraftRequiresLoadedState();
+    TestApplyLoadedColorPipelineDraftRejectsActionMixing();
     TestUiAutomationReportFlags();
     TestEquationPackWorkbenchPackJsonMissingValue();
     TestSdfPackJsonMissingValue();

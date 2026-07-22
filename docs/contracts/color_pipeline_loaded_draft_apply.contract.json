@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_loaded_draft_apply",
+  "feature_id": "color_pipeline_loaded_draft_apply",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/color_pipeline_loaded_draft_apply_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/color_pipeline_loaded_draft_apply_PHASED_PLAN.md",
+    "docs/contracts/color_pipeline_loaded_draft_apply.contract.json",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "explicitly apply a deserialized Color Pipeline draft through engine-owned lowering",
+    "keep ordinary state loading draft-preserving and non-applying",
+    "provide a reusable callable seam with a thin CLI adapter",
+    "prove emitted complete state replays without the apply flag"
+  ],
+  "forbidden_operator_prompts": [
+    "auto-apply every loaded color_pipeline_draft",
+    "duplicate Color Pipeline mappings or UI-Salt metadata",
+    "implement a capture-only or state-tool-only workaround",
+    "change state JSON schema or Color Pipeline behavior",
+    "merge the feature without separate authorization"
+  ],
+  "required_defaults": {
+    "ordinary_load_applies_draft": false,
+    "explicit_apply_required": true,
+    "engine_lowering_authority": "ApplyColorPipelineDraftToLiveState",
+    "replay_requires_apply_flag": false,
+    "invalid_draft_behavior": "fail_closed"
+  },
+  "forbidden_defaults": {
+    "python_color_pipeline_lowering": "forbidden",
+    "implicit_load_side_effect": "forbidden",
+    "capture_only_application": "forbidden",
+    "action_synthesis": "forbidden",
+    "state_schema_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_loaded_draft_apply.contract.json --out-json artifacts/validation/color_pipeline_loaded_draft_apply_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_focused_api --log artifacts/logs/color_pipeline_loaded_draft_focused_api.log --out-json artifacts/validation/color_pipeline_loaded_draft_focused_api.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_loaded_draft",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_viewer_cli --log artifacts/logs/color_pipeline_loaded_draft_viewer_cli.log --out-json artifacts/validation/color_pipeline_loaded_draft_viewer_cli.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_cli",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_state_init --log artifacts/logs/color_pipeline_loaded_draft_state_init.log --out-json artifacts/validation/color_pipeline_loaded_draft_state_init.json --heartbeat-seconds 30 --timeout-seconds 300 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_state_init",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_full_native --log artifacts/logs/color_pipeline_loaded_draft_full_native.log --out-json artifacts/validation/color_pipeline_loaded_draft_full_native.json --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_runtime_publish --log artifacts/logs/color_pipeline_loaded_draft_runtime_publish.log --out-json artifacts/validation/color_pipeline_loaded_draft_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_runtime_pytest --log artifacts/logs/color_pipeline_loaded_draft_runtime_pytest.log --out-json artifacts/validation/color_pipeline_loaded_draft_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 600 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_loaded_draft_apply.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_loaded_draft_apply_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_diff_check --log artifacts/logs/color_pipeline_loaded_draft_diff_check.log --out-json artifacts/validation/color_pipeline_loaded_draft_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_loaded_draft_apply_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_loaded_draft_apply_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The loaded Color Pipeline draft application contract validates successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_loaded_draft_apply_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The loaded Color Pipeline draft application hostile audit is complete before closeout.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_loaded_draft_apply_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

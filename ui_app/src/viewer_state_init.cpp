@@ -1,5 +1,6 @@
 #include "viewer_state_init.h"
 
+#include "color_pipeline_loaded_draft.h"
 #define COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "color_pipeline_window.h"
 #undef COLOR_PIPELINE_WINDOW_NO_IMGUI
@@ -11,6 +12,7 @@
 #include "fractal_family_rules.h"
 #include "view_hp_sync.h"
 
+#include <cstdio>
 #include <filesystem>
 
 namespace {
@@ -172,6 +174,31 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
 
     if (IsExplainoFamily(view.fractal_type) && !loadedExplicitRuntimeAuthority) {
         UpdateExplainoPolynomial(view, params, dirty);
+    }
+
+    if (cli.apply_loaded_color_pipeline_draft) {
+        if (!loadedState || !ioColorPipelineWindow ||
+                CliOverridesLoadedColorPipelineDraft(cli) ||
+                !cli.color_pipeline_headless_proof.actions.empty()) {
+            std::fprintf(stderr,
+                "--apply-loaded-color-pipeline-draft requires an exact loaded state and cannot be mixed with draft-invalidating overrides or Color Pipeline actions\n");
+            return 1;
+        }
+
+        ColorPipelineLoadedDraftApplyResult applyResult{};
+        std::string applyError;
+        if (!ApplyLoadedColorPipelineDraftToRuntime(
+                ioColorPipelineWindow,
+                view.fractal_type,
+                &params,
+                &applyResult,
+                &applyError)) {
+            std::fprintf(stderr, "%s\n", applyError.c_str());
+            return 1;
+        }
+        if (dirty && applyResult.changed) {
+            *dirty = true;
+        }
     }
 
     if (loadedState && ioColorPipelineWindow && CliOverridesLoadedColorPipelineDraft(cli)) {
