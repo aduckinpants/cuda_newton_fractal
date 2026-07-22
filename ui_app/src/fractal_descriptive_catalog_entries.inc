@@ -395,3 +395,48 @@ FRACTAL_REVIEWED_DESCRIPTION(
     "At high zoom, a small dynamics-parameter change can move or reorganize visible structures substantially; compare against the exact viewport facts rather than inferring visual scale from numeric magnitude.",
     "ui_app/src/fractal_catalog.h#kFractalCatalog", "ui_app/src/escape_time_direct_formulas.h#StepEscapeTimeDirectState",
     "ui_app/src/fractal_sample_device.inl#FractalSample", nullptr)
+FRACTAL_REVIEWED_DESCRIPTION(
+    generic_equation_pack, "generic_equation_pack",
+    "Generic Equation Pack is a programmable engine lane whose active recurrence is supplied by the validated loaded equation-pack descriptor rather than one fixed built-in formula.",
+    "The runtime lowers the selected pack operations into the generic complex sample core; the concrete recurrence and constants therefore come from the attached pack authority.",
+    "State order is pack-defined and must be read from the active pack operations rather than inferred from this selector name.",
+    "Escape, convergence, and classification follow the validated pack program and the generic runtime limits.",
+    "Do not attribute a particular formula to this selector without the exact loaded pack; the catalog describes the programmable substrate only.",
+    "ui_app/src/fractal_catalog.h#kFractalCatalog", "ui_app/src/generic_equation_pack_live.cpp#RenderGenericEquationPackLiveFrame",
+    nullptr, nullptr)
+FRACTAL_REVIEWED_DESCRIPTION(
+    sdf_pack_scene, "sdf_pack_scene",
+    "SDF Pack Scene is a field-primary lane that evaluates a validated authored or built-in signed-distance scene instead of iterating a complex orbit.",
+    "The field producer evaluates the selected SDF pack graph at the sampled coordinate; there is no universal complex recurrence for this selector.",
+    "Evaluation is descriptor-driven and field-primary rather than an orbit with a fixed recurrence order.",
+    "Classification and coloring consume the signed-distance field and its declared scene semantics rather than escape-time iteration.",
+    "Geometric claims require the exact attached SDF pack; selector identity alone does not specify the scene primitives or composition.",
+    "ui_app/src/fractal_catalog.h#kFractalCatalog", "ui_app/src/sdf_pack_field_producer.cpp#ComputeSdfPackRuntimeFieldWithBackend",
+    nullptr, nullptr)
+FRACTAL_REVIEWED_DESCRIPTION(
+    explaino_root_sdf, "explaino_root_sdf",
+    "ExplainO Root SDF is a field-primary lane derived from the current ExplainO root layout.",
+    "The engine lowers effective roots to root circles and bridge capsules with optional deterministic phase-sine modulation, producing a signed-distance field rather than an orbit recurrence.",
+    "It evaluates a root-derived field at each coordinate and has no iterative orbit state order.",
+    "The result is classified through signed-distance field membership; unsupported non-SDF source rows fail closed.",
+    "Serialized root geometry supplies field inputs, but root symmetry alone does not prove visible frame symmetry after camera and coloring transformations.",
+    "ui_app/src/fractal_catalog.h#kFractalCatalog", "ui_app/src/explaino_root_sdf_field.cpp#ComputeExplainoRootSdfFieldForViewport",
+    nullptr, nullptr)
+FRACTAL_REVIEWED_DESCRIPTION(
+    explaino_mandelbrot_root_trap, "explaino_mandelbrot_root_trap",
+    "ExplainO Mandelbrot Root Trap uses Mandelbrot orbit dynamics and exposes the current ExplainO root field only to downstream trap coloring.",
+    "The base orbit is z_next = z squared + c from z_0 = 0; root-field data does not feed back into that recurrence.",
+    "The orbit is first-order in z for fixed pixel parameter c.",
+    "It uses Mandelbrot escape/interior classification at radius two, nonfinite state, or the iteration limit.",
+    "Root proximity is a continuous coloring signal and does not by itself establish discrete root basins or causal visual dominance.",
+    "ui_app/src/fractal_family_rules.h#RootFieldConsumerBaseFractalType", "ui_app/src/escape_time_direct_formulas.h#StepEscapeTimeDirectState",
+    "ui_app/src/fractal_sample_device.inl#FractalSample", "ui_app/src/escape_time_coloring.h#TryResolveRootFieldConsumerDistance")
+FRACTAL_REVIEWED_DESCRIPTION(
+    explaino_multibrot_root_trap, "explaino_multibrot_root_trap",
+    "ExplainO Multibrot Root Trap uses Multibrot orbit dynamics and exposes the current ExplainO root field only to downstream trap coloring.",
+    "The base orbit uses the configured principal complex power in z_next = z to power p plus c; root-field data does not feed back into that recurrence.",
+    "The orbit is first-order in z for fixed c and power.",
+    "It uses direct escape/interior classification at radius two, nonfinite state, or the iteration limit.",
+    "Power changes can reorganize orbit geometry sharply, while root proximity remains a downstream coloring signal rather than proof of basins.",
+    "ui_app/src/fractal_family_rules.h#RootFieldConsumerBaseFractalType", "ui_app/src/escape_time_direct_formulas.h#StepEscapeTimeDirectState",
+    "ui_app/src/fractal_sample_device.inl#FractalSample", "ui_app/src/escape_time_coloring.h#TryResolveRootFieldConsumerDistance")

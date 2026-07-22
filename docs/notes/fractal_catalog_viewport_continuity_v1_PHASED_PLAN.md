@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 - review and ground custom, SDF, and root-field consumer selectors; prove zero unavailable rows.
+Phase 5 - publish, run all mandatory rails, complete hostile audit, checkpoint, push, and stop at the engine merge-approval boundary.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 4 - review and ground custom, SDF, and root-field consumer selectors; prov
 - [x] Phase 1 - add deterministic engine-owned viewport facts with focused RED/GREEN proof.
 - [x] Phase 2 - review and ground the direct native fractal families.
 - [x] Phase 3 - review and ground the ExplainO and composed-analysis families.
-- [ ] Phase 4 - review and ground custom, SDF, and root-field consumer selectors; prove zero unavailable rows.
+- [x] Phase 4 - review and ground custom, SDF, and root-field consumer selectors; prove zero unavailable rows.
 - [ ] Phase 5 - publish, run all mandatory rails, complete hostile audit, checkpoint, push, and stop at the engine merge-approval boundary.
 
 ## Explicit User Asks
@@ -241,6 +241,10 @@ The engine feature stops at a clean pushed pull request. This plan and the overn
 - Phase 3 RED/GREEN: `artifacts/validation/fractal_catalog_explaino_composed_red.json` records the expected unavailable-selector failure; `fractal_catalog_explaino_composed_green.json` proves the 46-selector ExplainO/composed coverage and sensitive semantic assertions.
 - Phase 3 coverage: 232 accepted claims cover 46 selectors; all 220 newly generated claims across 44 selectors resolve to current repository-relative source files and symbols.
 - Phase 3 full and published-runtime proof: `fractal_catalog_viewport_full_native.json`, `fractal_catalog_viewport_runtime_publish.json`, and `fractal_catalog_viewport_runtime_pytest.json` prove the full native suite, canonical runtime publish, and 8/8 runtime checks with the exact 46-entry reviewed subset.
+- Phase 3 checkpoint: `c613cf2` records 46 reviewed selectors, ExplainO/composed current-source evidence, full native proof, and published-runtime verification.
+- Phase 4 RED/GREEN: `artifacts/validation/fractal_catalog_special_families_red.json` records the expected unavailable-selector failure; `fractal_catalog_special_families_green.json` proves all 51 live selectors reviewed with special-family authority-boundary assertions.
+- Phase 4 coverage: 258 ledger records cover the complete live catalog; all 25 claims for the five newly reviewed custom/SDF/root-field selectors resolve to current source files and symbols.
+- Phase 4 full and published-runtime proof: `fractal_catalog_viewport_full_native.json`, `fractal_catalog_viewport_runtime_publish.json`, and `fractal_catalog_viewport_runtime_pytest.json` prove the full native suite, canonical runtime publish, and 8/8 runtime checks with zero unavailable live rows.
 - PR and clean-tree proof: pending.
 - Slice lock: `ck:ae7df1e6`; `fractal_catalog_viewport_continuity_v1` is the active locked contract.
 - Phase 0 proof: contract validator, phased-plan sync, 43 workflow-tool tests, and `git diff --check` passed.
@@ -262,8 +266,8 @@ Audit questions:
 
 ## Audit Passes
 
-- [x] Pass 1 - hostile current-source and sentence-ledger audit found the duplicate generated declaration block and confirmed sensitive family semantics before Phase 3 GREEN.
-- [x] Pass 2 - re-read the repaired state after the first real Phase 3 finding; all newly accepted source symbols resolve and the compiled overlay agrees with the ledger.
+- [x] Pass 1 - hostile current-source and sentence-ledger audit rejected reuse of the generator's duplicate declaration block and confirmed each special selector's runtime authority boundary.
+- [x] Pass 2 - re-read the repaired state after the first real Phase 4 finding; all five new selector claims resolve and zero live rows remain unavailable.
 - [x] Pass 3 - no additional workflow mistake found in the final clean re-audit after full native and published-runtime proof.
 
 ## Audit Findings
@@ -282,6 +286,11 @@ Audit questions:
 - [x] ExplainO Phoenix and Joy describe memory conditionally, Balance Void remains a dedicated first-order branch, Rational Escape preserves the denominator clamp from 1 through 6, and Spider remains first-order in augmented `(z,c)` state.
 - [x] Counterfactual Pair describes different-root basin-swap classification without spatially localizing the synthetic result; Projection and Flow distinguishes peak/final transient pressure from a spatial force field.
 - [x] The published-runtime test now asserts all 46 reviewed selectors in exact live catalog order and remains byte-deterministic across repeated stdout and file exports.
+- [x] The Phase 4 generator output still contained the previously identified duplicate declaration include. The slice intentionally applied only the new compiled rows and ledger evidence, reusing the single reviewed-overlay declaration seam already in source.
+- [x] Generic Equation Pack and SDF Pack Scene describe programmable/field substrates without inventing fixed formulas; exact loaded pack or scene authority remains required for concrete claims.
+- [x] ExplainO Root SDF names the current root-circle, bridge-capsule, and phase-sine field construction without claiming an orbit recurrence or visible symmetry from serialized roots alone.
+- [x] Mandelbrot and Multibrot root-trap selectors distinguish their base orbit dynamics from downstream root-field coloring, and continuous root proximity is not promoted into discrete basin evidence.
+- [x] The published runtime now exports all 51 live catalog rows as reviewed in exact `kFractalCatalog` order, with zero unavailable shipped selectors and unchanged V1 schema/flag taxonomy.
 
 ## Notes
 

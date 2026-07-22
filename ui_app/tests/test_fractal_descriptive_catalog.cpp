@@ -47,7 +47,8 @@ const std::set<std::string>& ExpectedReviewedSelectors() {
         "celtic_mandelbrot", "perpendicular_burning_ship", "explaino_joy", "explaino_fold", "explaino_bell",
         "explaino_ripple", "explaino_splice", "explaino_vortex", "explaino_tension", "explaino_balance_void",
         "counterfactual_pair", "explaino_counterfactual_pair", "projection_and_flow", "explaino_projection_and_flow", "magnet",
-        "explaino_magnet_root_well",
+        "generic_equation_pack", "sdf_pack_scene", "explaino_root_sdf", "explaino_mandelbrot_root_trap", "explaino_magnet_root_well",
+        "explaino_multibrot_root_trap",
     };
     return selectors;
 }
@@ -150,6 +151,11 @@ bool TestSchemaCoverageAndDeterminism() {
     const auto* counterfactual = FindEntry(entries, "explaino_counterfactual_pair");
     const auto* projection = FindEntry(entries, "projection_and_flow");
     const auto* explainoPhoenix = FindEntry(entries, "explaino_phoenix");
+    const auto* genericPack = FindEntry(entries, "generic_equation_pack");
+    const auto* sdfPack = FindEntry(entries, "sdf_pack_scene");
+    const auto* rootSdf = FindEntry(entries, "explaino_root_sdf");
+    const auto* mandelbrotTrap = FindEntry(entries, "explaino_mandelbrot_root_trap");
+    const auto* multibrotTrap = FindEntry(entries, "explaino_multibrot_root_trap");
     if (!Expect(explainoJulia && explainoJulia->get("description")->get("recurrence_or_field_model")->as_string().find("configured custom ExplainO Julia constant") != std::string::npos,
             "ExplainO Julia prose must include the custom-constant authority path")) return false;
     if (!Expect(rationalEscape && rationalEscape->get("description")->get("recurrence_or_field_model")->as_string().find("1 through 6") != std::string::npos,
@@ -163,6 +169,21 @@ bool TestSchemaCoverageAndDeterminism() {
             "projection prose must describe the actual transient-pressure statistic")) return false;
     if (!Expect(explainoPhoenix && explainoPhoenix->get("description")->get("state_order")->as_string().find("when that memory term is active") != std::string::npos,
             "Phoenix-family state order must be conditional on configured memory")) return false;
+    if (!Expect(genericPack && genericPack->get("description")->get("recurrence_or_field_model")->as_string().find("attached pack authority") != std::string::npos &&
+            genericPack->get("description")->get("interpretation_notes")->as_string().find("without the exact loaded pack") != std::string::npos,
+            "programmable pack prose must preserve its exact loaded-authority boundary")) return false;
+    if (!Expect(sdfPack && sdfPack->get("description")->get("state_order")->as_string().find("field-primary") != std::string::npos &&
+            sdfPack->get("description")->get("recurrence_or_field_model")->as_string().find("no universal complex recurrence") != std::string::npos,
+            "SDF pack prose must not invent an orbit recurrence")) return false;
+    if (!Expect(rootSdf && rootSdf->get("description")->get("recurrence_or_field_model")->as_string().find("root circles and bridge capsules") != std::string::npos &&
+            rootSdf->get("description")->get("recurrence_or_field_model")->as_string().find("phase-sine modulation") != std::string::npos,
+            "root SDF prose must name the current field construction")) return false;
+    if (!Expect(mandelbrotTrap && mandelbrotTrap->get("description")->get("recurrence_or_field_model")->as_string().find("does not feed back") != std::string::npos &&
+            mandelbrotTrap->get("description")->get("interpretation_notes")->as_string().find("does not by itself establish discrete root basins") != std::string::npos,
+            "Mandelbrot root-trap prose must separate base recurrence from downstream field coloring")) return false;
+    if (!Expect(multibrotTrap && multibrotTrap->get("description")->get("recurrence_or_field_model")->as_string().find("configured principal complex power") != std::string::npos &&
+            multibrotTrap->get("description")->get("interpretation_notes")->as_string().find("downstream coloring signal") != std::string::npos,
+            "Multibrot root-trap prose must separate powered orbit dynamics from downstream field coloring")) return false;
 
     for (const char* forbidden : {"\"generated_at\":", "\"timestamp\":", "\"branch\":", "\"commit\":", "C:\\\\", "D:\\\\"}) {
         if (!Expect(first.find(forbidden) == std::string::npos, std::string("volatile provenance field leaked: ") + forbidden)) return false;

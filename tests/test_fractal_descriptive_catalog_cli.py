@@ -84,7 +84,12 @@ def test_descriptive_catalog_stdout_is_deterministic_and_complete() -> None:
         "projection_and_flow",
         "explaino_projection_and_flow",
         "magnet",
+        "generic_equation_pack",
+        "sdf_pack_scene",
+        "explaino_root_sdf",
+        "explaino_mandelbrot_root_trap",
         "explaino_magnet_root_well",
+        "explaino_multibrot_root_trap",
     ]
     for entry in catalog["entries"]:
         if entry["description_status"] == "unavailable":
