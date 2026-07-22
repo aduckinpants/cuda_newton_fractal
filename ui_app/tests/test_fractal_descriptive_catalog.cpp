@@ -38,10 +38,16 @@ const json_min::Value* FindEntry(const json_min::Array& entries, const std::stri
 
 const std::set<std::string>& ExpectedReviewedSelectors() {
     static const std::set<std::string> selectors = {
-        "newton", "nova", "mandelbrot", "julia", "burning_ship", "multibrot", "phoenix",
-        "multicorn", "halley", "collatz", "mcmullen", "lambda", "spider",
-        "celtic_mandelbrot", "perpendicular_burning_ship", "magnet",
-        "explaino_all", "explaino_magnet_root_well",
+        "newton", "nova", "mandelbrot", "julia", "burning_ship",
+        "multibrot", "phoenix", "explaino", "explaino_all", "explaino_y",
+        "explaino_fp", "explaino_nova", "explaino_halley", "explaino_dual", "explaino_mult",
+        "explaino_phoenix", "explaino_transcendental", "explaino_inertial", "explaino_julia", "explaino_rational",
+        "multicorn", "halley", "collatz", "explaino_collatz", "explaino_collatz_direct",
+        "mcmullen", "lambda", "explaino_lambda", "explaino_rational_escape", "spider",
+        "celtic_mandelbrot", "perpendicular_burning_ship", "explaino_joy", "explaino_fold", "explaino_bell",
+        "explaino_ripple", "explaino_splice", "explaino_vortex", "explaino_tension", "explaino_balance_void",
+        "counterfactual_pair", "explaino_counterfactual_pair", "projection_and_flow", "explaino_projection_and_flow", "magnet",
+        "explaino_magnet_root_well",
     };
     return selectors;
 }
@@ -117,7 +123,7 @@ bool TestSchemaCoverageAndDeterminism() {
             if (!Expect(status->as_string() == "unavailable" && description->is_null(), "unreviewed entries must fail softly as unavailable/null")) return false;
         }
     }
-    if (!Expect(reviewedCount == ExpectedReviewedSelectors().size(), "reviewed count must match the bounded direct-family batch")) return false;
+    if (!Expect(reviewedCount == ExpectedReviewedSelectors().size(), "reviewed count must match the bounded ExplainO and composed-analysis batch")) return false;
     if (!Expect(FindEntry(entries, "explaino_all")->get("description_status")->as_string() == "reviewed", "explaino_all must be reviewed")) return false;
     if (!Expect(FindEntry(entries, "explaino_magnet_root_well")->get("description_status")->as_string() == "reviewed", "explaino_magnet_root_well must be reviewed")) return false;
     if (!Expect(FindEntry(entries, "lambda") != nullptr && FindEntry(entries, "lambda_map") == nullptr, "live lambda identity must remain lambda")) return false;
@@ -137,6 +143,26 @@ bool TestSchemaCoverageAndDeterminism() {
             "McMullen prose must retain its rational negative-power term")) return false;
     if (!Expect(magnet && magnet->get("description")->get("termination_or_classification")->as_string().find("epsilon squared") != std::string::npos,
             "Magnet prose must identify the engine's unit-attractor residual test")) return false;
+
+    const auto* explainoJulia = FindEntry(entries, "explaino_julia");
+    const auto* rationalEscape = FindEntry(entries, "explaino_rational_escape");
+    const auto* balanceVoid = FindEntry(entries, "explaino_balance_void");
+    const auto* counterfactual = FindEntry(entries, "explaino_counterfactual_pair");
+    const auto* projection = FindEntry(entries, "projection_and_flow");
+    const auto* explainoPhoenix = FindEntry(entries, "explaino_phoenix");
+    if (!Expect(explainoJulia && explainoJulia->get("description")->get("recurrence_or_field_model")->as_string().find("configured custom ExplainO Julia constant") != std::string::npos,
+            "ExplainO Julia prose must include the custom-constant authority path")) return false;
+    if (!Expect(rationalEscape && rationalEscape->get("description")->get("recurrence_or_field_model")->as_string().find("1 through 6") != std::string::npos,
+            "Rational Escape prose must follow the serialized denominator power")) return false;
+    if (!Expect(balanceVoid && balanceVoid->get("description")->get("state_order")->as_string().find("first-order") != std::string::npos &&
+            balanceVoid->get("description")->get("state_order")->as_string().find("Phoenix") == std::string::npos,
+            "Balance Void must not inherit Phoenix memory from a different ExplainO branch")) return false;
+    if (!Expect(counterfactual && counterfactual->get("description")->get("termination_or_classification")->as_string().find("different-root basin swap") != std::string::npos,
+            "counterfactual prose must retain the engine's distinct-root class")) return false;
+    if (!Expect(projection && projection->get("description")->get("interpretation_notes")->as_string().find("peak and final projection pressure") != std::string::npos,
+            "projection prose must describe the actual transient-pressure statistic")) return false;
+    if (!Expect(explainoPhoenix && explainoPhoenix->get("description")->get("state_order")->as_string().find("when that memory term is active") != std::string::npos,
+            "Phoenix-family state order must be conditional on configured memory")) return false;
 
     for (const char* forbidden : {"\"generated_at\":", "\"timestamp\":", "\"branch\":", "\"commit\":", "C:\\\\", "D:\\\\"}) {
         if (!Expect(first.find(forbidden) == std::string::npos, std::string("volatile provenance field leaked: ") + forbidden)) return false;

@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 3 - review and ground the ExplainO and composed-analysis families.
+Phase 4 - review and ground custom, SDF, and root-field consumer selectors; prove zero unavailable rows.
 
 ## Phase Checklist
 
 - [x] Phase 0 - locked this engine-native plan and contract from exact clean master.
 - [x] Phase 1 - add deterministic engine-owned viewport facts with focused RED/GREEN proof.
 - [x] Phase 2 - review and ground the direct native fractal families.
-- [ ] Phase 3 - review and ground the ExplainO and composed-analysis families.
+- [x] Phase 3 - review and ground the ExplainO and composed-analysis families.
 - [ ] Phase 4 - review and ground custom, SDF, and root-field consumer selectors; prove zero unavailable rows.
 - [ ] Phase 5 - publish, run all mandatory rails, complete hostile audit, checkpoint, push, and stop at the engine merge-approval boundary.
 
@@ -237,6 +237,10 @@ The engine feature stops at a clean pushed pull request. This plan and the overn
 - Phase 2 RED/GREEN: `artifacts/validation/fractal_catalog_direct_families_red.json` records the expected unavailable-selector failure; `fractal_catalog_direct_families_green.json` proves the bounded direct-family coverage and sentence-ledger joins.
 - Phase 2 coverage: 18 live selectors are now reviewed in catalog order, including the two pre-existing reviewed entries; 80 newly accepted sentence claims were checked against current repository-relative source symbols.
 - Phase 2 full and published-runtime proof: `fractal_catalog_viewport_full_native.json`, `fractal_catalog_viewport_runtime_publish.json`, and `fractal_catalog_viewport_runtime_pytest.json` prove the full native suite, canonical runtime publish, and 8/8 runtime catalog/viewport checks.
+- Phase 2 checkpoint: `8e1e813` records direct-family catalog coverage, current-source evidence, full native proof, and published-runtime verification.
+- Phase 3 RED/GREEN: `artifacts/validation/fractal_catalog_explaino_composed_red.json` records the expected unavailable-selector failure; `fractal_catalog_explaino_composed_green.json` proves the 46-selector ExplainO/composed coverage and sensitive semantic assertions.
+- Phase 3 coverage: 232 accepted claims cover 46 selectors; all 220 newly generated claims across 44 selectors resolve to current repository-relative source files and symbols.
+- Phase 3 full and published-runtime proof: `fractal_catalog_viewport_full_native.json`, `fractal_catalog_viewport_runtime_publish.json`, and `fractal_catalog_viewport_runtime_pytest.json` prove the full native suite, canonical runtime publish, and 8/8 runtime checks with the exact 46-entry reviewed subset.
 - PR and clean-tree proof: pending.
 - Slice lock: `ck:ae7df1e6`; `fractal_catalog_viewport_continuity_v1` is the active locked contract.
 - Phase 0 proof: contract validator, phased-plan sync, 43 workflow-tool tests, and `git diff --check` passed.
@@ -258,9 +262,9 @@ Audit questions:
 
 ## Audit Passes
 
-- [x] Pass 1 - hostile current-source and sentence-ledger audit found and repaired inherited Collatz, Spider, Magnet, Julia, and termination wording errors before Phase 2 GREEN.
-- [x] Pass 2 - re-read the repaired state against the current recurrence and termination symbols; the compiled overlay, accepted ledger claims, and public source references agree.
-- [x] Pass 3 - no additional workflow mistake found in the final clean re-audit after the published-runtime expectation repair.
+- [x] Pass 1 - hostile current-source and sentence-ledger audit found the duplicate generated declaration block and confirmed sensitive family semantics before Phase 3 GREEN.
+- [x] Pass 2 - re-read the repaired state after the first real Phase 3 finding; all newly accepted source symbols resolve and the compiled overlay agrees with the ledger.
+- [x] Pass 3 - no additional workflow mistake found in the final clean re-audit after full native and published-runtime proof.
 
 ## Audit Findings
 
@@ -274,6 +278,10 @@ Audit questions:
 - [x] The first published-runtime Phase 2 run exposed a stale Python expectation for only the two pre-campaign reviewed entries. The repaired test now asserts all 18 reviewed selectors in exact live catalog order and passes 8/8 against the published executable.
 - [x] The first attempt to repair that Python expectation bypassed the required patch wrapper. It was caught immediately, reverted before testing, and reapplied through `viewer_host_apply_repo_patch.py`; the final diff contains only wrapper-authorized mutation.
 - [x] Existing `explaino_all` and `explaino_magnet_root_well` prose remained byte-for-byte unchanged while the new direct-family overlay was added; the runtime still has no dependency on the evidence ledger or historical files.
+- [x] The first Phase 3 implementation patch duplicated the generated declaration include and failed compilation with redefined arrays. The duplicate block was removed through the authorized wrapper before GREEN; each generated selector now has one declaration and one reviewed-table row.
+- [x] ExplainO Phoenix and Joy describe memory conditionally, Balance Void remains a dedicated first-order branch, Rational Escape preserves the denominator clamp from 1 through 6, and Spider remains first-order in augmented `(z,c)` state.
+- [x] Counterfactual Pair describes different-root basin-swap classification without spatially localizing the synthetic result; Projection and Flow distinguishes peak/final transient pressure from a spatial force field.
+- [x] The published-runtime test now asserts all 46 reviewed selectors in exact live catalog order and remains byte-deterministic across repeated stdout and file exports.
 
 ## Notes
 
