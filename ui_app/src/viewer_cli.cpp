@@ -434,12 +434,14 @@ static bool TryParseMetadataHeadlessArgs(const std::vector<std::string>& args, V
     out->describe_functions = HasArg(args, "--describe-functions");
     out->describe_parameter_surface = HasArg(args, "--describe-parameter-surface");
     out->describe_fractal_catalog = HasArg(args, "--describe-fractal-catalog");
+    out->describe_viewport_facts = HasArg(args, "--describe-viewport-facts");
     out->describe_explaino_axis_registry = HasArg(args, "--describe-explaino-axis-registry");
     out->validate_ui_salt_contract = HasArg(args, "--validate-ui-salt-contract");
     out->explore_recommend = HasArg(args, "--explore-recommend");
     if (!TryStr(args, "--describe-functions-json", &out->have_describe_functions_json, &out->describe_functions_json_path)) return false;
     if (!TryStr(args, "--describe-parameter-surface-json", &out->have_describe_parameter_surface_json, &out->describe_parameter_surface_json_path)) return false;
     if (!TryStr(args, "--describe-fractal-catalog-json", &out->have_describe_fractal_catalog_json, &out->describe_fractal_catalog_json_path)) return false;
+    if (!TryStr(args, "--describe-viewport-facts-json", &out->have_describe_viewport_facts_json, &out->describe_viewport_facts_json_path)) return false;
     if (!TryStr(args, "--describe-explaino-axis-registry-json", &out->have_describe_explaino_axis_registry_json, &out->describe_explaino_axis_registry_json_path)) return false;
     if (!TryStr(args, "--ui-salt-contract-json", &out->have_ui_salt_contract_json, &out->ui_salt_contract_json_path)) return false;
     if (!TryStr(args, "--ui-salt-contract-report-json", &out->have_ui_salt_contract_report_json, &out->ui_salt_contract_report_json_path)) return false;

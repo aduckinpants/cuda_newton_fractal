@@ -1,4 +1,5 @@
 #include "fractal_types.h"
+#include "fractal_viewport_mapping.h"
 #include "fractal_family_rules.h"
 #include "fractal_sample_result.h"
 #include "fractal_device_math.cuh"
@@ -139,30 +140,21 @@ __global__ void kernel_render(
     int py = (int)(blockIdx.y * blockDim.y + threadIdx.y);
     if (px >= width || py >= height) return;
 
-    // Use double intermediates for view mapping to reduce precision loss at deep zoom.
-    double aspect = (height > 0) ? (double)width / (double)height : 1.0;
-    // Authoritative zoom is exp2(log2_zoom). This avoids the float UI surface collapsing at deep zoom.
-    double zoom = fmax(1.0e-300, exp2(view.log2_zoom));
-    double base = 2.0 / zoom;
-
-    double nx = (((double)px + 0.5 + sampleOffsetX) / (double)width - 0.5) * 2.0;
-    double ny = (((double)py + 0.5 + sampleOffsetY) / (double)height - 0.5) * 2.0;
-
-    double x = (double)view.center_hp_x + nx * base * aspect;
-    double y = (double)view.center_hp_y + ny * base;
-
-    // Optional rotation
-    if (view.rotation_degrees != 0.0f) {
-        double a = (double)view.rotation_degrees * (double)(CUDART_PI_F / 180.0f);
-        double cs = cos(a);
-        double sn = sin(a);
-        double cx = (double)view.center_hp_x;
-        double cy = (double)view.center_hp_y;
-        double rx = (x - cx) * cs - (y - cy) * sn;
-        double ry = (x - cx) * sn + (y - cy) * cs;
-        x = cx + rx;
-        y = cy + ry;
-    }
+    // Shared renderer-owned mapping also drives the deterministic viewport-facts export.
+    const FractalViewportMappingTransform viewportTransform = BuildFractalViewportMappingTransform(
+        width, height, view.log2_zoom, static_cast<double>(view.rotation_degrees));
+    const FractalViewportMappedPoint mappedPoint = MapFractalViewportSample(
+        viewportTransform,
+        view.center_hp_x,
+        view.center_hp_y,
+        width,
+        height,
+        px,
+        py,
+        sampleOffsetX,
+        sampleOffsetY);
+    const double x = mappedPoint.real;
+    const double y = mappedPoint.imag;
 
     Cxd coordD{x, y};
     Cx coord{(float)x, (float)y};

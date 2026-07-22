@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 1 - add deterministic engine-owned viewport facts with focused RED/GREEN proof.
+Phase 2 - review and ground the direct native fractal families.
 
 ## Phase Checklist
 
 - [x] Phase 0 - locked this engine-native plan and contract from exact clean master.
-- [ ] Phase 1 - add deterministic engine-owned viewport facts with focused RED/GREEN proof.
+- [x] Phase 1 - add deterministic engine-owned viewport facts with focused RED/GREEN proof.
 - [ ] Phase 2 - review and ground the direct native fractal families.
 - [ ] Phase 3 - review and ground the ExplainO and composed-analysis families.
 - [ ] Phase 4 - review and ground custom, SDF, and root-field consumer selectors; prove zero unavailable rows.
@@ -230,9 +230,9 @@ The engine feature stops at a clean pushed pull request. This plan and the overn
 - Existing reviewed coverage: 2 reviewed, 49 unavailable before this campaign.
 - Renderer mapping source: `ui_app/src/fractal_renderer.cu::fractal_kernel` lines implementing aspect, `exp2(log2_zoom)`, pixel-center normalization, center, and rotation.
 - Historical audit: existing V1 audit records 48 historical entries, one `lambda_map -> lambda` editorial alias, and three newer unseeded live rows; all claims require current-source reconfirmation.
-- RED receipts: pending.
-- Focused GREEN receipts: pending.
-- Full validation receipts: pending.
+- Viewport RED receipts: `artifacts/validation/fractal_viewport_facts_red.json`, `fractal_viewport_cli_red.json`, and `fractal_viewport_finding_sidecar_red.json` record the expected pre-implementation failures.
+- Focused GREEN receipts: `artifacts/validation/fractal_viewport_facts_green.json`, `fractal_viewport_cli_green.json`, `fractal_viewport_finding_sidecar_green.json`, `fractal_viewport_shared_mapping.json`, `fractal_viewport_phase1_repairs_fast.json`, and `fractal_viewport_renderer_exact_parity.json` cover the module, CLI, archive sidecar, and renderer-resident mapping.
+- Full Phase 1 validation: `artifacts/validation/fractal_viewport_phase1_full_native_final.json`, `fractal_viewport_phase1_publish.json`, and `fractal_viewport_phase1_runtime.json` prove the completed native suite, published build, and published-runtime CLI.
 - PR and clean-tree proof: pending.
 - Slice lock: `ck:ae7df1e6`; `fractal_catalog_viewport_continuity_v1` is the active locked contract.
 - Phase 0 proof: contract validator, phased-plan sync, 43 workflow-tool tests, and `git diff --check` passed.
@@ -254,14 +254,17 @@ Audit questions:
 
 ## Audit Passes
 
-- [x] Pass 1 - hostile contract and authority audit found the inherited-contract successor bootstrap gap and confirmed exact clean master, current rearward approval, live catalog ownership, and renderer mapping ownership.
-- [x] Pass 2 - re-read the repaired state and confirmed the contract excludes formulas, rendering behavior, state semantics, parameter applicability, Color Pipeline behavior, taxonomy changes, and state-tool edits.
-- [x] Pass 3 - a second clean re-read found no additional workflow mistake; the inherited contract is restored byte-for-byte and the new contract is locked.
+- [x] Pass 1 - hostile implementation and renderer-parity audit after Phase 1 GREEN.
+- [x] Pass 2 - re-read the repaired state after the first real Phase 1 finding and confirmed the archive-sidecar ownership fix.
+- [x] Pass 3 - no additional workflow mistake found in the final clean re-audit before the Phase 1 checkpoint.
 
 ## Audit Findings
 
 - [x] The inherited active contract did not authorize creation of its successor plan/contract. A minimal contract-only bootstrap temporarily authorized the two exact successor paths, the successor contract was locked, and the inherited file was restored with no lingering diff.
 - [x] The plan ties completion to live catalog coverage rather than treating the preflight count of 51 as a permanent hard-coded taxonomy.
+- [x] The first capture integration wrote viewport facts after the archive script, which could leave a published finding whose metadata omitted the required sidecar. The repair now generates the exact bytes before archival and passes them through the established archive transaction, metadata, and readable artifact list.
+- [x] The first shared mapping refactor used a higher-precision degree conversion and removed the renderer's center-add/subtract operation order. Although mathematically cleaner, both could change rotated or deep-zoom pixels. The final shared mapping preserves the historical `CUDART_PI_F / 180.0f` value, rotation branch, and arithmetic order exactly; the renderer-resident rail remains green.
+- [x] The active contract initially omitted the existing Reality Toolkit archive paths required by the accepted finding-sidecar contract. The contract was revised narrowly to include `tools/reality_toolkit`, revalidated, and explicitly re-locked before those paths changed.
 
 ## Notes
 

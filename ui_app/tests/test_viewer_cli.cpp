@@ -273,6 +273,55 @@ static void TestDescribeFractalCatalogJsonMissingValue() {
     Check(ParseViewerCli(Args({"--describe-fractal-catalog-json"}), &cli) != 0, "TestDescribeFractalCatalogJsonMissingValue_Fails");
 }
 
+static void TestDescribeViewportFacts() {
+    ViewerCliArgs cli{};
+    const int rc = ParseViewerCli(Args({
+        "--describe-viewport-facts",
+        "--load-state-json", "state.json",
+    }), &cli);
+    Check(rc == 0, "TestDescribeViewportFacts_ReturnCode");
+    Check(cli.describe_viewport_facts, "TestDescribeViewportFacts_Flag");
+    Check(cli.have_load_state_json && cli.load_state_json == "state.json", "TestDescribeViewportFacts_LoadState");
+    Check(ValidateViewerCliModeConflicts(cli), "TestDescribeViewportFacts_ModeValid");
+}
+
+static void TestDescribeViewportFactsJson() {
+    ViewerCliArgs cli{};
+    const int rc = ParseViewerCli(Args({
+        "--describe-viewport-facts-json", "viewport.json",
+        "--load-state-json", "state.json",
+    }), &cli);
+    Check(rc == 0, "TestDescribeViewportFactsJson_ReturnCode");
+    Check(cli.have_describe_viewport_facts_json, "TestDescribeViewportFactsJson_Have");
+    Check(cli.describe_viewport_facts_json_path == "viewport.json", "TestDescribeViewportFactsJson_Path");
+    Check(ValidateViewerCliModeConflicts(cli), "TestDescribeViewportFactsJson_ModeValid");
+}
+
+static void TestDescribeViewportFactsRequiresLoadedState() {
+    ViewerCliArgs cli{};
+    Check(ParseViewerCli(Args({"--describe-viewport-facts"}), &cli) == 0,
+        "TestDescribeViewportFactsRequiresLoadedState_Parse");
+    Check(!ValidateViewerCliModeConflicts(cli),
+        "TestDescribeViewportFactsRequiresLoadedState_ModeInvalid");
+}
+
+static void TestDescribeViewportFactsJsonMissingValue() {
+    ViewerCliArgs cli{};
+    Check(ParseViewerCli(Args({"--describe-viewport-facts-json"}), &cli) != 0,
+        "TestDescribeViewportFactsJsonMissingValue_Fails");
+}
+
+static void TestDescribeViewportFactsConflictsWithOtherHeadlessModes() {
+    ViewerCliArgs cli{};
+    Check(ParseViewerCli(Args({
+        "--describe-viewport-facts",
+        "--load-state-json", "state.json",
+        "--describe-fractal-catalog",
+    }), &cli) == 0, "TestDescribeViewportFactsConflictsWithOtherHeadlessModes_Parse");
+    Check(!ValidateViewerCliModeConflicts(cli),
+        "TestDescribeViewportFactsConflictsWithOtherHeadlessModes_ModeInvalid");
+}
+
 static void TestExploreRecommendJson() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({
@@ -820,6 +869,11 @@ int main() {
     TestDescribeFractalCatalog();
     TestDescribeFractalCatalogJson();
     TestDescribeFractalCatalogJsonMissingValue();
+    TestDescribeViewportFacts();
+    TestDescribeViewportFactsJson();
+    TestDescribeViewportFactsRequiresLoadedState();
+    TestDescribeViewportFactsJsonMissingValue();
+    TestDescribeViewportFactsConflictsWithOtherHeadlessModes();
     TestLoadStateJson();
     TestApplyLoadedColorPipelineDraftParsesWithLoadedState();
     TestApplyLoadedColorPipelineDraftRequiresLoadedState();

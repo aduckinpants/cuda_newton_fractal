@@ -65,6 +65,10 @@ int RunDescribeParameterSurfaceMode(bool toStdout, const std::string& jsonPath,
 int RunDescribeFractalCatalogMode(bool toStdout, const std::string& jsonPath);
 
 // Returns 0 on success, 1 on error.
+int RunDescribeViewportFactsMode(bool toStdout, const std::string& jsonPath,
+    const ViewState& view, const RenderSettings& render);
+
+// Returns 0 on success, 1 on error.
 int RunDescribeExplainoAxisRegistryMode(bool toStdout, const std::string& jsonPath);
 
 // Returns 0 on success, 1 on error.

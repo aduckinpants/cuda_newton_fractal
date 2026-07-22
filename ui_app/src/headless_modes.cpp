@@ -26,6 +26,7 @@
 #include "explaino_sidecar_window.h"
 #include "enum_id_utils.h"
 #include "fractal_descriptive_catalog.h"
+#include "fractal_viewport_facts.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "fractal_parameter_surface_descriptor.h"
@@ -1045,6 +1046,39 @@ int RunDescribeFractalCatalogMode(bool toStdout, const std::string& jsonPath) {
             std::fprintf(stderr, "%s\n", error.c_str());
             return 1;
         }
+    }
+    return 0;
+}
+
+int RunDescribeViewportFactsMode(bool toStdout, const std::string& jsonPath,
+                                 const ViewState& view, const RenderSettings& render) {
+    if (!toStdout && jsonPath.empty()) {
+        std::fprintf(stderr, "describe-viewport-facts mode requires an output sink\n");
+        return 1;
+    }
+    std::string json;
+    std::string error;
+    if (!BuildFractalViewportFactsJson(view, render, &json, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+    if (toStdout) {
+        if (_setmode(_fileno(stdout), _O_BINARY) == -1) {
+            std::fprintf(stderr, "failed to set viewport facts stdout to binary mode\n");
+            return 1;
+        }
+        if (std::fwrite(json.data(), 1, json.size(), stdout) != json.size()) {
+            std::fprintf(stderr, "failed to write viewport facts JSON to stdout\n");
+            return 1;
+        }
+        if (std::fflush(stdout) != 0) {
+            std::fprintf(stderr, "failed to flush viewport facts JSON to stdout\n");
+            return 1;
+        }
+    }
+    if (!jsonPath.empty() && !WriteFractalViewportFactsJsonFile(jsonPath, view, render, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
     }
     return 0;
 }
