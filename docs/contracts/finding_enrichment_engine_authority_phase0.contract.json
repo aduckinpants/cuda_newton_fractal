@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "contract_id": "finding_enrichment_engine_authority_phase0",
+  "feature_id": "finding_enrichment_engine_authority_v1",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/finding_enrichment_engine_authority_v1_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes",
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "exact clean engine master at 09d5664b77116b716f83dd8df1085e88596498d0",
+    "state-tool finding enrichment review with external feedback classified as advisory",
+    "current engine sampler callable and runtime source traces",
+    "published runtime executable hash with explicit source provenance limitation"
+  ],
+  "forbidden_operator_prompts": [
+    "start product mutation during Phase 0",
+    "treat current source behavior as proven in an unversioned published executable",
+    "build a Rational Escape-only enrichment architecture",
+    "implement or model nonzero ExplainO warp",
+    "move solving annotations caching mosaics disclosure or packet prose into the engine",
+    "merge an engine pull request without separate user approval"
+  ],
+  "required_defaults": {
+    "phase0_scope": "planning_contract_and_provenance_only",
+    "provider_architecture": "slotted_with_common_subset",
+    "warp_policy": "zero_required_otherwise_unavailable",
+    "source_binary_claims_separated": true,
+    "annotation_record_render_receipt_separated": true,
+    "disclosure_outside_analysis_identity": true,
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "product_code_mutation": "forbidden",
+    "packet_binary_inference_from_source": "forbidden",
+    "rational_escape_one_off_provider": "forbidden",
+    "nonzero_warp_fixture": "forbidden",
+    "engine_owned_presentation_or_disclosure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/finding_enrichment_engine_authority_phase0.contract.json --out-json artifacts/validation/finding_enrichment_engine_authority_phase0_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_phase0_contract_tests --log artifacts/logs/finding_enrichment_phase0_contract_tests.log --out-json artifacts/validation/finding_enrichment_phase0_contract_tests.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 -m pytest tests/test_viewer_host_contract_tools.py tests/test_viewer_host_contract_proof.py -k \"not test_validate_fits_contract_passes_on_repo_defaults and not test_fractal_parameter_surface_contract_requires_all44_scope\"",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_phase0_diff_check --log artifacts/logs/finding_enrichment_phase0_diff_check.log --out-json artifacts/validation/finding_enrichment_phase0_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/finding_enrichment_engine_authority_v1_PHASED_PLAN.md --out-json artifacts/validation/finding_enrichment_engine_authority_phase0_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "phase0_contract_schema_valid",
+      "description": "The finding-enrichment Phase 0 workflow-only contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_engine_authority_phase0_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "phase0_hostile_audit_ok",
+      "description": "The planning checkpoint hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_engine_authority_phase0_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
