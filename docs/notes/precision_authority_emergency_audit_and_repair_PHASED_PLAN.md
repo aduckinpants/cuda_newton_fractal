@@ -360,6 +360,9 @@ Forbidden without a new user-approved plan:
 - Phase 4 contract: `docs/contracts/precision_authority_promotion_review_p4.contract.json`; slice checkpoint token `ck:8166a250`.
 - Phase 4 decision: `NO_PRECISION_PROMOTION_AUTHORIZED`; six candidate classes were joined to the current inventory and none satisfied every reproducible-defect, compatibility, benefit, measurement, and published-replay gate.
 - Phase 4 product mutation: none. The combined ExplainO seed fraction and float parameters consumed inside float64 branches remain explicitly reopenable only through a new family-specific defect witness.
+- Phase 5 contract: `docs/contracts/precision_authority_final_qualification_p5.contract.json`; slice checkpoint token `ck:973a005f`.
+- Phase 5 pre-publication focused proof: 12 inventory and promotion-court tests pass.
+- Phase 5 full native qualification: all helper tests pass from the unchanged product sources before the clean publication checkpoint.
 
 ## Hostile Audit
 
@@ -406,6 +409,7 @@ Audit questions:
 - [x] Pass 26 - hostile review rejected the overbroad claim that current non-promotion proves binary32 universally sufficient; the report now says only that current evidence authorizes no widening and defines a bounded re-entry gate.
 - [x] Pass 27 - hostile review separated truthful float64 recurrence execution from parameter storage width; float parameters consumed by double branches remain deferred pending a family-specific parameter-resolution defect rather than promoted by label analogy.
 - [x] Pass 28 - final decision-ledger, inventory join, contract, plan-sync, code-quality, and diff re-read found no additional Phase 4 defect and no product mutation.
+- [x] Pass 29 - the first Phase 5 contract patch declared too few added lines and produced truncated JSON; validation blocked slice start, the contract was repaired before locking, and focused plus full-native qualification then passed without product mutation.
 
 ## Audit Findings
 
@@ -432,6 +436,7 @@ Audit questions:
 - [x] A caller timeout can outlive an owned compiler child. Concurrent publication artifacts are invalid evidence; exact owned trees were cleaned and the canonical proof is the later single-owner clean rerun only.
 - [x] A no-promotion decision can become a false universal sufficiency claim. The Phase 4 report is checkpoint-relative, preserves deferred candidates, and requires a new bounded witness before future mutation.
 - [x] Float64 execution truth does not imply every participating parameter must be stored as double. Parameter-width promotion remains a separate evidence question with compatibility and performance costs.
+- [x] Contract generation is not self-proving: the first Phase 5 patch truncated the final assertion object, and the contract validator correctly prevented it from becoming active until repaired.
 
 ## Notes
 

@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "contract_id": "precision_authority_final_qualification_p5",
+  "feature_id": "precision_authority_emergency_audit_and_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean reviewed Phase 4 checkpoint fc17c713d8237f2cd9ebb50e0c6f2e7741d68afb",
+    "complete Phase 1 through Phase 4 precision proof ledger",
+    "published runtime at D:/salt-fractal/cuda_newton_fractal_clone/runtime",
+    "provisional ui.salt reality-contact documentation in its separately governed repository"
+  ],
+  "forbidden_operator_prompts": [
+    "change engine product source during final qualification",
+    "promote storage or arithmetic without a new approved defect witness",
+    "repair nonzero ExplainO warp",
+    "modify state-tool files",
+    "treat provisional ui.salt examples as runtime authority",
+    "merge the engine branch"
+  ],
+  "required_defaults": {
+    "engine_product_mutation_authorized": false,
+    "published_runtime_rebuilt_from_exact_checkpoint": true,
+    "all_precision_runtime_witnesses_required": true,
+    "external_reality_contact_is_design_evidence_only": true,
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "speculative_precision_promotion": "forbidden",
+    "cross_repository_dirty_overlap": "forbidden",
+    "ui_salt_runtime_dependency": "forbidden",
+    "engine_merge": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/precision_authority_final_qualification_p5.contract.json --out-json artifacts/validation/precision_authority_final_qualification_p5_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p5_focused --log artifacts/logs/precision_authority_p5_focused.log --out-json artifacts/validation/precision_authority_p5_focused.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_precision_authority_inventory.py tests/test_precision_authority_promotion_review.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p5_full_native --log artifacts/logs/precision_authority_p5_full_native.log --out-json artifacts/validation/precision_authority_p5_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p5_runtime_publish --log artifacts/logs/precision_authority_p5_runtime_publish.log --out-json artifacts/validation/precision_authority_p5_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p5_runtime_truth --log artifacts/logs/precision_authority_p5_runtime_truth.log --out-json artifacts/validation/precision_authority_p5_runtime_truth.json --heartbeat-seconds 30 --timeout-seconds 2400 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_precision_tier_truth.py tests/test_fractal_runtime_state_io_precision_authority.py tests/test_fractal_runtime_color_pipeline_precision_authority.py tests/test_fractal_runtime_general_float_authoring_identity.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/precision_authority_p5_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p5_diff_check --log artifacts/logs/precision_authority_p5_diff_check.log --out-json artifacts/validation/precision_authority_p5_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md --out-json artifacts/validation/precision_authority_final_qualification_p5_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "precision_authority_p5_contract_schema_valid",
+      "description": "The final qualification contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_final_qualification_p5_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p5_full_native_passed",
+      "description": "The complete native helper-test rail passes on the final branch.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_p5_full_native.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p5_runtime_publish_passed",
+      "description": "The runtime is rebuilt and published from the final branch checkpoint.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_p5_runtime_publish.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p5_runtime_truth_passed",
+      "description": "All four published-runtime precision authority witnesses pass together.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_p5_runtime_truth.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p5_hostile_audit_ok",
+      "description": "The final hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_final_qualification_p5_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
