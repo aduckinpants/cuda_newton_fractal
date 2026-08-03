@@ -26,6 +26,8 @@
 #include "explaino_sidecar_window.h"
 #include "enum_id_utils.h"
 #include "fractal_descriptive_catalog.h"
+#include "fractal_active_model.h"
+#include "file_sha256.h"
 #include "fractal_viewport_facts.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
@@ -1046,6 +1048,50 @@ int RunDescribeFractalCatalogMode(bool toStdout, const std::string& jsonPath) {
             std::fprintf(stderr, "%s\n", error.c_str());
             return 1;
         }
+    }
+    return 0;
+}
+
+int RunDescribeActiveFractalModelMode(
+    bool toStdout,
+    const std::string& jsonPath,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const std::string& stateJsonPath,
+    const std::string& runtimeExecutablePath) {
+    if (!toStdout && jsonPath.empty()) {
+        std::fprintf(stderr, "describe-active-fractal-model mode requires an output sink\n");
+        return 1;
+    }
+    ActiveFractalModelReceiptContext context;
+    std::string error;
+    if (!ComputeFileSha256Hex(stateJsonPath, &context.state_json_sha256, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+    if (!ComputeFileSha256Hex(runtimeExecutablePath, &context.runtime_executable_sha256, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+    std::string json;
+    if (!BuildActiveFractalModelReceiptJson(view, params, render, context, &json, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+    if (toStdout) {
+        if (_setmode(_fileno(stdout), _O_BINARY) == -1) {
+            std::fprintf(stderr, "failed to set active-model receipt stdout to binary mode\n");
+            return 1;
+        }
+        if (std::fwrite(json.data(), 1, json.size(), stdout) != json.size() || std::fflush(stdout) != 0) {
+            std::fprintf(stderr, "failed to write active-model receipt JSON to stdout\n");
+            return 1;
+        }
+    }
+    if (!jsonPath.empty() && !WriteActiveFractalModelReceiptJsonFile(jsonPath, json, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
     }
     return 0;
 }

@@ -273,6 +273,30 @@ static void TestDescribeFractalCatalogJsonMissingValue() {
     Check(ParseViewerCli(Args({"--describe-fractal-catalog-json"}), &cli) != 0, "TestDescribeFractalCatalogJsonMissingValue_Fails");
 }
 
+static void TestDescribeActiveFractalModel() {
+    ViewerCliArgs cli;
+    Check(ParseViewerCli(Args({"--load-state-json", "state.json", "--describe-active-fractal-model"}), &cli) == 0,
+          "TestDescribeActiveFractalModel_ReturnCode");
+    Check(cli.describe_active_fractal_model, "TestDescribeActiveFractalModel_Flag");
+    Check(ValidateViewerCliModeConflicts(cli), "TestDescribeActiveFractalModel_ModeValid");
+}
+
+static void TestDescribeActiveFractalModelRequiresState() {
+    ViewerCliArgs cli;
+    Check(ParseViewerCli(Args({"--describe-active-fractal-model"}), &cli) == 0,
+          "TestDescribeActiveFractalModelRequiresState_Parse");
+    Check(!ValidateViewerCliModeConflicts(cli), "TestDescribeActiveFractalModelRequiresState_Conflict");
+}
+
+static void TestDescribeActiveFractalModelJson() {
+    ViewerCliArgs cli;
+    Check(ParseViewerCli(Args({"--load-state-json", "state.json", "--describe-active-fractal-model-json", "receipt.json"}), &cli) == 0,
+          "TestDescribeActiveFractalModelJson_ReturnCode");
+    Check(cli.have_describe_active_fractal_model_json, "TestDescribeActiveFractalModelJson_Have");
+    Check(cli.describe_active_fractal_model_json_path == "receipt.json", "TestDescribeActiveFractalModelJson_Path");
+    Check(ValidateViewerCliModeConflicts(cli), "TestDescribeActiveFractalModelJson_ModeValid");
+}
+
 static void TestDescribeViewportFacts() {
     ViewerCliArgs cli{};
     const int rc = ParseViewerCli(Args({
@@ -869,6 +893,9 @@ int main() {
     TestDescribeFractalCatalog();
     TestDescribeFractalCatalogJson();
     TestDescribeFractalCatalogJsonMissingValue();
+    TestDescribeActiveFractalModel();
+    TestDescribeActiveFractalModelRequiresState();
+    TestDescribeActiveFractalModelJson();
     TestDescribeViewportFacts();
     TestDescribeViewportFactsJson();
     TestDescribeViewportFactsRequiresLoadedState();

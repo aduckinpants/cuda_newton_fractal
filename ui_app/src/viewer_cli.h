@@ -19,6 +19,7 @@ struct ViewerCliArgs {
     bool describe_functions = false;
     bool describe_parameter_surface = false;
     bool describe_fractal_catalog = false;
+    bool describe_active_fractal_model = false;
     bool describe_viewport_facts = false;
     bool describe_explaino_axis_registry = false;
     bool validate_ui_salt_contract = false;
@@ -53,6 +54,10 @@ struct ViewerCliArgs {
     // Describe fractal catalog
     bool have_describe_fractal_catalog_json = false;
     std::string describe_fractal_catalog_json_path;
+
+    // Describe the active state-bound mathematical model.
+    bool have_describe_active_fractal_model_json = false;
+    std::string describe_active_fractal_model_json_path;
 
     // Describe exact viewport geometry for one loaded state
     bool have_describe_viewport_facts_json = false;
@@ -186,6 +191,7 @@ inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool describeParameterSurface = cli.describe_parameter_surface || cli.have_describe_parameter_surface_json;
     const bool describeFractalCatalog = cli.describe_fractal_catalog || cli.have_describe_fractal_catalog_json;
+    const bool describeActiveFractalModel = cli.describe_active_fractal_model || cli.have_describe_active_fractal_model_json;
     const bool describeViewportFacts = cli.describe_viewport_facts || cli.have_describe_viewport_facts_json;
     const bool describeExplainoAxisRegistry = cli.describe_explaino_axis_registry || cli.have_describe_explaino_axis_registry_json;
     const bool validateUiSaltContract = cli.validate_ui_salt_contract || cli.have_ui_salt_contract_json || cli.have_ui_salt_contract_report_json;
@@ -210,6 +216,12 @@ inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
     if (describeViewportFacts && (!cli.have_load_state_json || viewportStateMutation ||
             cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only ||
             exploreRecommend || describeParameterSurface || describeFractalCatalog ||
+            describeExplainoAxisRegistry || validateUiSaltContract || flashlightProbe ||
+            runtimeWalk || runtimeWalkViewer || cli.sample_session || cli.any_sample_mode_arg ||
+            cli.describe_functions || cli.have_describe_functions_json)) return false;
+    if (describeActiveFractalModel && (!cli.have_load_state_json || viewportStateMutation ||
+            cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only ||
+            exploreRecommend || describeParameterSurface || describeFractalCatalog || describeViewportFacts ||
             describeExplainoAxisRegistry || validateUiSaltContract || flashlightProbe ||
             runtimeWalk || runtimeWalkViewer || cli.sample_session || cli.any_sample_mode_arg ||
             cli.describe_functions || cli.have_describe_functions_json)) return false;

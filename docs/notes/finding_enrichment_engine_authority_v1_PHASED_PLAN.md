@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 1 / E0 is complete at product checkpoint `bdbffea018485aeaf69ca1a50bbfd81caf561d74`. The published runtime was rebuilt from that exact clean checkpoint and its tracked Rational Escape witness passed. E1 remains deferred pending explicit user review and authorization.
+Phase 3 / E2 implementation and qualification are complete on `codex/finding-enrichment-engine-authority-e1-e2`. The branch is ready for its clean product checkpoint and pull request. Engine merge remains separately unauthorized; Phase 4 begins only after explicit user merge approval.
 
 ## Phase Checklist
 
 - [x] Phase 0 - lock this engine-native campaign plan, record source-to-binary provenance status, validate the planning contract, checkpoint, push, and stop for review.
 - [x] Phase 1 / E0 - repair Rational Escape numeric truth in the canonical device sampler with controlled float32/float64 evidence.
-- [ ] Phase 2 / E1 - make the shipped callable sampling route use the canonical CUDA sampling owner and classify any retained compatibility route explicitly.
-- [ ] Phase 3 / E2 - add a deterministic state-bound active-model receipt and bounded canonical point evaluation for supported model providers.
+- [x] Phase 2 / E1 - make the shipped callable sampling route use the canonical CUDA sampling owner and classify any retained compatibility route explicitly.
+- [x] Phase 3 / E2 - add a deterministic state-bound active-model receipt and bounded canonical point evaluation for supported model providers.
 - [ ] Phase 4 - merge under separate authorization, publish from exact merged master, and produce the engine-to-tool handoff.
 - [ ] Phase 5 / E3 - only under a later approved plan, add diagnostic-channel rendering required by a full diagnostic mosaic.
 
@@ -26,10 +26,10 @@ Phase 1 / E0 is complete at product checkpoint `bdbffea018485aeaf69ca1a50bbfd81c
 ## Starting Authority
 
 - Repository: `C:\code\cuda_newton_fractal_clone`
-- Branch: `codex/finding-enrichment-engine-authority-v1`
-- Exact starting commit: `09d5664b77116b716f83dd8df1085e88596498d0`
-- Starting base: exact clean `master`, equal to `origin/master`
-- Rearward review: `artifacts/hooks/viewer_host_rearward_review/09d5664b77116b716f83dd8df1085e88596498d0.json` reports `ok`.
+- Branch: `codex/finding-enrichment-engine-authority-e1-e2`
+- Exact E2 starting commit: `379421cb389478f65444a8cc46886472e35aa20a`
+- Starting base: exact clean E1 product checkpoint on the current branch.
+- Rearward review: `artifacts/hooks/viewer_host_rearward_review/379421cb389478f65444a8cc46886472e35aa20a.json` reports `ok`.
 - Published executable inspected during Phase 0: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`
 - Published executable SHA-256 observed during Phase 0: `ae329398693a5872faced0fa6f9cf57868788fc975b07ece5150954ac4face78`
 - The executable has no embedded file or product version and no colocated commit receipt was found. Its exact source commit is therefore unproven until an exact-head rebuild/publication receipt is produced.
@@ -148,9 +148,16 @@ E1 is merged and published before a production state-tool provider may consume c
 
 Expose a deterministic, state-bound model receipt plus bounded evaluation requests without making the engine responsible for analysis presentation.
 
-### Candidate public surface
+### Locked public surface
 
-The engine-native implementation plan must lock exact CLI/API spelling after current CLI convention review. The accepted semantics are:
+E2 adds the following headless modes, following the existing deterministic stdout/file convention:
+
+```text
+fractal_ui.exe --load-state-json <path> --describe-active-fractal-model
+fractal_ui.exe --load-state-json <path> --describe-active-fractal-model-json <path>
+```
+
+Both modes require a complete loaded state. Stdout emits only deterministic UTF-8 JSON; diagnostics use stderr. File mode writes identical JSON bytes using the closest existing same-directory temporary-file and replacement convention. The accepted semantics are:
 
 ```text
 complete loaded state
@@ -160,6 +167,8 @@ complete loaded state
 complete loaded state + bounded point list
 -> canonical evaluation evidence bound to the same provider and runtime
 ```
+
+The bounded evaluation surface remains the E1 `fractal.sample` operation. E2 does not add another evaluator. Runtime qualification binds an active-model receipt and `fractal.sample` evidence to the same exact loaded state and running executable; the downstream tool must retain and verify those identities together.
 
 ### Common receipt envelope
 
@@ -172,17 +181,21 @@ complete loaded state + bounded point list
 - provider-specific payload;
 - deterministic fixed ordering and no volatile machine-local fields.
 
+The exact state binding is SHA-256 over the resolved `state.json` bytes. The runtime binding is SHA-256 over the running executable bytes. Paths, timestamps, branch names, commit timestamps, and machine identity are not serialized into the receipt.
+
 ### Rational Escape provider
 
 Initial provider ID: `polynomial_over_power_escape.v1`.
 
-It may expose:
+It exposes only currently participating authority:
 
 - real polynomial coefficients in declared order;
 - denominator power after the engine's existing clamp semantics;
-- escape radius, epsilon, iteration cap, and other actually participating values;
+- the denominator power after the existing clamp, iteration cap, pole threshold, escape-radius threshold, and other actually participating values;
 - canonical critical or singular points only when mechanically implied by the active model;
 - explicit unsupported status when warp is nonzero.
+
+The provider does not expose serialized epsilon as recurrence authority when the canonical Rational Escape recurrence does not use it.
 
 It must not solve orbit equations, infer visible feature identity, place annotations, choose camera moves, or claim that a canonical point caused a visible pixel feature.
 
@@ -307,6 +320,20 @@ The campaign does not authorize engine merge. At the end of each implementation 
 - E0 exact-checkpoint publication: `finding_enrichment_e0_runtime_publish_exact_checkpoint.json` records a successful build and publish from the clean product checkpoint; the published executable SHA-256 is `240987082532e8e7fbd9676f06b1314ed1bbdab3d8d6007bdc99fba249e42c83`.
 - E0 published runtime: `finding_enrichment_e0_runtime_truth_exact_checkpoint.json` passes the tracked zero-warp Rational Escape fixture against that exact-checkpoint executable with deterministic, distinct float32/float64 frames.
 - E0 raw witness: `.local/finding_enrichment_e0/postchange_b550c769/runtime-witness.json` records float32 frame continuity `8290c8cf...e046ebd == 8290c8cf...e046ebd` and controlled tier hashes `cc92e38c...743c9bb` versus `d989246a...e873439`.
+- E1 product checkpoint: `379421cb389478f65444a8cc46886472e35aa20a` (`Use canonical CUDA sampling for fractal.sample`).
+- E1 publication: the exact clean checkpoint produced published executable SHA-256 `89a7570d82cbe5312571c6f311d4b4f16ab2a45b419ace4b36a2dff7ae836aac`.
+- E1 focused and full native rails passed; the runtime lane passed the canonical callable-sampling, probe CLI, and session compatibility corpus.
+- E1 ownership result: the public `fractal.sample` route batches concrete sequence members through `SampleFractalEvidencePoints`; the duplicated host recurrence table was removed rather than retained as compatibility authority.
+- E1 arithmetic disclosure: additive `runtime.iteration_arithmetic` is projected from actual per-sample evidence as `float32`, `float64`, or `mixed`; requested tier is not treated as executed truth.
+- E1 rearward review for `379421cb389478f65444a8cc46886472e35aa20a` reports `ok`; the state-tool repository remained clean and untouched.
+- E2 planning contract: `docs/contracts/finding_enrichment_active_model_e2.contract.json` locks the deterministic active-model CLI, exact state/runtime binding, static provider slot, zero-warp availability rule, canonical E1 evaluation reuse, and mandatory native/runtime/publication rails.
+- E2 focused RED: `artifacts/validation/finding_enrichment_e2_red_native.json` records the expected missing `file_sha256` implementation/header failure before product code existed.
+- E2 focused GREEN: `artifacts/validation/finding_enrichment_e2_focused_native.json` passes exact SHA-256 vectors, deterministic active-model provider/receipt/file semantics, and 256 viewer CLI assertions.
+- E2 full native: `artifacts/validation/finding_enrichment_e2_full_native.json` records the complete helper suite passing after the standalone `test_headless_modes` link recipe was corrected to include the new owners.
+- E2 published runtime: `artifacts/validation/finding_enrichment_e2_runtime_publish.json` records a successful build and publication to the regular runtime path; executable SHA-256 is `df1bb7105ca95ae8646d80a70abd050fb095a5e7e39b0ec915fdd7979a7acd33`.
+- E2 runtime truth: `artifacts/validation/finding_enrichment_e2_runtime_truth.json` passes deterministic repeated/file-equivalent receipts, exact state/executable hashes, explicit unsupported states, and a canonical `fractal.sample` call bound to the same state/runtime authority.
+- E2 provider architecture: one static descriptor registry owns provider match, availability, version, and payload emission; the first slot is `polynomial_over_power_escape.v1` and exact nonzero warp remains unavailable.
+- E2 public boundary: the receipt names `fractal.sample` as evaluation authority and adds no second recurrence evaluator, solver, annotation, cache, disclosure, or packet surface.
 
 ## Hostile Audit
 
@@ -334,6 +361,12 @@ Audit questions:
 - [x] Pass 5 - re-read the repaired E0 state after focused and full native GREEN; no additional real defect was found in enum consumers or canonical sampler ownership.
 - [x] Pass 6 - clean re-read of published-runtime evidence confirmed the inert 729x fixture was not forced and the tracked 2^16 zoom fixture proves deterministic tier separation.
 - [x] Pass 7 - rebuilt and published from exact clean product checkpoint `bdbffea018485aeaf69ca1a50bbfd81caf561d74`, hashed the deployed executable, and reran the tracked runtime witness successfully.
+- [x] Pass 8 - reviewed the E1 route convergence and confirmed the public callable surface delegates to the canonical CUDA owner without a retained host formula table.
+- [x] Pass 9 - reviewed the E2 public contract and kept provider selection, exact state/runtime binding, and recurrence identity in the engine while leaving solving, annotation, cache, disclosure, and packet prose tool-owned.
+- [x] Pass 10 - clean re-read of the E2 planning state confirmed nonzero warp remains a simple unavailable result, unsupported families remain explicit, and no second evaluation surface or merge authority was introduced.
+- [x] Pass 11 - reviewed the focused E2 implementation diff for deterministic identity binding, provider isolation, truthful participating fields, and file-output behavior.
+- [x] Pass 12 - clean re-read after focused and full native GREEN plus published-runtime qualification recorded the standalone headless-test link omission and its bounded repair; no further real defect was found.
+- [x] Pass 13 - final clean re-read of the product checkpoint candidate and engine-to-tool handoff boundary confirmed no merge authority or tool-side work leaked into E2.
 
 ## Audit Findings
 
@@ -348,10 +381,16 @@ Audit questions:
 - [x] Building the runtime fixture from a generic ExplainO baseline produced an invalid Rational Escape state. The repair promotes the exact zero-warp capture state into `tests/fixtures/rational_escape_numeric_truth_v1/state.json`; production does not depend on the external capture path.
 - [x] The pre-change binary normalized a loaded `fast` state to `standard`, confirming the Phase 0 source-to-binary provenance warning. Float32 continuity is therefore proven with the old and new binaries' shared default low-zoom command, not by pretending that loaded-state comparison was authoritative.
 - [x] E0 changes only the canonical device sampler and shared termination serialization. The duplicated host `SamplePoint` implementation remains unchanged and explicitly deferred to E1.
+- [x] E1 removed the duplicated host recurrence implementation and preserved request, sequence, grid, NDJSON, and session transport behavior through the compatibility corpus.
+- [x] During E2 bootstrap the completed E1 contract was briefly expanded to name the successor plan directory, then restored byte-for-byte after the E2 contract lock. One failed first attempt named the not-yet-present E2 contract path; it changed no product file and the corrected bootstrap added only the existing `docs/contracts` directory before successor creation.
+- [x] E2 reuses `fractal.sample` for canonical bounded evaluation. The active-model receipt names and binds the exact state and executable; runtime tests must prove receipt and evaluation are produced from that same authority rather than claiming a new provider-specific evaluator.
+- [x] The first full native E2 run found that the standalone `test_headless_modes` link recipe omitted `file_sha256.cpp`, `fractal_active_model.cpp`, and `bcrypt.lib`. The runtime and focused owners were already correct. The bounded build-owner repair was applied, the exact earlier failure point passed, and the complete native suite then passed.
+- [x] A single provider ID array plus hardcoded branching would not have been a truthful slotted architecture. Before closure, E2 was tightened to a static descriptor registry whose entries own matching, availability, version, and payload emission; the public schema remained unchanged.
 
 ## Notes
 
 - The state-tool repository remains clean and untouched during engine planning and implementation.
-- E0 was explicitly authorized after Phase 0 review and is complete. The next approved boundary is user review; E1 product mutation is not authorized by this checkpoint.
-- On 2026-08-02 the user authorized a separate emergency precision-authority successor campaign. E1 remains deferred; the successor begins with a system-wide precision inventory rather than callable-sampling mutation.
+- E0 and E1 are complete. On 2026-08-03 the user approved continuing the planned repair and enhancement campaign through E2 and the later state-tool manual-review gate.
+- E2 product mutation begins only after this successor contract is checked in, validated, and activated through the repository's native slice machinery.
+- E2 implementation is complete and qualified. The next boundary is a clean pushed engine pull request followed by separate user merge authorization. State-tool mutation remains blocked until authorized merge and exact merged-master publication.
 - No CUDA engine merge is authorized by this plan or by approval to implement E0.

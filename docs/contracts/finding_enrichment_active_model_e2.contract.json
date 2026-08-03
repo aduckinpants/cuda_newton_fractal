@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "contract_id": "finding_enrichment_active_model_e2",
+  "feature_id": "finding_enrichment_engine_authority_v1",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/finding_enrichment_engine_authority_v1_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/finding_enrichment_engine_authority_v1_PHASED_PLAN.md",
+    "docs/contracts/finding_enrichment_active_model_e2.contract.json",
+    "docs/contracts/finding_enrichment_canonical_callable_sampling_e1.contract.json",
+    "docs/callable_engine_surface.md",
+    "docs/callable_engine_fractal_sample_cheatsheet.md",
+    "ui_app/src",
+    "ui_app/src/fractal_probe_contract.cpp",
+    "ui_app/src/fractal_probe_contract.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/headless_modes.cpp",
+    "ui_app/src/headless_modes.h",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_cli.cpp",
+    "ui_app/src/viewer_cli.h",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/tests",
+    "ui_app/tests/test_fractal_probe.cpp",
+    "ui_app/tests/test_fractal_probe_contract.cpp",
+    "ui_app/tests/test_headless_modes.cpp",
+    "ui_app/tests/test_viewer_cli.cpp",
+    "tests",
+    "tests/test_fractal_runtime_canonical_callable_sampling.py",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean E1 checkpoint 379421cb389478f65444a8cc46886472e35aa20a with rearward status ok",
+    "published E1 runtime executable SHA-256 89a7570d82cbe5312571c6f311d4b4f16ab2a45b419ace4b36a2dff7ae836aac",
+    "canonical SampleFractalEvidencePoints and fractal.sample evaluation surface",
+    "tracked zero-warp Rational Escape state fixture",
+    "state-tool repository clean and untouched"
+  ],
+  "forbidden_operator_prompts": [
+    "add a second recurrence evaluator or solver",
+    "move analytic solving annotations caches mosaics disclosure or packet prose into the engine",
+    "implement or model nonzero ExplainO warp",
+    "force unsupported fractal families through Rational Escape vocabulary",
+    "add diagnostic channels or rendered overlays",
+    "change state JSON rendering Color Pipeline or parameter applicability",
+    "merge the engine pull request without separate user approval"
+  ],
+  "required_defaults": {
+    "receipt_cli_stdout": "--describe-active-fractal-model",
+    "receipt_cli_file": "--describe-active-fractal-model-json",
+    "state_input": "--load-state-json",
+    "provider_id": "polynomial_over_power_escape.v1",
+    "provider_version": 1,
+    "provider_registry": "static_slotted",
+    "canonical_evaluation_surface": "fractal.sample",
+    "warp_policy": "zero_required_otherwise_unavailable",
+    "state_binding": "exact_resolved_state_json_sha256",
+    "runtime_binding": "exact_running_executable_sha256",
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "rational_escape_one_off_public_architecture": "forbidden",
+    "host_formula_authority": "forbidden",
+    "engine_owned_solver_or_annotation": "forbidden",
+    "volatile_paths_or_timestamps_in_receipt": "forbidden",
+    "silent_provider_fallback": "forbidden",
+    "cross_repository_dirty_overlap": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/finding_enrichment_active_model_e2.contract.json --out-json artifacts/validation/finding_enrichment_active_model_e2_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e2_focused_native --log artifacts/logs/finding_enrichment_e2_focused_native.log --out-json artifacts/validation/finding_enrichment_e2_focused_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_file_sha256 test_fractal_active_model test_viewer_cli",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e2_full_native --log artifacts/logs/finding_enrichment_e2_full_native.log --out-json artifacts/validation/finding_enrichment_e2_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e2_runtime_publish --log artifacts/logs/finding_enrichment_e2_runtime_publish.log --out-json artifacts/validation/finding_enrichment_e2_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e2_runtime_truth --log artifacts/logs/finding_enrichment_e2_runtime_truth.log --out-json artifacts/validation/finding_enrichment_e2_runtime_truth.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_active_model.py tests/test_fractal_runtime_canonical_callable_sampling.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/finding_enrichment_e2_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e2_diff_check --log artifacts/logs/finding_enrichment_e2_diff_check.log --out-json artifacts/validation/finding_enrichment_e2_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/finding_enrichment_engine_authority_v1_PHASED_PLAN.md --out-json artifacts/validation/finding_enrichment_e2_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "e2_contract_schema_valid",
+      "description": "The E2 active-model contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_active_model_e2_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "e2_focused_native_passed",
+      "description": "Focused hashing, provider, CLI, and binding tests pass.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_e2_focused_native.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "e2_runtime_truth_passed",
+      "description": "The published runtime emits deterministic state/runtime-bound receipts and canonical provider-bound evaluation evidence.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_e2_runtime_truth.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "e2_hostile_audit_ok",
+      "description": "The E2 hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_e2_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

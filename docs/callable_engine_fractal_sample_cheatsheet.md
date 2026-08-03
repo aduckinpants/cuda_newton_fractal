@@ -14,6 +14,7 @@ If you want copy-paste JSON, read [docs/examples/callable_engine/README.md](docs
 - It executes the canonical CUDA sampling service shared with renderer-side fractal evaluation, not a host-maintained formula copy.
 - You drive it through binding paths such as `fractal.view.*`, `fractal.params.*`, and `fractal.render.*`.
 - The safe way to discover applicable parameters is still `--describe-functions`.
+- For supported analysis providers, `--describe-active-fractal-model` identifies the state-bound model and names this sampler as the canonical evaluation surface.
 
 This is the right surface when the question is:
 
@@ -124,6 +125,8 @@ Runtime provenance is explicit:
 - `runtime.iteration_arithmetic` reports the arithmetic actually used by returned samples: `float32`, `float64`, or `mixed`
 - sequence requests batch all coordinates once per concrete sequence member
 - canonical CUDA results are authoritative when they differ from historical host-copy values
+
+For model-driven analysis, generate an active-model receipt from the exact same `state.json` first. Verify its `state_json_sha256` and `runtime_executable_sha256`, then keep those identities with the `fractal.sample` response. The receipt does not alter sampling, and the sampler does not silently select a provider from receipt prose.
 
 Practical rule:
 
