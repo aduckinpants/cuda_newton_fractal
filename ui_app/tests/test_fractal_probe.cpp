@@ -1050,7 +1050,7 @@ int main() {
     {
         FractalProbeRequest request{};
         request.request_version = 1;
-        request.request_id = "probe-explaino-y-nonfinite-status";
+        request.request_id = "probe-explaino-y-canonical-large-coordinate";
         request.function_id = "fractal.sample";
         request.mode = FractalProbeMode::point_set;
         request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino_y")});
@@ -1059,19 +1059,66 @@ int main() {
         FractalProbeResponse response{};
         std::string error;
         if (!RunFractalProbeRequest(request, "probe.exe", &response, &error)) {
-            std::cerr << "Expected Explaino-Y nonfinite probe to run: " << error << "\n";
+            std::cerr << "Expected Explaino-Y canonical large-coordinate probe to run: " << error << "\n";
             return 1;
         }
         if (!response.ok || response.samples.size() != 1) {
-            std::cerr << "Expected a single Explaino-Y nonfinite sample\n";
+            std::cerr << "Expected a single Explaino-Y canonical sample\n";
             return 1;
         }
-        if (response.samples[0].status != FractalProbeSampleStatus::nonfinite) {
-            std::cerr << "Explaino-Y nonfinite samples must not be rewritten to converged\n";
+        if (response.samples[0].status != FractalProbeSampleStatus::converged) {
+            std::cerr << "Explaino-Y callable status must follow the canonical device fallback result\n";
             return 1;
         }
-        if (response.samples[0].has_root_index) {
-            std::cerr << "Explaino-Y nonfinite samples must not report a root index\n";
+        if (!response.samples[0].has_root_index) {
+            std::cerr << "Explaino-Y canonical nearest-root fallback must preserve its projected root index\n";
+            return 1;
+        }
+    }
+
+    {
+        auto runRationalEscapePower = [](int denominatorPower, FractalProbeResponse* outResponse, std::string* outError) {
+            FractalProbeRequest request{};
+            request.request_version = 1;
+            request.request_id = "probe-rational-escape-denominator-power-" + std::to_string(denominatorPower);
+            request.function_id = "fractal.sample";
+            request.mode = FractalProbeMode::point_set;
+            request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino_rational_escape")});
+            request.overrides.push_back({"fractal.params.explaino_warp_strength", FractalProbeScalar::Number(0.0)});
+            request.overrides.push_back({"fractal.params.max_iter", FractalProbeScalar::Number(1.0)});
+            request.overrides.push_back({
+                "fractal.params.explaino_rational_escape_denominator_power",
+                FractalProbeScalar::Number(static_cast<double>(denominatorPower)),
+            });
+            request.points.push_back({0.5, 0.2});
+            return RunFractalProbeRequest(request, "probe.exe", outResponse, outError);
+        };
+
+        FractalProbeResponse powerOne{};
+        FractalProbeResponse powerSix{};
+        std::string error;
+        if (!runRationalEscapePower(1, &powerOne, &error)) {
+            std::cerr << "Expected denominator-power-one probe to run: " << error << "\n";
+            return 1;
+        }
+        if (!runRationalEscapePower(6, &powerSix, &error)) {
+            std::cerr << "Expected denominator-power-six probe to run: " << error << "\n";
+            return 1;
+        }
+        if (powerOne.samples.size() != 1 || powerSix.samples.size() != 1) {
+            std::cerr << "Expected one canonical Rational Escape sample per denominator power\n";
+            return 1;
+        }
+        const FractalProbeSample& sampleOne = powerOne.samples[0];
+        const FractalProbeSample& sampleSix = powerSix.samples[0];
+        if (NearlyEqual(sampleOne.final_z_x, sampleSix.final_z_x, 1.0e-6) &&
+            NearlyEqual(sampleOne.final_z_y, sampleSix.final_z_y, 1.0e-6)) {
+            std::cerr << "Rational Escape denominator powers one and six must not collapse to the duplicated cubic host recurrence\n";
+            return 1;
+        }
+        if (powerOne.runtime.backend_used != "cuda" || powerOne.runtime.iteration_arithmetic.empty() ||
+            powerOne.runtime.iteration_arithmetic != powerSix.runtime.iteration_arithmetic) {
+            std::cerr << "Canonical Rational Escape probes must disclose their actual CUDA iteration arithmetic\n";
             return 1;
         }
     }

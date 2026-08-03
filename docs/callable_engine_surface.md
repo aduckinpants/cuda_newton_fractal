@@ -113,6 +113,16 @@ This is the runtime-authoritative fractal sampler over the existing binding-path
 
 Callers should discover applicable parameters through `--describe-functions` rather than guessing.
 
+Execution authority:
+
+- each concrete point or grid batch is evaluated by the canonical CUDA `SampleFractalEvidencePoints` service used by the renderer-side sampling core
+- a sequence request dispatches one CUDA batch per concrete sequence member; it does not launch one kernel per point
+- successful responses retain `runtime.backend_used = "cuda"` and add `runtime.iteration_arithmetic` as `float32`, `float64`, or `mixed`, derived from the returned per-sample evidence
+- requested sample-tier names do not substitute for executed-arithmetic truth
+- `root_index` remains a response projection over the canonical final state; it does not invoke another recurrence
+
+The callable transport, NDJSON, session, state-token, metric-filtering, ordering, and summary surfaces remain unchanged. Canonical CUDA results intentionally replace values previously produced by the removed host-side recurrence copy.
+
 ### `generic.sample`
 
 For a current POC cheatsheet focused on dynamic function solving, supported expression forms, and supported sweep modes, see [docs/callable_engine_dynamic_function_cheatsheet.md](docs/callable_engine_dynamic_function_cheatsheet.md).

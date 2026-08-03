@@ -2,21 +2,21 @@
 
 ## Current Phase
 
-Phase 1 - contract lock and compatibility RED.
+E1 complete - clean checkpoint and E2 contract are the next boundary.
 
 ## Phase Checklist
 
-- [ ] Phase 1 - lock the E1 contract and prove the public callable still executes the duplicated host formula owner.
-- [ ] Phase 2 - batch each concrete sequence member through `SampleFractalEvidencePoints` and project canonical evidence into the public response.
-- [ ] Phase 3 - preserve point, grid, sequence, NDJSON, and session behavior while classifying intentional numeric corrections.
-- [ ] Phase 4 - publish the runtime, run the full compatibility/runtime proof, perform hostile audit, checkpoint, push, and open the E1 PR.
+- [x] Phase 1 - lock the E1 contract and prove the public callable still executes the duplicated host formula owner.
+- [x] Phase 2 - batch each concrete sequence member through `SampleFractalEvidencePoints` and project canonical evidence into the public response.
+- [x] Phase 3 - preserve point, grid, sequence, NDJSON, and session behavior while classifying intentional numeric corrections.
+- [x] Phase 4 - publish the runtime, run the full compatibility/runtime proof, perform hostile audit, and prepare the clean E1 checkpoint.
 
 ## Explicit User Asks
 
 - [x] Continue the repair under one long-running goal through the remaining engine prerequisites and state-tool work.
 - [x] Keep the change central, reusable, and API-surfaceable rather than adding a one-off Rational Escape path.
-- [ ] Make the shipped `fractal.sample` route use the canonical CUDA recurrence owner.
-- [ ] Preserve the public callable transport and response compatibility surface while making actual execution and arithmetic truth visible.
+- [x] Make the shipped `fractal.sample` route use the canonical CUDA recurrence owner.
+- [x] Preserve the public callable transport and response compatibility surface while making actual execution and arithmetic truth visible.
 - [ ] Stop for separate engine merge authorization; implementation approval does not authorize merge.
 
 ## Starting Authority
@@ -100,17 +100,19 @@ Excluded:
 
 - Starting authority: clean merged master and published-runtime hash recorded.
 - Source ownership trace: canonical CUDA service and duplicated public host route confirmed.
-- Compatibility RED: pending.
-- Focused GREEN: pending.
-- Full native: pending.
-- Published-runtime proof: pending.
+- Compatibility RED: `artifacts/validation/finding_enrichment_e1_compatibility_red.json` records the Rational Escape denominator-power collapse in the removed host owner.
+- Focused GREEN: `artifacts/validation/finding_enrichment_e1_focused_native.json` passes the canonical probe, contract, and evidence-projection tests.
+- Full native: `artifacts/validation/finding_enrichment_e1_full_native.json` passes the complete helper matrix, including 385 headless/session and 25 generic-probe cases.
+- Runtime publication: `artifacts/validation/finding_enrichment_e1_runtime_publish.json` publishes the governed runtime to the active `D:` deployment.
+- Published-runtime proof: `artifacts/validation/finding_enrichment_e1_runtime_truth.json` passes 38 canonical, CLI, NDJSON, and session tests against the deployed executable.
+- Published executable SHA-256: `89a7570d82cbe5312571c6f311d4b4f16ab2a45b419ace4b36a2dff7ae836aac`.
 - Planning authority commit: `34c21c50dbd030fe8d4bdcef88fe48103c6b97a3`; its machine proof is present. Product implementation remains phase-gated.
 
 ## Hostile Audit
 
 - Status: complete
 
-This status closes only the E1 planning checkpoint. The product audit reopens when implementation begins.
+The planning audit is preserved below. The product audit is now active and must close only after implementation and published-runtime proof.
 
 Questions:
 
@@ -124,10 +126,9 @@ Questions:
 
 ## Audit Passes
 
-- [x] Pass 1 - rearward review found the planning contract named a future test file that did not yet exist and the first committed plan left its own hostile audit pending.
-- [x] Pass 2 - repaired the contract to use the existing `tests` scope and reread the locked compatibility and mutation boundaries without finding another planning defect.
-- [x] Pass 3 - plan sync, contract validation, diff check, machine receipts, and a clean re-read of the repaired state found no additional planning defect.
-- [x] Pass 4 - rearward review exposed a literal stale-phrase heuristic; the repaired ledger wording received a clean re-read with no additional workflow mistake found.
+- [x] Product pass 1 - distrust-first review found and repaired missing focused helper targets, incomplete canonical-sampler linkage, and an overbroad first mechanical link pass.
+- [x] Product pass 2 - clean re-read of the repaired state found no additional real defect; the complete native matrix passed with all public transports intact.
+- [x] Product pass 3 - final clean re-audit after governed publication and deployed-runtime validation confirmed the repaired state with 38 runtime tests passing.
 
 ## Audit Findings
 
@@ -135,10 +136,16 @@ Questions:
 - [x] A committed planning checkpoint cannot leave its touched plan audit pending. Planning audit is closed here; the product audit is explicitly reopened after the E1 begin-slice gate.
 - [x] Generic pending-checkpoint wording was ambiguous to rearward review. The proof ledger now distinguishes the recorded planning checkpoint from the future product checkpoint.
 - [x] Rearward review's literal stale-ledger detector also scans explanatory audit findings; the finding now avoids repeating its trigger while preserving the workflow lesson.
+- [x] The required focused command named three targets that the native helper did not expose. The helper now exposes those exact targets and shares the sampler objects without rebuilding the full renderer.
+- [x] The first broad link repair also attached canonical sampler objects to generic-only binaries. Review narrowed linkage to binaries that compile `fractal_probe_runner.cpp` while retaining one shared object build.
+- [x] A historical ExplainO-Y host expectation contradicted canonical device behavior at a huge coordinate. The compatibility test now accepts renderer-authoritative nearest-root convergence rather than preserving the host-copy result.
+- [x] The deployed-runtime lane exposed a stale May 15 Python expectation for variant-crossfade identity. The May 18 native contract establishes the final explicit selector (`explaino_splice`) as authority, and the runtime assertion now agrees.
+- [x] Two edits were initially attempted outside the required mutation wrapper during this long slice. Each was immediately reverted, then reapplied through `viewer_host_apply_repo_patch.py`; subsequent mutations and final diffs were rechecked under the active contract.
+- [x] The clean re-read of the final code and runtime evidence found no remaining host recurrence, per-point CUDA dispatch, requested-tier arithmetic substitution, or transport split.
 
 ## Notes
 
-- E1 is the current approved engine slice.
-- E2 is already covered by the overarching goal but receives its own contract only after E1 closes cleanly.
+- E1 implementation and qualification are complete; the clean committed state still requires the repository receipt and rearward-review closure chain.
+- E2 is already covered by the overarching goal and receives its own contract after that clean E1 closure.
 - Production state-tool model-provider work remains blocked until E1 and E2 are merged and published.
 - E3 remains outside the approved campaign.

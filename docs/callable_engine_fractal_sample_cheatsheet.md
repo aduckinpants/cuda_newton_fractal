@@ -11,6 +11,7 @@ If you want copy-paste JSON, read [docs/examples/callable_engine/README.md](docs
 
 - `fractal.sample` is the runtime-authoritative sampler for the shipped fractal engine.
 - It samples real fractal families and real runtime parameters, not a separate toy evaluator.
+- It executes the canonical CUDA sampling service shared with renderer-side fractal evaluation, not a host-maintained formula copy.
 - You drive it through binding paths such as `fractal.view.*`, `fractal.params.*`, and `fractal.render.*`.
 - The safe way to discover applicable parameters is still `--describe-functions`.
 
@@ -117,6 +118,13 @@ Summary metrics currently exposed:
 
 Some outputs are family-dependent.
 
+Runtime provenance is explicit:
+
+- `runtime.backend_used` is `cuda` for successful `fractal.sample` responses
+- `runtime.iteration_arithmetic` reports the arithmetic actually used by returned samples: `float32`, `float64`, or `mixed`
+- sequence requests batch all coordinates once per concrete sequence member
+- canonical CUDA results are authoritative when they differ from historical host-copy values
+
 Practical rule:
 
 - `root_index` and `residual` are most meaningful on basin/root-finding families
@@ -146,6 +154,7 @@ Two useful habits:
 - invalid enum ids fail fast
 - unsupported `variant_crossfade` variants fail fast
 - ordinary V1 sequence overrides may not vary `fractal.view.fractal_type`
+- `runtime.iteration_arithmetic` is observed execution evidence, not a promise inferred from the requested tier
 
 ## What It Cannot Do Yet
 
