@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 1 / E0 product implementation and native/runtime proof are complete. A clean product checkpoint and exact-checkpoint republish remain before E0 closure; E1 remains deferred.
+Phase 1 / E0 is complete at product checkpoint `bdbffea018485aeaf69ca1a50bbfd81caf561d74`. The published runtime was rebuilt from that exact clean checkpoint and its tracked Rational Escape witness passed. E1 remains deferred pending explicit user review and authorization.
 
 ## Phase Checklist
 
 - [x] Phase 0 - lock this engine-native campaign plan, record source-to-binary provenance status, validate the planning contract, checkpoint, push, and stop for review.
-- [ ] Phase 1 / E0 - repair Rational Escape numeric truth in the canonical device sampler with controlled float32/float64 evidence.
+- [x] Phase 1 / E0 - repair Rational Escape numeric truth in the canonical device sampler with controlled float32/float64 evidence.
 - [ ] Phase 2 / E1 - make the shipped callable sampling route use the canonical CUDA sampling owner and classify any retained compatibility route explicitly.
 - [ ] Phase 3 / E2 - add a deterministic state-bound active-model receipt and bounded canonical point evaluation for supported model providers.
 - [ ] Phase 4 - merge under separate authorization, publish from exact merged master, and produce the engine-to-tool handoff.
@@ -303,8 +303,9 @@ The campaign does not authorize engine merge. At the end of each implementation 
 - E0 RED: `artifacts/validation/finding_enrichment_e0_red_sample_kernel.json` records the expected missing `TerminationKind::pole` compile failure.
 - E0 focused GREEN: `finding_enrichment_e0_sample_kernel.json` reports 1,052 passed CUDA sample assertions; `finding_enrichment_e0_fractal_types.json` reports 140 passed type/ordinal assertions.
 - E0 full native: `finding_enrichment_e0_full_native.json` reports the complete helper suite passed.
-- E0 working-tree publication: published executable SHA-256 `b550c769e868952cfe7752d5a2777a8167f1e9d19d6faa26b81379dfff095193`; exact clean-checkpoint republication remains pending.
-- E0 published runtime: `finding_enrichment_e0_runtime_truth.json` passes a tracked zero-warp Rational Escape fixture with deterministic, distinct float32/float64 frames.
+- E0 product checkpoint: `bdbffea018485aeaf69ca1a50bbfd81caf561d74` (`Repair Rational Escape numeric truth`).
+- E0 exact-checkpoint publication: `finding_enrichment_e0_runtime_publish_exact_checkpoint.json` records a successful build and publish from the clean product checkpoint; the published executable SHA-256 is `240987082532e8e7fbd9676f06b1314ed1bbdab3d8d6007bdc99fba249e42c83`.
+- E0 published runtime: `finding_enrichment_e0_runtime_truth_exact_checkpoint.json` passes the tracked zero-warp Rational Escape fixture against that exact-checkpoint executable with deterministic, distinct float32/float64 frames.
 - E0 raw witness: `.local/finding_enrichment_e0/postchange_b550c769/runtime-witness.json` records float32 frame continuity `8290c8cf...e046ebd == 8290c8cf...e046ebd` and controlled tier hashes `cc92e38c...743c9bb` versus `d989246a...e873439`.
 
 ## Hostile Audit
@@ -332,11 +333,12 @@ Audit questions:
 - [x] Pass 4 - reviewed the E0 diff for float32 operation-order continuity, an actual double-precision branch, append-only termination identity, and absence of host-probe mutation.
 - [x] Pass 5 - re-read the repaired E0 state after focused and full native GREEN; no additional real defect was found in enum consumers or canonical sampler ownership.
 - [x] Pass 6 - clean re-read of published-runtime evidence confirmed the inert 729x fixture was not forced and the tracked 2^16 zoom fixture proves deterministic tier separation.
+- [x] Pass 7 - rebuilt and published from exact clean product checkpoint `bdbffea018485aeaf69ca1a50bbfd81caf561d74`, hashed the deployed executable, and reran the tracked runtime witness successfully.
 
 ## Audit Findings
 
 - [x] The inherited completed contract did not authorize its successor plan/contract. The documented minimal contract-only bootstrap precedent named the two successor paths, locked this successor, and restored the inherited contract byte-for-byte.
-- [x] Source-to-binary provenance is incomplete: the published executable is hashable but does not identify its source commit. Phase 0 records this limitation; later behavioral claims require exact-head build/publication receipts.
+- [x] Initial source-to-binary provenance was incomplete because the published executable did not identify its source commit. E0 closes its behavioral claim through an external exact-head publication receipt: clean product checkpoint `bdbffea018485aeaf69ca1a50bbfd81caf561d74` produced executable SHA-256 `240987082532e8e7fbd9676f06b1314ed1bbdab3d8d6007bdc99fba249e42c83`, followed immediately by the passing tracked runtime witness.
 - [x] Rational Escape has two distinct source defects: numeric-tier divergence in the canonical device sampler and an independently duplicated host callable implementation. E0 and E1 remain separate bounded phases.
 - [x] The current termination enum does not name pole termination. The E0 contract must choose a truthful compatible extension rather than reuse an unrelated status silently.
 - [x] A point/subsample result is not exact final pixel authority under SSAA and color aggregation. Public wording and tests preserve that boundary.
@@ -350,5 +352,5 @@ Audit questions:
 ## Notes
 
 - The state-tool repository remains clean and untouched during engine planning and implementation.
-- E0 was explicitly authorized after Phase 0 review. Its next boundary is exact-checkpoint runtime republication, receipts, push, and user review before E1.
+- E0 was explicitly authorized after Phase 0 review and is complete. The next approved boundary is user review; E1 product mutation is not authorized by this checkpoint.
 - No CUDA engine merge is authorized by this plan or by approval to implement E0.
