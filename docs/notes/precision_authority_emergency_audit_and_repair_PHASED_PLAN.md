@@ -2,7 +2,10 @@
 
 ## Current Phase
 
-Phase 5 - run final qualification, reconcile the provisional ui.salt reality-contact note, and stop at the clean pushed engine merge-approval boundary.
+Campaign complete - all Phases 0-5 are exhausted. Final qualification passed
+from clean engine checkpoint `1e33b410db37ed215312f1939bb5fe6c55e304d9`,
+the provisional `ui.salt` reality-contact note was reconciled separately, and
+this branch stops at the clean pushed engine merge-approval boundary.
 
 ## Phase Checklist
 
@@ -16,19 +19,19 @@ Phase 5 - run final qualification, reconcile the provisional ui.salt reality-con
   - [x] Phase 3C - classify Color Pipeline contract carriers against runtime consumers and repair only proven authoring/readback loss.
   - [x] Phase 3D - repair the remaining shared general-schema binary32 typed-input and specialized camera typed-edit routes, preserving readable slider labels and engine-owned camera math.
 - [x] Phase 4 - make only evidence-driven storage or arithmetic precision promotions, preserving intentionally truthful float32 domains. No current candidate satisfied the gate; no promotion was made.
-- [ ] Phase 5 - run full qualification, publish from an exact clean checkpoint, reconcile the provisional fractal `ui.salt` reality-contact note, and stop at the engine merge-approval boundary.
+- [x] Phase 5 - run full qualification, publish from an exact clean checkpoint, reconcile the provisional fractal `ui.salt` reality-contact note, and stop at the engine merge-approval boundary.
 
 ## Explicit User Asks
 
-- [open] Audit the engine broadly enough to determine how severe float32/float64 authoring and runtime truth problems are across the system.
-- [open] Repair proven precision-authority defects without blindly converting every float to double.
-- [open] Cover all three authoring routes: general schema binding, Color Pipeline UI-Salt contract materialization, and `state.json` load/save/replay.
-- [open] Distinguish what the UI claims, what storage preserves, what runtime tier resolution reports, and what arithmetic actually executes.
-- [open] Preserve the current float32 route where it is truthful and measure intentional float64 changes rather than treating them as regressions.
-- [open] Keep nonzero ExplainO warp out of this campaign. Fixtures use zero warp; no warp redesign or materialization work is authorized.
-- [open] Keep the future `ui.salt` direction visible as a nonblocking design constraint, using the provisional pack-idea reality-contact examples as design evidence only.
-- [open] Do not redesign the whole UI, implement the Salticid language, add WPF/designer infrastructure, or modify the state-tool repository in this campaign.
-- [open] Do not merge the CUDA engine branch without separate user approval.
+- [done] Audit the engine broadly enough to determine how severe float32/float64 authoring and runtime truth problems are across the system.
+- [done] Repair proven precision-authority defects without blindly converting every float to double.
+- [done] Cover all three authoring routes: general schema binding, Color Pipeline UI-Salt contract materialization, and `state.json` load/save/replay.
+- [done] Distinguish what the UI claims, what storage preserves, what runtime tier resolution reports, and what arithmetic actually executes.
+- [done] Preserve the current float32 route where it is truthful and measure intentional float64 changes rather than treating them as regressions.
+- [done] Keep nonzero ExplainO warp out of this campaign. Fixtures use zero warp; no warp redesign or materialization work was performed.
+- [done] Keep the future `ui.salt` direction visible as a nonblocking design constraint, using the reconciled pack-idea reality-contact examples as design evidence only.
+- [done] Do not redesign the whole UI, implement the Salticid language, add WPF/designer infrastructure, or modify the state-tool repository in this campaign.
+- [done] Stop without merging the CUDA engine branch; merge still requires separate user approval.
 
 ## Starting Authority
 
@@ -363,6 +366,12 @@ Forbidden without a new user-approved plan:
 - Phase 5 contract: `docs/contracts/precision_authority_final_qualification_p5.contract.json`; slice checkpoint token `ck:973a005f`.
 - Phase 5 pre-publication focused proof: 12 inventory and promotion-court tests pass.
 - Phase 5 full native qualification: all helper tests pass from the unchanged product sources before the clean publication checkpoint.
+- Phase 5 clean publication checkpoint: `1e33b410db37ed215312f1939bb5fe6c55e304d9`; validation and contract-proof receipts exist for that exact commit and rearward review reports `ok`.
+- Phase 5 published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `77c2af1ad6b2d1340e051feda9c5a4e268a630147885371ccf0dc276d6ccf67f`.
+- Phase 5 combined published-runtime proof: nine tests pass across executed tier truth, state-I/O precision, Color Pipeline normalization/replay, and general float plus camera authoring identity.
+- Phase 5 code-quality audit: 93/100 with baseline check passed; no Phase 5 product mutation occurred.
+- Phase 5 external reality-contact reconciliation: staging branch `codex/fractal-ui-salt-precision-reconciliation` at `63358745f22195ffacbdfb2f1b3021b2e892ab1`, pushed at remote parity and stopped before merge.
+- Phase 5 state-tool boundary: `C:\code\cuda-fractal-engine-state-tool` remained unmodified throughout the engine campaign.
 
 ## Hostile Audit
 
@@ -410,6 +419,10 @@ Audit questions:
 - [x] Pass 27 - hostile review separated truthful float64 recurrence execution from parameter storage width; float parameters consumed by double branches remain deferred pending a family-specific parameter-resolution defect rather than promoted by label analogy.
 - [x] Pass 28 - final decision-ledger, inventory join, contract, plan-sync, code-quality, and diff re-read found no additional Phase 4 defect and no product mutation.
 - [x] Pass 29 - the first Phase 5 contract patch declared too few added lines and produced truncated JSON; validation blocked slice start, the contract was repaired before locking, and focused plus full-native qualification then passed without product mutation.
+- [x] Pass 30 - exact clean publication from `1e33b41` and all nine combined published-runtime witnesses passed; executable hash and receipts were recorded before cross-repository reconciliation.
+- [x] Pass 31 - the separately governed staging reconciliation preserved hypothetical syntax, separated numeric declaration/display/storage/readback/execution facts, passed its three workflow rails, and stopped before merge.
+- [x] Pass 32 - beginning the final closure slice auto-rotated the handoff log into `docs/handoffs/archive`; the active contract initially omitted that tool-owned archive path, so the contract was explicitly revised rather than hiding an out-of-scope write.
+- [x] Pass 33 - final plan, contract, proof ledger, diff, publication identity, runtime witnesses, cross-repository boundaries, and no-merge stop line were reread with no additional product defect found.
 
 ## Audit Findings
 
@@ -437,9 +450,10 @@ Audit questions:
 - [x] A no-promotion decision can become a false universal sufficiency claim. The Phase 4 report is checkpoint-relative, preserves deferred candidates, and requires a new bounded witness before future mutation.
 - [x] Float64 execution truth does not imply every participating parameter must be stored as double. Parameter-width promotion remains a separate evidence question with compatibility and performance costs.
 - [x] Contract generation is not self-proving: the first Phase 5 patch truncated the final assertion object, and the contract validator correctly prevented it from becoming active until repaired.
+- [x] Tool-owned handoff rotation is part of closure mutation scope. The Phase 5 contract now names `docs/handoffs` explicitly so the archived log cannot bypass scope accounting.
 
 ## Notes
 
 - The prior finding-enrichment E1 callable-centralization phase remains deferred. This emergency campaign does not silently absorb it.
-- Phase 2A closes at its evidence checkpoint once validation, commit, receipt, rearward review, and push finish.
-- Phase 5 final qualification and reality-contact reconciliation is the next planned execution boundary after the Phase 4 checkpoint; no engine merge is authorized.
+- The clean published product checkpoint is `1e33b410db37ed215312f1939bb5fe6c55e304d9`; later closure commits are documentation and handoff bookkeeping only.
+- Preplanned sliced work is exhausted. Stop for user merge review before any engine merge or further product mutation.
