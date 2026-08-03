@@ -8,6 +8,7 @@
 #include "../src/explaino_seed.h"
 #include "../third_party/imgui/imgui.h"
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -1180,6 +1181,40 @@ int main() {
         const double parsed = std::strtod(text, &end);
         if (written <= 0 || written >= static_cast<int>(sizeof(text)) || !end || *end != '\0' || parsed != kRationalEscapeSeed) {
             std::cerr << "General double format failed exact Rational Escape seed round trip: " << text << "\n";
+            return 1;
+        }
+    }
+
+    {
+        const char* format = GeneralFloatControlRoundTripFormat();
+        if (!format || std::strcmp(format, "%.9g") != 0) {
+            std::cerr << "General float typed inputs must use the canonical binary32 round-trip format\n";
+            return 1;
+        }
+        const float adjacent = std::nextafter(1.0f, 2.0f);
+        char text[64]{};
+        const int written = std::snprintf(text, sizeof(text), format, adjacent);
+        char* end = nullptr;
+        const float parsed = std::strtof(text, &end);
+        if (written <= 0 || written >= static_cast<int>(sizeof(text)) || !end || *end != '\0' || parsed != adjacent) {
+            std::cerr << "General float format failed adjacent-binary32 round trip: " << text << "\n";
+            return 1;
+        }
+    }
+
+    {
+        const char* format = GeneralCameraControlRoundTripFormat();
+        if (!format || std::strcmp(format, "%.17g") != 0) {
+            std::cerr << "Camera typed inputs must use the canonical binary64 round-trip format\n";
+            return 1;
+        }
+        constexpr double kCenter = 0.123456789012345;
+        char text[64]{};
+        std::snprintf(text, sizeof(text), format, kCenter);
+        char* end = nullptr;
+        const double parsed = std::strtod(text, &end);
+        if (!end || *end != '\0' || parsed != kCenter) {
+            std::cerr << "Camera format failed binary64 center round trip: " << text << "\n";
             return 1;
         }
     }

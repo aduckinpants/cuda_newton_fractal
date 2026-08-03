@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3C checkpoint closed - Color Pipeline float authoring and readback preserve exact binary32 identity through shared owners, while explicit loaded-draft application fails closed without authoritative normalized readback. Phase 4 evidence-driven promotion review is the next planned boundary.
+Phase 4 - review remaining float32 storage and arithmetic owners against the evidence-driven promotion gate after the closed Phase 3D authoring checkpoint.
 
 ## Phase Checklist
 
@@ -14,6 +14,7 @@ Phase 3C checkpoint closed - Color Pipeline float authoring and readback preserv
   - [x] Phase 3A - replace the shared six-decimal general-double editor format with one source-owned binary64 round-trip format and prove the Rational Escape combined seed through the published viewer.
   - [x] Phase 3B - classify state-load numeric casts by destination owner and repair only proven state-I/O identity loss.
   - [x] Phase 3C - classify Color Pipeline contract carriers against runtime consumers and repair only proven authoring/readback loss.
+  - [x] Phase 3D - repair the remaining shared general-schema binary32 typed-input and specialized camera typed-edit routes, preserving readable slider labels and engine-owned camera math.
 - [ ] Phase 4 - make only evidence-driven storage or arithmetic precision promotions, preserving intentionally truthful float32 domains.
 - [ ] Phase 5 - run full qualification, publish from an exact clean checkpoint, reconcile the provisional fractal `ui.salt` reality-contact note, and stop at the engine merge-approval boundary.
 
@@ -348,7 +349,14 @@ Forbidden without a new user-approved plan:
 - Phase 3C compatibility boundary: live control normalization preserves active draft storage; ordinary direct apply remains compatible when historical tuples lack snapshot reconstruction; explicit loaded-draft apply is transactional and fails closed without normalized readback.
 - Phase 3C full native rail: all helper tests passed.
 - Phase 3C published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `1b4cb2565a34f6005e2eb0412468a0edd907ee011db15dc15905d91f0213d3a1`.
-- Phase 3C runtime proof: over-precise `grade.balance_void` normalizes once to exact binary32, the emitted draft reports that value, the frame changes, and action-free replay preserves authoritative state and exact frame identity.
+- Phase 3C runtime proof: over-precise grade.balance_void normalizes once to exact binary32, the emitted draft reports that value, the frame changes, and action-free replay preserves authoritative state and exact frame identity.
+- Phase 3D continuity RED: after Phase 3C closure, the current inventory still reports 86 AUTHORING_IDENTITY_LOSS controls. Source review reduces them to one shared %.5f binary32 input spelling plus the specialized center/zoom camera typed-edit path; this is remaining Phase 3 work, not evidence for storage promotion.
+- Phase 3D contract: `docs/contracts/precision_authority_general_float_camera_p3d.contract.json`; slice checkpoint token `ck:d8e1fdc5`.
+- Phase 3D inventory: 107 numeric controls classify as 87 truthful binary32, 5 truthful binary64, and 15 intentional mixed-precision, with zero `AUTHORING_IDENTITY_LOSS` results.
+- Phase 3D focused proof: ten inventory tests and the complete `test_schema_binding` target pass, including adjacent-binary32 text round-trip plus binary64 camera typed-input witnesses.
+- Phase 3D full native rail: all helper tests passed.
+- Phase 3D published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `3773bf8df75f20c0c9ccca0aa546092658a152bd6aef8a0f39e66226fd72f77f`.
+- Phase 3D runtime proof: an adjacent binary32 seed-drift edit, exact binary64 center edit, and engine-owned linear-zoom-to-log2 edit survive the published viewer automation route.
 
 ## Hostile Audit
 
@@ -388,6 +396,10 @@ Audit questions:
 - [x] Pass 19 - distrust-first review found that fixed `1e-6` draft and runtime equality tolerances could hide an adjacent-binary32 Color Pipeline edit even after the editor became round-trip capable.
 - [x] Pass 20 - repaired shared editor spelling, decimal import rounding, exact state identity, normalized readback, transactional loaded-draft apply, and pointer-safe live control synchronization; reran all affected focused owners.
 - [x] Pass 21 - final source, focused, full-native, publication, runtime, code-quality, contract, plan-sync, and diff review found no additional Phase 3C defect or justified storage-width promotion.
+- [x] Pass 22 - reopening the supposedly closed Phase 3 found 86 remaining general-schema authoring-loss records; source review reduced them to the shared binary32 typed-input owner and the specialized camera typed-edit owner instead of 86 independent repairs.
+- [x] Pass 23 - the first runtime fixture requested an adjacent float above the control hard maximum and correctly observed a clamp; the witness now uses adjacent binary32 values around 0.5 and passes.
+- [x] Pass 24 - a short outer timeout orphaned one publication compiler before a retry started another. Both exact owned process trees were terminated, their artifacts invalidated, and one clean single-owner publication rerun passed.
+- [x] Pass 25 - final source, diff, inventory, focused native, full native, clean publication, and published-runtime review found no additional Phase 3D defect or justified storage promotion.
 
 ## Audit Findings
 
@@ -409,9 +421,12 @@ Audit questions:
 - [x] Rebuilding the entire draft after every live edit invalidated active UI parameter pointers. The repaired control path canonicalizes value carriers in place while general apply retains topology-rebuilding synchronization.
 - [x] Some historical valid tuples apply but cannot be reconstructed by the live-snapshot importer. Direct UI behavior remains compatible; explicit loaded-draft application refuses to commit without authoritative readback.
 - [x] Runtime replay evidence must exclude documented volatile diagnostics such as `stats`; authoritative authoring state and decoded frame identity remain exact.
+- [x] Phase 3 was prematurely marked closed while the inventory still contained 86 authoring-loss rows. The repaired continuity now closes the two shared owner seams and requires zero remaining authoring-loss classifications before Phase 4.
+- [x] Runtime witnesses must respect the declared control range; an out-of-range adjacent-float input proved clamping, not round-trip identity.
+- [x] A caller timeout can outlive an owned compiler child. Concurrent publication artifacts are invalid evidence; exact owned trees were cleaned and the canonical proof is the later single-owner clean rerun only.
 
 ## Notes
 
 - The prior finding-enrichment E1 callable-centralization phase remains deferred. This emergency campaign does not silently absorb it.
 - Phase 2A closes at its evidence checkpoint once validation, commit, receipt, rearward review, and push finish.
-- Phase 4 evidence-driven precision promotion review is the next planned execution boundary after Phase 3C checkpoint closure; no engine merge is authorized.
+- Phase 4 evidence-driven precision promotion review is the next planned execution boundary after the Phase 3D checkpoint; no engine merge is authorized.

@@ -18,6 +18,14 @@ const char* GeneralDoubleControlRoundTripFormat() {
     return "%.17g";
 }
 
+const char* GeneralFloatControlRoundTripFormat() {
+    return "%.9g";
+}
+
+const char* GeneralCameraControlRoundTripFormat() {
+    return GeneralDoubleControlRoundTripFormat();
+}
+
 namespace {
 
 std::string EnumIdOrEmpty(const char* id) {
@@ -439,10 +447,11 @@ const char* FloatControlDisplayFormat(const UISchemaControl& control, const UISc
 }
 
 const char* FloatControlInputFormat(const UISchemaControl& control, const UISchemaBinding& binding) {
-    if (binding.path == "fractal.view.zoom" || control.logarithmic) {
-        return "%.9g";
+    if (IsCameraFloatBindingPath(binding.path)) {
+        return GeneralCameraControlRoundTripFormat();
     }
-    return "%.5f";
+    (void)control;
+    return GeneralFloatControlRoundTripFormat();
 }
 
 bool IsAllowedColoringModeForBinding(const BindingContext& ctx, ColoringMode mode) {
@@ -2042,6 +2051,8 @@ bool RenderFloatControl(
         return RenderDiagnosticLabel(control, "bind failed");
     }
     float value = static_cast<float>(displayedValue);
+    double typedValue = displayedValue;
+    const bool cameraTypedInput = IsCameraFloatBindingPath(binding.path);
 
     const NumericControlRange range = ResolveNumericControlRange(control);
     const float minValue = range.has_widget_min ? static_cast<float>(range.widget_min) : 0.0f;
@@ -2064,11 +2075,16 @@ bool RenderFloatControl(
     const bool automationChanged = TryApplyPrimaryUiAutomationSetValue(ctx, control, binding, range, ioDirty, ioInteracted);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
-    const bool typedChanged = ImGui::InputFloat(inputLabel.c_str(), &value, 0.0f, 0.0f, inputFormat);
-    if (changed || typedChanged) {
-        if (!ApplyFloatControlEdit(binding, ctx, range, static_cast<double>(value))) {
-            return RenderDiagnosticLabel(control, IsCameraFloatBindingPath(binding.path) ? "camera edit failed" : "edit failed");
-        }
+    const bool typedChanged = cameraTypedInput
+        ? ImGui::InputDouble(inputLabel.c_str(), &typedValue, 0.0, 0.0, inputFormat)
+        : ImGui::InputFloat(inputLabel.c_str(), &value, 0.0f, 0.0f, inputFormat);
+    if (changed && !ApplyFloatControlEdit(binding, ctx, range, static_cast<double>(value))) {
+        return RenderDiagnosticLabel(control, cameraTypedInput ? "camera edit failed" : "edit failed");
+    }
+    if (typedChanged && !ApplyFloatControlEdit(binding, ctx, range, cameraTypedInput ? typedValue : static_cast<double>(value))) {
+        return RenderDiagnosticLabel(control, cameraTypedInput ? "camera edit failed" : "edit failed");
+    }
+    if (typedChanged) {
         changed = true;
     }
     changed = changed || automationChanged;

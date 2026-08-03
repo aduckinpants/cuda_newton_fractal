@@ -23,7 +23,7 @@ witnesses remain separate evidence.
 
 ### General schema authoring
 
-The current schema contains 107 numeric controls:
+The Phase 1 starting schema contained 107 numeric controls:
 
 | Classification | Count | Reviewed meaning |
 |---|---:|---|
@@ -161,6 +161,8 @@ float-backed; the published runtime proves exact readback for the captured
 Rational Escape model value rather than claiming arbitrary binary64 retention.
 Camera routes remain unresolved successor work.
 
+Phase 3D resolution: the apparent 86 remaining authoring-loss controls reduced to two shared owners. Ordinary float-backed controls now keep readable slider/drag labels but use a source-owned `%.9g` typed-input spelling. Center controls retain float drag mirrors while their typed field uses the authoritative double value with `%.17g`; zoom uses the same binary64 typed spelling and keeps the engine-owned linear-zoom/log2 conversion. The regenerated inventory classifies all 107 controls as 87 truthful binary32, 5 truthful binary64, and 15 intentional mixed-precision, with zero authoring-identity-loss rows and no storage promotion.
+
 ### P1 - mechanically identified float peers
 
 After the double/camera witness is green, address the 83 ordinary float inputs as
@@ -192,9 +194,7 @@ effect without creating parallel metadata.
   float, integer, or enum?
 - Which visible float controls intentionally expose coarse authoring versus
   merely inheriting a shared format that predates exact state workflows?
-- What exact public UI automation and state replay witnesses should enforce
-  camera no-op identity without recreating camera mathematics outside the
-  engine?
+- Camera typed authoring now has native format/route coverage plus published viewer readback for exact center and engine-owned zoom conversion; no camera mathematics was recreated outside the engine.
 
 ## Boundaries Preserved
 

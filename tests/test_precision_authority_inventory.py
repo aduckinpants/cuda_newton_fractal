@@ -56,6 +56,20 @@ def test_general_schema_inventory_exposes_repaired_double_display_identity() -> 
     assert direct["classification_basis"] == "double_binding_and_roundtrip_capable_input"
 
 
+def test_general_schema_inventory_exposes_repaired_float_typed_input_identity() -> None:
+    inventory = build_inventory(REPO_ROOT)
+    controls = inventory["general_schema"]["numeric_controls"]
+    direct_floats = [
+        item for item in controls
+        if item["binding_storage"] == "float" and item["edit_route"] == "direct_binding"
+    ]
+
+    assert direct_floats
+    assert {item["input_format"] for item in direct_floats} == {"%.9g"}
+    assert {item["classification"] for item in direct_floats} == {"TRUTHFUL_FLOAT32"}
+    assert inventory["general_schema"]["classification_counts"].get("AUTHORING_IDENTITY_LOSS", 0) == 0
+
+
 def test_general_schema_inventory_exposes_specialized_camera_authority_routes() -> None:
     inventory = build_inventory(REPO_ROOT)
     controls = {
@@ -67,11 +81,12 @@ def test_general_schema_inventory_exposes_specialized_camera_authority_routes() 
         control = controls[control_id]
         assert control["binding_storage"] == "float"
         assert control["authoritative_storage"] == "double"
-        assert control["editor_carrier"] == "float"
-        assert control["edit_route"] == "camera_hp_double_via_float_editor"
-        assert control["classification"] == "AUTHORING_IDENTITY_LOSS"
+        assert control["editor_carrier"] == "double"
+        assert control["edit_route"] == "camera_hp_double_via_double_typed_input_and_float_drag"
+        assert control["input_format"] == "%.17g"
+        assert control["classification"] == "TRUTHFUL_FLOAT64"
         assert control["classification_basis"] == (
-            "camera_hp_double_authority_roundtrips_through_float_editor_and_fixed_five_decimal_input"
+            "camera_hp_double_authority_uses_roundtrip_double_typed_input_and_float_drag_mirror"
         )
 
     zoom = controls["zoom"]
@@ -79,9 +94,10 @@ def test_general_schema_inventory_exposes_specialized_camera_authority_routes() 
     assert zoom["authoritative_storage"] == "double_log2"
     assert zoom["editor_carrier"] == "double"
     assert zoom["edit_route"] == "camera_log2_double_via_double_editor"
-    assert zoom["classification"] == "AUTHORING_IDENTITY_LOSS"
+    assert zoom["input_format"] == "%.17g"
+    assert zoom["classification"] == "TRUTHFUL_FLOAT64"
     assert zoom["classification_basis"] == (
-        "camera_log2_double_authority_uses_nine_significant_digit_linear_zoom_input"
+        "camera_log2_double_authority_uses_roundtrip_linear_zoom_input"
     )
 
 
@@ -220,7 +236,7 @@ def test_markdown_and_cli_outputs_are_stable(tmp_path: Path) -> None:
     inventory = build_inventory(REPO_ROOT)
     markdown = render_markdown(inventory)
     assert "# Precision Authority Inventory" in markdown
-    assert "AUTHORING_IDENTITY_LOSS" in markdown
+    assert "AUTHORING_IDENTITY_LOSS" not in markdown
     assert "INTENTIONAL_MIXED_PRECISION" in markdown
 
     out_json = tmp_path / "matrix.json"

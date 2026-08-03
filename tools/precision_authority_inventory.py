@@ -101,18 +101,35 @@ def _binding_path_types(schema_binding: str) -> dict[str, str]:
     return typed_paths
 
 
-def _general_double_input_format(schema_binding: str) -> str:
-    body = _function_body(schema_binding, "const char* GeneralDoubleControlRoundTripFormat")
+def _source_owned_input_format(schema_binding: str, function_name: str) -> str:
+    body = _function_body(schema_binding, f"const char* {function_name}")
     match = re.search(r'return\s+"([^"]+)"\s*;', body)
     if not match:
-        raise ValueError("general double round-trip format is not source-proven")
+        raise ValueError(f"{function_name} round-trip format is not source-proven")
     return match.group(1)
+
+
+def _general_double_input_format(schema_binding: str) -> str:
+    return _source_owned_input_format(schema_binding, "GeneralDoubleControlRoundTripFormat")
+
+
+def _general_float_input_format(schema_binding: str) -> str:
+    return _source_owned_input_format(schema_binding, "GeneralFloatControlRoundTripFormat")
+
+
+def _camera_input_format(schema_binding: str) -> str:
+    body = _function_body(schema_binding, "const char* GeneralCameraControlRoundTripFormat")
+    if "GeneralDoubleControlRoundTripFormat()" not in body:
+        raise ValueError("camera round-trip format is not delegated to binary64 authority")
+    return _general_double_input_format(schema_binding)
 
 
 def _numeric_controls(ui_schema: dict[str, Any], schema_binding: str) -> list[dict[str, Any]]:
     binding_types = _binding_path_types(schema_binding)
     special_routes = _special_numeric_routes(schema_binding)
     general_double_input_format = _general_double_input_format(schema_binding)
+    general_float_input_format = _general_float_input_format(schema_binding)
+    camera_input_format = _camera_input_format(schema_binding)
     controls: list[dict[str, Any]] = []
     for panel in ui_schema.get("panels", []):
         for control in panel.get("controls", []):
@@ -122,7 +139,7 @@ def _numeric_controls(ui_schema: dict[str, Any], schema_binding: str) -> list[di
             binding = control.get("binding") or {}
             path = str(binding.get("path", ""))
             storage = binding_types.get(path, "unresolved")
-            input_format = _input_format(control, path, general_double_input_format)
+            input_format = _input_format(control, path, general_double_input_format, general_float_input_format, camera_input_format)
             route = special_routes.get(
                 path,
                 {
@@ -175,6 +192,7 @@ def _special_numeric_routes(schema_binding: str) -> dict[str, dict[str, str]]:
     edit_body = _function_body(schema_binding, "bool ApplyFloatControlEdit")
     double_edit_body = _function_body(schema_binding, "bool ApplyDoubleControlEdit")
     zoom_render_body = _function_body(schema_binding, "bool RenderCameraZoomControl")
+    float_render_body = _function_body(schema_binding, "bool RenderFloatControl")
     get_int_body = _function_body(schema_binding, "bool BindingContext::GetIntValue")
     set_int_body = _function_body(schema_binding, "bool BindingContext::SetIntValue")
     routes: dict[str, dict[str, str]] = {}
@@ -186,12 +204,13 @@ def _special_numeric_routes(schema_binding: str) -> dict[str, dict[str, str]]:
             and hp_member in display_body
             and f'binding.path == "{path}"' in edit_body
             and hp_member in edit_body
-            and "ImGui::InputFloat" in schema_binding
+            and "cameraTypedInput" in float_render_body
+            and "ImGui::InputDouble" in float_render_body
         ):
             routes[path] = {
-                "edit_route": "camera_hp_double_via_float_editor",
+                "edit_route": "camera_hp_double_via_double_typed_input_and_float_drag",
                 "authoritative_storage": "double",
-                "editor_carrier": "float",
+                "editor_carrier": "double",
             }
     if (
         'binding.path == "fractal.view.zoom"' in display_body
@@ -230,14 +249,20 @@ def _special_numeric_routes(schema_binding: str) -> dict[str, dict[str, str]]:
     return routes
 
 
-def _input_format(control: dict[str, Any], path: str, general_double_input_format: str) -> str:
+def _input_format(
+    control: dict[str, Any],
+    path: str,
+    general_double_input_format: str,
+    general_float_input_format: str,
+    camera_input_format: str,
+) -> str:
     control_type = str(control.get("type", ""))
     if control_type in {"slider_double", "drag_double"}:
         return general_double_input_format
     if control_type in {"slider_float", "drag_float"}:
-        if path == "fractal.view.zoom" or bool(control.get("logarithmic", False)):
-            return "%.9g"
-        return "%.5f"
+        if path in {"fractal.view.center.x", "fractal.view.center.y", "fractal.view.zoom"}:
+            return camera_input_format
+        return general_float_input_format
     return "integer"
 
 
@@ -259,15 +284,15 @@ def _authoring_classification(
             "INTENTIONAL_MIXED_PRECISION",
             "single_integer_authoring_projects_to_aspect_preserving_int2_resolution",
         )
-    if route["edit_route"] == "camera_hp_double_via_float_editor":
+    if route["edit_route"] == "camera_hp_double_via_double_typed_input_and_float_drag":
         return (
-            "AUTHORING_IDENTITY_LOSS",
-            "camera_hp_double_authority_roundtrips_through_float_editor_and_fixed_five_decimal_input",
+            "TRUTHFUL_FLOAT64",
+            "camera_hp_double_authority_uses_roundtrip_double_typed_input_and_float_drag_mirror",
         )
     if route["edit_route"] == "camera_log2_double_via_double_editor":
         return (
-            "AUTHORING_IDENTITY_LOSS",
-            "camera_log2_double_authority_uses_nine_significant_digit_linear_zoom_input",
+            "TRUTHFUL_FLOAT64",
+            "camera_log2_double_authority_uses_roundtrip_linear_zoom_input",
         )
     if storage == "unresolved":
         return "UNSUPPORTED_OR_NONAUTHORABLE", "binding_path_did_not_resolve_in_static_binding_owner"
