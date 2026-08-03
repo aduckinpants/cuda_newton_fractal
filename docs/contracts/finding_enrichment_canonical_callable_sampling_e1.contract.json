@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "contract_id": "finding_enrichment_canonical_callable_sampling_e1",
+  "feature_id": "finding_enrichment_engine_authority_v1",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/finding_enrichment_canonical_callable_sampling_e1_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/finding_enrichment_canonical_callable_sampling_e1_PHASED_PLAN.md",
+    "docs/contracts/finding_enrichment_canonical_callable_sampling_e1.contract.json",
+    "docs/callable_engine_surface.md",
+    "docs/callable_engine_fractal_sample_cheatsheet.md",
+    "docs/callable_engine_dynamic_function_cheatsheet.md",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_probe_runner.h",
+    "ui_app/src/fractal_probe_contract.cpp",
+    "ui_app/src/fractal_probe_contract.h",
+    "ui_app/src/fractal_sample_core.cu",
+    "ui_app/src/fractal_sample_result.h",
+    "ui_app/tests/test_fractal_probe.cpp",
+    "ui_app/tests/test_fractal_probe_contract.cpp",
+    "ui_app/tests/test_fractal_sample_result.cpp",
+    "tests/test_fractal_runtime_probe_cli.py",
+    "tests/test_fractal_runtime_session.py",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "exact clean merged master e1e1a14c3cf75b23167430251331aa65bcd240cf",
+    "rearward review status ok for the exact starting head",
+    "published merged runtime executable SHA-256 2c3b1da9c46e3de9dd2f8d47d101da1fdd804bb50bd2bf4e01d8314e999bf02b",
+    "canonical SampleFractalEvidencePoints service and public fractal.sample compatibility corpus",
+    "state-tool repository clean and untouched"
+  ],
+  "forbidden_operator_prompts": [
+    "add another recurrence implementation or selector-specific callable workaround",
+    "change public request transport sequence expansion NDJSON or session token semantics",
+    "preserve known-wrong host-copy numeric output over canonical CUDA truth",
+    "infer executed arithmetic only from requested sample tier",
+    "implement E2 active-model receipts or state-tool analysis in the E1 slice",
+    "implement or repair nonzero ExplainO warp",
+    "merge the engine pull request without separate user approval"
+  ],
+  "required_defaults": {
+    "canonical_sampling_owner": "SampleFractalEvidencePoints",
+    "execution_backend_compatibility_field": "runtime.backend_used",
+    "execution_backend_value": "cuda",
+    "executed_arithmetic_source": "canonical_per_sample_evidence",
+    "batch_per_concrete_sequence_member": true,
+    "public_transport_compatibility_required": true,
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "host_formula_authority": "forbidden",
+    "per_point_kernel_dispatch": "forbidden",
+    "requested_tier_as_executed_truth": "forbidden",
+    "silent_numeric_compatibility_laundering": "forbidden",
+    "cross_repository_dirty_overlap": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/finding_enrichment_canonical_callable_sampling_e1.contract.json --out-json artifacts/validation/finding_enrichment_canonical_callable_sampling_e1_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_focused_native --log artifacts/logs/finding_enrichment_e1_focused_native.log --out-json artifacts/validation/finding_enrichment_e1_focused_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_probe test_fractal_probe_contract test_fractal_sample_result",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_full_native --log artifacts/logs/finding_enrichment_e1_full_native.log --out-json artifacts/validation/finding_enrichment_e1_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_runtime_publish --log artifacts/logs/finding_enrichment_e1_runtime_publish.log --out-json artifacts/validation/finding_enrichment_e1_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_runtime_truth --log artifacts/logs/finding_enrichment_e1_runtime_truth.log --out-json artifacts/validation/finding_enrichment_e1_runtime_truth.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_canonical_callable_sampling.py tests/test_fractal_runtime_probe_cli.py tests/test_fractal_runtime_session.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/finding_enrichment_e1_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_diff_check --log artifacts/logs/finding_enrichment_e1_diff_check.log --out-json artifacts/validation/finding_enrichment_e1_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/finding_enrichment_canonical_callable_sampling_e1_PHASED_PLAN.md --out-json artifacts/validation/finding_enrichment_e1_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "e1_contract_schema_valid",
+      "description": "The canonical callable-sampling E1 contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_canonical_callable_sampling_e1_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "e1_focused_native_passed",
+      "description": "Focused native callable compatibility and evidence projections pass.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_e1_focused_native.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "e1_runtime_truth_passed",
+      "description": "The published runtime proves canonical CUDA callable execution, denominator-power truth, executed arithmetic disclosure, and preserved transports.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_e1_runtime_truth.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "e1_hostile_audit_ok",
+      "description": "The E1 hostile audit is complete before closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_e1_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
