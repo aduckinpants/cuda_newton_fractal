@@ -99,6 +99,28 @@ Important boundary:
 - the advisor is a headless report mode, not a callable `function_id`
 - it is Explaino-only today and intentionally fails fast on non-Explaino states
 
+### 5. State-bound active-model receipt
+
+Use the active-model surface when a downstream analysis tool needs the mathematical model that the loaded state actually selects, without duplicating engine recurrence metadata:
+
+```powershell
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --load-state-json state.json --describe-active-fractal-model
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --load-state-json state.json --describe-active-fractal-model-json active-model.json
+```
+
+The deterministic V1 receipt binds:
+
+- SHA-256 of the exact loaded `state.json` bytes
+- SHA-256 of the running executable bytes
+- selected and resolved runtime fractal identities
+- requested sample tier and resolved numeric backend
+- provider identity, participating serialized fields, recurrence identifiers, thresholds, and termination vocabulary
+- `fractal.sample` as the canonical evaluation surface
+
+The first static provider slot is `polynomial_over_power_escape.v1` for an exact `explaino_rational_escape` state with zero ExplainO warp. Nonzero warp and unsupported selectors return a valid receipt with explicit `unavailable` status; they never fall back to another model. The receipt does not solve critical points, place annotations, infer visible causes, or add another recurrence evaluator.
+
+To evaluate points, call `fractal.sample` against the same exact state and retain the receipt's state and runtime hashes beside the sample evidence. The active-model mode is metadata authority; E1's canonical CUDA sampler remains execution authority.
+
 ## Current Function Boundary
 
 ### `fractal.sample`
@@ -112,6 +134,16 @@ This is the runtime-authoritative fractal sampler over the existing binding-path
 - `fractal.render.*`
 
 Callers should discover applicable parameters through `--describe-functions` rather than guessing.
+
+Execution authority:
+
+- each concrete point or grid batch is evaluated by the canonical CUDA `SampleFractalEvidencePoints` service used by the renderer-side sampling core
+- a sequence request dispatches one CUDA batch per concrete sequence member; it does not launch one kernel per point
+- successful responses retain `runtime.backend_used = "cuda"` and add `runtime.iteration_arithmetic` as `float32`, `float64`, or `mixed`, derived from the returned per-sample evidence
+- requested sample-tier names do not substitute for executed-arithmetic truth
+- `root_index` remains a response projection over the canonical final state; it does not invoke another recurrence
+
+The callable transport, NDJSON, session, state-token, metric-filtering, ordering, and summary surfaces remain unchanged. Canonical CUDA results intentionally replace values previously produced by the removed host-side recurrence copy.
 
 ### `generic.sample`
 
@@ -174,6 +206,7 @@ For the current branch, treat the callable surface as:
 - discovery via `--describe-functions`
 - deterministic sampling via `fractal.sample` and `generic.sample`
 - deterministic state-review advice via `--explore-recommend`
+- deterministic state/runtime-bound model disclosure via `--describe-active-fractal-model`
 
 Do not pretend the engine already supports arbitrary registered kernels. That belongs to the later registry/transpiler thread described in:
 

@@ -217,6 +217,7 @@ void TestSerializationAndIds() {
     response.ok = true;
     response.runtime.fractal_type = "generic";
     response.runtime.backend_used = "cpu";
+    response.runtime.iteration_arithmetic = "float64";
     response.summary.sample_count = 1;
     response.summary.mean_abs2 = 9.0;
     response.metric_selection = BuildFractalProbeMetricSelection({"status", "value", "derivative", "summary_mean_abs2"});
@@ -236,6 +237,7 @@ void TestSerializationAndIds() {
     const std::string json = SerializeFractalProbeResponseJson(response);
     CheckParsesJson(json, "Response JSON parses");
     Check(Contains(json, "\"function_id\": \"generic.sample\""), "Response JSON includes function_id");
+    Check(Contains(json, "\"iteration_arithmetic\": \"float64\""), "Response JSON includes actual iteration arithmetic when supplied");
     Check(Contains(json, "\"mean_abs2\": 9"), "Response JSON includes selected summary metric");
     Check(Contains(json, "\"status\": \"bounded\""), "Response JSON includes selected sample status");
     Check(Contains(json, "\"value_x\": 1.5"), "Response JSON includes selected value field");
@@ -259,6 +261,7 @@ void TestSerializationAndIds() {
     CheckParsesJson(summary, "NDJSON summary JSON parses");
     Check(Contains(summary, "\"type\":\"summary\""), "NDJSON summary includes type");
     Check(Contains(summary, "\"state_token\":\"state-99\""), "NDJSON summary includes state token");
+    Check(Contains(summary, "\"iteration_arithmetic\":\"float64\""), "NDJSON summary includes actual iteration arithmetic");
 }
 
 } // namespace

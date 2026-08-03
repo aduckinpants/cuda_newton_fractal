@@ -156,6 +156,7 @@ struct FractalProbeRuntimeInfo {
     std::string fractal_type;
     int device_id{0};
     std::string backend_used;
+    std::string iteration_arithmetic;
 };
 
 struct FractalProbeCost {

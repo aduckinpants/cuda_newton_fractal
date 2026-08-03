@@ -2597,6 +2597,8 @@ static void ApplySweepPlaybackPerFrame(const SweepPlayerConfig& config, float de
 }
 
 static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& exeDir,
+                                    const std::string& exePath,
+                                    const std::string& currentLoadedStatePath,
                                     ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens, bool& dirty,
                                     SdfPackViewerState& sdfPackViewer,
                                     ColorPipelineWindowState& colorPipelineWindow,
@@ -2626,6 +2628,20 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     const ColorPipelineHeadlessProofConfig& colorPipelineHeadlessProofConfig = cli.color_pipeline_headless_proof;
 
     const bool describeViewportFacts = cli.describe_viewport_facts || cli.have_describe_viewport_facts_json;
+    const bool describeActiveFractalModel =
+        cli.describe_active_fractal_model || cli.have_describe_active_fractal_model_json;
+    if (describeActiveFractalModel) {
+        return RunDescribeActiveFractalModelMode(
+            cli.describe_active_fractal_model,
+            cli.have_describe_active_fractal_model_json
+                ? cli.describe_active_fractal_model_json_path
+                : std::string(),
+            view,
+            params,
+            render,
+            currentLoadedStatePath,
+            exePath);
+    }
     if (describeViewportFacts) {
         return RunDescribeViewportFactsMode(
             cli.describe_viewport_facts,
@@ -2844,11 +2860,21 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool describeParameterSurface = cli.describe_parameter_surface || cli.have_describe_parameter_surface_json;
     const bool describeFractalCatalog = cli.describe_fractal_catalog || cli.have_describe_fractal_catalog_json;
+    const bool describeActiveFractalModel =
+        cli.describe_active_fractal_model || cli.have_describe_active_fractal_model_json;
     const bool describeExplainoAxisRegistry = cli.describe_explaino_axis_registry || cli.have_describe_explaino_axis_registry_json;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
     const bool validateUiSaltContract = cli.validate_ui_salt_contract ||
         cli.have_ui_salt_contract_json || cli.have_ui_salt_contract_report_json;
+    if (describeActiveFractalModel && (validateUiSaltContract || cli.sample_session || cli.any_sample_mode_arg ||
+            cli.describe_functions || cli.have_describe_functions_json || describeParameterSurface ||
+            describeFractalCatalog || describeExplainoAxisRegistry || exploreRecommend || cli.flashlight_probe ||
+            runtimeWalk || runtimeWalkViewer || cli.validate_ui_only || cli.capture_diagnostic_only ||
+            cli.capture_finding_only)) {
+        std::fprintf(stderr, "--describe-active-fractal-model is mutually exclusive with other headless verbs\n");
+        return 1;
+    }
     if (validateUiSaltContract) {
         if (!cli.validate_ui_salt_contract || cli.sample_session || cli.any_sample_mode_arg ||
                 cli.describe_functions || cli.have_describe_functions_json ||
@@ -4758,7 +4784,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     BindingContext bind = BuildViewerBindingContext(view, params, render, lens);
 
-    { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, lens, dirty,
+    { int headless = TryDispatchHeadlessMode(cli, exeDir, exePath, currentLoadedStatePath, view, params, render, lens, dirty,
         sdfPackViewer,
         colorPipelineWindow,
           engineCatalog, bind, sidecarControllerPolicy, sidecarMeasurementHost,

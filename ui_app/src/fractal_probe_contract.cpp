@@ -1056,7 +1056,11 @@ std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& respon
     ss << "    \"exe_path\": \"" << EscapeJsonString(response.runtime.exe_path) << "\",\n";
     ss << "    \"fractal_type\": \"" << EscapeJsonString(response.runtime.fractal_type) << "\",\n";
     ss << "    \"device_id\": " << response.runtime.device_id << ",\n";
-    ss << "    \"backend_used\": \"" << EscapeJsonString(response.runtime.backend_used) << "\"\n";
+    ss << "    \"backend_used\": \"" << EscapeJsonString(response.runtime.backend_used) << "\"";
+    if (!response.runtime.iteration_arithmetic.empty()) {
+        ss << ",\n    \"iteration_arithmetic\": \"" << EscapeJsonString(response.runtime.iteration_arithmetic) << "\"";
+    }
+    ss << "\n";
     ss << "  },\n";
     AppendSummaryJson(ss, response.summary, response.metric_selection, 2);
     ss << ",\n";
@@ -1126,6 +1130,9 @@ std::string SerializeFractalProbeNdjsonSummaryJson(
     runtimeEntries.push_back({"fractal_type", JsonStringLiteral(response.runtime.fractal_type)});
     runtimeEntries.push_back({"device_id", std::to_string(response.runtime.device_id)});
     runtimeEntries.push_back({"backend_used", JsonStringLiteral(response.runtime.backend_used)});
+    if (!response.runtime.iteration_arithmetic.empty()) {
+        runtimeEntries.push_back({"iteration_arithmetic", JsonStringLiteral(response.runtime.iteration_arithmetic)});
+    }
 
     std::ostringstream runtimeJson;
     AppendJsonObjectCompact(runtimeJson, runtimeEntries);
