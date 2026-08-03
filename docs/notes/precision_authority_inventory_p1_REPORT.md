@@ -89,10 +89,23 @@ numeric values use a double carrier. That proves neither binary64 execution nor
 loss: each selected function can still consume or deliberately narrow its value
 in its runtime implementation.
 
-The correct classification is `NEEDS_RUNTIME_WITNESS`. The next Color Pipeline
-audit must derive its parameter list from the compiled contract and join each
-parameter to its current function consumer. No C++ or Python precision table may
-be introduced alongside that contract.
+Phase 3C resolution: the 120 descriptors reduce to 94 float, 8 integer, and 18
+enum declarations feeding five shared runtime owner structures. Float
+descriptors intentionally normalize into binary32 owners; no storage promotion
+or second parameter registry is justified.
+
+The audit proved four shared authoring/readback defects: fixed three- and
+five-decimal editor spellings, six-decimal Balance Void import rounding,
+`1e-6` state-identity comparisons that hid adjacent binary32 values, and loaded
+drafts retaining digits discarded by the runtime owner. The repaired route uses
+`%.9g`, exact binary32-to-double readback, exact stored-value identity, and
+runtime-normalized draft synchronization.
+
+Direct UI apply remains compatible with historical tuples that the older live
+snapshot importer cannot reconstruct. The explicit loaded-draft route is
+transactional and fails closed when authoritative normalized readback is
+unavailable. Published-runtime proof demonstrates one-time normalization,
+visible frame effect, and action-free authoring-state/frame replay.
 
 ### Runtime tiers
 

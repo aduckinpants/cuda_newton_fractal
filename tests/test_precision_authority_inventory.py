@@ -105,20 +105,36 @@ def test_general_schema_inventory_exposes_composite_numeric_routes() -> None:
         assert seed["editor_carrier"] == "double"
 
 
-def test_color_pipeline_inventory_uses_compiled_contract_and_double_carrier() -> None:
+def test_color_pipeline_inventory_collapses_descriptors_to_shared_typed_owners() -> None:
     inventory = build_inventory(REPO_ROOT)
     pipeline = inventory["color_pipeline"]
 
-    assert pipeline["contract_parameter_count"] > 0
-    assert pipeline["parameter_type_counts"]["float"] > 0
+    assert pipeline["contract_parameter_count"] == 120
+    assert pipeline["parameter_type_counts"] == {"enum": 18, "float": 94, "int": 8}
     assert pipeline["runtime_number_carrier"] == "double"
-    assert pipeline["classification"] == "NEEDS_RUNTIME_WITNESS"
+    assert pipeline["compiled_double_parameter_count"] == 0
+    assert pipeline["float_editor_format"] == "%.9g"
+    assert pipeline["float_readback"] == "exact_binary32_promotion"
+    assert pipeline["float_identity_comparison"] == "exact_binary32"
+    assert pipeline["runtime_numeric_storage_types"] == ["float", "int"]
+    assert pipeline["runtime_consumer_owner_count"] < pipeline["contract_parameter_count"]
+    assert pipeline["classification"] == "INTENTIONAL_MIXED_PRECISION"
     assert pipeline["authority_kind"] == "compiled_ui_salt_contract"
-    assert {item["classification_confidence"] for item in pipeline["parameters"]} == {
-        "contract_and_carrier_proven_runtime_consumer_unresolved"
+
+    by_type = {
+        declared_type: [
+            item for item in pipeline["parameters"]
+            if item["declared_type"] == declared_type
+        ]
+        for declared_type in ("float", "int", "enum")
     }
-
-
+    assert {item["classification"] for item in by_type["float"]} == {"TRUTHFUL_FLOAT32"}
+    assert {item["editor_carrier"] for item in by_type["float"]} == {"float"}
+    assert {item["runtime_consumption"] for item in by_type["float"]} == {
+        "float_backed_color_pipeline_runtime_owner"
+    }
+    assert {item["classification"] for item in by_type["int"]} == {"TRUTHFUL_INTEGER"}
+    assert {item["classification"] for item in by_type["enum"]} == {"TRUTHFUL_ENUM"}
 def test_state_io_inventory_joins_every_float_conversion_to_declared_storage() -> None:
     inventory = build_inventory(REPO_ROOT)
     state_io = inventory["state_io"]

@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "contract_id": "precision_authority_color_pipeline_consumer_p3c",
+  "feature_id": "precision_authority_emergency_audit_and_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md",
+    "docs/notes/precision_authority_inventory_p1_REPORT.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/color_pipeline_loaded_draft.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_color_pipeline_loaded_draft.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "tools/precision_authority_inventory.py",
+    "tests/test_precision_authority_inventory.py",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean reviewed Phase 3B checkpoint c8c404e6751011bb09a98b0978b145a16f353126",
+    "compiled UI-Salt Color Pipeline contract",
+    "ColorPipelineParamState draft carrier",
+    "Color Pipeline editor numeric branches",
+    "Color Pipeline draft-to-live lowering owners",
+    "KernelParams and stack-entry runtime consumers",
+    "published runtime at D:/salt-fractal/cuda_newton_fractal_clone/runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "treat 120 descriptors as 120 independent repairs",
+    "promote Color Pipeline float descriptors or runtime storage to double",
+    "add a Python-owned function parameter or consumer registry",
+    "change Color Pipeline topology functions ranges defaults recipes compatibility or rendering behavior",
+    "change state schema keys versions defaults or compatibility behavior",
+    "change general schema camera formula sampler or runtime tier behavior",
+    "repair nonzero ExplainO warp",
+    "change state-tool files or merge the engine branch"
+  ],
+  "required_defaults": {
+    "compiled_parameter_count_starting_hypothesis": 120,
+    "compiled_float_parameter_count_starting_hypothesis": 94,
+    "compiled_int_parameter_count_starting_hypothesis": 8,
+    "compiled_enum_parameter_count_starting_hypothesis": 18,
+    "compiled_double_parameter_count_starting_hypothesis": 0,
+    "draft_numeric_carrier": "double",
+    "float_runtime_consumer_storage": "float",
+    "float_editor_roundtrip_format": "%.9g",
+    "imported_float_readback_preserves_exact_binary32_value": true,
+    "classification_is_source_derived": true,
+    "product_repair_requires_proven_authoring_or_readback_loss": true,
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "descriptor_count_as_repair_count": "forbidden",
+    "bulk_float_to_double_conversion": "forbidden",
+    "handwritten_pipeline_precision_registry": "forbidden",
+    "decimal_rounding_of_runtime_float_readback": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/precision_authority_color_pipeline_consumer_p3c.contract.json --out-json artifacts/validation/precision_authority_color_pipeline_consumer_p3c_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3c_inventory --log artifacts/logs/precision_authority_p3c_inventory.log --out-json artifacts/validation/precision_authority_p3c_inventory.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_precision_authority_inventory.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3c_window --log artifacts/logs/precision_authority_p3c_window.log --out-json artifacts/validation/precision_authority_p3c_window.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3c_loaded_draft --log artifacts/logs/precision_authority_p3c_loaded_draft.log --out-json artifacts/validation/precision_authority_p3c_loaded_draft.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_loaded_draft",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3c_full_native --log artifacts/logs/precision_authority_p3c_full_native.log --out-json artifacts/validation/precision_authority_p3c_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3c_runtime_publish --log artifacts/logs/precision_authority_p3c_runtime_publish.log --out-json artifacts/validation/precision_authority_p3c_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3c_runtime_truth --log artifacts/logs/precision_authority_p3c_runtime_truth.log --out-json artifacts/validation/precision_authority_p3c_runtime_truth.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_precision_authority.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/precision_authority_p3c_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3c_diff_check --log artifacts/logs/precision_authority_p3c_diff_check.log --out-json artifacts/validation/precision_authority_p3c_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md --out-json artifacts/validation/precision_authority_color_pipeline_consumer_p3c_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {"assertion_id": "precision_authority_p3c_contract_schema_valid", "description": "The bounded Color Pipeline carrier-consumer contract validates.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_color_pipeline_consumer_p3c_contract.json", "json_path": "checks.contract_schema_valid", "equals": true},
+    {"assertion_id": "precision_authority_p3c_inventory_passed", "description": "The source-derived inventory classifies every compiled descriptor through the shared draft carrier and runtime consumer owners without a handwritten parameter registry.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_p3c_inventory.json", "json_path": "ok", "equals": true},
+    {"assertion_id": "precision_authority_p3c_window_passed", "description": "Focused native editor and import witnesses prove binary32 round-trip display and exact runtime-float readback.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_p3c_window.json", "json_path": "ok", "equals": true},
+    {"assertion_id": "precision_authority_p3c_loaded_draft_passed", "description": "Focused loaded-draft application proves over-precise draft numbers normalize visibly to their float runtime consumers.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_p3c_loaded_draft.json", "json_path": "ok", "equals": true},
+    {"assertion_id": "precision_authority_p3c_published_runtime_truth_passed", "description": "The published runtime materializes and action-free replays the normalized Color Pipeline draft and frame deterministically.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_p3c_runtime_truth.json", "json_path": "ok", "equals": true},
+    {"assertion_id": "precision_authority_p3c_hostile_audit_ok", "description": "The Phase 3C hostile audit is complete before checkpoint.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_color_pipeline_consumer_p3c_hostile_audit.json", "json_path": "ok", "equals": true}
+  ]
+}

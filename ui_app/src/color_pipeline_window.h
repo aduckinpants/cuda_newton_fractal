@@ -617,7 +617,7 @@ inline bool ColorPipelineParamStatesEqual(
     const ColorPipelineParamState& right) {
     return left.path == right.path &&
         left.type == right.type &&
-        std::fabs(left.number_value - right.number_value) <= 1e-6 &&
+        left.number_value == right.number_value &&
         left.bool_value == right.bool_value &&
         left.enum_value == right.enum_value;
 }
@@ -744,6 +744,59 @@ inline bool ResetColorPipelineDraftFromLiveState(ColorPipelineWindowState* ioSta
     return true;
 }
 
+inline bool CanonicalizeAppliedColorPipelineDraftFromLiveSnapshot(
+    ColorPipelineWindowState* ioState) {
+    if (!ioState || !ioState->live_snapshot.valid) {
+        return false;
+    }
+    if (!ioState->live_snapshot.draft_import_supported ||
+        ioState->live_snapshot.lanes.empty()) {
+        PushColorPipelineValidationMessage(
+            ioState,
+            "Applied Color Pipeline draft cannot be synchronized from the current live selection.");
+        return false;
+    }
+    if (ioState->lanes.size() != ioState->live_snapshot.lanes.size()) {
+        return false;
+    }
+
+    for (std::size_t laneIndex = 0; laneIndex < ioState->lanes.size(); ++laneIndex) {
+        ColorPipelineLaneState& draftLane = ioState->lanes[laneIndex];
+        const ColorPipelineLaneState& liveLane = ioState->live_snapshot.lanes[laneIndex];
+        if (draftLane.lane_id != liveLane.lane_id) {
+            return false;
+        }
+
+        std::size_t liveRowIndex = 0;
+        for (ColorPipelineRowState& draftRow : draftLane.rows) {
+            if (!draftRow.enabled) {
+                continue;
+            }
+            if (liveRowIndex >= liveLane.rows.size()) {
+                return false;
+            }
+            const ColorPipelineRowState& liveRow = liveLane.rows[liveRowIndex++];
+            if (draftRow.function_id != liveRow.function_id ||
+                draftRow.parameter_values.size() != liveRow.parameter_values.size()) {
+                return false;
+            }
+            for (std::size_t paramIndex = 0;
+                 paramIndex < draftRow.parameter_values.size();
+                 ++paramIndex) {
+                ColorPipelineParamState& draftParam = draftRow.parameter_values[paramIndex];
+                const ColorPipelineParamState& liveParam = liveRow.parameter_values[paramIndex];
+                if (draftParam.path != liveParam.path || draftParam.type != liveParam.type) {
+                    return false;
+                }
+                draftParam = liveParam;
+            }
+        }
+        if (liveRowIndex != liveLane.rows.size()) {
+            return false;
+        }
+    }
+    return true;
+}
 inline bool TryBuildColorPipelineScheduleBridgeIds(
     const ColorPipelineSelection& pipeline,
     const char** outSourceFunctionId,
@@ -1748,25 +1801,25 @@ inline bool IsSdfColorPipelineSourceFunctionId(const std::string& functionId) {
 inline bool ColorPipelineSourceRuntimeParamsEqual(
     const ColorPipelineSourceRuntimeParams& left,
     const ColorPipelineSourceRuntimeParams& right) {
-    return std::fabs(left.scale - right.scale) <= 1.0e-6f &&
-        std::fabs(left.bias - right.bias) <= 1.0e-6f &&
-        std::fabs(left.phase_offset - right.phase_offset) <= 1.0e-6f &&
-        std::fabs(left.wrap_cycles - right.wrap_cycles) <= 1.0e-6f &&
+    return left.scale == right.scale &&
+        left.bias == right.bias &&
+        left.phase_offset == right.phase_offset &&
+        left.wrap_cycles == right.wrap_cycles &&
         left.band_count == right.band_count &&
-        std::fabs(left.softness - right.softness) <= 1.0e-6f &&
-        std::fabs(left.magnitude_scale - right.magnitude_scale) <= 1.0e-6f &&
-        std::fabs(left.magnitude_bias - right.magnitude_bias) <= 1.0e-6f &&
-        std::fabs(left.stripe_frequency - right.stripe_frequency) <= 1.0e-6f &&
-        std::fabs(left.stripe_phase - right.stripe_phase) <= 1.0e-6f &&
-        std::fabs(left.proximity_scale - right.proximity_scale) <= 1.0e-6f &&
-        std::fabs(left.proximity_bias - right.proximity_bias) <= 1.0e-6f &&
-        std::fabs(left.sdf_boundary_width_px - right.sdf_boundary_width_px) <= 1.0e-6f &&
-        std::fabs(left.lens_field_v2_sign_contrast - right.lens_field_v2_sign_contrast) <= 1.0e-6f &&
+        left.softness == right.softness &&
+        left.magnitude_scale == right.magnitude_scale &&
+        left.magnitude_bias == right.magnitude_bias &&
+        left.stripe_frequency == right.stripe_frequency &&
+        left.stripe_phase == right.stripe_phase &&
+        left.proximity_scale == right.proximity_scale &&
+        left.proximity_bias == right.proximity_bias &&
+        left.sdf_boundary_width_px == right.sdf_boundary_width_px &&
+        left.lens_field_v2_sign_contrast == right.lens_field_v2_sign_contrast &&
         left.sdf_gate == right.sdf_gate &&
-        std::fabs(left.sdf_gate_width_px - right.sdf_gate_width_px) <= 1.0e-6f &&
+        left.sdf_gate_width_px == right.sdf_gate_width_px &&
         left.sdf_sample_step == right.sdf_sample_step &&
         left.sdf_field_downsample == right.sdf_field_downsample &&
-        std::fabs(left.blend_weight - right.blend_weight) <= 1.0e-6f;
+        left.blend_weight == right.blend_weight;
 }
 
 inline bool ColorPipelineSourceStackEntriesEqual(
@@ -1779,17 +1832,17 @@ inline bool ColorPipelineSourceStackEntriesEqual(
 inline bool ColorPipelineShapeRuntimeParamsEqual(
     const ColorPipelineShapeRuntimeParams& left,
     const ColorPipelineShapeRuntimeParams& right) {
-    return std::fabs(left.offset - right.offset) <= 1.0e-6f &&
-        std::fabs(left.scale - right.scale) <= 1.0e-6f &&
-        std::fabs(left.repeat_frequency - right.repeat_frequency) <= 1.0e-6f &&
-        std::fabs(left.repeat_phase - right.repeat_phase) <= 1.0e-6f &&
+    return left.offset == right.offset &&
+        left.scale == right.scale &&
+        left.repeat_frequency == right.repeat_frequency &&
+        left.repeat_phase == right.repeat_phase &&
         left.posterize_steps == right.posterize_steps &&
-        std::fabs(left.posterize_mix - right.posterize_mix) <= 1.0e-6f &&
-        std::fabs(left.bias - right.bias) <= 1.0e-6f &&
-        std::fabs(left.gain - right.gain) <= 1.0e-6f &&
-        std::fabs(left.window_center - right.window_center) <= 1.0e-6f &&
-        std::fabs(left.window_width - right.window_width) <= 1.0e-6f &&
-        std::fabs(left.window_softness - right.window_softness) <= 1.0e-6f;
+        left.posterize_mix == right.posterize_mix &&
+        left.bias == right.bias &&
+        left.gain == right.gain &&
+        left.window_center == right.window_center &&
+        left.window_width == right.window_width &&
+        left.window_softness == right.window_softness;
 }
 
 inline bool ColorPipelineShapeStackEntriesEqual(
@@ -1813,13 +1866,13 @@ inline bool IsSupportedColorPipelineGradingFunctionId(const std::string& functio
 inline bool ColorPipelineGradingRuntimeParamsEqual(
     const ColorPipelineGradingRuntimeParams& left,
     const ColorPipelineGradingRuntimeParams& right) {
-    return std::fabs(left.exposure - right.exposure) <= 1.0e-6f &&
-        std::fabs(left.saturation - right.saturation) <= 1.0e-6f &&
-        std::fabs(left.contrast - right.contrast) <= 1.0e-6f &&
-        std::fabs(left.glow - right.glow) <= 1.0e-6f &&
-        std::fabs(left.balance_void - right.balance_void) <= 1.0e-6f &&
-        std::fabs(left.chroma_tension - right.chroma_tension) <= 1.0e-6f &&
-        std::fabs(left.accent_bias - right.accent_bias) <= 1.0e-6f;
+    return left.exposure == right.exposure &&
+        left.saturation == right.saturation &&
+        left.contrast == right.contrast &&
+        left.glow == right.glow &&
+        left.balance_void == right.balance_void &&
+        left.chroma_tension == right.chroma_tension &&
+        left.accent_bias == right.accent_bias;
 }
 
 inline bool ColorPipelineGradingStackEntriesEqual(
@@ -1840,14 +1893,14 @@ inline bool IsSupportedColorPipelinePaletteStackFunctionId(const std::string& fu
 inline bool ColorPipelinePaletteRuntimeParamsEqual(
     const ColorPipelinePaletteRuntimeParams& left,
     const ColorPipelinePaletteRuntimeParams& right) {
-    return std::fabs(left.cycle_scale - right.cycle_scale) <= 1.0e-6f &&
-        std::fabs(left.saturation - right.saturation) <= 1.0e-6f &&
-        std::fabs(left.phase_offset - right.phase_offset) <= 1.0e-6f &&
-        std::fabs(left.band_emphasis - right.band_emphasis) <= 1.0e-6f &&
-        std::fabs(left.seed_scale - right.seed_scale) <= 1.0e-6f &&
-        std::fabs(left.seed_phase - right.seed_phase) <= 1.0e-6f &&
-        std::fabs(left.colorfulness - right.colorfulness) <= 1.0e-6f &&
-        std::fabs(left.blend_weight - right.blend_weight) <= 1.0e-6f &&
+    return left.cycle_scale == right.cycle_scale &&
+        left.saturation == right.saturation &&
+        left.phase_offset == right.phase_offset &&
+        left.band_emphasis == right.band_emphasis &&
+        left.seed_scale == right.seed_scale &&
+        left.seed_phase == right.seed_phase &&
+        left.colorfulness == right.colorfulness &&
+        left.blend_weight == right.blend_weight &&
         left.blend_mode == right.blend_mode;
 }
 
@@ -2891,9 +2944,9 @@ inline bool ImportSupportedColorPipelineParamsFromGradingStackEntry(
             SetColorPipelineParamNumber(ioRow, "grade.glow", gradingEntry.params.glow, outError);
     }
     if (ioRow->function_id == "balance_void_grade") {
-        return SetColorPipelineParamNumber(ioRow, "grade.balance_void", color_pipeline_core::NormalizeImportedColorPipelineNumber(gradingEntry.params.balance_void), outError) &&
-            SetColorPipelineParamNumber(ioRow, "grade.chroma_tension", color_pipeline_core::NormalizeImportedColorPipelineNumber(gradingEntry.params.chroma_tension), outError) &&
-            SetColorPipelineParamNumber(ioRow, "grade.accent_bias", color_pipeline_core::NormalizeImportedColorPipelineNumber(gradingEntry.params.accent_bias), outError);
+        return SetColorPipelineParamNumber(ioRow, "grade.balance_void", color_pipeline_core::PreserveImportedColorPipelineFloat(gradingEntry.params.balance_void), outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.chroma_tension", color_pipeline_core::PreserveImportedColorPipelineFloat(gradingEntry.params.chroma_tension), outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.accent_bias", color_pipeline_core::PreserveImportedColorPipelineFloat(gradingEntry.params.accent_bias), outError);
     }
     return true;
 }
@@ -3084,7 +3137,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         }
     };
     const auto assignShapeFloat = [&](float* target, float value) {
-        if (std::fabs(*target - value) > 1.0e-6f) {
+        if (*target != value) {
             *target = value;
             changed = true;
         }
@@ -3934,7 +3987,8 @@ inline bool ApplyColorPipelineDraftToLiveState(
     ColorPipelineWindowState* ioState,
     FractalType liveFractalType,
     KernelParams* ioParams,
-    bool* outChanged = nullptr) {
+    bool* outChanged = nullptr,
+    bool preserveDraftStorage = false) {
     if (outChanged) {
         *outChanged = false;
     }
@@ -4006,6 +4060,14 @@ inline bool ApplyColorPipelineDraftToLiveState(
     ioParams->color_pipeline = nextPipeline;
     if (!SyncColorPipelineWindowFromLiveState(ioState, liveFractalType, ioParams)) {
         return false;
+    }
+    if (ioState->live_snapshot.draft_import_supported) {
+        const bool synchronized = preserveDraftStorage
+            ? CanonicalizeAppliedColorPipelineDraftFromLiveSnapshot(ioState)
+            : ResetColorPipelineDraftFromLiveState(ioState);
+        if (!synchronized) {
+            return false;
+        }
     }
     if (outChanged) {
         *outChanged = changed || paramChanged;
@@ -4287,7 +4349,8 @@ inline bool TryApplySupportedColorPipelineDraftFromControl(
     }
 
     bool changed = false;
-    if (!ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed)) {
+    if (!ApplyColorPipelineDraftToLiveState(
+            ioState, liveFractalType, liveParams, &changed, true)) {
         return false;
     }
     if (changed && ioDirty) {
@@ -4322,12 +4385,12 @@ inline bool RenderColorPipelineParamControl(
         const float maxValue = range.has_widget_max ? static_cast<float>(range.widget_max) : 1.0f;
         bool sliderChanged = false;
         if (range.has_widget_min && range.has_widget_max) {
-            sliderChanged = ImGui::SliderFloat(param.label.c_str(), &value, minValue, maxValue, "%.5f");
+            sliderChanged = ImGui::SliderFloat(param.label.c_str(), &value, minValue, maxValue, color_pipeline_core::ColorPipelineFloatInputFormat());
         } else {
             const float step = param.has_step ? static_cast<float>(param.step_value) : 0.01f;
             const float dragMin = dragBounds.has_bounds ? static_cast<float>(dragBounds.min) : 0.0f;
             const float dragMax = dragBounds.has_bounds ? static_cast<float>(dragBounds.max) : 0.0f;
-            sliderChanged = ImGui::DragFloat(param.label.c_str(), &value, step, dragMin, dragMax, "%.3f");
+            sliderChanged = ImGui::DragFloat(param.label.c_str(), &value, step, dragMin, dragMax, color_pipeline_core::ColorPipelineFloatInputFormat());
         }
         NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
         const bool automationChanged = TryApplyColorPipelineUiAutomationSetValue(
@@ -4351,7 +4414,7 @@ inline bool RenderColorPipelineParamControl(
             ioDirty,
             ioInteraction);
         ImGui::SameLine();
-        const bool typedChanged = ImGui::InputFloat("##value_input", &value, 0.0f, 0.0f, "%.5f");
+        const bool typedChanged = ImGui::InputFloat("##value_input", &value, 0.0f, 0.0f, color_pipeline_core::ColorPipelineFloatInputFormat());
         CommitColorPipelineNumericParamEditFromCurrentItem(
             ioState,
             liveFractalType,

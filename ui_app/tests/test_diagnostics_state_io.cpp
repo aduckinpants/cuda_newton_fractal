@@ -5398,6 +5398,10 @@ int main() {
                         << shapeDescriptor.id << " / "
                         << paletteDescriptor.id << " / "
                         << gradingDescriptor.id << "\n";
+                  for (const std::string& validationMessage : appliedDraft.validation_messages) {
+                    std::cerr << "  Color Pipeline validation: "
+                              << validationMessage << "\n";
+                  }
                   return 1;
                 }
 
@@ -5476,6 +5480,10 @@ int main() {
                         << shapeDescriptor.id << " / "
                         << paletteDescriptor.id << " / "
                         << gradingDescriptor.id << "\n";
+                  for (const std::string& validationMessage : appliedDraft.validation_messages) {
+                    std::cerr << "  Color Pipeline validation: "
+                              << validationMessage << "\n";
+                  }
                   return 1;
                 }
 

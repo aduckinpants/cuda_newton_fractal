@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include <initializer_list>
 #include <string>
 #include <vector>
@@ -1171,6 +1172,54 @@ void TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries() {
         "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_GroupLabelsAreReadable");
 }
 
+void TestFloatIdentityPreservesAdjacentBinary32Edits() {
+    ColorPipelineParamState left{};
+    left.path = "grade.balance_void";
+    left.type = "float";
+    const float baseValue = 0.12345678f;
+    const float adjacentValue = std::nextafter(baseValue, 1.0f);
+    left.number_value = static_cast<double>(baseValue);
+    ColorPipelineParamState right = left;
+    right.number_value = static_cast<double>(adjacentValue);
+    Check(!ColorPipelineParamStatesEqual(left, right),
+        "TestFloatIdentityPreservesAdjacentBinary32Edits_DraftIdentityIsExact");
+
+    ColorPipelineSourceRuntimeParams leftSource{};
+    leftSource.lens_field_v2_sign_contrast = baseValue;
+    ColorPipelineSourceRuntimeParams rightSource = leftSource;
+    rightSource.lens_field_v2_sign_contrast = adjacentValue;
+    Check(!ColorPipelineSourceRuntimeParamsEqual(leftSource, rightSource),
+        "TestFloatIdentityPreservesAdjacentBinary32Edits_SourceRuntimeIdentityIsExact");
+
+    KernelParams params = SmoothEscapeParams();
+    ColorPipelineWindowState state{};
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::mandelbrot, &params) &&
+            SelectColorPipelineLaneFunction(&state, 3, "balance_void_grade") &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.balance_void", baseValue),
+        "TestFloatIdentityPreservesAdjacentBinary32Edits_ConfiguresBaseValue");
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::mandelbrot, &params, &changed) && changed &&
+            params.color_balance_void == baseValue,
+        "TestFloatIdentityPreservesAdjacentBinary32Edits_AppliesBaseValue");
+    Check(SetRowNumber(state.lanes[3].rows[0], "grade.balance_void", adjacentValue),
+        "TestFloatIdentityPreservesAdjacentBinary32Edits_ConfiguresAdjacentValue");
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::mandelbrot, &params, &changed) && changed &&
+            params.color_balance_void == adjacentValue &&
+            !HasColorPipelineDraftEdits(state),
+        "TestFloatIdentityPreservesAdjacentBinary32Edits_AppliesAdjacentValue");
+}
+void TestFloatAuthoringUsesBinary32RoundTripText() {
+    const float value = std::nextafter(0.123456789f, 1.0f);
+    char text[64]{};
+    std::snprintf(text, sizeof(text), color_pipeline_core::ColorPipelineFloatInputFormat(), value);
+    char* end = nullptr;
+    const float parsed = std::strtof(text, &end);
+    Check(std::strcmp(color_pipeline_core::ColorPipelineFloatInputFormat(), "%.9g") == 0,
+        "TestFloatAuthoringUsesBinary32RoundTripText_FormatIsNineSignificantDigits");
+    Check(end && *end == '\0' && parsed == value,
+        "TestFloatAuthoringUsesBinary32RoundTripText_FormatParsePreservesExactFloat");
+}
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -1236,6 +1285,8 @@ int main() {
     TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries();
     TestPresetWorkflowTruthSurface();
     TestRecipeExpansionUsesExistingWindowDraftRows();
+    TestFloatIdentityPreservesAdjacentBinary32Edits();
+    TestFloatAuthoringUsesBinary32RoundTripText();
     TestWindowUtilityContracts();
 
     std::printf("test_color_pipeline_window: passed=%d failed=%d\n", g_passed, g_failed);

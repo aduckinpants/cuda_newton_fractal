@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3B checkpoint closed - all 149 float conversions resolve to eight declared float-backed owners, five binary64 state owners replay exactly, and the ExplainO seed remains explicitly mixed and canonicalized. Phase 3C Color Pipeline carrier/consumer classification is the next approved boundary.
+Phase 3C checkpoint closed - Color Pipeline float authoring and readback preserve exact binary32 identity through shared owners, while explicit loaded-draft application fails closed without authoritative normalized readback. Phase 4 evidence-driven promotion review is the next planned boundary.
 
 ## Phase Checklist
 
@@ -10,10 +10,10 @@ Phase 3B checkpoint closed - all 149 float conversions resolve to eight declared
 - [x] Phase 1 - produce a deterministic system-wide precision matrix covering authoring, state I/O, declared runtime tiers, and actual recurrence arithmetic; stop at the evidence review gate.
 - [x] Phase 2 - repair false runtime-tier declarations or dispatch only where the matrix and focused RED witnesses prove them.
   - [x] Phase 2A - repair ExplainO Y, ExplainO Julia, ExplainO Lambda, Multicorn, and the shared McMullen/Collatz owner; preserve fast arithmetic; prove canonical execution and published-runtime truth.
-- [ ] Phase 3 - repair numeric authoring and readback identity across the general schema route, Color Pipeline UI-Salt route, and `state.json` route.
+- [x] Phase 3 - repair numeric authoring and readback identity across the general schema route, Color Pipeline UI-Salt route, and `state.json` route.
   - [x] Phase 3A - replace the shared six-decimal general-double editor format with one source-owned binary64 round-trip format and prove the Rational Escape combined seed through the published viewer.
   - [x] Phase 3B - classify state-load numeric casts by destination owner and repair only proven state-I/O identity loss.
-  - [ ] Phase 3C - classify Color Pipeline contract carriers against runtime consumers and repair only proven authoring/readback loss.
+  - [x] Phase 3C - classify Color Pipeline contract carriers against runtime consumers and repair only proven authoring/readback loss.
 - [ ] Phase 4 - make only evidence-driven storage or arithmetic precision promotions, preserving intentionally truthful float32 domains.
 - [ ] Phase 5 - run full qualification, publish from an exact clean checkpoint, reconcile the provisional fractal `ui.salt` reality-contact note, and stop at the engine merge-approval boundary.
 
@@ -228,6 +228,23 @@ Required behavior:
 
 This sub-slice does not authorize model-width promotion, state schema changes, camera UI changes, Color Pipeline draft-carrier work, formula changes, nonzero-warp work, state-tool mutation, or engine merge.
 
+### Phase 3C - Color Pipeline Carrier And Consumer Truth
+
+The Phase 1 count of 120 compiled Color Pipeline parameters is not a repair count. The exact compiled UI-Salt contract declares 94 float parameters, 8 integer parameters, 18 enum parameters, and zero double parameters. Numeric draft values share one double carrier before lowering into float- and int-backed runtime owners.
+
+Required behavior:
+
+- mechanically classify every compiled parameter by declared kind, shared draft carrier, editor branch, and runtime consumer owner without adding a handwritten parameter registry;
+- retain the double draft carrier so exact JSON input remains inspectable before materialization;
+- preserve the intentional float32 runtime owners and expose their normalization in the synchronized engine-emitted draft;
+- replace the shared fixed five- and three-decimal float editor formats with one source-owned nine-significant-digit binary32 round-trip format;
+- remove decimal rounding from live float import so draft readback preserves the exact binary32 value promoted to double;
+- compare draft and runtime float state by exact stored identity rather than a fixed decimal tolerance so adjacent binary32 edits cannot disappear;
+- prove a non-binary32 draft spelling normalizes once at the float runtime owner, appears normalized in the engine-emitted draft, and replays without further drift;
+- preserve historical direct UI apply for tuples without live-snapshot reconstruction, but require explicit loaded-draft application to fail transactionally when authoritative normalized readback is unavailable;
+- repair no descriptor, runtime storage width, function behavior, or contract taxonomy unless a focused witness proves a distinct mismatch.
+
+This sub-slice does not authorize float-to-double promotion, Color Pipeline topology or semantic changes, UI-Salt contract taxonomy changes, general-schema or camera work, formula changes, nonzero-warp work, state-tool mutation, or engine merge.
 ## Phase 4 - Evidence-Driven Precision Promotions
 
 A field or arithmetic path may move from float32 to float64 only when all are established:
@@ -325,6 +342,13 @@ Forbidden without a new user-approved plan:
 - Phase 3B published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `6cdc1b24e71983489b07a9aded7c993a21b87db75c9f26eece3bf49c2a82076c`.
 - Phase 3B runtime proof: one action-free materialize/replay test passed; five binary64 owners were exact, the canonical ExplainO seed was stable, over-precise damping was emitted as its exact binary32 value, and replay frame hashes matched.
 - Phase 3B code-quality audit: 93/100 with baseline check passed; no product runtime source changed.
+- Phase 3C contract: `docs/contracts/precision_authority_color_pipeline_consumer_p3c.contract.json`; slice checkpoint token `ck:0c3749cb`.
+- Phase 3C inventory: nine tests pass; 120 compiled descriptors reduce to 94 float, 8 integer, and 18 enum declarations through five shared runtime owner structures.
+- Phase 3C focused proof: `test_color_pipeline_core` passes 3,329 assertions, `test_color_pipeline_window` passes 441 assertions, `test_color_pipeline_loaded_draft` passes 30 assertions, and the schema-binding and diagnostics-state-I/O targets pass.
+- Phase 3C compatibility boundary: live control normalization preserves active draft storage; ordinary direct apply remains compatible when historical tuples lack snapshot reconstruction; explicit loaded-draft apply is transactional and fails closed without normalized readback.
+- Phase 3C full native rail: all helper tests passed.
+- Phase 3C published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `1b4cb2565a34f6005e2eb0412468a0edd907ee011db15dc15905d91f0213d3a1`.
+- Phase 3C runtime proof: over-precise `grade.balance_void` normalizes once to exact binary32, the emitted draft reports that value, the frame changes, and action-free replay preserves authoritative state and exact frame identity.
 
 ## Hostile Audit
 
@@ -361,6 +385,9 @@ Audit questions:
 - [x] Pass 16 - the first Phase 3B native witness rejected the assumption that all six serialized double members are unrestricted exact owners; `ExplainoSeedNormalize` intentionally canonicalizes `explaino_seed` with float-backed drift.
 - [x] Pass 17 - repaired the source-derived inventory and witnesses to distinguish five exact binary64 state owners from the one normalized mixed-precision seed owner; all 149 float conversion lines still resolve to declared float storage.
 - [x] Pass 18 - final source, focused, full-native, publication, action-free replay, code-quality, contract, plan-sync, and diff review found no additional Phase 3B defect and no justified product cast or storage mutation.
+- [x] Pass 19 - distrust-first review found that fixed `1e-6` draft and runtime equality tolerances could hide an adjacent-binary32 Color Pipeline edit even after the editor became round-trip capable.
+- [x] Pass 20 - repaired shared editor spelling, decimal import rounding, exact state identity, normalized readback, transactional loaded-draft apply, and pointer-safe live control synchronization; reran all affected focused owners.
+- [x] Pass 21 - final source, focused, full-native, publication, runtime, code-quality, contract, plan-sync, and diff review found no additional Phase 3C defect or justified storage-width promotion.
 
 ## Audit Findings
 
@@ -378,9 +405,13 @@ Audit questions:
 - [x] `%.17g` repairs the shared editor text, but it does not widen combined-seed storage. The inventory now distinguishes direct double controls from double-plus-float combined seed routes.
 - [x] Sub-slice closure wording must not use whole-plan completion vocabulary while successor phases remain open; the plan now says `checkpoint closed` and passes the deterministic sync gate.
 - [x] A `double` member is not automatically an unrestricted binary64 replay authority. The Phase 3B RED witness exposed `explaino_seed` canonicalization; inventory now follows the normalization owner instead of classifying from declaration width alone.
+- [x] Color Pipeline authoring identity cannot use a visual epsilon as state equality. An adjacent-binary32 RED witness now requires exact draft/runtime comparison while range and integer-validation tolerances remain unchanged.
+- [x] Rebuilding the entire draft after every live edit invalidated active UI parameter pointers. The repaired control path canonicalizes value carriers in place while general apply retains topology-rebuilding synchronization.
+- [x] Some historical valid tuples apply but cannot be reconstructed by the live-snapshot importer. Direct UI behavior remains compatible; explicit loaded-draft application refuses to commit without authoritative readback.
+- [x] Runtime replay evidence must exclude documented volatile diagnostics such as `stats`; authoritative authoring state and decoded frame identity remain exact.
 
 ## Notes
 
 - The prior finding-enrichment E1 callable-centralization phase remains deferred. This emergency campaign does not silently absorb it.
 - Phase 2A closes at its evidence checkpoint once validation, commit, receipt, rearward review, and push finish.
-- Phase 3 numeric authoring and readback identity is the next approved execution boundary; no engine merge is authorized.
+- Phase 4 evidence-driven precision promotion review is the next planned execution boundary after Phase 3C checkpoint closure; no engine merge is authorized.

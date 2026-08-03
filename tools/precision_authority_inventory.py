@@ -19,6 +19,7 @@ STATE_CAPTURE_PATH = Path("ui_app/src/diagnostics_capture.cpp")
 FRACTAL_TYPES_PATH = Path("ui_app/src/fractal_types.h")
 EXPLAINO_SEED_PATH = Path("ui_app/src/explaino_seed.cpp")
 COLOR_PIPELINE_CORE_PATH = Path("ui_app/src/color_pipeline_core.h")
+COLOR_PIPELINE_WINDOW_PATH = Path("ui_app/src/color_pipeline_window.h")
 TIER_RESOLVER_PATH = Path("ui_app/src/sample_tier_resolver.cpp")
 SAMPLE_DEVICE_PATH = Path("ui_app/src/fractal_sample_device.inl")
 ENUM_IDS_PATH = Path("ui_app/src/enum_id_utils.h")
@@ -285,46 +286,157 @@ def _authoring_classification(
     return "INTENTIONAL_MIXED_PRECISION", "integer_authoring_is_exact_but_outside_float_width_audit"
 
 
-def _pipeline_inventory(contract: dict[str, Any], core_source: str) -> dict[str, Any]:
+def _pipeline_inventory(
+    contract: dict[str, Any],
+    core_source: str,
+    window_source: str,
+    fractal_types_source: str,
+) -> dict[str, Any]:
+    struct_fields = _struct_field_types(fractal_types_source)
+    runtime_owner_names = (
+        "ColorPipelineSourceRuntimeParams",
+        "ColorPipelineShapeRuntimeParams",
+        "ColorPipelinePaletteRuntimeParams",
+        "ColorPipelineGradingRuntimeParams",
+        "KernelParams",
+    )
+    runtime_consumer_owners: list[dict[str, Any]] = []
+    runtime_numeric_types: set[str] = set()
+    for owner_name in runtime_owner_names:
+        numeric_fields = []
+        for field_name, field_type in sorted(struct_fields.get(owner_name, {}).items()):
+            if field_type not in {"float", "int", "double"}:
+                continue
+            if owner_name == "KernelParams" and not _color_pipeline_kernel_field(field_name):
+                continue
+            numeric_fields.append({"field": field_name, "storage_type": field_type})
+            runtime_numeric_types.add(field_type)
+        if numeric_fields:
+            runtime_consumer_owners.append({
+                "owner_struct": owner_name,
+                "numeric_fields": numeric_fields,
+            })
+
+    format_match = re.search(
+        r'kColorPipelineFloatInputFormat\s*=\s*"([^"]+)"',
+        core_source,
+    )
+    float_editor_format = format_match.group(1) if format_match else "unresolved"
+    import_signature = "inline double PreserveImportedColorPipelineFloat"
+    if import_signature in core_source:
+        import_body = _function_body(core_source, import_signature)
+    elif "inline double NormalizeImportedColorPipelineNumber" in core_source:
+        import_body = _function_body(core_source, "inline double NormalizeImportedColorPipelineNumber")
+    else:
+        import_body = ""
+    exact_float_readback = (
+        "static_cast<double>(value)" in import_body
+        and "round" not in import_body
+    )
+    exact_float_identity = (
+        "left.number_value == right.number_value" in window_source
+        and "if (*target != value)" in window_source
+        and "if (*target != value)" in core_source
+    )
+    float_lowering_is_source_proven = (
+        "ApplySupportedColorPipelineParamsToLive" in window_source
+        and "static_cast<float>" in window_source
+        and "float" in runtime_numeric_types
+        and "double" not in runtime_numeric_types
+    )
+
     parameters: list[dict[str, Any]] = []
     lanes = contract.get("function_library", {}).get("lanes", [])
     for lane in lanes:
         for function in lane.get("functions", []):
             for index, parameter in enumerate(function.get("params", [])):
-                parameters.append(
-                    {
-                        "lane_id": lane.get("id"),
-                        "function_id": function.get("id"),
-                        "parameter_index": index,
-                        "path": parameter.get("path"),
-                        "declared_type": parameter.get("type"),
-                        "minimum": parameter.get("min"),
-                        "maximum": parameter.get("max"),
-                        "step": parameter.get("step"),
-                        "default": parameter.get("default"),
-                        "authorability_status": "compiled_contract_parameter",
-                        "classification": "NEEDS_RUNTIME_WITNESS",
-                        "classification_confidence": (
-                            "contract_and_carrier_proven_runtime_consumer_unresolved"
-                        ),
-                        "state_load_conversion": "not_joined_requires_phase3_owner_trace",
-                        "runtime_consumption": "not_joined_requires_focused_function_witness",
-                    }
-                )
+                declared_type = str(parameter.get("type", "unknown"))
+                if declared_type == "float":
+                    classification = (
+                        "TRUTHFUL_FLOAT32"
+                        if float_editor_format == "%.9g" and exact_float_readback and exact_float_identity and float_lowering_is_source_proven
+                        else "AUTHORING_IDENTITY_LOSS"
+                    )
+                    editor_carrier = "float"
+                    runtime_consumption = (
+                        "float_backed_color_pipeline_runtime_owner"
+                        if float_lowering_is_source_proven
+                        else "unresolved_float_runtime_owner"
+                    )
+                elif declared_type == "int":
+                    classification = "TRUTHFUL_INTEGER"
+                    editor_carrier = "int"
+                    runtime_consumption = "int_backed_color_pipeline_runtime_owner"
+                elif declared_type == "enum":
+                    classification = "TRUTHFUL_ENUM"
+                    editor_carrier = "enum"
+                    runtime_consumption = "enum_backed_color_pipeline_runtime_owner"
+                else:
+                    classification = "UNSUPPORTED_OR_NONAUTHORABLE"
+                    editor_carrier = "unresolved"
+                    runtime_consumption = "unresolved"
+                parameters.append({
+                    "lane_id": lane.get("id"),
+                    "function_id": function.get("id"),
+                    "parameter_index": index,
+                    "path": parameter.get("path"),
+                    "declared_type": declared_type,
+                    "minimum": parameter.get("min"),
+                    "maximum": parameter.get("max"),
+                    "step": parameter.get("step"),
+                    "default": parameter.get("default"),
+                    "draft_carrier": "double" if declared_type in {"float", "int"} else declared_type,
+                    "editor_carrier": editor_carrier,
+                    "authorability_status": "compiled_contract_parameter",
+                    "classification": classification,
+                    "classification_confidence": "compiled_contract_and_shared_source_owners_proven",
+                    "state_load_conversion": (
+                        "runtime_owner_normalizes_on_explicit_apply"
+                        if declared_type == "float"
+                        else "typed_contract_validation"
+                    ),
+                    "runtime_consumption": runtime_consumption,
+                })
+
     type_counts = Counter(str(parameter.get("declared_type", "unknown")) for parameter in parameters)
     carrier = "double" if re.search(r"\bdouble\s+number_value\s*=", core_source) else "unresolved"
+    classifications = Counter(parameter["classification"] for parameter in parameters)
+    all_supported = not classifications.get("UNSUPPORTED_OR_NONAUTHORABLE")
+    all_float_truthful = classifications.get("TRUTHFUL_FLOAT32", 0) == type_counts.get("float", 0)
     return {
         "authority_kind": "compiled_ui_salt_contract",
         "contract_parameter_count": len(parameters),
         "parameter_type_counts": dict(sorted(type_counts.items())),
+        "compiled_double_parameter_count": type_counts.get("double", 0),
         "runtime_number_carrier": carrier,
+        "float_editor_format": float_editor_format,
+        "float_identity_comparison": (
+            "exact_binary32" if exact_float_identity else "fixed_decimal_tolerance_loss"
+        ),
+        "float_readback": (
+            "exact_binary32_promotion"
+            if exact_float_readback
+            else "decimal_rounding_identity_loss"
+        ),
+        "runtime_numeric_storage_types": sorted(runtime_numeric_types),
+        "runtime_consumer_owner_count": len(runtime_consumer_owners),
+        "runtime_consumer_owners": runtime_consumer_owners,
         "parameters": parameters,
-        "classification": "NEEDS_RUNTIME_WITNESS",
+        "classification_counts": dict(sorted(classifications.items())),
+        "classification": (
+            "INTENTIONAL_MIXED_PRECISION"
+            if carrier == "double" and all_supported and all_float_truthful
+            else "AUTHORING_IDENTITY_LOSS"
+        ),
         "classification_basis": (
-            "compiled descriptors declare numeric intent and draft storage uses a double carrier; "
-            "per-function runtime consumption width still requires focused source/runtime evidence"
+            "compiled types select shared typed editor and runtime owners; the double draft carrier "
+            "preserves input until explicit application normalizes float descriptors to binary32"
         ),
     }
+
+
+def _color_pipeline_kernel_field(field_name: str) -> bool:
+    return field_name.startswith("color_") or field_name == "exposure"
 
 
 def _brace_range(source: str, opening: int) -> tuple[int, int]:
@@ -669,6 +781,7 @@ def _authority(repo_root: Path) -> dict[str, Any]:
         FRACTAL_TYPES_PATH,
         EXPLAINO_SEED_PATH,
         COLOR_PIPELINE_CORE_PATH,
+        COLOR_PIPELINE_WINDOW_PATH,
         TIER_RESOLVER_PATH,
         SAMPLE_DEVICE_PATH,
         ENUM_IDS_PATH,
@@ -704,6 +817,8 @@ def build_inventory(repo_root: Path) -> dict[str, Any]:
         "color_pipeline": _pipeline_inventory(
             pipeline_contract,
             _read_text(repo_root, COLOR_PIPELINE_CORE_PATH),
+            _read_text(repo_root, COLOR_PIPELINE_WINDOW_PATH),
+            _read_text(repo_root, FRACTAL_TYPES_PATH),
         ),
         "state_io": _state_io_inventory(
             _read_text(repo_root, STATE_IO_PATH),
@@ -762,6 +877,9 @@ def render_markdown(inventory: dict[str, Any]) -> str:
             "",
             f"- Authority: {pipeline['authority_kind']}",
             f"- Runtime numeric carrier: {pipeline['runtime_number_carrier']}",
+            f"- Float editor format: `{pipeline['float_editor_format']}`",
+            f"- Float readback: {pipeline['float_readback']}",
+            f"- Runtime consumer owners: {pipeline['runtime_consumer_owner_count']}",
             f"- Classification: {pipeline['classification']}",
             "",
             "## State I/O",
