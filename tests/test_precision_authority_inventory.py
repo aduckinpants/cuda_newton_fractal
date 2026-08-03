@@ -119,14 +119,47 @@ def test_color_pipeline_inventory_uses_compiled_contract_and_double_carrier() ->
     }
 
 
-def test_state_io_inventory_records_roundtrip_and_narrowing_sites_without_overclaiming() -> None:
+def test_state_io_inventory_joins_every_float_conversion_to_declared_storage() -> None:
     inventory = build_inventory(REPO_ROOT)
     state_io = inventory["state_io"]
 
     assert state_io["serializer_precision"] == "std::numeric_limits<double>::max_digits10"
-    assert state_io["float_cast_site_count"] > 0
-    assert all("line" in site and "snippet" in site for site in state_io["float_cast_sites"])
-    assert state_io["classification"] == "NEEDS_RUNTIME_WITNESS"
+    assert state_io["float_cast_site_count"] == 149
+    assert state_io["float_conversion_owner_function_count"] == 8
+    assert state_io["float_conversion_owner_counts"] == {
+        "ApplyColorShapeStackEntryNumbers": 10,
+        "LoadDiagnosticsStateJson": 106,
+        "ParseColorGradingStackEntry": 7,
+        "ParseColorPaletteStackEntry": 8,
+        "ParseColorSourceStackEntry": 15,
+        "ParseFixedFloatArray": 1,
+        "ParseOptionalExplainoRoots": 1,
+        "ParseOptionalLensFloat": 1,
+    }
+    assert state_io["unresolved_float_cast_site_count"] == 0
+    assert {site["destination_scalar_type"] for site in state_io["float_cast_sites"]} == {"float"}
+    assert {site["classification"] for site in state_io["float_cast_sites"]} == {"TRUTHFUL_FLOAT32"}
+    assert state_io["classification"] == "INTENTIONAL_MIXED_PRECISION"
+
+
+def test_state_io_inventory_distinguishes_exact_and_normalized_double_owners() -> None:
+    owners = build_inventory(REPO_ROOT)["state_io"]["double_state_owners"]
+    assert [(item["owner_struct"], item["owner_member"]) for item in owners] == [
+        ("ViewState", "center_hp_x"),
+        ("ViewState", "center_hp_y"),
+        ("ViewState", "log2_zoom"),
+        ("KernelParams", "explaino_secondary_root_pattern_seed"),
+        ("KernelParams", "explaino_seed"),
+        ("KernelParams", "explaino_seed_b"),
+    ]
+    assert {item["storage_type"] for item in owners} == {"double"}
+    exact = [item for item in owners if item["classification"] == "TRUTHFUL_FLOAT64"]
+    normalized = [item for item in owners if item["classification"] == "INTENTIONAL_MIXED_PRECISION"]
+    assert len(exact) == 5
+    assert [(item["owner_struct"], item["owner_member"]) for item in normalized] == [
+        ("KernelParams", "explaino_seed")
+    ]
+    assert normalized[0]["normalization_owner"] == "ExplainoSeedNormalize"
 
 
 def test_runtime_tier_inventory_separates_universal_claim_from_static_branch_evidence() -> None:
@@ -172,7 +205,7 @@ def test_markdown_and_cli_outputs_are_stable(tmp_path: Path) -> None:
     markdown = render_markdown(inventory)
     assert "# Precision Authority Inventory" in markdown
     assert "AUTHORING_IDENTITY_LOSS" in markdown
-    assert "NEEDS_RUNTIME_WITNESS" in markdown
+    assert "INTENTIONAL_MIXED_PRECISION" in markdown
 
     out_json = tmp_path / "matrix.json"
     out_md = tmp_path / "matrix.md"

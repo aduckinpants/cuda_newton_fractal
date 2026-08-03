@@ -16,6 +16,8 @@ PIPELINE_CONTRACT_PATH = Path("docs/ui_salt/generated/color_pipeline_function_li
 SCHEMA_BINDING_PATH = Path("ui_app/src/schema_binding.cpp")
 STATE_IO_PATH = Path("ui_app/src/diagnostics_state_io.cpp")
 STATE_CAPTURE_PATH = Path("ui_app/src/diagnostics_capture.cpp")
+FRACTAL_TYPES_PATH = Path("ui_app/src/fractal_types.h")
+EXPLAINO_SEED_PATH = Path("ui_app/src/explaino_seed.cpp")
 COLOR_PIPELINE_CORE_PATH = Path("ui_app/src/color_pipeline_core.h")
 TIER_RESOLVER_PATH = Path("ui_app/src/sample_tier_resolver.cpp")
 SAMPLE_DEVICE_PATH = Path("ui_app/src/fractal_sample_device.inl")
@@ -325,33 +327,182 @@ def _pipeline_inventory(contract: dict[str, Any], core_source: str) -> dict[str,
     }
 
 
-def _float_cast_sites(state_io_source: str) -> list[dict[str, Any]]:
+def _brace_range(source: str, opening: int) -> tuple[int, int]:
+    depth = 0
+    for index in range(opening, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return opening, index
+    raise ValueError("unterminated source brace block")
+
+
+def _struct_field_types(fractal_types_source: str) -> dict[str, dict[str, str]]:
+    structs: dict[str, dict[str, str]] = {}
+    for match in re.finditer(r"(?m)^struct\s+([A-Za-z_]\w*)\s*\{", fractal_types_source):
+        struct_name = match.group(1)
+        opening = fractal_types_source.find("{", match.start())
+        _, closing = _brace_range(fractal_types_source, opening)
+        body = fractal_types_source[opening + 1:closing]
+        fields: dict[str, str] = {}
+        for raw_line in body.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith(("//", "static ")):
+                continue
+            field_match = re.match(
+                r"([A-Za-z_]\w*(?:::\w+)*)\s+([A-Za-z_]\w*)(?:\[[^\]]+\])?\s*(?:\{|;)",
+                line,
+            )
+            if field_match:
+                fields[field_match.group(2)] = field_match.group(1)
+        structs[struct_name] = fields
+    return structs
+
+
+def _loader_function_ranges(state_io_source: str) -> list[dict[str, Any]]:
+    ranges: list[dict[str, Any]] = []
+    signature_pattern = re.compile(r"(?m)^(?:bool|void)\s+([A-Za-z_]\w*)\s*\(")
+    for match in signature_pattern.finditer(state_io_source):
+        opening = state_io_source.find("{", match.end())
+        if opening < 0:
+            continue
+        _, closing = _brace_range(state_io_source, opening)
+        ranges.append({"name": match.group(1), "start": match.start(), "end": closing, "source": state_io_source[match.start():closing + 1]})
+    return ranges
+
+
+def _function_variable_types(function_source: str, struct_fields: dict[str, dict[str, str]]) -> dict[str, str]:
+    known_types = sorted({"float", "double", *struct_fields}, key=len, reverse=True)
+    type_pattern = "|".join(re.escape(type_name) for type_name in known_types)
+    variables: dict[str, str] = {}
+    for match in re.finditer(rf"\b({type_pattern})\s*(?:const\s+)?(?:\*|&)?\s*([A-Za-z_]\w*)", function_source):
+        variables[match.group(2)] = match.group(1)
+    return variables
+
+
+def _assignment_destination_type(raw_line: str, variables: dict[str, str], struct_fields: dict[str, dict[str, str]]) -> tuple[str, str]:
+    assignment = raw_line.split("=", 1)[0].strip().lstrip("*").strip()
+    normalized = re.sub(r"\[[^\]]+\]", "", assignment.replace("->", "."))
+    parts = [part for part in normalized.split(".") if part]
+    if not parts or parts[0] not in variables:
+        return assignment, "unresolved"
+    destination_type = variables[parts[0]]
+    for field_name in parts[1:]:
+        owner_fields = struct_fields.get(destination_type)
+        if owner_fields is None or field_name not in owner_fields:
+            return assignment, "unresolved"
+        destination_type = owner_fields[field_name]
+    return assignment, destination_type
+
+
+def _float_cast_sites(state_io_source: str, fractal_types_source: str) -> list[dict[str, Any]]:
+    struct_fields = _struct_field_types(fractal_types_source)
+    function_ranges = _loader_function_ranges(state_io_source)
     sites: list[dict[str, Any]] = []
-    for line_number, raw_line in enumerate(state_io_source.splitlines(), start=1):
+    offset = 0
+    for line_number, raw_line in enumerate(state_io_source.splitlines(keepends=True), start=1):
+        line_start = offset
+        offset += len(raw_line)
         if "static_cast<float>" not in raw_line:
             continue
-        sites.append({"line": line_number, "snippet": raw_line.strip()})
+        owners = [item for item in function_ranges if item["start"] <= line_start <= item["end"]]
+        if not owners:
+            owner_name = "unresolved"
+            variables: dict[str, str] = {}
+        else:
+            owner = min(owners, key=lambda item: item["end"] - item["start"])
+            owner_name = str(owner["name"])
+            variables = _function_variable_types(str(owner["source"]), struct_fields)
+        target, destination_type = _assignment_destination_type(raw_line, variables, struct_fields)
+        scalar_type = "float" if destination_type in {"float", "Float2"} else "unresolved"
+        sites.append({
+            "line": line_number,
+            "snippet": raw_line.strip(),
+            "owner_function": owner_name,
+            "assignment_target": target,
+            "destination_type": destination_type,
+            "destination_scalar_type": scalar_type,
+            "classification": "TRUTHFUL_FLOAT32" if scalar_type == "float" else "NEEDS_RUNTIME_WITNESS",
+        })
     return sites
 
 
-def _state_io_inventory(state_io_source: str, capture_source: str) -> dict[str, Any]:
-    cast_sites = _float_cast_sites(state_io_source)
+def _seed_normalized_state_members(explaino_seed_source: str) -> set[tuple[str, str]]:
+    normalize_body = _function_body(explaino_seed_source, "void ExplainoSeedNormalize")
+    if "ExplainoSeedSetCombined" not in normalize_body:
+        return set()
+    setter_body = _function_body(explaino_seed_source, "void ExplainoSeedSetCombined")
+    members: set[tuple[str, str]] = set()
+    for variable_name, struct_name in (("view", "ViewState"), ("params", "KernelParams")):
+        for field_name in re.findall(rf"\b{variable_name}\.([A-Za-z_]\w*)\s*=", setter_body):
+            members.add((struct_name, field_name))
+    return members
+
+
+def _serialized_double_state_owners(state_io_source: str, capture_source: str, fractal_types_source: str, explaino_seed_source: str) -> list[dict[str, str]]:
+    struct_fields = _struct_field_types(fractal_types_source)
+    normalized_members = _seed_normalized_state_members(explaino_seed_source)
+    owners: list[dict[str, str]] = []
+    for struct_name, load_prefix, save_prefix in (("ViewState", "nextView", "view"), ("KernelParams", "nextParams", "params")):
+        for field_name, field_type in sorted(struct_fields.get(struct_name, {}).items()):
+            if field_type != "double":
+                continue
+            load_assignment = f"{load_prefix}.{field_name} ="
+            save_reference = f"{save_prefix}.{field_name}"
+            if load_assignment not in state_io_source or save_reference not in capture_source:
+                continue
+            owners.append({
+                "owner_struct": struct_name,
+                "owner_member": field_name,
+                "storage_type": "double",
+                "load_assignment": load_assignment,
+                "save_reference": save_reference,
+                "classification": (
+                    "INTENTIONAL_MIXED_PRECISION"
+                    if (struct_name, field_name) in normalized_members
+                    else "TRUTHFUL_FLOAT64"
+                ),
+                "normalization_owner": (
+                    "ExplainoSeedNormalize"
+                    if (struct_name, field_name) in normalized_members
+                    else "none"
+                ),
+            })
+    return owners
+
+
+def _state_io_inventory(state_io_source: str, capture_source: str, fractal_types_source: str, explaino_seed_source: str) -> dict[str, Any]:
+    cast_sites = _float_cast_sites(state_io_source, fractal_types_source)
+    owner_counts = Counter(site["owner_function"] for site in cast_sites)
+    unresolved_sites = [site for site in cast_sites if site["destination_scalar_type"] == "unresolved"]
+    serialized_double_owners = _serialized_double_state_owners(state_io_source, capture_source, fractal_types_source, explaino_seed_source)
+    truthful_double_owners = [item for item in serialized_double_owners if item["classification"] == "TRUTHFUL_FLOAT64"]
+    normalized_double_owners = [item for item in serialized_double_owners if item["classification"] == "INTENTIONAL_MIXED_PRECISION"]
     serializer = "unresolved"
     marker = "std::setprecision(std::numeric_limits<double>::max_digits10)"
     if marker in capture_source:
         serializer = "std::numeric_limits<double>::max_digits10"
+    classification = "INTENTIONAL_MIXED_PRECISION" if not unresolved_sites else "NEEDS_RUNTIME_WITNESS"
     return {
         "serializer_precision": serializer,
         "float_cast_site_count": len(cast_sites),
+        "float_conversion_owner_function_count": len(owner_counts),
+        "float_conversion_owner_counts": dict(sorted(owner_counts.items())),
         "float_cast_sites": cast_sites,
-        "classification": "NEEDS_RUNTIME_WITNESS",
+        "unresolved_float_cast_site_count": len(unresolved_sites),
+        "serialized_double_state_owner_count": len(serialized_double_owners),
+        "truthful_double_state_owner_count": len(truthful_double_owners),
+        "normalized_double_state_owner_count": len(normalized_double_owners),
+        "double_state_owners": serialized_double_owners,
+        "classification": classification,
         "classification_basis": (
-            "roundtrip-capable serialization is present, but each JSON-number-to-float assignment "
-            "must be classified against model ownership and runtime use"
+            "every explicit float conversion resolves to float-backed destination storage; five serialized double owners bypass normalization and one is canonicalized by the mixed-precision ExplainO seed owner"
+            if not unresolved_sites
+            else "one or more explicit float conversions could not be joined mechanically to destination storage"
         ),
     }
-
-
 def _enum_id_map(enum_source: str) -> dict[str, str]:
     pairs = re.findall(r'\{FractalType::([A-Za-z0-9_]+),\s*"([^"]+)"\}', enum_source)
     return {enum_name: public_id for enum_name, public_id in pairs}
@@ -515,6 +666,8 @@ def _authority(repo_root: Path) -> dict[str, Any]:
         SCHEMA_BINDING_PATH,
         STATE_IO_PATH,
         STATE_CAPTURE_PATH,
+        FRACTAL_TYPES_PATH,
+        EXPLAINO_SEED_PATH,
         COLOR_PIPELINE_CORE_PATH,
         TIER_RESOLVER_PATH,
         SAMPLE_DEVICE_PATH,
@@ -555,6 +708,8 @@ def build_inventory(repo_root: Path) -> dict[str, Any]:
         "state_io": _state_io_inventory(
             _read_text(repo_root, STATE_IO_PATH),
             _read_text(repo_root, STATE_CAPTURE_PATH),
+            _read_text(repo_root, FRACTAL_TYPES_PATH),
+            _read_text(repo_root, EXPLAINO_SEED_PATH),
         ),
         "runtime_tiers": _runtime_inventory(
             ui_schema,
@@ -612,7 +767,12 @@ def render_markdown(inventory: dict[str, Any]) -> str:
             "## State I/O",
             "",
             f"- Serializer precision: `{state_io['serializer_precision']}`",
-            f"- Float narrowing sites to classify: {state_io['float_cast_site_count']}",
+            f"- Float conversion sites: {state_io['float_cast_site_count']}",
+            f"- Conversion owner functions: {state_io['float_conversion_owner_function_count']}",
+            f"- Unresolved destinations: {state_io['unresolved_float_cast_site_count']}",
+            f"- Serialized double state owners: {state_io['serialized_double_state_owner_count']}",
+            f"- Exact binary64 state owners: {state_io['truthful_double_state_owner_count']}",
+            f"- Normalized mixed-precision double owners: {state_io['normalized_double_state_owner_count']}",
             f"- Classification: {state_io['classification']}",
             "",
             "## Runtime Tier Truth",

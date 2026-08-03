@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3A checkpoint closed - the shared general-double editor now uses source-owned round-trip text, direct binary64 and mixed combined-seed identity are distinguished, and the published viewer reports exact combined-seed readback. Phase 3B state-I/O owner classification is the next approved boundary.
+Phase 3B checkpoint closed - all 149 float conversions resolve to eight declared float-backed owners, five binary64 state owners replay exactly, and the ExplainO seed remains explicitly mixed and canonicalized. Phase 3C Color Pipeline carrier/consumer classification is the next approved boundary.
 
 ## Phase Checklist
 
@@ -12,7 +12,7 @@ Phase 3A checkpoint closed - the shared general-double editor now uses source-ow
   - [x] Phase 2A - repair ExplainO Y, ExplainO Julia, ExplainO Lambda, Multicorn, and the shared McMullen/Collatz owner; preserve fast arithmetic; prove canonical execution and published-runtime truth.
 - [ ] Phase 3 - repair numeric authoring and readback identity across the general schema route, Color Pipeline UI-Salt route, and `state.json` route.
   - [x] Phase 3A - replace the shared six-decimal general-double editor format with one source-owned binary64 round-trip format and prove the Rational Escape combined seed through the published viewer.
-  - [ ] Phase 3B - classify state-load numeric casts by destination owner and repair only proven state-I/O identity loss.
+  - [x] Phase 3B - classify state-load numeric casts by destination owner and repair only proven state-I/O identity loss.
   - [ ] Phase 3C - classify Color Pipeline contract carriers against runtime consumers and repair only proven authoring/readback loss.
 - [ ] Phase 4 - make only evidence-driven storage or arithmetic precision promotions, preserving intentionally truthful float32 domains.
 - [ ] Phase 5 - run full qualification, publish from an exact clean checkpoint, reconcile the provisional fractal `ui.salt` reality-contact note, and stop at the engine merge-approval boundary.
@@ -213,6 +213,21 @@ Required behavior:
 
 This sub-slice does not authorize camera formatting, Color Pipeline carriers, state JSON casts, model-width changes, or a general UI precision redesign. Those remain Phase 3 successor work after this checkpoint.
 
+### Phase 3B - State-I/O Owner Classification And Exact Replay
+
+The Phase 1 count of 149 explicit `static_cast<float>` expressions is not a repair count. Current source groups them under eight loader owners: the main `LoadDiagnosticsStateJson` route plus seven typed helpers for Lens, fixed float arrays, ExplainO roots, and Color Pipeline stack runtime parameters.
+
+Required behavior:
+
+- mechanically join every float conversion to its declared destination storage owner and fail the inventory on an unclassified or ambiguous destination;
+- keep deliberate JSON-number-to-float conversions when the destination model member is float-backed;
+- enumerate serialized binary64 owners separately and prove their load/save/reload identity with nontrivial sentinels;
+- prove that a non-binary32 JSON spelling assigned to a float owner is normalized to the actual float value and that the emitted state reports that value exactly;
+- add a published-runtime action-free witness covering exact binary64 state identity and visible float normalization;
+- repair product code only if the owner join or runtime witness proves an actual destination-width mismatch.
+
+This sub-slice does not authorize model-width promotion, state schema changes, camera UI changes, Color Pipeline draft-carrier work, formula changes, nonzero-warp work, state-tool mutation, or engine merge.
+
 ## Phase 4 - Evidence-Driven Precision Promotions
 
 A field or arithmetic path may move from float32 to float64 only when all are established:
@@ -303,6 +318,13 @@ Forbidden without a new user-approved plan:
 - Phase 3A full native rail: all helper tests passed.
 - Phase 3A published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `0cc8b94ee13cffd5166fed5d464324cf2589725e0241ad317ac4ab9109cd2bb3`.
 - Phase 3A runtime proof: the published Rational Escape control consumed `0.21797676384449005` and reported the exact same engine-model combined seed; one runtime test passed with no skips.
+- Phase 3B contract: `docs/contracts/precision_authority_state_io_owner_classification_p3b.contract.json`; exact clean start `49295852034f5249728cd19827b196c8bb90f264`.
+- Phase 3B starting hypothesis: 149 float conversions are grouped under eight loader owners and appear to target float-backed storage; six serialized double members bypass those casts. Deterministic source joins confirm five are exact binary64 owners while `explaino_seed` is canonicalized with float-backed drift by `ExplainoSeedNormalize`.
+- Phase 3B focused proof: nine inventory tests and `test_diagnostics_state_io` pass; the native RED first exposed seed canonicalization, then the repaired witness proved canonical binary64 identity and explicit float normalization.
+- Phase 3B full native rail: all helper tests passed.
+- Phase 3B published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `6cdc1b24e71983489b07a9aded7c993a21b87db75c9f26eece3bf49c2a82076c`.
+- Phase 3B runtime proof: one action-free materialize/replay test passed; five binary64 owners were exact, the canonical ExplainO seed was stable, over-precise damping was emitted as its exact binary32 value, and replay frame hashes matched.
+- Phase 3B code-quality audit: 93/100 with baseline check passed; no product runtime source changed.
 
 ## Hostile Audit
 
@@ -336,6 +358,9 @@ Audit questions:
 - [x] Pass 13 - found that the first inventory repair overclaimed combined seed as truthful binary64 even though fractional drift remains float-backed; reclassified it as intentional mixed precision and added direct-versus-combined assertions.
 - [x] Pass 14 - the closure validator rejected `Phase 3A complete` because it truthfully interpreted that phrase as whole-campaign closure while Phases 3B-5 remain open; repaired the current-phase wording to `checkpoint closed`.
 - [x] Pass 15 - final source, diff, focused, full-native, publication, runtime, contract, and plan-sync re-read found no additional Phase 3A defect.
+- [x] Pass 16 - the first Phase 3B native witness rejected the assumption that all six serialized double members are unrestricted exact owners; `ExplainoSeedNormalize` intentionally canonicalizes `explaino_seed` with float-backed drift.
+- [x] Pass 17 - repaired the source-derived inventory and witnesses to distinguish five exact binary64 state owners from the one normalized mixed-precision seed owner; all 149 float conversion lines still resolve to declared float storage.
+- [x] Pass 18 - final source, focused, full-native, publication, action-free replay, code-quality, contract, plan-sync, and diff review found no additional Phase 3B defect and no justified product cast or storage mutation.
 
 ## Audit Findings
 
@@ -352,6 +377,7 @@ Audit questions:
 - [x] The automation-report test target needed the same `explaino_seed.cpp` owner as the product route; no duplicate combination formula was introduced.
 - [x] `%.17g` repairs the shared editor text, but it does not widen combined-seed storage. The inventory now distinguishes direct double controls from double-plus-float combined seed routes.
 - [x] Sub-slice closure wording must not use whole-plan completion vocabulary while successor phases remain open; the plan now says `checkpoint closed` and passes the deterministic sync gate.
+- [x] A `double` member is not automatically an unrestricted binary64 replay authority. The Phase 3B RED witness exposed `explaino_seed` canonicalization; inventory now follows the normalization owner instead of classifying from declaration width alone.
 
 ## Notes
 

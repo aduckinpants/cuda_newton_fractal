@@ -80,6 +80,8 @@ current classification is therefore `NEEDS_RUNTIME_WITNESS`, not
 owner and test whether the engine-emitted state truthfully reports any
 normalization. A bulk cast removal is not authorized.
 
+Phase 3B resolution: the 149 lines reduce to eight loader owners, and every conversion resolves mechanically to declared float-backed storage. No cast removal or storage promotion is justified. Six serialized `double` members are present: five preserve exact binary64 state, while `explaino_seed` is intentionally canonicalized with float-backed drift by `ExplainoSeedNormalize`. Native and published-runtime witnesses prove exact canonical replay plus visible float normalization.
+
 ### Color Pipeline UI-Salt route
 
 The compiled UI-Salt function-library contract contains 120 parameters. Draft
