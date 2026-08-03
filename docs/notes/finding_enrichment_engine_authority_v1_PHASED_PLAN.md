@@ -353,4 +353,5 @@ Audit questions:
 
 - The state-tool repository remains clean and untouched during engine planning and implementation.
 - E0 was explicitly authorized after Phase 0 review and is complete. The next approved boundary is user review; E1 product mutation is not authorized by this checkpoint.
+- On 2026-08-02 the user authorized a separate emergency precision-authority successor campaign. E1 remains deferred; the successor begins with a system-wide precision inventory rather than callable-sampling mutation.
 - No CUDA engine merge is authorized by this plan or by approval to implement E0.
