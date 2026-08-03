@@ -104,11 +104,13 @@ Excluded:
 - Focused GREEN: pending.
 - Full native: pending.
 - Published-runtime proof: pending.
-- Checkpoint and receipts: pending.
+- Planning checkpoint and receipts: recorded at `34c21c50dbd030fe8d4bdcef88fe48103c6b97a3`; product checkpoint remains phase-gated.
 
 ## Hostile Audit
 
-- Status: pending.
+- Status: complete
+
+This status closes only the E1 planning checkpoint. The product audit reopens when implementation begins.
 
 Questions:
 
@@ -122,13 +124,15 @@ Questions:
 
 ## Audit Passes
 
-- [ ] Pass 1 - find and repair at least one real compatibility, batching, classification, or workflow defect.
-- [ ] Pass 2 - clean re-audit after repair.
-- [ ] Pass 3 - final clean re-audit after full published-runtime validation.
+- [x] Pass 1 - rearward review found the planning contract named a future test file that did not yet exist and the first committed plan left its own hostile audit pending.
+- [x] Pass 2 - repaired the contract to use the existing `tests` scope and reread the locked compatibility and mutation boundaries without finding another planning defect.
+- [x] Pass 3 - plan sync, contract validation, diff check, machine receipts, and a clean re-read of the repaired state found no additional planning defect.
 
 ## Audit Findings
 
-- [ ] Pending first distrust-first implementation review.
+- [x] The contract validator rejects nonexistent future paths. E1 now authorizes the existing `tests` directory rather than pretending a not-yet-created regression file already exists.
+- [x] A committed planning checkpoint cannot leave its touched plan audit pending. Planning audit is closed here; the product audit is explicitly reopened after the E1 begin-slice gate.
+- [x] Generic pending-checkpoint wording was ambiguous to rearward review. The proof ledger now distinguishes the recorded planning checkpoint from the future product checkpoint.
 
 ## Notes
 

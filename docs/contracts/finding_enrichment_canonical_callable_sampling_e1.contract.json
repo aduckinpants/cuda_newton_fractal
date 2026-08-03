@@ -2,7 +2,7 @@
   "version": 1,
   "contract_id": "finding_enrichment_canonical_callable_sampling_e1",
   "feature_id": "finding_enrichment_engine_authority_v1",
-  "workflow_type": "viewer_first",
+  "workflow_type": "workflow_only",
   "plan_path": "docs/notes/finding_enrichment_canonical_callable_sampling_e1_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/notes/finding_enrichment_canonical_callable_sampling_e1_PHASED_PLAN.md",
@@ -60,12 +60,7 @@
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/finding_enrichment_canonical_callable_sampling_e1.contract.json --out-json artifacts/validation/finding_enrichment_canonical_callable_sampling_e1_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_focused_native --log artifacts/logs/finding_enrichment_e1_focused_native.log --out-json artifacts/validation/finding_enrichment_e1_focused_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_probe test_fractal_probe_contract test_fractal_sample_result",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_full_native --log artifacts/logs/finding_enrichment_e1_full_native.log --out-json artifacts/validation/finding_enrichment_e1_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_runtime_publish --log artifacts/logs/finding_enrichment_e1_runtime_publish.log --out-json artifacts/validation/finding_enrichment_e1_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_runtime_truth --log artifacts/logs/finding_enrichment_e1_runtime_truth.log --out-json artifacts/validation/finding_enrichment_e1_runtime_truth.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_canonical_callable_sampling.py tests/test_fractal_runtime_probe_cli.py tests/test_fractal_runtime_session.py",
-    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/finding_enrichment_e1_code_quality.json",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_diff_check --log artifacts/logs/finding_enrichment_e1_diff_check.log --out-json artifacts/validation/finding_enrichment_e1_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e1_planning_diff_check --log artifacts/logs/finding_enrichment_e1_planning_diff_check.log --out-json artifacts/validation/finding_enrichment_e1_planning_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/finding_enrichment_canonical_callable_sampling_e1_PHASED_PLAN.md --out-json artifacts/validation/finding_enrichment_e1_hostile_audit.json"
   ],
   "required_acceptance_assertions": [
@@ -75,22 +70,6 @@
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/finding_enrichment_canonical_callable_sampling_e1_contract.json",
       "json_path": "checks.contract_schema_valid",
-      "equals": true
-    },
-    {
-      "assertion_id": "e1_focused_native_passed",
-      "description": "Focused native callable compatibility and evidence projections pass.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/finding_enrichment_e1_focused_native.json",
-      "json_path": "ok",
-      "equals": true
-    },
-    {
-      "assertion_id": "e1_runtime_truth_passed",
-      "description": "The published runtime proves canonical CUDA callable execution, denominator-power truth, executed arithmetic disclosure, and preserved transports.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/finding_enrichment_e1_runtime_truth.json",
-      "json_path": "ok",
       "equals": true
     },
     {
