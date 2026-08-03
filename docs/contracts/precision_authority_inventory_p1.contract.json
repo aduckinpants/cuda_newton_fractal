@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "contract_id": "precision_authority_inventory_p1",
+  "feature_id": "precision_authority_emergency_audit_and_repair",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md",
+    "docs/notes",
+    "docs/contracts/precision_authority_inventory_p1.contract.json",
+    "tools",
+    "tests",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean receipted Phase 0 checkpoint 662f578bc54be31182ef00655f3470d52bf2648e",
+    "current ui/fractal_binding_surface_v1.ui_schema.json bytes",
+    "current Color Pipeline UI-Salt materialized contract and draft value carriers",
+    "current schema_binding diagnostics state I/O sample-tier resolver and canonical sample device source",
+    "Rational Escape combined-seed authoring identity witness"
+  ],
+  "forbidden_operator_prompts": [
+    "modify product runtime UI schema state model recurrence or Color Pipeline behavior",
+    "treat static parsing as behavioral runtime proof",
+    "hand-maintain a replacement numeric registry",
+    "promote all floats to double",
+    "implement nonzero warp state-tool work Salticid language work or engine merge"
+  ],
+  "required_defaults": {
+    "phase1_scope": "deterministic_inventory_tests_and_review_only",
+    "matrix_schema": "viewer_host.precision_authority_inventory.v1",
+    "unknown_policy": "needs_runtime_witness",
+    "source_facts_are_runtime_authority": false,
+    "product_mutation_authorized": false,
+    "full_suite_policy": "run_and_compare_with_exact_phase0_baseline_no_new_failures",
+    "phase1_user_review_gate_required": true,
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "product_code_mutation": "forbidden",
+    "implicit_semantic_inference": "forbidden",
+    "parallel_precision_registry": "forbidden",
+    "mass_type_conversion": "forbidden",
+    "automatic_repair": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/precision_authority_inventory_p1.contract.json --out-json artifacts/validation/precision_authority_inventory_p1_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p1_focused_tests --log artifacts/logs/precision_authority_p1_focused_tests.log --out-json artifacts/validation/precision_authority_p1_focused_tests.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_precision_authority_inventory.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p1_matrix --log artifacts/logs/precision_authority_p1_matrix.log --out-json artifacts/validation/precision_authority_p1_matrix_command.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 tools/precision_authority_inventory.py --out-json artifacts/precision_authority/phase1/matrix.json --out-md artifacts/precision_authority/phase1/matrix.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p1_python_suite --log artifacts/logs/precision_authority_p1_python_suite.log --out-json artifacts/validation/precision_authority_p1_python_suite.json --heartbeat-seconds 30 --timeout-seconds 1800 -- py -3.14 -m pytest tests/ -q",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/precision_authority_p1_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p1_diff_check --log artifacts/logs/precision_authority_p1_diff_check.log --out-json artifacts/validation/precision_authority_p1_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md --out-json artifacts/validation/precision_authority_inventory_p1_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "precision_authority_p1_contract_schema_valid",
+      "description": "The precision inventory contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_inventory_p1_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p1_focused_tests_passed",
+      "description": "Focused deterministic inventory regressions pass.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_p1_focused_tests.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p1_matrix_generated",
+      "description": "The precision matrix generator completed successfully.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_p1_matrix_command.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p1_hostile_audit_ok",
+      "description": "The Phase 1 hostile audit is complete before checkpoint.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_inventory_p1_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

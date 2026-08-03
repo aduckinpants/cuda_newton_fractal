@@ -1,0 +1,565 @@
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import subprocess
+from collections import Counter
+from pathlib import Path
+from typing import Any
+
+
+SCHEMA_VERSION = "viewer_host.precision_authority_inventory.v1"
+UI_SCHEMA_PATH = Path("ui/fractal_binding_surface_v1.ui_schema.json")
+PIPELINE_CONTRACT_PATH = Path("docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json")
+SCHEMA_BINDING_PATH = Path("ui_app/src/schema_binding.cpp")
+STATE_IO_PATH = Path("ui_app/src/diagnostics_state_io.cpp")
+STATE_CAPTURE_PATH = Path("ui_app/src/diagnostics_capture.cpp")
+COLOR_PIPELINE_CORE_PATH = Path("ui_app/src/color_pipeline_core.h")
+TIER_RESOLVER_PATH = Path("ui_app/src/sample_tier_resolver.cpp")
+SAMPLE_DEVICE_PATH = Path("ui_app/src/fractal_sample_device.inl")
+ENUM_IDS_PATH = Path("ui_app/src/enum_id_utils.h")
+
+NUMERIC_CONTROL_TYPES = {
+    "drag_float",
+    "slider_float",
+    "drag_double",
+    "slider_double",
+    "drag_int",
+    "slider_int",
+}
+
+
+def _read_text(repo_root: Path, relative: Path) -> str:
+    return (repo_root / relative).read_text(encoding="utf-8")
+
+
+def _read_json(repo_root: Path, relative: Path) -> dict[str, Any]:
+    return json.loads(_read_text(repo_root, relative))
+
+
+def _sha256(repo_root: Path, relative: Path) -> str:
+    return hashlib.sha256((repo_root / relative).read_bytes()).hexdigest()
+
+
+def _source_commit(repo_root: Path) -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _function_body(source: str, signature: str) -> str:
+    start = source.find(signature)
+    if start < 0:
+        raise ValueError(f"missing required source signature: {signature}")
+    opening = source.find("{", start)
+    if opening < 0:
+        raise ValueError(f"missing opening brace for: {signature}")
+    depth = 0
+    for index in range(opening, len(source)):
+        char = source[index]
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return source[opening + 1:index]
+    raise ValueError(f"unterminated source function: {signature}")
+
+
+def _quoted_paths(source: str) -> set[str]:
+    return set(re.findall(r'"(fractal\.[^"]+)"', source))
+
+
+def _binding_path_types(schema_binding: str) -> dict[str, str]:
+    float_signatures = (
+        "bool BindExplainoRootCoordinate",
+        "bool BindColorPanelFloat",
+        "bool BindExplainoRootSdfFloat",
+        "bool BindViewFloat",
+        "bool BindingContext::BindFloat",
+    )
+    typed_paths: dict[str, str] = {}
+    for signature in float_signatures:
+        for path in _quoted_paths(_function_body(schema_binding, signature)):
+            typed_paths[path] = "float"
+    for path in _quoted_paths(_function_body(schema_binding, "bool BindingContext::BindDouble")):
+        typed_paths[path] = "double"
+    for path in _quoted_paths(_function_body(schema_binding, "bool BindingContext::BindInt")):
+        typed_paths[path] = "int"
+    return typed_paths
+
+
+def _numeric_controls(ui_schema: dict[str, Any], schema_binding: str) -> list[dict[str, Any]]:
+    binding_types = _binding_path_types(schema_binding)
+    special_routes = _special_numeric_routes(schema_binding)
+    controls: list[dict[str, Any]] = []
+    for panel in ui_schema.get("panels", []):
+        for control in panel.get("controls", []):
+            control_type = str(control.get("type", ""))
+            if control_type not in NUMERIC_CONTROL_TYPES:
+                continue
+            binding = control.get("binding") or {}
+            path = str(binding.get("path", ""))
+            storage = binding_types.get(path, "unresolved")
+            input_format = _input_format(control, path)
+            route = special_routes.get(
+                path,
+                {
+                    "edit_route": "direct_binding",
+                    "authoritative_storage": storage,
+                    "editor_carrier": storage,
+                },
+            )
+            classification, basis = _authoring_classification(
+                control,
+                storage,
+                input_format,
+                route,
+            )
+            controls.append(
+                {
+                    "panel_id": str(panel.get("id", "")),
+                    "control_id": str(control.get("id", "")),
+                    "control_type": control_type,
+                    "declared_value_type": str(control.get("value_type", "")),
+                    "binding_path": path,
+                    "binding_storage": storage,
+                    "authoritative_storage": route["authoritative_storage"],
+                    "editor_carrier": route["editor_carrier"],
+                    "edit_route": route["edit_route"],
+                    "authorability_status": "schema_ui_numeric_authoring_route",
+                    "declared_applicability": control.get("visible_if", "always_visible_in_panel"),
+                    "declared_range": {
+                        key: control[key]
+                        for key in ("min", "max", "ui_min", "ui_max")
+                        if key in control
+                    },
+                    "input_format": input_format,
+                    "step": control.get("step"),
+                    "logarithmic": bool(control.get("logarithmic", False)),
+                    "classification": classification,
+                    "classification_basis": basis,
+                    "classification_confidence": "source_proven_authoring_route",
+                    "state_load_conversion": "not_joined_requires_phase3_owner_trace",
+                    "state_save_policy": "global_max_digits10_serializer_path_membership_not_joined",
+                    "runtime_consumption": "not_proven_by_ui_binding",
+                    "authority_ref": f"{UI_SCHEMA_PATH.as_posix()}#{panel.get('id')}/{control.get('id')}",
+                }
+            )
+    return controls
+
+
+def _special_numeric_routes(schema_binding: str) -> dict[str, dict[str, str]]:
+    display_body = _function_body(schema_binding, "bool TryGetFloatControlDisplayValue")
+    edit_body = _function_body(schema_binding, "bool ApplyFloatControlEdit")
+    double_edit_body = _function_body(schema_binding, "bool ApplyDoubleControlEdit")
+    zoom_render_body = _function_body(schema_binding, "bool RenderCameraZoomControl")
+    get_int_body = _function_body(schema_binding, "bool BindingContext::GetIntValue")
+    set_int_body = _function_body(schema_binding, "bool BindingContext::SetIntValue")
+    routes: dict[str, dict[str, str]] = {}
+    for axis in ("x", "y"):
+        path = f"fractal.view.center.{axis}"
+        hp_member = f"center_hp_{axis}"
+        if (
+            f'binding.path == "{path}"' in display_body
+            and hp_member in display_body
+            and f'binding.path == "{path}"' in edit_body
+            and hp_member in edit_body
+            and "ImGui::InputFloat" in schema_binding
+        ):
+            routes[path] = {
+                "edit_route": "camera_hp_double_via_float_editor",
+                "authoritative_storage": "double",
+                "editor_carrier": "float",
+            }
+    if (
+        'binding.path == "fractal.view.zoom"' in display_body
+        and "log2_zoom" in display_body
+        and 'binding.path == "fractal.view.zoom"' in edit_body
+        and "log2_zoom" in edit_body
+        and "ImGui::InputDouble" in zoom_render_body
+    ):
+        routes["fractal.view.zoom"] = {
+            "edit_route": "camera_log2_double_via_double_editor",
+            "authoritative_storage": "double_log2",
+            "editor_carrier": "double",
+        }
+    if (
+        "IsResolutionLongEdgePath(path)" in get_int_body
+        and "ResolutionLongEdge(*render)" in get_int_body
+        and "IsResolutionLongEdgePath(path)" in set_int_body
+        and "ApplyResolutionLongEdge(*render, value)" in set_int_body
+    ):
+        routes["fractal.render.resolution.long_edge"] = {
+            "edit_route": "resolution_long_edge_to_int2",
+            "authoritative_storage": "int2",
+            "editor_carrier": "int",
+        }
+    if "ExplainoSeedSetCombined(*ctx.view, *ctx.params, nextValue)" in double_edit_body:
+        for path in (
+            "fractal.params.explaino_seed",
+            "fractal.root_pattern.dynamics.seed",
+        ):
+            if f'binding.path == "{path}"' in double_edit_body:
+                routes[path] = {
+                    "edit_route": "combined_explaino_seed_double",
+                    "authoritative_storage": "double_plus_derived_float_fields",
+                    "editor_carrier": "double",
+                }
+    return routes
+
+
+def _input_format(control: dict[str, Any], path: str) -> str:
+    control_type = str(control.get("type", ""))
+    if control_type in {"slider_double", "drag_double"}:
+        return "%.6f"
+    if control_type in {"slider_float", "drag_float"}:
+        if path == "fractal.view.zoom" or bool(control.get("logarithmic", False)):
+            return "%.9g"
+        return "%.5f"
+    return "integer"
+
+
+def _authoring_classification(
+    control: dict[str, Any],
+    storage: str,
+    input_format: str,
+    route: dict[str, str],
+) -> tuple[str, str]:
+    declared = str(control.get("value_type", ""))
+    control_id = str(control.get("id", ""))
+    if route["edit_route"] == "resolution_long_edge_to_int2":
+        return (
+            "INTENTIONAL_MIXED_PRECISION",
+            "single_integer_authoring_projects_to_aspect_preserving_int2_resolution",
+        )
+    if route["edit_route"] == "camera_hp_double_via_float_editor":
+        return (
+            "AUTHORING_IDENTITY_LOSS",
+            "camera_hp_double_authority_roundtrips_through_float_editor_and_fixed_five_decimal_input",
+        )
+    if route["edit_route"] == "camera_log2_double_via_double_editor":
+        return (
+            "AUTHORING_IDENTITY_LOSS",
+            "camera_log2_double_authority_uses_nine_significant_digit_linear_zoom_input",
+        )
+    if storage == "unresolved":
+        return "UNSUPPORTED_OR_NONAUTHORABLE", "binding_path_did_not_resolve_in_static_binding_owner"
+    if declared and declared != storage:
+        return "AUTHORING_IDENTITY_LOSS", "schema_value_type_and_binding_storage_disagree"
+    if storage == "double" and input_format == "%.6f":
+        if control_id == "explaino_seed":
+            return "AUTHORING_IDENTITY_LOSS", "combined_double_seed_uses_fixed_six_decimal_edit_format"
+        return "AUTHORING_IDENTITY_LOSS", "double_storage_uses_fixed_six_decimal_edit_format"
+    if storage == "float" and input_format != "%.9g":
+        return "AUTHORING_IDENTITY_LOSS", "float_storage_edit_format_is_not_roundtrip_precision"
+    if storage == "float":
+        return "TRUTHFUL_FLOAT32", "float_input_uses_nine_significant_digits"
+    if storage == "double":
+        return "TRUTHFUL_FLOAT64", "double_binding_and_roundtrip_capable_input"
+    return "INTENTIONAL_MIXED_PRECISION", "integer_authoring_is_exact_but_outside_float_width_audit"
+
+
+def _pipeline_inventory(contract: dict[str, Any], core_source: str) -> dict[str, Any]:
+    parameters: list[dict[str, Any]] = []
+    lanes = contract.get("function_library", {}).get("lanes", [])
+    for lane in lanes:
+        for function in lane.get("functions", []):
+            for index, parameter in enumerate(function.get("params", [])):
+                parameters.append(
+                    {
+                        "lane_id": lane.get("id"),
+                        "function_id": function.get("id"),
+                        "parameter_index": index,
+                        "path": parameter.get("path"),
+                        "declared_type": parameter.get("type"),
+                        "minimum": parameter.get("min"),
+                        "maximum": parameter.get("max"),
+                        "step": parameter.get("step"),
+                        "default": parameter.get("default"),
+                        "authorability_status": "compiled_contract_parameter",
+                        "classification": "NEEDS_RUNTIME_WITNESS",
+                        "classification_confidence": (
+                            "contract_and_carrier_proven_runtime_consumer_unresolved"
+                        ),
+                        "state_load_conversion": "not_joined_requires_phase3_owner_trace",
+                        "runtime_consumption": "not_joined_requires_focused_function_witness",
+                    }
+                )
+    type_counts = Counter(str(parameter.get("declared_type", "unknown")) for parameter in parameters)
+    carrier = "double" if re.search(r"\bdouble\s+number_value\s*=", core_source) else "unresolved"
+    return {
+        "authority_kind": "compiled_ui_salt_contract",
+        "contract_parameter_count": len(parameters),
+        "parameter_type_counts": dict(sorted(type_counts.items())),
+        "runtime_number_carrier": carrier,
+        "parameters": parameters,
+        "classification": "NEEDS_RUNTIME_WITNESS",
+        "classification_basis": (
+            "compiled descriptors declare numeric intent and draft storage uses a double carrier; "
+            "per-function runtime consumption width still requires focused source/runtime evidence"
+        ),
+    }
+
+
+def _float_cast_sites(state_io_source: str) -> list[dict[str, Any]]:
+    sites: list[dict[str, Any]] = []
+    for line_number, raw_line in enumerate(state_io_source.splitlines(), start=1):
+        if "static_cast<float>" not in raw_line:
+            continue
+        sites.append({"line": line_number, "snippet": raw_line.strip()})
+    return sites
+
+
+def _state_io_inventory(state_io_source: str, capture_source: str) -> dict[str, Any]:
+    cast_sites = _float_cast_sites(state_io_source)
+    serializer = "unresolved"
+    marker = "std::setprecision(std::numeric_limits<double>::max_digits10)"
+    if marker in capture_source:
+        serializer = "std::numeric_limits<double>::max_digits10"
+    return {
+        "serializer_precision": serializer,
+        "float_cast_site_count": len(cast_sites),
+        "float_cast_sites": cast_sites,
+        "classification": "NEEDS_RUNTIME_WITNESS",
+        "classification_basis": (
+            "roundtrip-capable serialization is present, but each JSON-number-to-float assignment "
+            "must be classified against model ownership and runtime use"
+        ),
+    }
+
+
+def _enum_id_map(enum_source: str) -> dict[str, str]:
+    pairs = re.findall(r'\{FractalType::([A-Za-z0-9_]+),\s*"([^"]+)"\}', enum_source)
+    return {enum_name: public_id for enum_name, public_id in pairs}
+
+
+def _top_level_sampler_branches(sample_source: str, enum_map: dict[str, str]) -> list[dict[str, Any]]:
+    pattern = re.compile(
+        r"(?ms)^    (?:\}\s*)?(?:if|else if)\s*"
+        r"\(([^{}]*?\b(?:ft|fractalType)\b[^{}]*?)\)\s*\{"
+    )
+    branches: list[dict[str, Any]] = []
+    for match in pattern.finditer(sample_source):
+        opening = sample_source.find("{", match.start())
+        block = _brace_block(sample_source, opening)
+        enum_names = sorted(set(re.findall(r"FractalType::([A-Za-z0-9_]+)", match.group(1))))
+        selectors = [enum_map.get(name, name) for name in enum_names]
+        branches.append(
+            {
+                "line": sample_source.count("\n", 0, match.start()) + 1,
+                "condition": " ".join(match.group(1).split()),
+                "enum_names": enum_names,
+                "selectors": selectors,
+                "direct_use_fp64_token": "useFP64" in block,
+                "classification_confidence": "static_token_evidence_only",
+            }
+        )
+    return branches
+
+
+def _brace_block(source: str, opening: int) -> str:
+    if opening < 0 or source[opening] != "{":
+        raise ValueError("invalid sampler branch opening brace")
+    depth = 0
+    for index in range(opening, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[opening:index + 1]
+    raise ValueError("unterminated sampler branch")
+
+
+def _fractal_selector_ids(ui_schema: dict[str, Any]) -> list[str]:
+    for panel in ui_schema.get("panels", []):
+        for control in panel.get("controls", []):
+            if control.get("id") == "fractal_type":
+                return [str(option["id"]) for option in control.get("options", [])]
+    raise ValueError("fractal_type selector is missing from UI schema")
+
+
+def _runtime_inventory(
+    ui_schema: dict[str, Any],
+    tier_source: str,
+    sample_source: str,
+    enum_source: str,
+) -> dict[str, Any]:
+    selectors = _fractal_selector_ids(ui_schema)
+    branches = _top_level_sampler_branches(sample_source, _enum_id_map(enum_source))
+    direct_fp64 = {
+        selector
+        for branch in branches
+        if branch["direct_use_fp64_token"]
+        for selector in branch["selectors"]
+    }
+    support_policy = "unresolved"
+    if "if (!SupportsBasinColoring(ft))" in tier_source and "flags |= kSupport_Standard" in tier_source:
+        support_policy = "advertised_for_all_selectors"
+    standard_resolves = "unresolved"
+    if "return {NumericBackend::float64, IterationStrategy::direct};" in tier_source:
+        standard_resolves = "float64_direct"
+    return {
+        "selector_count": len(selectors),
+        "selectors": selectors,
+        "standard_support_policy": support_policy,
+        "standard_resolves_to": standard_resolves,
+        "branch_records": branches,
+        "selectors_with_direct_fp64_branch_evidence": sorted(set(selectors) & direct_fp64),
+        "selectors_needing_runtime_witness": sorted(set(selectors) - direct_fp64),
+        "static_evidence_disclaimer": (
+            "A direct useFP64 token is only static branch evidence. Its absence can identify a witness target; "
+            "its presence does not prove all participating parameters and helpers execute at float64."
+        ),
+    }
+
+
+def _authority(repo_root: Path) -> dict[str, Any]:
+    paths = (
+        UI_SCHEMA_PATH,
+        PIPELINE_CONTRACT_PATH,
+        SCHEMA_BINDING_PATH,
+        STATE_IO_PATH,
+        STATE_CAPTURE_PATH,
+        COLOR_PIPELINE_CORE_PATH,
+        TIER_RESOLVER_PATH,
+        SAMPLE_DEVICE_PATH,
+        ENUM_IDS_PATH,
+    )
+    records = {path.as_posix(): _sha256(repo_root, path) for path in paths}
+    return {
+        "source_commit": _source_commit(repo_root),
+        "ui_schema": {"path": UI_SCHEMA_PATH.as_posix(), "sha256": records[UI_SCHEMA_PATH.as_posix()]},
+        "color_pipeline_contract": {
+            "path": PIPELINE_CONTRACT_PATH.as_posix(),
+            "sha256": records[PIPELINE_CONTRACT_PATH.as_posix()],
+        },
+        "source_files": records,
+    }
+
+
+def build_inventory(repo_root: Path) -> dict[str, Any]:
+    ui_schema = _read_json(repo_root, UI_SCHEMA_PATH)
+    pipeline_contract = _read_json(repo_root, PIPELINE_CONTRACT_PATH)
+    schema_binding = _read_text(repo_root, SCHEMA_BINDING_PATH)
+    numeric_controls = _numeric_controls(ui_schema, schema_binding)
+    classifications = Counter(item["classification"] for item in numeric_controls)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "authority": _authority(repo_root),
+        "general_schema": {
+            "numeric_control_count": len(numeric_controls),
+            "classification_counts": dict(sorted(classifications.items())),
+            "numeric_controls": numeric_controls,
+        },
+        "color_pipeline": _pipeline_inventory(
+            pipeline_contract,
+            _read_text(repo_root, COLOR_PIPELINE_CORE_PATH),
+        ),
+        "state_io": _state_io_inventory(
+            _read_text(repo_root, STATE_IO_PATH),
+            _read_text(repo_root, STATE_CAPTURE_PATH),
+        ),
+        "runtime_tiers": _runtime_inventory(
+            ui_schema,
+            _read_text(repo_root, TIER_RESOLVER_PATH),
+            _read_text(repo_root, SAMPLE_DEVICE_PATH),
+            _read_text(repo_root, ENUM_IDS_PATH),
+        ),
+    }
+
+
+def render_markdown(inventory: dict[str, Any]) -> str:
+    general = inventory["general_schema"]
+    pipeline = inventory["color_pipeline"]
+    state_io = inventory["state_io"]
+    runtime = inventory["runtime_tiers"]
+    lines = [
+        "# Precision Authority Inventory",
+        "",
+        f"Schema: `{inventory['schema_version']}`",
+        f"Source commit: `{inventory['authority']['source_commit']}`",
+        "",
+        "## Summary",
+        "",
+        f"- General numeric controls: {general['numeric_control_count']}",
+        f"- Authoring identity losses: {general['classification_counts'].get('AUTHORING_IDENTITY_LOSS', 0)}",
+        f"- Color Pipeline contract parameters: {pipeline['contract_parameter_count']}",
+        f"- State-load float cast sites: {state_io['float_cast_site_count']}",
+        f"- Live selectors: {runtime['selector_count']}",
+        f"- Selectors without direct float64 branch evidence: {len(runtime['selectors_needing_runtime_witness'])}",
+        "",
+        "## General Schema Authoring Risks",
+        "",
+        "| Control | Path | Storage | Input format | Classification |",
+        "|---|---|---|---|---|",
+    ]
+    for item in general["numeric_controls"]:
+        if item["classification"] != "AUTHORING_IDENTITY_LOSS":
+            continue
+        lines.append(
+            f"| `{item['control_id']}` | `{item['binding_path']}` | {item['binding_storage']} | "
+            f"`{item['input_format']}` | {item['classification']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Color Pipeline",
+            "",
+            f"- Authority: {pipeline['authority_kind']}",
+            f"- Runtime numeric carrier: {pipeline['runtime_number_carrier']}",
+            f"- Classification: {pipeline['classification']}",
+            "",
+            "## State I/O",
+            "",
+            f"- Serializer precision: `{state_io['serializer_precision']}`",
+            f"- Float narrowing sites to classify: {state_io['float_cast_site_count']}",
+            f"- Classification: {state_io['classification']}",
+            "",
+            "## Runtime Tier Truth",
+            "",
+            f"- Standard support policy: `{runtime['standard_support_policy']}`",
+            f"- Standard resolves to: `{runtime['standard_resolves_to']}`",
+            "- Static evidence is not runtime proof.",
+            "- Selectors requiring focused runtime witnesses:",
+        ]
+    )
+    for selector in runtime["selectors_needing_runtime_witness"]:
+        lines.append(f"  - `{selector}`")
+    return "\n".join(lines) + "\n"
+
+
+def write_outputs(inventory: dict[str, Any], *, out_json: Path, out_md: Path) -> None:
+    out_json.parent.mkdir(parents=True, exist_ok=True)
+    out_md.parent.mkdir(parents=True, exist_ok=True)
+    out_json.write_text(json.dumps(inventory, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    out_md.write_text(render_markdown(inventory), encoding="utf-8")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Build the deterministic viewer-host precision authority inventory")
+    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--out-json", type=Path, required=True)
+    parser.add_argument("--out-md", type=Path, required=True)
+    args = parser.parse_args(argv)
+    inventory = build_inventory(args.repo_root.resolve())
+    write_outputs(inventory, out_json=args.out_json, out_md=args.out_md)
+    print(
+        "precision_authority_inventory: "
+        f"controls={inventory['general_schema']['numeric_control_count']} "
+        f"pipeline_params={inventory['color_pipeline']['contract_parameter_count']} "
+        f"selectors={inventory['runtime_tiers']['selector_count']}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

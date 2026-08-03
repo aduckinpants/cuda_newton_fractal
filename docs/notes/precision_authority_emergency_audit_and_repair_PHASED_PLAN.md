@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 1 - produce the deterministic precision matrix and stop at the evidence review gate.
+Phase 1 complete - deterministic precision matrix and reviewed report are ready at the evidence review gate. Phase 2 product mutation is blocked pending user review.
 
 ## Phase Checklist
 
 - [x] Phase 0 - lock this engine-native plan and workflow-only contract, validate it, checkpoint it, and continue without product mutation.
-- [ ] Phase 1 - produce a deterministic system-wide precision matrix covering authoring, state I/O, declared runtime tiers, and actual recurrence arithmetic; stop at the evidence review gate.
+- [x] Phase 1 - produce a deterministic system-wide precision matrix covering authoring, state I/O, declared runtime tiers, and actual recurrence arithmetic; stop at the evidence review gate.
 - [ ] Phase 2 - repair false runtime-tier declarations or dispatch only where the matrix and focused RED witnesses prove them.
 - [ ] Phase 3 - repair numeric authoring and readback identity across the general schema route, Color Pipeline UI-Salt route, and `state.json` route.
 - [ ] Phase 4 - make only evidence-driven storage or arithmetic precision promotions, preserving intentionally truthful float32 domains.
@@ -237,7 +237,15 @@ Forbidden without a new user-approved plan:
 - Phase 0 plan sync: passed for both the predecessor handoff note and this successor plan.
 - Phase 0 focused workflow tests: 30 passed, with the same two explicitly unrelated baseline tests deselected as in the preceding planning checkpoint.
 - Phase 0 product mutation: none.
-- Phase 1 matrix: pending.
+- Phase 0 checkpoint: `662f578bc54be31182ef00655f3470d52bf2648e`, receipted, rearward-reviewed `ok`, and pushed.
+- Phase 1 contract: `docs/contracts/precision_authority_inventory_p1.contract.json`.
+- Phase 1 deterministic generator: `tools/precision_authority_inventory.py` with eight focused tests in `tests/test_precision_authority_inventory.py`.
+- Phase 1 machine matrix: `artifacts/precision_authority/phase1/matrix.json`; generated Markdown projection: `artifacts/precision_authority/phase1/matrix.md`.
+- Phase 1 reviewed conclusions: `docs/notes/precision_authority_inventory_p1_REPORT.md`.
+- Phase 1 source inventory: 107 numeric controls, including 90 authoring-identity risks, 120 compiled Color Pipeline parameters, 149 explicit state-load float casts requiring owner classification, and 51 selectors under a universally advertised `standard -> float64 direct` policy.
+- Phase 1 runtime-tier result: 25 selectors lack selector-named direct `useFP64` branch evidence, but shared predicates/delegation/fallback make them witness targets rather than proven false claims.
+- Phase 1 full Python suite on the dirty candidate: 581 passed, 19 failed, 23 skipped. The exact clean Phase 0 checkpoint `662f578bc54be31182ef00655f3470d52bf2648e` produced 572 passed, 20 failed, 23 skipped. Failure-set comparison found zero new failures; the only baseline-only failure was `test_runtime_sweep_changes_live_view_and_space_pauses_it`, which passed in the candidate run. The suite is not represented as green; raw logs are `artifacts/logs/precision_authority_p1_python_suite.log` and `artifacts/logs/precision_authority_p1_baseline_python_suite.log`.
+- Phase 1 product mutation: none.
 
 ## Hostile Audit
 
@@ -259,14 +267,21 @@ Audit questions:
 - [x] Pass 1 - reviewed the Phase 0 plan and contract against live repository authority and found an invalid forward reference to a not-yet-created successor contract.
 - [x] Pass 2 - removed the invalid forward reference, re-read the repaired state after contract validation and plan sync, and found no additional real defect.
 - [x] Pass 3 - final clean re-read confirmed the repaired state separates UI display, storage, JSON, tier resolution, and executed arithmetic and does not authorize mass precision conversion, warp work, state-tool mutation, or engine merge.
+- [x] Pass 4 - distrust-first review found that the first generator flattened specialized high-precision camera routes into ordinary float bindings and misclassified the composite resolution long-edge route as unresolved.
+- [x] Pass 5 - added RED coverage, then repaired the generator to expose binding storage, editor carrier, authoritative storage, special edit route, source confidence, and unresolved cross-layer joins; the repaired inventory now recognizes camera, combined-seed, and aspect-preserving resolution ownership.
+- [x] Pass 6 - final re-read confirmed that static sampler-token absence is reported only as a witness target, state-load casts and Color Pipeline carriers remain `NEEDS_RUNTIME_WITNESS`, no product repair is mixed into Phase 1, and Phase 2 remains blocked at the user review gate.
 
 ## Audit Findings
 
 - [x] The first Phase 0 contract listed `docs/contracts/precision_authority_inventory_p1.contract.json` before that successor file existed. Contract validation correctly blocked slice start. The repaired P0 contract names only existing paths; the P1 contract will be created through the repository's checked-in successor-lock procedure after this checkpoint.
 - [x] The inventory could have become a second semantic registry if it treated static source parsing as runtime authority. The plan now requires source-derived facts, explicit confidence, `NEEDS_RUNTIME_WITNESS` for incomplete evidence, and runtime proof before behavioral repair.
+- [x] The first generator treated schema `BindFloat` as the whole camera story. Current source instead reads and writes `center_hp_x`, `center_hp_y`, and `log2_zoom` through specialized routes, including a float editor for the double center authorities. Tests now prevent that authority compression.
+- [x] The first generator called `fractal.render.resolution.long_edge` unresolved because it is not a direct `BindInt` pointer. Current source intentionally projects that integer through `GetIntValue` / `SetIntValue` into an aspect-preserving `int2` resolution. Tests now preserve that composite route.
+- [x] A top-level selector branch containing `useFP64` is useful static evidence but not executed-arithmetic proof. Shared predicate branches and the generic fallback make token absence insufficient for `FALSE_RUNTIME_TIER_CLAIM`; the report keeps all such rows at the runtime-witness boundary.
+- [x] The repository-wide Python suite is red on the exact clean Phase 0 checkpoint. The Phase 1 candidate introduced no new failure IDs, so closure records baseline equivalence rather than making a false all-green claim. Product repair for the inherited failures is outside this workflow-only slice.
 
 ## Notes
 
 - The prior finding-enrichment E1 callable-centralization phase remains deferred. This emergency campaign does not silently absorb it.
-- Phase 1 is the next evidence-producing slice after Phase 0 closure.
-- The first required user review boundary is the completed Phase 1 precision matrix, before broad repair work.
+- Phase 1 is closed at its evidence checkpoint once validation, commit, receipt, rearward review, and push finish.
+- The first required user review boundary is now active: review the completed Phase 1 precision matrix and repair priorities before any Phase 2 product mutation.
