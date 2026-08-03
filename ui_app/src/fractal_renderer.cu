@@ -30,7 +30,8 @@ namespace {
 // No pixel mapping, no coloring, no framebuffer — pure iteration result.
 __device__ FractalSampleResult fractal_sample_device(
     Cx coord, Cxd coordD, ViewState view, KernelParams params,
-    RenderSettings render, const double2* refOrbit, int refLen, double2 refC0)
+    RenderSettings render, const double2* refOrbit, int refLen, double2 refC0,
+    bool* outUsedFloat64IterationArithmetic)
 {
 #include "fractal_sample_device.inl"
 }
@@ -160,7 +161,8 @@ __global__ void kernel_render(
     Cx coord{(float)x, (float)y};
 
     // K1: Iteration logic extracted to fractal_sample_device().
-    FractalSampleResult sample = fractal_sample_device(coord, coordD, view, params, render, refOrbit, refLen, refC0);
+    FractalSampleResult sample = fractal_sample_device(
+        coord, coordD, view, params, render, refOrbit, refLen, refC0, nullptr);
     int it = sample.iterations;
     Cx z{sample.final_z_x, sample.final_z_y};
     float pAbs = sample.residual;

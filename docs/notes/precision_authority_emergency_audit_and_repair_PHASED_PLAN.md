@@ -2,13 +2,14 @@
 
 ## Current Phase
 
-Phase 1 complete - deterministic precision matrix and reviewed report are ready at the evidence review gate. Phase 2 product mutation is blocked pending user review.
+Phase 2A complete - five source-proven float32-only dispatch owners covering six selectors now have truthful standard-tier arithmetic, canonical execution evidence, owner-level inventory attribution, and published-runtime proof. Phase 3 is the next approved execution boundary after the Phase 2A checkpoint.
 
 ## Phase Checklist
 
 - [x] Phase 0 - lock this engine-native plan and workflow-only contract, validate it, checkpoint it, and continue without product mutation.
 - [x] Phase 1 - produce a deterministic system-wide precision matrix covering authoring, state I/O, declared runtime tiers, and actual recurrence arithmetic; stop at the evidence review gate.
-- [ ] Phase 2 - repair false runtime-tier declarations or dispatch only where the matrix and focused RED witnesses prove them.
+- [x] Phase 2 - repair false runtime-tier declarations or dispatch only where the matrix and focused RED witnesses prove them.
+  - [x] Phase 2A - repair ExplainO Y, ExplainO Julia, ExplainO Lambda, Multicorn, and the shared McMullen/Collatz owner; preserve fast arithmetic; prove canonical execution and published-runtime truth.
 - [ ] Phase 3 - repair numeric authoring and readback identity across the general schema route, Color Pipeline UI-Salt route, and `state.json` route.
 - [ ] Phase 4 - make only evidence-driven storage or arithmetic precision promotions, preserving intentionally truthful float32 domains.
 - [ ] Phase 5 - run full qualification, publish from an exact clean checkpoint, reconcile the provisional fractal `ui.salt` reality-contact note, and stop at the engine merge-approval boundary.
@@ -160,6 +161,29 @@ For each matrix row classified as a false tier claim or high-risk unknown:
 
 Do not declare all selectors float64-capable because their coordinates enter through a double camera. Do not downgrade a truthful float64 path merely because some model parameters are intentionally float-backed.
 
+### Phase 2A - Bounded False-Owner Repair
+
+The Phase 1 count of 25 selectors without selector-named `useFP64` tokens is not a workload count. Shared predicates and the generic fallback already own most of those selectors. Source review narrows this slice to five dispatch owners covering six selectors:
+
+```text
+explaino_y
+explaino_julia
+explaino_lambda
+multicorn
+UsesSpecializedEscapeTimeFormula -> mcmullen, collatz
+```
+
+Required behavior:
+
+- add a canonical `FractalSampleEvidence` field that records whether float64 iteration arithmetic actually executed, without changing `FractalSampleResult`;
+- instrument real float64 iteration branches, not float64-only postprocessing such as nearest-root snapping;
+- add RED native witnesses proving every target resolves to float64 and executes float64 iteration arithmetic under `standard`, while `fast` remains on the existing float32 route;
+- implement the missing double routes with existing typed math helpers and preserve float32 operation order;
+- update the inventory to attribute shared predicate/fallback owners and stop presenting selector count as repair count;
+- publish and prove representative repaired selectors through the exact runtime.
+
+No host-probe centralization, numeric authoring repair, state I/O work, Color Pipeline work, storage promotion, nonzero-warp work, state-tool mutation, or engine merge belongs in Phase 2A.
+
 ## Phase 3 - Numeric Authoring And Readback Identity
 
 Repair only matrix-proven authoring defects. Required behavior:
@@ -246,6 +270,15 @@ Forbidden without a new user-approved plan:
 - Phase 1 runtime-tier result: 25 selectors lack selector-named direct `useFP64` branch evidence, but shared predicates/delegation/fallback make them witness targets rather than proven false claims.
 - Phase 1 full Python suite on the dirty candidate: 581 passed, 19 failed, 23 skipped. The exact clean Phase 0 checkpoint `662f578bc54be31182ef00655f3470d52bf2648e` produced 572 passed, 20 failed, 23 skipped. Failure-set comparison found zero new failures; the only baseline-only failure was `test_runtime_sweep_changes_live_view_and_space_pauses_it`, which passed in the candidate run. The suite is not represented as green; raw logs are `artifacts/logs/precision_authority_p1_python_suite.log` and `artifacts/logs/precision_authority_p1_baseline_python_suite.log`.
 - Phase 1 product mutation: none.
+- Phase 2A contract: `docs/contracts/precision_authority_runtime_tier_p2a.contract.json`; slice checkpoint token `ck:de3d3067`.
+- Phase 2A RED: the focused CUDA witness failed because `FractalSampleEvidence` did not expose executed-arithmetic identity.
+- Phase 2A repair: ExplainO Y, ExplainO Julia, ExplainO Lambda, Multicorn, and the shared McMullen/Collatz owner retain their float32 fast branches and execute typed float64 recurrence arithmetic under standard.
+- Phase 2A canonical native witness: `test_fractal_sample_kernel` reports 1,076 passed and zero failed; all six targets report false for fast and true for standard `used_float64_iteration_arithmetic`.
+- Phase 2A inventory: eight focused tests pass; 51 selectors are attributed to 31 top-level dispatch owners, and no owner lacks the canonical static execution marker. Static attribution remains explicitly subordinate to the native execution witness.
+- Phase 2A full native rail: all helper tests passed after the execution-evidence ABI test was updated to lock the intentional three-field layout.
+- Phase 2A published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `30d143a5baf81b7eb79ea46874eefe687ac08cf8d9e2e60dc1f4c3ae1ea288e9`.
+- Phase 2A published-runtime matrix: six selectors passed fast/standard resolution and deterministic action-free standard replay in `tests/test_fractal_runtime_precision_tier_truth.py`.
+- Phase 2A code-quality audit: 93/100 with baseline check passed; no new critical, error, or warning class was introduced.
 
 ## Hostile Audit
 
@@ -270,6 +303,10 @@ Audit questions:
 - [x] Pass 4 - distrust-first review found that the first generator flattened specialized high-precision camera routes into ordinary float bindings and misclassified the composite resolution long-edge route as unresolved.
 - [x] Pass 5 - added RED coverage, then repaired the generator to expose binding storage, editor carrier, authoritative storage, special edit route, source confidence, and unresolved cross-layer joins; the repaired inventory now recognizes camera, combined-seed, and aspect-preserving resolution ownership.
 - [x] Pass 6 - final re-read confirmed that static sampler-token absence is reported only as a witness target, state-load casts and Color Pipeline carriers remain `NEEDS_RUNTIME_WITNESS`, no product repair is mixed into Phase 1, and Phase 2 remains blocked at the user review gate.
+- [x] Pass 7 - distrust-first source review found that ExplainO Y initially tested convergence through a float-projected residual and that perturbation execution was not marked because it does not sit under `if (useFP64)`; both defects were repaired before the focused GREEN witness.
+- [x] Pass 8 - the first full native rail found the intentional evidence-field addition conflicted with a stale exact two-field layout assertion; the test now locks the legacy prefix, witness offset, and padded three-field size, and the complete native rail passes.
+- [x] Pass 9 - final marker review found mechanically inserted assignments inside nearest-root postprocessing blocks. Those assignments were removed so the witness records actual iteration arithmetic only; the generic direct-iteration fallback marker was retained and correctly indented.
+- [x] Pass 10 - post-repair re-read plus focused, full-native, publication, and six-selector runtime reruns found no additional real defect.
 
 ## Audit Findings
 
@@ -279,9 +316,12 @@ Audit questions:
 - [x] The first generator called `fractal.render.resolution.long_edge` unresolved because it is not a direct `BindInt` pointer. Current source intentionally projects that integer through `GetIntValue` / `SetIntValue` into an aspect-preserving `int2` resolution. Tests now preserve that composite route.
 - [x] A top-level selector branch containing `useFP64` is useful static evidence but not executed-arithmetic proof. Shared predicate branches and the generic fallback make token absence insufficient for `FALSE_RUNTIME_TIER_CLAIM`; the report keeps all such rows at the runtime-witness boundary.
 - [x] The repository-wide Python suite is red on the exact clean Phase 0 checkpoint. The Phase 1 candidate introduced no new failure IDs, so closure records baseline equivalence rather than making a false all-green claim. Product repair for the inherited failures is outside this workflow-only slice.
+- [x] Selector counts were misleading as repair counts. The owner-aware inventory now attributes helper predicates and the generic fallback mechanically from source, while retaining the native CUDA witness as behavioral authority.
+- [x] The first Phase 2A execution witness marked float64 postprocessing as well as recurrence execution. Hostile review removed the postprocess-only assignments and reran every affected proof rail.
+- [x] The widened evidence seam intentionally changes only `FractalSampleEvidence`; `FractalSampleResult`, renderer behavior, state contracts, and the fast float32 route remain unchanged.
 
 ## Notes
 
 - The prior finding-enrichment E1 callable-centralization phase remains deferred. This emergency campaign does not silently absorb it.
-- Phase 1 is closed at its evidence checkpoint once validation, commit, receipt, rearward review, and push finish.
-- The first required user review boundary is now active: review the completed Phase 1 precision matrix and repair priorities before any Phase 2 product mutation.
+- Phase 2A closes at its evidence checkpoint once validation, commit, receipt, rearward review, and push finish.
+- Phase 3 numeric authoring and readback identity is the next approved execution boundary; no engine merge is authorized.

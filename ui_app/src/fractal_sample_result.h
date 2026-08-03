@@ -28,6 +28,7 @@ struct FractalSampleResult {
 struct FractalSampleEvidence {
     Double2 sample_coord{0.0, 0.0};
     FractalSampleResult legacy_result{};
+    bool used_float64_iteration_arithmetic{false};
 };
 
 inline FractalSampleResult BuildLegacySampleResult(const FractalSampleEvidence& evidence) {

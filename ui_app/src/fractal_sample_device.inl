@@ -1,5 +1,6 @@
     // Precision tier dispatch: resolved eval mode determines arithmetic width.
     bool useFP64 = (render.resolved_eval.backend == NumericBackend::float64);
+    bool usedFloat64IterationArithmetic = false;
 
     int maxIter = max(1, params.max_iter);
     float eps = fmaxf(1e-12f, params.epsilon);
@@ -25,6 +26,7 @@
     FractalType ft = ResolveExplainoRuntimeFractalType(requestedFt, params);
     if (ft == FractalType::newton) {
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = coordD;
             double pAbsD = 0.0;
             for (; it < maxIter; ++it) {
@@ -97,6 +99,7 @@
             : 0.0;
 
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explainoProjectionAndFlow
                 ? explaino_warp_start_d(coordD, explainoSeed, explainoPhase, explainoWarpStrength)
                 : coordD;
@@ -285,6 +288,7 @@
         int pairClass = 3;
 
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd baselineZ = coordD;
             Cxd partnerZ = {coordD.x + pairOffsetX, coordD.y + pairOffsetY};
             bool baselineDone = false;
@@ -514,6 +518,7 @@
         int pairClass = 3;
 
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             const double dampD = (double)userDamp;
             Cxd baselineZ = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd partnerZ = {baselineZ.x + pairOffsetX, baselineZ.y + pairOffsetY};
@@ -729,6 +734,7 @@
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
             double dampD = (double)userDamp;
@@ -778,6 +784,7 @@
         const int rootCount = useExplicitRoots ? params.explaino_root_count : polynomialRootCount;
         int bestIt_balance_void = 0;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
             double bestPD_balance_void = 1.0e30;
@@ -1001,6 +1008,7 @@
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
             double dampD = (double)userDamp;
@@ -1081,82 +1089,160 @@
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
-        Cx zPrev = z;
 
-        float bestP = 1.0e30f;
-        int bestIt = 0;
-        Cx bestZ = z;
+        if (useFP64) {
+            usedFloat64IterationArithmetic = true;
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            double bestPD = 1.0e300;
+            double pAbsD = 0.0;
+            int bestIt = 0;
+            Cxd bestZD = zd;
 
-        for (; it < maxIter; ++it) {
-            float localPhase = phase + 0.07f * (float)it;
-            Cx zW = explaino_warp_start(z, seed, localPhase, strength * 0.30f);
+            for (; it < maxIter; ++it) {
+                const float localPhase = phase + 0.07f * (float)it;
+                Cxd zW = explaino_warp_start_d(zd, seed, localPhase, strength * 0.30f);
 
-            Cx P, dP;
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zW, &P, &dP);
 
-            float coeffs[5];
-            #pragma unroll
-            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                pAbsD = cxd_abs(P);
+                pAbs = (float)pAbsD;
+                if (pAbsD < bestPD) {
+                    bestPD = pAbsD;
+                    bestIt = it;
+                    bestZD = zW;
+                }
+                if (pAbsD < epsD) {
+                    zd = zW;
+                    break;
+                }
 
-            poly_eval_real_coeffs_deg4(coeffs, zW, &P, &dP);
+                const double dAbs2 = cxd_abs2(dP);
+                const Cxd step = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                const double stepMag = sqrt(fmax(0.0, cxd_abs2(step)));
+                const double damp = 0.90 * (double)userDamp / (1.0 + stepMag);
+                const Cxd newtonW = cxd_sub(zW, cxd_scale(step, damp));
 
-            pAbs = cx_abs(P);
-            if (pAbs < bestP) {
-                bestP = pAbs;
-                bestIt = it;
-                bestZ = zW;
+                const double mix = 0.78;
+                Cxd zNext = cxd_add(cxd_scale(zd, 1.0 - mix), cxd_scale(newtonW, mix));
+                const Cxd vel = cxd_sub(zd, zPrevD);
+                zNext = cxd_add(zNext, cxd_scale(vel, 0.10));
+                zNext = cxd_add(zNext, cxd_scale(coordD, 0.045));
+
+                zPrevD = zd;
+                zd = zNext;
+
+                const double r2 = cxd_abs2(zd);
+                const double k = 1.0 / sqrt(1.0 + r2 * 0.0625);
+                zd = cxd_scale(zd, 4.0 * k);
+
+                if (!isfinite(zd.x) || !isfinite(zd.y)) {
+                    zd = {0.0, 0.0};
+                    break;
+                }
             }
-            if (pAbs < eps) {
-                z = zW;
-                break;
-            }
 
-            float dAbs2 = cx_abs2(dP);
-            Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
-
-            float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
-            float damp = 0.90f * userDamp / (1.0f + stepMag);
-            Cx newtonW = cx_sub(zW, cx_scale(step, damp));
-
-            float mix = 0.78f;
-            Cx zNext = cx_add(cx_scale(z, 1.0f - mix), cx_scale(newtonW, mix));
-
-            Cx vel = cx_sub(z, zPrev);
-            zNext = cx_add(zNext, cx_scale(vel, 0.10f));
-            zNext = cx_add(zNext, cx_scale(coord, 0.045f));
-
-            zPrev = z;
-            z = zNext;
-
-            float r2 = cx_abs2(z);
-            float k = 1.0f / sqrtf(1.0f + r2 * 0.0625f);
-            z = cx_scale(z, 4.0f * k);
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
-            }
-        }
-
-        converged = (pAbs < eps);
-        if (!converged) {
-            z = bestZ;
-            it = bestIt;
-            // Snap to nearest root for meaningful basin assignment (matches
-            // explaino_fp / explaino_joy pattern).
-            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
-            if (nRoots > 0) {
-                int idx = NearestRootIndexUnitRoots(z, nRoots);
-                z = unit_root_k(idx, nRoots);
-                pAbs = 0.0f;
-            } else if (params.explaino_root_count > 0) {
-                int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
-                z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
-                pAbs = 0.0f;
+            converged = (pAbsD < epsD);
+            if (!converged) {
+                zd = bestZD;
+                it = bestIt;
+                int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                    pAbs = 0.0f;
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                    pAbs = 0.0f;
+                } else {
+                    z = {(float)zd.x, (float)zd.y};
+                    pAbs = (float)bestPD;
+                }
+                converged = true;
             } else {
-                pAbs = bestP;
+                z = {(float)zd.x, (float)zd.y};
             }
-            converged = true;
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+
+            float bestP = 1.0e30f;
+            int bestIt = 0;
+            Cx bestZ = z;
+
+            for (; it < maxIter; ++it) {
+                float localPhase = phase + 0.07f * (float)it;
+                Cx zW = explaino_warp_start(z, seed, localPhase, strength * 0.30f);
+
+                Cx P, dP;
+
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+
+                poly_eval_real_coeffs_deg4(coeffs, zW, &P, &dP);
+
+                pAbs = cx_abs(P);
+                if (pAbs < bestP) {
+                    bestP = pAbs;
+                    bestIt = it;
+                    bestZ = zW;
+                }
+                if (pAbs < eps) {
+                    z = zW;
+                    break;
+                }
+
+                float dAbs2 = cx_abs2(dP);
+                Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
+                float damp = 0.90f * userDamp / (1.0f + stepMag);
+                Cx newtonW = cx_sub(zW, cx_scale(step, damp));
+
+                float mix = 0.78f;
+                Cx zNext = cx_add(cx_scale(z, 1.0f - mix), cx_scale(newtonW, mix));
+
+                Cx vel = cx_sub(z, zPrev);
+                zNext = cx_add(zNext, cx_scale(vel, 0.10f));
+                zNext = cx_add(zNext, cx_scale(coord, 0.045f));
+
+                zPrev = z;
+                z = zNext;
+
+                float r2 = cx_abs2(z);
+                float k = 1.0f / sqrtf(1.0f + r2 * 0.0625f);
+                z = cx_scale(z, 4.0f * k);
+
+                if (!isfinite(z.x) || !isfinite(z.y)) {
+                    z = {0.0f, 0.0f};
+                    break;
+                }
+            }
+
+            converged = (pAbs < eps);
+            if (!converged) {
+                z = bestZ;
+                it = bestIt;
+                int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                    pAbs = 0.0f;
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                    pAbs = 0.0f;
+                } else {
+                    pAbs = bestP;
+                }
+                converged = true;
+            }
         }
     } else if (ft == FractalType::nova || ft == FractalType::explaino_nova) {
         // Nova (V1): z_{n+1} = z_n - alpha * f(z_n)/f'(z_n) + c
@@ -1178,6 +1264,7 @@
         if (!(alpha > 0.0f) || !(alpha <= 2.0f) || !isfinite(alpha)) {
             escaped = true;
         } else if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = {0.0, 0.0};
             Cxd cConstD = isExplainoNova
                 ? explaino_warp_start_d(coordD, novaSeed, novaPhase, novaWarpStrength)
@@ -1233,6 +1320,7 @@
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
             double dampD = (double)userDamp;
@@ -1290,6 +1378,7 @@
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_phx = 0;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -1389,6 +1478,7 @@
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_joy = 0;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -1512,6 +1602,7 @@
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_fold = 0;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -1628,6 +1719,7 @@
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_bell = 0;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -1753,6 +1845,7 @@
         const float kTwoPI = 6.2831853071795864f;
         const float kRipplePeriod = 8.0f;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -2090,6 +2183,7 @@
         const float kTwoPI = 6.2831853071795864f;
         const float kRipplePeriod = 8.0f;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -2213,6 +2307,7 @@
         #pragma unroll
         for (int k = 0; k < 5; ++k) { coeffsA[k] = params.poly_coeffs[k]; coeffsB[k] = params.poly_coeffs_b[k]; }
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -2328,6 +2423,7 @@
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_vortex = 0;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -2456,6 +2552,7 @@
         int nRootsForPull = params.explaino_root_count;
         int bestIt_tension = 0;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -2623,6 +2720,7 @@
 
         TranscendentalFunc tf = params.transcendental_func;
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
             double dampD = (double)userDamp;
@@ -2694,6 +2792,7 @@
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd zPrev2D = zd;
@@ -2753,27 +2852,48 @@
         float strength = params.explaino_warp_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
 
         const bool useCustomJuliaConstant =
             params.explaino_julia_constant_mode == ExplainoJuliaConstantMode::custom;
-        Cx cJ = useCustomJuliaConstant
-            ? Cx{params.explaino_julia_c_real, params.explaino_julia_c_imag}
-            : ((params.explaino_root_count > 0)
-                ? Cx{params.explaino_roots[0].x, params.explaino_roots[0].y}
-                : Cx{-0.7f, 0.27015f});
+        if (useFP64) {
+            usedFloat64IterationArithmetic = true;
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            const Cxd cJ = useCustomJuliaConstant
+                ? Cxd{(double)params.explaino_julia_c_real, (double)params.explaino_julia_c_imag}
+                : ((params.explaino_root_count > 0)
+                    ? Cxd{(double)params.explaino_roots[0].x, (double)params.explaino_roots[0].y}
+                    : Cxd{-0.7, 0.27015});
 
-        for (; it < maxIter; ++it) {
-            Cx z2 = cx_mul(z, z);
-            z = cx_add(z2, cJ);
-
-            if (cx_abs2(z) > 4.0f) {
-                escaped = true;
-                break;
+            for (; it < maxIter; ++it) {
+                zd = cxd_add(cxd_mul(zd, zd), cJ);
+                if (cxd_abs2(zd) > 4.0) {
+                    escaped = true;
+                    break;
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) {
+                    escaped = true;
+                    break;
+                }
             }
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                escaped = true;
-                break;
+            z = {(float)zd.x, (float)zd.y};
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            const Cx cJ = useCustomJuliaConstant
+                ? Cx{params.explaino_julia_c_real, params.explaino_julia_c_imag}
+                : ((params.explaino_root_count > 0)
+                    ? Cx{params.explaino_roots[0].x, params.explaino_roots[0].y}
+                    : Cx{-0.7f, 0.27015f});
+
+            for (; it < maxIter; ++it) {
+                z = cx_add(cx_mul(z, z), cJ);
+                if (cx_abs2(z) > 4.0f) {
+                    escaped = true;
+                    break;
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) {
+                    escaped = true;
+                    break;
+                }
             }
         }
     } else if (ft == FractalType::explaino_lambda) {
@@ -2784,21 +2904,40 @@
         float strength = params.explaino_warp_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase * phaseStrength, strength);
 
-        Cx lambdaC{params.lambda_real, params.lambda_imag};
+        if (useFP64) {
+            usedFloat64IterationArithmetic = true;
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase * phaseStrength, strength);
+            const Cxd lambdaC{(double)params.lambda_real, (double)params.lambda_imag};
 
-        for (; it < maxIter; ++it) {
-            Cx oneMinusZ{1.0f - z.x, -z.y};
-            z = cx_mul(lambdaC, cx_mul(z, oneMinusZ));
-
-            if (cx_abs2(z) > 4.0f) {
-                escaped = true;
-                break;
+            for (; it < maxIter; ++it) {
+                const Cxd oneMinusZ{1.0 - zd.x, -zd.y};
+                zd = cxd_mul(lambdaC, cxd_mul(zd, oneMinusZ));
+                if (cxd_abs2(zd) > 4.0) {
+                    escaped = true;
+                    break;
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) {
+                    escaped = true;
+                    break;
+                }
             }
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                escaped = true;
-                break;
+            z = {(float)zd.x, (float)zd.y};
+        } else {
+            z = explaino_warp_start(coord, seed, phase * phaseStrength, strength);
+            const Cx lambdaC{params.lambda_real, params.lambda_imag};
+
+            for (; it < maxIter; ++it) {
+                const Cx oneMinusZ{1.0f - z.x, -z.y};
+                z = cx_mul(lambdaC, cx_mul(z, oneMinusZ));
+                if (cx_abs2(z) > 4.0f) {
+                    escaped = true;
+                    break;
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) {
+                    escaped = true;
+                    break;
+                }
             }
         }
     } else if (ft == FractalType::explaino_rational_escape) {
@@ -2818,6 +2957,7 @@
         if (denominatorPower > 6) denominatorPower = 6;
 
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             for (; it < maxIter; ++it) {
                 const double zAbs2 = cxd_abs2(zd);
@@ -2918,6 +3058,7 @@
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
             double dampD = (double)userDamp;
@@ -2970,38 +3111,73 @@
             converged = (pAbs < eps);
         }
     } else if (ft == FractalType::multicorn) {
-        EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord);
-        const Cx lambdaConst{params.lambda_real, params.lambda_imag};
-        const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
+        if (useFP64) {
+            usedFloat64IterationArithmetic = true;
+            EscapeTimeDirectState<Cxd> state = InitEscapeTimeDirectState(ft, coordD);
+            const Cxd lambdaConst{(double)params.lambda_real, (double)params.lambda_imag};
+            const Cxd phoenixP{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
 
-        for (; it < maxIter; ++it) {
-            StepEscapeTimeDirectState(
-                ft,
-                params.multibrot_power_float,
-                params.multibrot_power_imag,
-                params.multibrot_power,
-                lambdaConst,
-                phoenixP,
-                static_cast<float>(1),
-                params.spider_feedback,
-                params.burning_ship_fold_mix,
-                params.celtic_abs_mix,
-                params.perpendicular_fold_mix,
-                &state);
-            z = state.z;
-
-            if (cx_abs2(state.z) > DirectEscapeTimeRadiusSquared<float>()) {
-                escaped = true;
-                break;
+            for (; it < maxIter; ++it) {
+                StepEscapeTimeDirectState(
+                    ft,
+                    (double)params.multibrot_power_float,
+                    (double)params.multibrot_power_imag,
+                    params.multibrot_power,
+                    lambdaConst,
+                    phoenixP,
+                    1.0,
+                    (double)params.spider_feedback,
+                    (double)params.burning_ship_fold_mix,
+                    (double)params.celtic_abs_mix,
+                    (double)params.perpendicular_fold_mix,
+                    &state);
+                if (cxd_abs2(state.z) > DirectEscapeTimeRadiusSquared<double>()) {
+                    escaped = true;
+                    break;
+                }
+                if (!isfinite(state.z.x) || !isfinite(state.z.y) ||
+                    !isfinite(state.z_prev.x) || !isfinite(state.z_prev.y)) {
+                    escaped = true;
+                    break;
+                }
             }
-            if (!isfinite(state.z.x) || !isfinite(state.z.y) || !isfinite(state.z_prev.x) || !isfinite(state.z_prev.y)) {
-                escaped = true;
-                break;
+            z = {(float)state.z.x, (float)state.z.y};
+        } else {
+            EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord);
+            const Cx lambdaConst{params.lambda_real, params.lambda_imag};
+            const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
+
+            for (; it < maxIter; ++it) {
+                StepEscapeTimeDirectState(
+                    ft,
+                    params.multibrot_power_float,
+                    params.multibrot_power_imag,
+                    params.multibrot_power,
+                    lambdaConst,
+                    phoenixP,
+                    static_cast<float>(1),
+                    params.spider_feedback,
+                    params.burning_ship_fold_mix,
+                    params.celtic_abs_mix,
+                    params.perpendicular_fold_mix,
+                    &state);
+                z = state.z;
+
+                if (cx_abs2(state.z) > DirectEscapeTimeRadiusSquared<float>()) {
+                    escaped = true;
+                    break;
+                }
+                if (!isfinite(state.z.x) || !isfinite(state.z.y) ||
+                    !isfinite(state.z_prev.x) || !isfinite(state.z_prev.y)) {
+                    escaped = true;
+                    break;
+                }
             }
         }
     } else if (ft == FractalType::halley) {
         // Standalone Halley's method on standard polynomials.
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = coordD;
             double pAbsD = 0.0;
             for (; it < maxIter; ++it) {
@@ -3048,26 +3224,51 @@
             converged = (pAbs < eps);
         }
     } else if (UsesSpecializedEscapeTimeFormula(ft)) {
-        z = coord;
         const McMullenPresetConfig mcmullenConfig = ResolveMcMullenRuntimeConfig(params);
+        if (useFP64) {
+            usedFloat64IterationArithmetic = true;
+            Cxd zd = coordD;
+            const double escapeRadiusSquared = (double)SpecializedEscapeRadiusSquared();
+            for (; it < maxIter; ++it) {
+                if (ft == FractalType::mcmullen) {
+                    if (StepMcMullenEscapeState(mcmullenConfig, &zd) == SpecializedEscapeStepResult::pole) {
+                        escaped = true;
+                        break;
+                    }
+                } else {
+                    StepCollatzEscapeState(&zd, params.collatz_transition_strength);
+                }
 
-        for (; it < maxIter; ++it) {
-            if (ft == FractalType::mcmullen) {
-                if (StepMcMullenEscapeState(mcmullenConfig, &z) == SpecializedEscapeStepResult::pole) {
+                if (cxd_abs2(zd) > escapeRadiusSquared) {
                     escaped = true;
                     break;
                 }
-            } else {
-                StepCollatzEscapeState(&z, params.collatz_transition_strength);
+                if (!isfinite(zd.x) || !isfinite(zd.y)) {
+                    escaped = true;
+                    break;
+                }
             }
+            z = {(float)zd.x, (float)zd.y};
+        } else {
+            z = coord;
+            for (; it < maxIter; ++it) {
+                if (ft == FractalType::mcmullen) {
+                    if (StepMcMullenEscapeState(mcmullenConfig, &z) == SpecializedEscapeStepResult::pole) {
+                        escaped = true;
+                        break;
+                    }
+                } else {
+                    StepCollatzEscapeState(&z, params.collatz_transition_strength);
+                }
 
-            if (cx_abs2(z) > SpecializedEscapeRadiusSquared()) {
-                escaped = true;
-                break;
-            }
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                escaped = true;
-                break;
+                if (cx_abs2(z) > SpecializedEscapeRadiusSquared()) {
+                    escaped = true;
+                    break;
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) {
+                    escaped = true;
+                    break;
+                }
             }
         }
     } else if (ft == FractalType::explaino_collatz_direct) {
@@ -3077,6 +3278,7 @@
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
 
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, (double)phase, (double)strength);
             const double escapeRadiusSquaredD = (double)SpecializedEscapeRadiusSquared();
             for (; it < maxIter; ++it) {
@@ -3115,6 +3317,7 @@
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
 
         if (useFP64) {
+            usedFloat64IterationArithmetic = true;
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
             double dampD = (double)userDamp;
@@ -3143,6 +3346,7 @@
         bool doPerturb = canPerturb && (ft == FractalType::mandelbrot || ft == FractalType::julia);
 
         if (doPerturb) {
+            usedFloat64IterationArithmetic = true;
             // Perturbation deep zoom.
             // Mandelbrot: z0=0, c = refC0 + dc, delta0=0
             // Julia: z0 = refZ0 + dz0, c fixed, delta0=dz0
@@ -3183,6 +3387,7 @@
         } else {
             // Standard direct escape-time iteration shared with the probe sampler.
             if (useFP64) {
+                usedFloat64IterationArithmetic = true;
                 const Cxd magnetSeedD{(double)params.magnet_seed_real, (double)params.magnet_seed_imag};
                 const Cxd juliaConstD{(double)params.julia_c_real, (double)params.julia_c_imag};
                 EscapeTimeDirectState<Cxd> state = InitEscapeTimeDirectState(ft, coordD, magnetSeedD, juliaConstD);
@@ -3285,4 +3490,7 @@
     result.termination_kind = terminationKind;
     result.has_far_field_delta = hasFarFieldDelta;
     result.far_field_delta = farFieldDelta;
+    if (outUsedFloat64IterationArithmetic) {
+        *outUsedFloat64IterationArithmetic = usedFloat64IterationArithmetic;
+    }
     return result;

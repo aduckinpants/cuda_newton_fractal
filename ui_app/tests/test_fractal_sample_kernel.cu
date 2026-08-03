@@ -1694,6 +1694,60 @@ void TestCrossValidation() {
     }
 }
 
+void TestPrecisionTargetExecutionEvidence() {
+    const struct {
+        FractalType type;
+        const char* name;
+    } cases[] = {
+        {FractalType::explaino_y, "explaino_y"},
+        {FractalType::explaino_julia, "explaino_julia"},
+        {FractalType::explaino_lambda, "explaino_lambda"},
+        {FractalType::multicorn, "multicorn"},
+        {FractalType::mcmullen, "mcmullen"},
+        {FractalType::collatz, "collatz"},
+    };
+
+    const Double2 coord = MakeDouble2(0.31250000093132257, -0.21875000046566129);
+    for (const auto& testCase : cases) {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        MakeDefaults(testCase.type, view, params, render);
+        params.explaino_warp_strength = 0.0f;
+
+        FractalSampleEvidence fastEvidence{};
+        render.sample_tier = SampleTier::fast;
+        const char* error = nullptr;
+        const bool fastOk = SampleFractalEvidencePoints(
+            &coord, 1, view, params, render, &fastEvidence, &error);
+        if (!fastOk) {
+            std::cerr << "    " << testCase.name << " fast error: "
+                      << (error ? error : "unknown") << "\n";
+        }
+        CHECK(testCase.name, fastOk);
+        if (fastOk) {
+            CHECK("fast target does not claim float64 iteration arithmetic",
+                !fastEvidence.used_float64_iteration_arithmetic);
+        }
+
+        FractalSampleEvidence standardEvidence{};
+        render.sample_tier = SampleTier::standard;
+        error = nullptr;
+        const bool standardOk = SampleFractalEvidencePoints(
+            &coord, 1, view, params, render, &standardEvidence, &error);
+        if (!standardOk) {
+            std::cerr << "    " << testCase.name << " standard error: "
+                      << (error ? error : "unknown") << "\n";
+        }
+        CHECK(testCase.name, standardOk);
+        if (standardOk) {
+            CHECK("standard target executes float64 iteration arithmetic",
+                standardEvidence.used_float64_iteration_arithmetic);
+        }
+    }
+}
+
+
 // Test 5: Edge cases.
 void TestEdgeCases() {
     ViewState view{};
@@ -1745,6 +1799,7 @@ int main() {
     TestExplainoYEpsilonTunedWitnessAffectsSamples();
     TestRationalEscapeNumericBackendAndTerminationTruth();
     TestWidenedEvidenceProjectsToLegacyResults();
+    TestPrecisionTargetExecutionEvidence();
     TestCrossValidation();
     TestEdgeCases();
 

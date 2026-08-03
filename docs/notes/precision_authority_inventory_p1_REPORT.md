@@ -99,20 +99,22 @@ The tier resolver currently:
 - advertises `standard` for all 51 shipped selectors; and
 - resolves `standard` to `float64` plus direct iteration.
 
-The canonical sample device has heterogeneous dispatch. Direct `useFP64` tokens
-are statically visible for many selector branches, including the repaired
-Rational Escape branch. Twenty-five selectors do not have a selector-specific
-top-level branch containing that token.
+The original Phase 1 projection counted 25 selectors without a selector-named
+top-level `useFP64` token. Phase 2A proved that this was routing-accounting debt,
+not 25 independent repair items. The canonical device currently exposes 31
+top-level dispatch owners for 51 selectors; shared predicates and the generic
+escape-time fallback own the apparent gaps.
 
-Those 25 selectors are witness targets, not 25 proven false tier claims. Several
-are owned by shared predicates, delegated carriers, or the generic fallback, so
-absence of a token in a selector-named branch cannot establish executed
-arithmetic. Conversely, presence of `useFP64` does not prove that every helper
-and parameter participating in the recurrence is binary64.
+The updated inventory derives those owners from current source and looks for the
+canonical executed-arithmetic evidence assignment. It reports no dispatch owner
+without that static marker after the bounded Phase 2A repairs. This remains
+source-routing evidence rather than behavioral proof: the focused CUDA witness
+is authoritative for the five repaired owners covering six selectors, and
+published-runtime replay supplies the viewer-path check.
 
-Phase 2 must group selectors by their real dispatch owner and obtain a focused
-runtime witness before applying either `TRUTHFUL_FLOAT64` or
-`FALSE_RUNTIME_TIER_CLAIM`.
+Presence of a marker still does not prove that every participating parameter is
+binary64. Parameter storage and helper-consumer width remain separate audit
+questions for later phases.
 
 ## Priority Repair Candidates
 
@@ -157,7 +159,8 @@ effect without creating parallel metadata.
 
 ## Unknowns That Block Broader Repairs
 
-- Which distinct sampler owners execute the 25 selector witness targets?
+- Which participating helper parameters remain intentionally float-backed inside
+  otherwise truthful binary64 branches?
 - Which helper calls inside nominally binary64 branches still intentionally or
   accidentally consume float-backed values?
 - Which of the 149 state-load casts are truthful destination conversions, which

@@ -132,12 +132,34 @@ def test_runtime_tier_inventory_separates_universal_claim_from_static_branch_evi
     assert runtime["standard_resolves_to"] == "float64_direct"
     assert runtime["selector_count"] == 51
     assert runtime["branch_records"]
-    assert runtime["selectors_needing_runtime_witness"]
-    assert "explaino_rational_escape" not in runtime["selectors_needing_runtime_witness"]
+    assert runtime["dispatch_owner_count"] < runtime["selector_count"]
+    assert runtime["dispatch_owners_needing_execution_witness"] == []
+    assert runtime["selectors_without_static_execution_owner"] == []
     assert runtime["static_evidence_disclaimer"]
     assert {record["classification_confidence"] for record in runtime["branch_records"]} == {
-        "static_token_evidence_only"
+        "static_execution_marker_only"
     }
+
+    repaired_owners = {
+        record["owner_id"]: record
+        for record in runtime["dispatch_owner_records"]
+        if record["owner_id"] in {
+            "branch:explaino_y",
+            "branch:explaino_julia",
+            "branch:explaino_lambda",
+            "branch:multicorn",
+            "predicate:UsesSpecializedEscapeTimeFormula",
+        }
+    }
+    assert set(repaired_owners) == {
+        "branch:explaino_y",
+        "branch:explaino_julia",
+        "branch:explaino_lambda",
+        "branch:multicorn",
+        "predicate:UsesSpecializedEscapeTimeFormula",
+    }
+    assert repaired_owners["predicate:UsesSpecializedEscapeTimeFormula"]["selectors"] == ["collatz", "mcmullen"]
+    assert all(record["float64_iteration_execution_marker"] for record in repaired_owners.values())
 
 
 def test_markdown_and_cli_outputs_are_stable(tmp_path: Path) -> None:

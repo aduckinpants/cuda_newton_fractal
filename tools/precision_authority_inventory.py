@@ -20,6 +20,8 @@ COLOR_PIPELINE_CORE_PATH = Path("ui_app/src/color_pipeline_core.h")
 TIER_RESOLVER_PATH = Path("ui_app/src/sample_tier_resolver.cpp")
 SAMPLE_DEVICE_PATH = Path("ui_app/src/fractal_sample_device.inl")
 ENUM_IDS_PATH = Path("ui_app/src/enum_id_utils.h")
+FAMILY_RULES_PATH = Path("ui_app/src/fractal_family_rules.h")
+SPECIALIZED_FORMULAS_PATH = Path("ui_app/src/escape_time_specialized_formulas.h")
 
 NUMERIC_CONTROL_TYPES = {
     "drag_float",
@@ -341,7 +343,32 @@ def _enum_id_map(enum_source: str) -> dict[str, str]:
     return {enum_name: public_id for enum_name, public_id in pairs}
 
 
-def _top_level_sampler_branches(sample_source: str, enum_map: dict[str, str]) -> list[dict[str, Any]]:
+def _selector_ids_from_condition(
+    condition: str,
+    enum_map: dict[str, str],
+    helper_sources: tuple[str, ...],
+) -> tuple[list[str], list[str]]:
+    enum_names = set(re.findall(r"FractalType::([A-Za-z0-9_]+)", condition))
+    helper_names: list[str] = []
+    for helper_name in re.findall(r"\b([A-Z][A-Za-z0-9_]*)\([^)]*\)", condition):
+        helper_body = None
+        for source in helper_sources:
+            signature = re.search(rf"\b{re.escape(helper_name)}\s*\([^{{;]*\)\s*\{{", source)
+            if signature:
+                helper_body = _brace_block(source, source.find("{", signature.start()))
+                break
+        if helper_body is None:
+            continue
+        helper_names.append(helper_name)
+        enum_names.update(re.findall(r"FractalType::([A-Za-z0-9_]+)", helper_body))
+    return sorted(enum_map.get(name, name) for name in enum_names), sorted(set(helper_names))
+
+
+def _top_level_sampler_branches(
+    sample_source: str,
+    enum_map: dict[str, str],
+    helper_sources: tuple[str, ...],
+) -> list[dict[str, Any]]:
     pattern = re.compile(
         r"(?ms)^    (?:\}\s*)?(?:if|else if)\s*"
         r"\(([^{}]*?\b(?:ft|fractalType)\b[^{}]*?)\)\s*\{"
@@ -350,19 +377,48 @@ def _top_level_sampler_branches(sample_source: str, enum_map: dict[str, str]) ->
     for match in pattern.finditer(sample_source):
         opening = sample_source.find("{", match.start())
         block = _brace_block(sample_source, opening)
-        enum_names = sorted(set(re.findall(r"FractalType::([A-Za-z0-9_]+)", match.group(1))))
-        selectors = [enum_map.get(name, name) for name in enum_names]
+        condition = " ".join(match.group(1).split())
+        direct_enum_names = sorted(set(re.findall(r"FractalType::([A-Za-z0-9_]+)", condition)))
+        selectors, helper_names = _selector_ids_from_condition(condition, enum_map, helper_sources)
+        marker_present = "usedFloat64IterationArithmetic = true" in block
+        if helper_names and not direct_enum_names:
+            owner_id = f"predicate:{'+'.join(helper_names)}"
+        elif len(selectors) == 1:
+            owner_id = f"branch:{selectors[0]}"
+        else:
+            owner_id = f"branch:line-{sample_source.count(chr(10), 0, match.start()) + 1}"
         branches.append(
             {
+                "owner_id": owner_id,
                 "line": sample_source.count("\n", 0, match.start()) + 1,
-                "condition": " ".join(match.group(1).split()),
-                "enum_names": enum_names,
+                "condition": condition,
+                "enum_names": direct_enum_names,
+                "helper_names": helper_names,
                 "selectors": selectors,
-                "direct_use_fp64_token": "useFP64" in block,
-                "classification_confidence": "static_token_evidence_only",
+                "float64_iteration_execution_marker": marker_present,
+                "classification_confidence": "static_execution_marker_only",
             }
         )
     return branches
+
+
+def _fallback_dispatch_owner(sample_source: str, selectors: list[str], claimed: set[str]) -> dict[str, Any]:
+    marker = "// Escape-time family."
+    marker_index = sample_source.find(marker)
+    if marker_index < 0:
+        raise ValueError("missing final escape-time fallback marker")
+    opening = sample_source.rfind("{", 0, marker_index)
+    block = _brace_block(sample_source, opening)
+    return {
+        "owner_id": "fallback:escape_time_family",
+        "line": sample_source.count("\n", 0, opening) + 1,
+        "condition": "final else escape-time fallback after selector normalization",
+        "enum_names": [],
+        "helper_names": [],
+        "selectors": sorted(set(selectors) - claimed),
+        "float64_iteration_execution_marker": "usedFloat64IterationArithmetic = true" in block,
+        "classification_confidence": "static_execution_marker_only",
+    }
 
 
 def _brace_block(source: str, opening: int) -> str:
@@ -392,14 +448,22 @@ def _runtime_inventory(
     tier_source: str,
     sample_source: str,
     enum_source: str,
+    family_rules_source: str,
+    specialized_formulas_source: str,
 ) -> dict[str, Any]:
     selectors = _fractal_selector_ids(ui_schema)
-    branches = _top_level_sampler_branches(sample_source, _enum_id_map(enum_source))
-    direct_fp64 = {
+    branches = _top_level_sampler_branches(
+        sample_source,
+        _enum_id_map(enum_source),
+        (family_rules_source, specialized_formulas_source),
+    )
+    claimed = {selector for branch in branches for selector in branch["selectors"]}
+    dispatch_owners = [*branches, _fallback_dispatch_owner(sample_source, selectors, claimed)]
+    witnessed_selectors = {
         selector
-        for branch in branches
-        if branch["direct_use_fp64_token"]
-        for selector in branch["selectors"]
+        for owner in dispatch_owners
+        if owner["float64_iteration_execution_marker"]
+        for selector in owner["selectors"]
     }
     support_policy = "unresolved"
     if "if (!SupportsBasinColoring(ft))" in tier_source and "flags |= kSupport_Standard" in tier_source:
@@ -413,11 +477,19 @@ def _runtime_inventory(
         "standard_support_policy": support_policy,
         "standard_resolves_to": standard_resolves,
         "branch_records": branches,
-        "selectors_with_direct_fp64_branch_evidence": sorted(set(selectors) & direct_fp64),
-        "selectors_needing_runtime_witness": sorted(set(selectors) - direct_fp64),
+        "dispatch_owner_count": len(dispatch_owners),
+        "dispatch_owner_records": dispatch_owners,
+        "dispatch_owners_needing_execution_witness": sorted(
+            owner["owner_id"]
+            for owner in dispatch_owners
+            if not owner["float64_iteration_execution_marker"]
+        ),
+        "selectors_with_static_execution_owner": sorted(set(selectors) & witnessed_selectors),
+        "selectors_without_static_execution_owner": sorted(set(selectors) - witnessed_selectors),
         "static_evidence_disclaimer": (
-            "A direct useFP64 token is only static branch evidence. Its absence can identify a witness target; "
-            "its presence does not prove all participating parameters and helpers execute at float64."
+            "A canonical execution-evidence assignment is only static dispatch-owner evidence. It prevents "
+            "selector counts from being mistaken for repair counts, but native execution witnesses remain "
+            "authoritative for whether the iteration arithmetic actually ran at float64."
         ),
     }
 
@@ -433,6 +505,8 @@ def _authority(repo_root: Path) -> dict[str, Any]:
         TIER_RESOLVER_PATH,
         SAMPLE_DEVICE_PATH,
         ENUM_IDS_PATH,
+        FAMILY_RULES_PATH,
+        SPECIALIZED_FORMULAS_PATH,
     )
     records = {path.as_posix(): _sha256(repo_root, path) for path in paths}
     return {
@@ -473,6 +547,8 @@ def build_inventory(repo_root: Path) -> dict[str, Any]:
             _read_text(repo_root, TIER_RESOLVER_PATH),
             _read_text(repo_root, SAMPLE_DEVICE_PATH),
             _read_text(repo_root, ENUM_IDS_PATH),
+            _read_text(repo_root, FAMILY_RULES_PATH),
+            _read_text(repo_root, SPECIALIZED_FORMULAS_PATH),
         ),
     }
 
@@ -495,7 +571,8 @@ def render_markdown(inventory: dict[str, Any]) -> str:
         f"- Color Pipeline contract parameters: {pipeline['contract_parameter_count']}",
         f"- State-load float cast sites: {state_io['float_cast_site_count']}",
         f"- Live selectors: {runtime['selector_count']}",
-        f"- Selectors without direct float64 branch evidence: {len(runtime['selectors_needing_runtime_witness'])}",
+        f"- Runtime dispatch owners: {runtime['dispatch_owner_count']}",
+        f"- Dispatch owners without static execution markers: {len(runtime['dispatch_owners_needing_execution_witness'])}",
         "",
         "## General Schema Authoring Risks",
         "",
@@ -529,11 +606,14 @@ def render_markdown(inventory: dict[str, Any]) -> str:
             f"- Standard support policy: `{runtime['standard_support_policy']}`",
             f"- Standard resolves to: `{runtime['standard_resolves_to']}`",
             "- Static evidence is not runtime proof.",
-            "- Selectors requiring focused runtime witnesses:",
+            "- Dispatch owners without canonical float64 execution markers:",
         ]
     )
-    for selector in runtime["selectors_needing_runtime_witness"]:
-        lines.append(f"  - `{selector}`")
+    if runtime["dispatch_owners_needing_execution_witness"]:
+        for owner_id in runtime["dispatch_owners_needing_execution_witness"]:
+            lines.append(f"  - `{owner_id}`")
+    else:
+        lines.append("  - none")
     return "\n".join(lines) + "\n"
 
 
