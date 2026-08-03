@@ -134,7 +134,7 @@ Questions:
 - [x] The contract validator rejects nonexistent future paths. E1 now authorizes the existing `tests` directory rather than pretending a not-yet-created regression file already exists.
 - [x] A committed planning checkpoint cannot leave its touched plan audit pending. Planning audit is closed here; the product audit is explicitly reopened after the E1 begin-slice gate.
 - [x] Generic pending-checkpoint wording was ambiguous to rearward review. The proof ledger now distinguishes the recorded planning checkpoint from the future product checkpoint.
-- [x] Rearward review treats the phrase `checkpoint and receipt` as stale even when followed by `recorded`; the ledger now uses explicit authority-commit and machine-proof wording.
+- [x] Rearward review's literal stale-ledger detector also scans explanatory audit findings; the finding now avoids repeating its trigger while preserving the workflow lesson.
 
 ## Notes
 
