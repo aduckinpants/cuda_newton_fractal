@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "contract_id": "precision_authority_general_float_camera_p3d",
+  "feature_id": "precision_authority_emergency_audit_and_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md",
+    "docs/notes/precision_authority_inventory_p1_REPORT.md",
+    "ui_app/src/schema_binding.h",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "tools/precision_authority_inventory.py",
+    "tests/test_precision_authority_inventory.py",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean reviewed Phase 3C checkpoint 120a244c66cf33fe14376a3c82b86dba0c0600b2",
+    "generated UI schema numeric controls",
+    "schema_binding shared float editor",
+    "specialized center and zoom edit routes",
+    "published runtime at D:/salt-fractal/cuda_newton_fractal_clone/runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "treat 86 controls as independent repairs",
+    "promote float-backed runtime storage to double",
+    "change camera mapping precision mathematics or precedence",
+    "change slider steps ranges logarithmic behavior or readable display labels",
+    "change state schema keys versions defaults or compatibility behavior",
+    "change Color Pipeline formula sampler or runtime tier behavior",
+    "repair nonzero ExplainO warp",
+    "change state-tool files or merge the engine branch"
+  ],
+  "required_defaults": {
+    "binary32_typed_input_roundtrip_format": "%.9g",
+    "binary64_camera_typed_input_roundtrip_format": "%.17g",
+    "readable_slider_display_format_preserved": true,
+    "camera_math_remains_engine_owned": true,
+    "float_storage_promotions": 0,
+    "product_repair_requires_focused_red": true,
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "control_count_as_repair_count": "forbidden",
+    "bulk_float_to_double_conversion": "forbidden",
+    "python_camera_normalization": "forbidden",
+    "display_label_reformat_as_authoring_fix": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/precision_authority_general_float_camera_p3d.contract.json --out-json artifacts/validation/precision_authority_general_float_camera_p3d_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3d_inventory --log artifacts/logs/precision_authority_p3d_inventory.log --out-json artifacts/validation/precision_authority_p3d_inventory.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_precision_authority_inventory.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3d_schema_binding --log artifacts/logs/precision_authority_p3d_schema_binding.log --out-json artifacts/validation/precision_authority_p3d_schema_binding.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_tests_vsdevcmd.cmd test_schema_binding",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3d_full_native --log artifacts/logs/precision_authority_p3d_full_native.log --out-json artifacts/validation/precision_authority_p3d_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3d_runtime_publish_clean --log artifacts/logs/precision_authority_p3d_runtime_publish_clean.log --out-json artifacts/validation/precision_authority_p3d_runtime_publish_clean.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3d_runtime_truth --log artifacts/logs/precision_authority_p3d_runtime_truth.log --out-json artifacts/validation/precision_authority_p3d_runtime_truth.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_general_float_authoring_identity.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/precision_authority_p3d_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3d_diff_check --log artifacts/logs/precision_authority_p3d_diff_check.log --out-json artifacts/validation/precision_authority_p3d_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md --out-json artifacts/validation/precision_authority_general_float_camera_p3d_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {"assertion_id": "precision_authority_p3d_contract_schema_valid", "description": "The bounded general float and camera authoring contract validates.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_general_float_camera_p3d_contract.json", "json_path": "checks.contract_schema_valid", "equals": true},
+    {"assertion_id": "precision_authority_p3d_inventory_passed", "description": "The source-derived inventory reports no general-schema authoring identity loss after the two shared owner repairs.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_p3d_inventory.json", "json_path": "ok", "equals": true},
+    {"assertion_id": "precision_authority_p3d_schema_binding_passed", "description": "Focused native witnesses prove exact binary32 typed re-entry and binary64 camera typed editing without changing readable slider labels.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_p3d_schema_binding.json", "json_path": "ok", "equals": true},
+    {"assertion_id": "precision_authority_p3d_published_runtime_truth_passed", "description": "The published viewer preserves adjacent binary32 edits and high-precision camera edits through the real UI automation route.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_p3d_runtime_truth.json", "json_path": "ok", "equals": true},
+    {"assertion_id": "precision_authority_p3d_hostile_audit_ok", "description": "The Phase 3D hostile audit is complete before checkpoint.", "evidence_kind": "validator_json", "artifact_path": "artifacts/validation/precision_authority_general_float_camera_p3d_hostile_audit.json", "json_path": "ok", "equals": true}
+  ]
+}

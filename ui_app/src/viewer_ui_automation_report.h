@@ -192,6 +192,7 @@ void WriteColorPipelineUiAutomationReport(
     const GenericEquationPackWorkbenchAutomationReport* equationPackWorkbench,
     const SdfPackViewerAutomationReport* sdfPackViewer,
     const ViewState& view,
+    const KernelParams& params,
     const RenderSettings& render,
     const RenderStats& stats,
     const ViewerRenderPacingDecision& renderPacing,

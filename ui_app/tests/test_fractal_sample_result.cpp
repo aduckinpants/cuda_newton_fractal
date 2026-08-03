@@ -74,6 +74,8 @@ void TestWidenedEvidenceDefaults() {
         "TestWidenedEvidenceDefaults_LegacyHasFarFieldDelta");
     Check(evidence.legacy_result.far_field_delta == 0.0f,
         "TestWidenedEvidenceDefaults_LegacyFarFieldDelta");
+    Check(!evidence.used_float64_iteration_arithmetic,
+        "TestWidenedEvidenceDefaults_Float64IterationArithmetic");
     Check(sizeof(FractalSampleEvidence) > sizeof(FractalSampleResult),
         "TestWidenedEvidenceDefaults_SizeExceedsLegacy");
 }
@@ -104,15 +106,21 @@ void TestLegacyProjectionHelperRoundTrip() {
     Check(projected.far_field_delta == 2.5f, "TestLegacyProjectionHelperRoundTrip_FarFieldDelta");
 }
 
-void TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult() {
+void TestWidenedEvidenceLayoutKeepsLegacyPrefixAndExecutionWitness() {
     Check(std::is_standard_layout_v<FractalSampleEvidence>,
-        "TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult_StandardLayout");
+        "TestWidenedEvidenceLayoutKeepsLegacyPrefixAndExecutionWitness_StandardLayout");
     Check(offsetof(FractalSampleEvidence, sample_coord) == 0u,
-        "TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult_CoordAtStart");
+        "TestWidenedEvidenceLayoutKeepsLegacyPrefixAndExecutionWitness_CoordAtStart");
     Check(offsetof(FractalSampleEvidence, legacy_result) == sizeof(Double2),
-        "TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult_LegacyResultOffset");
-    Check(sizeof(FractalSampleEvidence) == sizeof(Double2) + sizeof(FractalSampleResult),
-        "TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult_SizeMatchesTwoFieldContract");
+        "TestWidenedEvidenceLayoutKeepsLegacyPrefixAndExecutionWitness_LegacyResultOffset");
+    constexpr std::size_t witnessOffset = sizeof(Double2) + sizeof(FractalSampleResult);
+    Check(offsetof(FractalSampleEvidence, used_float64_iteration_arithmetic) == witnessOffset,
+        "TestWidenedEvidenceLayoutKeepsLegacyPrefixAndExecutionWitness_WitnessOffset");
+    constexpr std::size_t payloadSize = witnessOffset + sizeof(bool);
+    constexpr std::size_t alignment = alignof(FractalSampleEvidence);
+    constexpr std::size_t expectedSize = ((payloadSize + alignment - 1u) / alignment) * alignment;
+    Check(sizeof(FractalSampleEvidence) == expectedSize,
+        "TestWidenedEvidenceLayoutKeepsLegacyPrefixAndExecutionWitness_SizeMatchesThreeFieldContract");
 }
 
 void TestSampleFractalEvidencePointsSurfaceExists() {
@@ -153,7 +161,7 @@ int main() {
     TestFieldRoundTrip();
     TestWidenedEvidenceDefaults();
     TestLegacyProjectionHelperRoundTrip();
-    TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult();
+    TestWidenedEvidenceLayoutKeepsLegacyPrefixAndExecutionWitness();
     TestSampleFractalEvidencePointsSurfaceExists();
     TestSampleFractalPointsStaysLegacyProjectionSurface();
     TestCompactLayoutExpectation();

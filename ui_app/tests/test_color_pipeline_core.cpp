@@ -897,9 +897,12 @@ void TestImportAndApplySupportedParams() {
     importedBalanceVoidParams.color_chroma_tension = 0.6f;
     importedBalanceVoidParams.color_accent_bias = -0.25f;
     Check(color_pipeline_core::ImportSupportedColorPipelineParamsFromLive(&balanceVoidImportedRow, importedBalanceVoidParams) &&
-            RowNumber(balanceVoidImportedRow, "grade.balance_void", 0.35) &&
-            RowNumber(balanceVoidImportedRow, "grade.chroma_tension", 0.6) &&
-            RowNumber(balanceVoidImportedRow, "grade.accent_bias", -0.25),
+            RowNumber(balanceVoidImportedRow, "grade.balance_void",
+                static_cast<double>(importedBalanceVoidParams.color_balance_void)) &&
+            RowNumber(balanceVoidImportedRow, "grade.chroma_tension",
+                static_cast<double>(importedBalanceVoidParams.color_chroma_tension)) &&
+            RowNumber(balanceVoidImportedRow, "grade.accent_bias",
+                static_cast<double>(importedBalanceVoidParams.color_accent_bias)),
         "TestImportAndApplySupportedParams_BalanceVoidGradeImportsLiveValues");
 
     ColorPipelineRowState balanceVoidAppliedRow;

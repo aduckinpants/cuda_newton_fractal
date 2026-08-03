@@ -2091,8 +2091,14 @@ inline double ResolveColorPipelineNumericDefault(const FunctionParamDescriptor& 
     return 0.0;
 }
 
-inline double NormalizeImportedColorPipelineNumber(float value) {
-    return std::round(static_cast<double>(value) * 1000000.0) / 1000000.0;
+inline constexpr const char* kColorPipelineFloatInputFormat = "%.9g";
+
+inline const char* ColorPipelineFloatInputFormat() {
+    return kColorPipelineFloatInputFormat;
+}
+
+inline double PreserveImportedColorPipelineFloat(float value) {
+    return static_cast<double>(value);
 }
 
 inline bool ResolveColorPipelineBoolDefault(const FunctionParamDescriptor& param) {
@@ -2508,9 +2514,9 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
             SetColorPipelineParamNumber(ioRow, "grade.glow", liveParams.color_glow, outError);
     }
     if (ioRow->function_id == "balance_void_grade") {
-        return SetColorPipelineParamNumber(ioRow, "grade.balance_void", NormalizeImportedColorPipelineNumber(liveParams.color_balance_void), outError) &&
-            SetColorPipelineParamNumber(ioRow, "grade.chroma_tension", NormalizeImportedColorPipelineNumber(liveParams.color_chroma_tension), outError) &&
-            SetColorPipelineParamNumber(ioRow, "grade.accent_bias", NormalizeImportedColorPipelineNumber(liveParams.color_accent_bias), outError);
+        return SetColorPipelineParamNumber(ioRow, "grade.balance_void", PreserveImportedColorPipelineFloat(liveParams.color_balance_void), outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.chroma_tension", PreserveImportedColorPipelineFloat(liveParams.color_chroma_tension), outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.accent_bias", PreserveImportedColorPipelineFloat(liveParams.color_accent_bias), outError);
     }
     if (ioRow->function_id == "phase_orbit" || ioRow->function_id == "root_phase") {
         if (!SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) ||
@@ -2833,7 +2839,7 @@ inline bool ApplySupportedColorPipelineRowParamsToLive(
         }
     };
     const auto assignFloat = [&](float* target, float value) {
-        if (std::fabs(*target - value) > 1.0e-6f) {
+        if (*target != value) {
             *target = value;
             changed = true;
         }

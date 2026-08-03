@@ -5,6 +5,7 @@
 #undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 
 #include <sstream>
+#include <utility>
 
 namespace {
 
@@ -52,17 +53,36 @@ bool ApplyLoadedColorPipelineDraftToRuntime(
         return false;
     }
 
-    ClearColorPipelineValidationMessages(ioDraft);
+    ColorPipelineWindowState candidateDraft = *ioDraft;
+    KernelParams candidateParams = *ioParams;
+    ClearColorPipelineValidationMessages(&candidateDraft);
     bool changed = false;
-    if (!ApplyColorPipelineDraftToLiveState(ioDraft, liveFractalType, ioParams, &changed)) {
+    if (!ApplyColorPipelineDraftToLiveState(
+            &candidateDraft, liveFractalType, &candidateParams, &changed)) {
         if (outError) {
             *outError = DescribeLoadedDraftApplyError(
-                *ioDraft,
+                candidateDraft,
                 "Failed to apply the loaded Color Pipeline draft to live runtime state.");
         }
+        ioDraft->validation_messages = std::move(candidateDraft.validation_messages);
         return false;
     }
 
+    if (!candidateDraft.live_snapshot.draft_import_supported) {
+        PushColorPipelineValidationMessage(
+            &candidateDraft,
+            "Loaded Color Pipeline draft applied in isolation, but the live runtime cannot provide authoritative draft readback.");
+        if (outError) {
+            *outError = DescribeLoadedDraftApplyError(
+                candidateDraft,
+                "Loaded Color Pipeline draft has no authoritative runtime readback.");
+        }
+        ioDraft->validation_messages = std::move(candidateDraft.validation_messages);
+        return false;
+    }
+
+    *ioDraft = std::move(candidateDraft);
+    *ioParams = std::move(candidateParams);
     if (outResult) {
         outResult->changed = changed;
     }

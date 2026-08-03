@@ -208,6 +208,8 @@ void TestSerializationAndIds() {
         "Sample status id maps invalid_param");
     Check(std::string(TerminationKindId(TerminationKind::far_field_settled)) == "far_field_settled",
         "Termination kind id maps far_field_settled");
+    Check(std::string(TerminationKindId(TerminationKind::pole)) == "pole",
+        "Termination kind id maps pole");
 
     FractalProbeResponse response{};
     response.request_id = "serialize-contract";

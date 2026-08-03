@@ -67,6 +67,49 @@ void TestAppliesLoadedDraftThroughExistingRuntimeAuthority() {
     Check(!result.changed, "TestApply_MatchingDraftReportsUnchanged");
 }
 
+void TestLoadedDraftNormalizesOnceToExactFloatOwner() {
+    KernelParams params = SmoothEscapeParams();
+    ColorPipelineWindowState draft{};
+    Check(SyncColorPipelineWindowFromLiveState(&draft, FractalType::mandelbrot, &params),
+        "TestFloatOwner_SyncsBaseDraft");
+    Check(SelectColorPipelineLaneFunction(&draft, 3, "balance_void_grade"),
+        "TestFloatOwner_SelectsBalanceVoidGrade");
+
+    constexpr double requested = 0.123456789012345;
+    const float expectedRuntime = static_cast<float>(requested);
+    Check(SetColorPipelineParamNumber(&draft.lanes[3].rows[0], "grade.balance_void", requested),
+        "TestFloatOwner_SetsOverPreciseDraftValue");
+
+    ColorPipelineLoadedDraftApplyResult result{};
+    std::string error;
+    Check(ApplyLoadedColorPipelineDraftToRuntime(
+            &draft, FractalType::mandelbrot, &params, &result, &error),
+        "TestFloatOwner_AppliesDraft");
+    Check(params.color_balance_void == expectedRuntime,
+        "TestFloatOwner_RuntimeStoresBinary32Value");
+
+    double emitted = 0.0;
+    Check(TryGetColorPipelineParamNumber(
+            draft.lanes[3].rows[0], "grade.balance_void", &emitted, &error),
+        "TestFloatOwner_ReadsSynchronizedDraft");
+    Check(emitted == static_cast<double>(expectedRuntime),
+        "TestFloatOwner_SynchronizedDraftReportsExactBinary32Value");
+    Check(emitted != requested,
+        "TestFloatOwner_SynchronizedDraftDoesNotPreserveDiscardedDraftDigits");
+
+    const double emittedBeforeReplay = emitted;
+    const float runtimeBeforeReplay = params.color_balance_void;
+    ColorPipelineLoadedDraftApplyResult replayResult{};
+    Check(ApplyLoadedColorPipelineDraftToRuntime(
+            &draft, FractalType::mandelbrot, &params, &replayResult, &error),
+        "TestFloatOwner_ReappliesNormalizedDraft");
+    emitted = 0.0;
+    Check(TryGetColorPipelineParamNumber(
+            draft.lanes[3].rows[0], "grade.balance_void", &emitted, &error) &&
+            emitted == emittedBeforeReplay &&
+            params.color_balance_void == runtimeBeforeReplay,
+        "TestFloatOwner_NormalizedRuntimeAndDraftDoNotDriftAgain");
+}
 void TestInvalidLoadedDraftFailsClosedWithValidationDetail() {
     KernelParams params = SmoothEscapeParams();
     ColorPipelineWindowState draft{};
@@ -96,6 +139,7 @@ void TestInvalidLoadedDraftFailsClosedWithValidationDetail() {
 
 int main() {
     TestAppliesLoadedDraftThroughExistingRuntimeAuthority();
+    TestLoadedDraftNormalizesOnceToExactFloatOwner();
     TestInvalidLoadedDraftFailsClosedWithValidationDetail();
     std::printf("test_color_pipeline_loaded_draft: %d passed, %d failed\n", gPassed, gFailed);
     return gFailed > 0 ? 1 : 0;

@@ -351,10 +351,11 @@ static bool ExpectManualExplainoJoyCaptureState(
   double expectedSmoothScale = 1.01033,
   double expectedGradeExposure = 1.19035,
   double expectedPaletteSeedScale = 1.45029,
-  double expectedPaletteColorfulness = 0.74803) {
+  double expectedPaletteColorfulness = 0.74803,
+  double expectedCenterHpY = 0.00927063) {
   if (view.fractal_type != FractalType::explaino_joy ||
       !NearlyEqual(view.center_hp_x, expectedCenterHpX, 1.0e-12) ||
-      !NearlyEqual(view.center_hp_y, 0.00927063, 1.0e-6) ||
+      !NearlyEqual(view.center_hp_y, expectedCenterHpY, 1.0e-12) ||
       !NearlyEqual(view.log2_zoom, expectedLog2Zoom, 1.0e-12) ||
       !NearlyEqual(view.explaino_phase_strength, 0.14458f, 1.0e-5)) {
     std::cerr << label << ": expected manual explaino_joy view fields to survive diagnostics state load\n";
@@ -5071,11 +5072,19 @@ int main() {
         }
 
         const double preciseCenterHpX = -1.840130123456789;
+        const double preciseCenterHpY = 0.00927063123456789;
         const double preciseLog2Zoom = 1.375040123456789;
+        const double preciseExplainoSeed = -3.0;
+        const double preciseExplainoSeedB = 1.2345678901234567;
+        const double preciseSecondarySeed = -2.345678901234567;
         const double preciseSmoothScale = 1.0103987654321;
         const double preciseGradeExposure = 1.1903987654321;
         view.center_hp_x = preciseCenterHpX;
+        view.center_hp_y = preciseCenterHpY;
         view.log2_zoom = preciseLog2Zoom;
+        params.explaino_seed = preciseExplainoSeed;
+        params.explaino_seed_b = preciseExplainoSeedB;
+        params.explaino_secondary_root_pattern_seed = preciseSecondarySeed;
         params.color_smooth_escape_scale = static_cast<float>(preciseSmoothScale);
         params.color_grading_stack[0].params.exposure = static_cast<float>(preciseGradeExposure);
         params.color_contrast_lift_exposure = static_cast<float>(preciseGradeExposure);
@@ -5212,11 +5221,48 @@ int main() {
                 preciseSmoothScale,
                 preciseGradeExposure,
                 1.5,
-                0.8)) {
+                0.8,
+                preciseCenterHpY)) {
             return 1;
         }
-        if (!NearlyEqual(roundTripParams.explaino_damping, 0.73f, 1.0e-6)) {
-            std::cerr << "Expected capture-backed serialization regression to reload ExplainO damping from emitted state.json\n";
+        if (roundTripView.center_hp_x != preciseCenterHpX ||
+            roundTripView.center_hp_y != preciseCenterHpY ||
+            roundTripView.log2_zoom != preciseLog2Zoom ||
+            roundTripParams.explaino_seed != preciseExplainoSeed ||
+            roundTripParams.explaino_seed_b != preciseExplainoSeedB ||
+            roundTripParams.explaino_secondary_root_pattern_seed != preciseSecondarySeed) {
+            std::cerr << "Expected all six serialized double members to survive canonical save/load exactly\n";
+            return 1;
+        }
+        if (roundTripParams.explaino_damping != params.explaino_damping) {
+            std::cerr << "Expected capture-backed serialization regression to reload the exact float-owned ExplainO damping value\n";
+            return 1;
+        }
+        std::string overpreciseFloatState = serializedState;
+        const std::string emittedDamping = "\"explaino_damping\": 0.73000001907348633";
+        const std::string requestedDamping = "\"explaino_damping\": 0.7300000000000001";
+        const size_t dampingPosition = overpreciseFloatState.find(emittedDamping);
+        if (dampingPosition == std::string::npos) {
+            std::cerr << "Expected emitted state to expose the exact float-owned damping spelling before normalization test\n";
+            return 1;
+        }
+        overpreciseFloatState.replace(dampingPosition, emittedDamping.size(), requestedDamping);
+        ViewState normalizedView = roundTripView;
+        KernelParams normalizedParams = roundTripParams;
+        RenderSettings normalizedRender = roundTripRender;
+        ColorPipelineWindowState normalizedDraft{};
+        if (!LoadDiagnosticsStateJson(
+                overpreciseFloatState,
+                &normalizedView,
+                &normalizedParams,
+                &normalizedRender,
+                &normalizedDraft,
+                &error)) {
+            std::cerr << "Expected overprecise float-owned state value to load with visible normalization: " << error << "\n";
+            return 1;
+        }
+        if (normalizedParams.explaino_damping != static_cast<float>(0.7300000000000001)) {
+            std::cerr << "Expected state load to normalize damping to its declared float owner\n";
             return 1;
         }
         if (roundTripParams.explaino_root_count != 4 ||
@@ -5352,6 +5398,10 @@ int main() {
                         << shapeDescriptor.id << " / "
                         << paletteDescriptor.id << " / "
                         << gradingDescriptor.id << "\n";
+                  for (const std::string& validationMessage : appliedDraft.validation_messages) {
+                    std::cerr << "  Color Pipeline validation: "
+                              << validationMessage << "\n";
+                  }
                   return 1;
                 }
 
@@ -5430,6 +5480,10 @@ int main() {
                         << shapeDescriptor.id << " / "
                         << paletteDescriptor.id << " / "
                         << gradingDescriptor.id << "\n";
+                  for (const std::string& validationMessage : appliedDraft.validation_messages) {
+                    std::cerr << "  Color Pipeline validation: "
+                              << validationMessage << "\n";
+                  }
                   return 1;
                 }
 

@@ -22,7 +22,8 @@
 // --- Device function: computes one fractal sample at a given coordinate.
 __device__ FractalSampleResult fractal_sample_device(
     Cx coord, Cxd coordD, ViewState view, KernelParams params,
-    RenderSettings render, const double2* refOrbit, int refLen, double2 refC0)
+    RenderSettings render, const double2* refOrbit, int refLen, double2 refC0,
+    bool* outUsedFloat64IterationArithmetic)
 {
 #include "fractal_sample_device.inl"
 }
@@ -32,8 +33,11 @@ __device__ FractalSampleEvidence fractal_sample_evidence_device(
     RenderSettings render, const double2* refOrbit, int refLen, double2 refC0)
 {
     FractalSampleEvidence evidence{};
+    bool usedFloat64IterationArithmetic = false;
     evidence.sample_coord = {coordD.x, coordD.y};
-    evidence.legacy_result = fractal_sample_device(coord, coordD, view, params, render, refOrbit, refLen, refC0);
+    evidence.legacy_result = fractal_sample_device(
+        coord, coordD, view, params, render, refOrbit, refLen, refC0, &usedFloat64IterationArithmetic);
+    evidence.used_float64_iteration_arithmetic = usedFloat64IterationArithmetic;
     return evidence;
 }
 

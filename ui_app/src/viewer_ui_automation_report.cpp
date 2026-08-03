@@ -2,6 +2,7 @@
 
 #include "color_pipeline_graph_receipt.h"
 #include "enum_id_utils.h"
+#include "explaino_seed.h"
 
 #include <cmath>
 #include <cstdint>
@@ -495,6 +496,7 @@ void WriteColorPipelineUiAutomationReport(
     const GenericEquationPackWorkbenchAutomationReport* equationPackWorkbench,
     const SdfPackViewerAutomationReport* sdfPackViewer,
     const ViewState& view,
+    const KernelParams& params,
     const RenderSettings& render,
     const RenderStats& stats,
     const ViewerRenderPacingDecision& renderPacing,
@@ -542,6 +544,7 @@ void WriteColorPipelineUiAutomationReport(
     out << "  \"view_center_hp_x\": " << std::setprecision(17) << view.center_hp_x << ",\n";
     out << "  \"view_center_hp_y\": " << std::setprecision(17) << view.center_hp_y << ",\n";
     out << "  \"view_log2_zoom\": " << std::setprecision(17) << view.log2_zoom << ",\n";
+    out << "  \"explaino_seed_combined\": " << std::setprecision(17) << ExplainoSeedCombined(view, params) << ",\n";
     out << "  \"requested_enum_path\": ";
     if (enumCommandReport.requested_enum_path.empty()) {
         out << "null";

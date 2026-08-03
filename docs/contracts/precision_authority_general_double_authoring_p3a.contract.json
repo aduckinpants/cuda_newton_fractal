@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "contract_id": "precision_authority_general_double_authoring_p3a",
+  "feature_id": "precision_authority_emergency_audit_and_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md",
+    "docs/notes/precision_authority_inventory_p1_REPORT.md",
+    "ui_app/src/schema_binding.h",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/src/main.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "tools/precision_authority_inventory.py",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean reviewed Phase 2A checkpoint 64efb0c4feda712dc489a6a89dbc362a4038339c",
+    "Phase 1 precision matrix and reviewed report",
+    "four slider_double controls in the exact general UI schema",
+    "schema_binding RenderDoubleControl and combined ExplainO seed route",
+    "published runtime at D:/salt-fractal/cuda_newton_fractal_clone/runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "modify Color Pipeline UI or contract behavior",
+    "modify camera precision routes or state JSON parsing and serialization",
+    "change formulas sampler behavior or model storage widths",
+    "add a second numeric format registry",
+    "change the schema contract merely to encode an implementation constant",
+    "repair nonzero ExplainO warp",
+    "change state-tool files or merge the engine branch"
+  ],
+  "required_defaults": {
+    "general_double_control_count": 4,
+    "canonical_roundtrip_format": "%.17g",
+    "rational_escape_combined_seed_witness": 0.21797676384449005,
+    "schema_contract_unchanged": true,
+    "color_pipeline_deferred": true,
+    "camera_routes_deferred": true,
+    "state_io_deferred": true,
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "six_decimal_double_input": "forbidden",
+    "python_owned_format_literal": "forbidden",
+    "global_numeric_format_rewrite": "forbidden",
+    "mass_type_conversion": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/precision_authority_general_double_authoring_p3a.contract.json --out-json artifacts/validation/precision_authority_general_double_authoring_p3a_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3a_schema_binding --log artifacts/logs/precision_authority_p3a_schema_binding.log --out-json artifacts/validation/precision_authority_p3a_schema_binding.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_tests_vsdevcmd.cmd test_schema_binding",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3a_inventory --log artifacts/logs/precision_authority_p3a_inventory.log --out-json artifacts/validation/precision_authority_p3a_inventory.json --heartbeat-seconds 30 --timeout-seconds 300 -- py -3.14 -m pytest tests/test_precision_authority_inventory.py -q",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3a_full_native --log artifacts/logs/precision_authority_p3a_full_native.log --out-json artifacts/validation/precision_authority_p3a_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3a_runtime_publish --log artifacts/logs/precision_authority_p3a_runtime_publish.log --out-json artifacts/validation/precision_authority_p3a_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3a_runtime_truth --log artifacts/logs/precision_authority_p3a_runtime_truth.log --out-json artifacts/validation/precision_authority_p3a_runtime_truth.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_double_authoring_identity.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/precision_authority_p3a_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label precision_authority_p3a_diff_check --log artifacts/logs/precision_authority_p3a_diff_check.log --out-json artifacts/validation/precision_authority_p3a_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/precision_authority_emergency_audit_and_repair_PHASED_PLAN.md --out-json artifacts/validation/precision_authority_general_double_authoring_p3a_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "precision_authority_p3a_contract_schema_valid",
+      "description": "The bounded general-double authoring contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_general_double_authoring_p3a_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p3a_native_roundtrip_passed",
+      "description": "The canonical general double editor preserves direct binary64 identity and the combined-seed route preserves exact engine-model readback with mixed storage disclosed.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_p3a_schema_binding.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p3a_published_runtime_truth_passed",
+      "description": "The published viewer accepts and reports the exact Rational Escape combined seed without six-decimal collapse.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_p3a_runtime_truth.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "precision_authority_p3a_hostile_audit_ok",
+      "description": "The Phase 3A hostile audit is complete before checkpoint.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/precision_authority_general_double_authoring_p3a_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

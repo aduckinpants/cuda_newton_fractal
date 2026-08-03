@@ -698,6 +698,7 @@ const char* TerminationKindId(TerminationKind terminationKind) {
     case TerminationKind::far_field_settled: return "far_field_settled";
     case TerminationKind::max_iterations: return "max_iterations";
     case TerminationKind::nonfinite: return "nonfinite";
+    case TerminationKind::pole: return "pole";
     }
     return "none";
 }
