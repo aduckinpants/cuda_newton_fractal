@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 - review remaining float32 storage and arithmetic owners against the evidence-driven promotion gate after the closed Phase 3D authoring checkpoint.
+Phase 5 - run final qualification, reconcile the provisional ui.salt reality-contact note, and stop at the clean pushed engine merge-approval boundary.
 
 ## Phase Checklist
 
@@ -15,7 +15,7 @@ Phase 4 - review remaining float32 storage and arithmetic owners against the evi
   - [x] Phase 3B - classify state-load numeric casts by destination owner and repair only proven state-I/O identity loss.
   - [x] Phase 3C - classify Color Pipeline contract carriers against runtime consumers and repair only proven authoring/readback loss.
   - [x] Phase 3D - repair the remaining shared general-schema binary32 typed-input and specialized camera typed-edit routes, preserving readable slider labels and engine-owned camera math.
-- [ ] Phase 4 - make only evidence-driven storage or arithmetic precision promotions, preserving intentionally truthful float32 domains.
+- [x] Phase 4 - make only evidence-driven storage or arithmetic precision promotions, preserving intentionally truthful float32 domains. No current candidate satisfied the gate; no promotion was made.
 - [ ] Phase 5 - run full qualification, publish from an exact clean checkpoint, reconcile the provisional fractal `ui.salt` reality-contact note, and stop at the engine merge-approval boundary.
 
 ## Explicit User Asks
@@ -357,6 +357,9 @@ Forbidden without a new user-approved plan:
 - Phase 3D full native rail: all helper tests passed.
 - Phase 3D published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `3773bf8df75f20c0c9ccca0aa546092658a152bd6aef8a0f39e66226fd72f77f`.
 - Phase 3D runtime proof: an adjacent binary32 seed-drift edit, exact binary64 center edit, and engine-owned linear-zoom-to-log2 edit survive the published viewer automation route.
+- Phase 4 contract: `docs/contracts/precision_authority_promotion_review_p4.contract.json`; slice checkpoint token `ck:8166a250`.
+- Phase 4 decision: `NO_PRECISION_PROMOTION_AUTHORIZED`; six candidate classes were joined to the current inventory and none satisfied every reproducible-defect, compatibility, benefit, measurement, and published-replay gate.
+- Phase 4 product mutation: none. The combined ExplainO seed fraction and float parameters consumed inside float64 branches remain explicitly reopenable only through a new family-specific defect witness.
 
 ## Hostile Audit
 
@@ -400,6 +403,9 @@ Audit questions:
 - [x] Pass 23 - the first runtime fixture requested an adjacent float above the control hard maximum and correctly observed a clamp; the witness now uses adjacent binary32 values around 0.5 and passes.
 - [x] Pass 24 - a short outer timeout orphaned one publication compiler before a retry started another. Both exact owned process trees were terminated, their artifacts invalidated, and one clean single-owner publication rerun passed.
 - [x] Pass 25 - final source, diff, inventory, focused native, full native, clean publication, and published-runtime review found no additional Phase 3D defect or justified storage promotion.
+- [x] Pass 26 - hostile review rejected the overbroad claim that current non-promotion proves binary32 universally sufficient; the report now says only that current evidence authorizes no widening and defines a bounded re-entry gate.
+- [x] Pass 27 - hostile review separated truthful float64 recurrence execution from parameter storage width; float parameters consumed by double branches remain deferred pending a family-specific parameter-resolution defect rather than promoted by label analogy.
+- [x] Pass 28 - final decision-ledger, inventory join, contract, plan-sync, code-quality, and diff re-read found no additional Phase 4 defect and no product mutation.
 
 ## Audit Findings
 
@@ -424,9 +430,11 @@ Audit questions:
 - [x] Phase 3 was prematurely marked closed while the inventory still contained 86 authoring-loss rows. The repaired continuity now closes the two shared owner seams and requires zero remaining authoring-loss classifications before Phase 4.
 - [x] Runtime witnesses must respect the declared control range; an out-of-range adjacent-float input proved clamping, not round-trip identity.
 - [x] A caller timeout can outlive an owned compiler child. Concurrent publication artifacts are invalid evidence; exact owned trees were cleaned and the canonical proof is the later single-owner clean rerun only.
+- [x] A no-promotion decision can become a false universal sufficiency claim. The Phase 4 report is checkpoint-relative, preserves deferred candidates, and requires a new bounded witness before future mutation.
+- [x] Float64 execution truth does not imply every participating parameter must be stored as double. Parameter-width promotion remains a separate evidence question with compatibility and performance costs.
 
 ## Notes
 
 - The prior finding-enrichment E1 callable-centralization phase remains deferred. This emergency campaign does not silently absorb it.
 - Phase 2A closes at its evidence checkpoint once validation, commit, receipt, rearward review, and push finish.
-- Phase 4 evidence-driven precision promotion review is the next planned execution boundary after the Phase 3D checkpoint; no engine merge is authorized.
+- Phase 5 final qualification and reality-contact reconciliation is the next planned execution boundary after the Phase 4 checkpoint; no engine merge is authorized.

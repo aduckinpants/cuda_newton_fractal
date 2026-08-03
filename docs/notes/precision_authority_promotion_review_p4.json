@@ -1,0 +1,76 @@
+{
+  "schema_version": "viewer_host.precision_authority_promotion_review.v1",
+  "review_checkpoint": "705e117ea8179176d8b65edc3888311ebd6bf681",
+  "overall_disposition": "NO_PRECISION_PROMOTION_AUTHORIZED",
+  "product_mutation_performed": false,
+  "promotion_gate": [
+    "reproducible_user_visible_or_scientific_defect",
+    "understood_storage_abi_and_state_compatibility",
+    "measured_material_runtime_benefit",
+    "measured_float32_continuity_performance_and_frame_delta",
+    "truthful_state_and_published_runtime_replay"
+  ],
+  "inventory_join": {
+    "general_schema_classification_counts": {
+      "TRUTHFUL_FLOAT32": 87,
+      "TRUTHFUL_FLOAT64": 5,
+      "INTENTIONAL_MIXED_PRECISION": 15
+    },
+    "general_schema_authoring_identity_loss_count": 0,
+    "state_io_float_cast_site_count": 149,
+    "state_io_unresolved_float_cast_site_count": 0,
+    "color_pipeline_float_parameter_count": 94,
+    "color_pipeline_double_parameter_count": 0,
+    "runtime_dispatch_owners_needing_execution_witness": []
+  },
+  "candidate_classes": [
+    {
+      "candidate_id": "general_schema_float_storage",
+      "current_owner": "float-backed schema bindings",
+      "disposition": "REJECTED_CURRENT_EVIDENCE",
+      "promotion_authorized": false,
+      "failed_gates": ["reproducible_user_visible_or_scientific_defect", "measured_material_runtime_benefit"],
+      "reason": "Phase 3D repaired typed authoring identity without changing float storage; no residual storage-width defect is reproduced."
+    },
+    {
+      "candidate_id": "state_io_float_destinations",
+      "current_owner": "eight declared float-backed loader owners",
+      "disposition": "REJECTED_CURRENT_EVIDENCE",
+      "promotion_authorized": false,
+      "failed_gates": ["reproducible_user_visible_or_scientific_defect", "understood_storage_abi_and_state_compatibility", "measured_material_runtime_benefit"],
+      "reason": "All 149 conversions resolve to float-backed destinations and published replay exposes normalization; removing casts would silently redefine storage authority."
+    },
+    {
+      "candidate_id": "color_pipeline_float_consumers",
+      "current_owner": "five shared runtime owner structures",
+      "disposition": "REJECTED_CURRENT_EVIDENCE",
+      "promotion_authorized": false,
+      "failed_gates": ["reproducible_user_visible_or_scientific_defect", "measured_material_runtime_benefit"],
+      "reason": "The 94 float descriptors now author and read back exact binary32 values; no compiled double descriptor or residual behavioral defect supports promotion."
+    },
+    {
+      "candidate_id": "combined_explaino_seed_fraction",
+      "current_owner": "double combined seed plus float-backed drift",
+      "disposition": "DEFERRED_NEEDS_REPRODUCIBLE_DEFECT",
+      "promotion_authorized": false,
+      "failed_gates": ["reproducible_user_visible_or_scientific_defect", "understood_storage_abi_and_state_compatibility", "measured_float32_continuity_performance_and_frame_delta"],
+      "reason": "The canonical mixed-precision normalization is explicit and the triggering Rational Escape authoring defect closed at the editor seam; widening the drift carrier would alter shared state semantics without a residual witness."
+    },
+    {
+      "candidate_id": "camera_float_ui_mirrors",
+      "current_owner": "double high-precision authority with float UI mirrors",
+      "disposition": "REJECTED_NOT_AUTHORITY",
+      "promotion_authorized": false,
+      "failed_gates": ["reproducible_user_visible_or_scientific_defect", "measured_material_runtime_benefit"],
+      "reason": "The mirrors are not camera authority. Typed center and zoom edits now stay on the existing double/log2 owners, so widening mirrors would not increase authoritative precision."
+    },
+    {
+      "candidate_id": "float_parameters_in_float64_iteration_routes",
+      "current_owner": "float-backed parameter values consumed by truthful float64 iteration branches",
+      "disposition": "DEFERRED_NEEDS_REPRODUCIBLE_DEFECT",
+      "promotion_authorized": false,
+      "failed_gates": ["reproducible_user_visible_or_scientific_defect", "understood_storage_abi_and_state_compatibility", "measured_material_runtime_benefit", "measured_float32_continuity_performance_and_frame_delta"],
+      "reason": "Float64 execution truth does not imply every input constant must be binary64. No bounded family witness currently proves a parameter-resolution failure after authoring repair."
+    }
+  ]
+}
