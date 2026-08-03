@@ -43,6 +43,7 @@ void TestEnumOrdinalContracts() {
     Check(static_cast<int>(PolyKind::custom) == 2, "PolyKind custom ordinal is stable");
     Check(static_cast<int>(TerminationKind::none) == 0, "TerminationKind none ordinal is stable");
     Check(static_cast<int>(TerminationKind::nonfinite) == 5, "TerminationKind nonfinite ordinal is stable");
+    Check(static_cast<int>(TerminationKind::pole) == 6, "TerminationKind pole ordinal is append-only stable");
     Check(static_cast<int>(ColoringMode::root_basin) == 0, "ColoringMode root_basin ordinal is stable");
     Check(static_cast<int>(ColoringMode::iteration_bands) == 5, "ColoringMode iteration_bands ordinal is stable");
     Check(static_cast<int>(ColorSignal::root_index) == 0, "ColorSignal root_index ordinal is stable");

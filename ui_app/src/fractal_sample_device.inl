@@ -2809,7 +2809,6 @@
         float strength = params.explaino_warp_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
 
         float coeffs[5];
         #pragma unroll
@@ -2818,35 +2817,96 @@
         if (denominatorPower < 1) denominatorPower = 1;
         if (denominatorPower > 6) denominatorPower = 6;
 
-        for (; it < maxIter; ++it) {
-            float zAbs2 = cx_abs2(z);
-            if (zAbs2 < 1e-20f) {
-                // At pole: treat as escaped (division by zero)
-                escaped = true;
-                break;
-            }
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            for (; it < maxIter; ++it) {
+                const double zAbs2 = cxd_abs2(zd);
+                if (!isfinite(zd.x) || !isfinite(zd.y) || !isfinite(zAbs2)) {
+                    escaped = true;
+                    terminationKind = TerminationKind::nonfinite;
+                    pAbs = (float)cxd_abs(zd);
+                    break;
+                }
+                if (zAbs2 < 1.0e-30) {
+                    escaped = true;
+                    terminationKind = TerminationKind::pole;
+                    pAbs = (float)sqrt(zAbs2);
+                    break;
+                }
 
-            // Evaluate P(z)
-            Cx P, dP;
-            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                Cxd P, dP;
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
 
-            Cx denominator = z;
-            #pragma unroll
-            for (int power = 1; power < 6; ++power) {
-                if (power < denominatorPower) {
-                    denominator = cx_mul(denominator, z);
+                Cxd denominator = zd;
+                #pragma unroll
+                for (int power = 1; power < 6; ++power) {
+                    if (power < denominatorPower) {
+                        denominator = cxd_mul(denominator, zd);
+                    }
+                }
+
+                zd = cxd_div(P, denominator);
+                const double nextAbs2 = cxd_abs2(zd);
+                pAbs = (float)sqrt(nextAbs2);
+                if (!isfinite(zd.x) || !isfinite(zd.y) || !isfinite(nextAbs2)) {
+                    escaped = true;
+                    terminationKind = TerminationKind::nonfinite;
+                    break;
+                }
+                if (nextAbs2 > 10000.0) {
+                    escaped = true;
+                    terminationKind = TerminationKind::escaped_radius;
+                    break;
                 }
             }
-
-            z = cx_div(P, denominator);
-
-            if (cx_abs2(z) > 10000.0f) {
-                escaped = true;
-                break;
+            if (terminationKind == TerminationKind::none && it >= maxIter) {
+                terminationKind = TerminationKind::max_iterations;
             }
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                escaped = true;
-                break;
+            z = {(float)zd.x, (float)zd.y};
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            for (; it < maxIter; ++it) {
+                const float zAbs2 = cx_abs2(z);
+                if (!isfinite(z.x) || !isfinite(z.y) || !isfinite(zAbs2)) {
+                    escaped = true;
+                    terminationKind = TerminationKind::nonfinite;
+                    pAbs = cx_abs(z);
+                    break;
+                }
+                if (zAbs2 < 1.0e-20f) {
+                    escaped = true;
+                    terminationKind = TerminationKind::pole;
+                    pAbs = sqrtf(zAbs2);
+                    break;
+                }
+
+                Cx P, dP;
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+
+                Cx denominator = z;
+                #pragma unroll
+                for (int power = 1; power < 6; ++power) {
+                    if (power < denominatorPower) {
+                        denominator = cx_mul(denominator, z);
+                    }
+                }
+
+                z = cx_div(P, denominator);
+                const float nextAbs2 = cx_abs2(z);
+                pAbs = sqrtf(nextAbs2);
+                if (!isfinite(z.x) || !isfinite(z.y) || !isfinite(nextAbs2)) {
+                    escaped = true;
+                    terminationKind = TerminationKind::nonfinite;
+                    break;
+                }
+                if (nextAbs2 > 10000.0f) {
+                    escaped = true;
+                    terminationKind = TerminationKind::escaped_radius;
+                    break;
+                }
+            }
+            if (terminationKind == TerminationKind::none && it >= maxIter) {
+                terminationKind = TerminationKind::max_iterations;
             }
         }
     } else if (ft == FractalType::explaino_rational) {

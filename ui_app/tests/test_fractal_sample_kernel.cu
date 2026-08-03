@@ -1542,6 +1542,71 @@ void TestExplainoYEpsilonTunedWitnessAffectsSamples() {
     CHECK("explaino_y epsilon tuned witness changes SampleFractalPoints results", sawDifference);
 }
 
+void TestRationalEscapeNumericBackendAndTerminationTruth() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings fastRender{};
+    MakeDefaults(FractalType::explaino_rational_escape, view, params, fastRender);
+    view.explaino_phase = 0.0f;
+    view.explaino_seed_drift = 0.0f;
+    params.explaino_seed = 0.0;
+    params.explaino_warp_strength = 0.0f;
+    params.max_iter = 4;
+    params.explaino_rational_escape_denominator_power = 3;
+    params.poly_coeffs[0] = -1.0f;
+    params.poly_coeffs[1] = 0.0f;
+    params.poly_coeffs[2] = 0.0f;
+    params.poly_coeffs[3] = 1.0f;
+    params.poly_coeffs[4] = 0.0f;
+    fastRender.sample_tier = SampleTier::fast;
+    RenderSettings standardRender = fastRender;
+    standardRender.sample_tier = SampleTier::standard;
+
+    const Double2 coords[] = {
+        MakeDouble2(0.0, 0.0),
+        MakeDouble2(1.0e-12, 0.0),
+    };
+    FractalSampleResult fastResults[2]{};
+    FractalSampleResult standardResults[2]{};
+    const char* error = nullptr;
+    CHECK("rational escape float32 truth sample ok",
+        SampleFractalPoints(coords, 2, view, params, fastRender, fastResults, &error));
+    CHECK("rational escape float64 truth sample ok",
+        SampleFractalPoints(coords, 2, view, params, standardRender, standardResults, &error));
+
+    CHECK("rational escape exact pole reports pole in float32",
+        fastResults[0].termination_kind == TerminationKind::pole);
+    CHECK("rational escape exact pole reports pole in float64",
+        standardResults[0].termination_kind == TerminationKind::pole);
+    CHECK("rational escape exact pole is an escape classification",
+        fastResults[0].escaped && standardResults[0].escaped);
+    CHECK("rational escape exact pole reports zero pole-distance metric",
+        fastResults[0].residual == 0.0f && standardResults[0].residual == 0.0f);
+
+    CHECK("rational escape float32 preserves existing near-pole threshold",
+        fastResults[1].termination_kind == TerminationKind::pole && fastResults[1].iterations == 0);
+    CHECK("rational escape float64 uses its wider finite domain",
+        standardResults[1].termination_kind == TerminationKind::escaped_radius &&
+        standardResults[1].iterations == 0);
+    CHECK("rational escape tiers no longer collapse to one arithmetic result",
+        fastResults[1].termination_kind != standardResults[1].termination_kind);
+
+    KernelParams boundedParams = params;
+    boundedParams.max_iter = 3;
+    boundedParams.poly_coeffs[0] = 0.0f;
+    boundedParams.poly_coeffs[1] = 0.0f;
+    boundedParams.poly_coeffs[2] = 0.0f;
+    boundedParams.poly_coeffs[3] = 1.0f;
+    boundedParams.poly_coeffs[4] = 0.0f;
+    const Double2 boundedCoord = MakeDouble2(1.0, 0.0);
+    FractalSampleResult boundedResult{};
+    CHECK("rational escape bounded sample ok",
+        SampleFractalPoints(&boundedCoord, 1, view, boundedParams, standardRender, &boundedResult, &error));
+    CHECK("rational escape capped orbit reports max iterations",
+        boundedResult.termination_kind == TerminationKind::max_iterations &&
+        boundedResult.iterations == boundedParams.max_iter && !boundedResult.escaped);
+}
+
 // Test 4: Widened evidence projects back to legacy semantics.
 void TestWidenedEvidenceProjectsToLegacyResults() {
     ViewState view{};
@@ -1678,6 +1743,7 @@ int main() {
     TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults();
     TestFixedFamilyFoldMixControlsAffectSamplesAndPreserveDefaults();
     TestExplainoYEpsilonTunedWitnessAffectsSamples();
+    TestRationalEscapeNumericBackendAndTerminationTruth();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

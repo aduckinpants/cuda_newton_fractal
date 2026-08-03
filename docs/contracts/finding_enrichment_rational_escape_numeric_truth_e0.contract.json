@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "contract_id": "finding_enrichment_rational_escape_numeric_truth_e0",
+  "feature_id": "finding_enrichment_engine_authority_v1",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/finding_enrichment_engine_authority_v1_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/finding_enrichment_engine_authority_v1_PHASED_PLAN.md",
+    "docs/contracts/finding_enrichment_rational_escape_numeric_truth_e0.contract.json",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/fractal_sample_result.h",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_probe_contract.cpp",
+    "ui_app/tests/test_fractal_types.cpp",
+    "ui_app/tests/test_fractal_sample_result.cpp",
+    "ui_app/tests/test_fractal_probe_contract.cpp",
+    "ui_app/tests/test_fractal_sample_kernel.cu",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "exact clean Phase 0 checkpoint 63da0241878102781d85adb0e15a20ff9ab5d2a9",
+    "controlled zero-warp Rational Escape state",
+    "pre-change published executable hash ae329398693a5872faced0fa6f9cf57868788fc975b07ece5150954ac4face78",
+    "canonical fractal_sample_device implementation and SampleFractalEvidencePoints route"
+  ],
+  "forbidden_operator_prompts": [
+    "modify the duplicated host probe implementation during E0",
+    "implement or analyze nonzero ExplainO warp",
+    "change state JSON parameter applicability rendering color pipeline or UI",
+    "claim a point sample is exact final rendered-pixel authority under SSAA",
+    "merge the engine pull request without separate user approval"
+  ],
+  "required_defaults": {
+    "rational_escape_float32_path_preserved": true,
+    "rational_escape_float64_path_truthfully_implemented": true,
+    "denominator_power_min": 1,
+    "denominator_power_max": 6,
+    "nonzero_warp_provider_status": "unavailable",
+    "host_probe_centralization_deferred_to_e1": true,
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "silent_float64_fallback_to_float32": "forbidden",
+    "unclassified_pole_exit": "forbidden",
+    "unrelated_termination_reuse": "forbidden",
+    "host_probe_one_off_repair": "forbidden",
+    "nonzero_warp_fixture_campaign": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/finding_enrichment_rational_escape_numeric_truth_e0.contract.json --out-json artifacts/validation/finding_enrichment_rational_escape_numeric_truth_e0_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e0_sample_kernel --log artifacts/logs/finding_enrichment_e0_sample_kernel.log --out-json artifacts/validation/finding_enrichment_e0_sample_kernel.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e0_fractal_types --log artifacts/logs/finding_enrichment_e0_fractal_types.log --out-json artifacts/validation/finding_enrichment_e0_fractal_types.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_types",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e0_full_native --log artifacts/logs/finding_enrichment_e0_full_native.log --out-json artifacts/validation/finding_enrichment_e0_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e0_runtime_publish --log artifacts/logs/finding_enrichment_e0_runtime_publish.log --out-json artifacts/validation/finding_enrichment_e0_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e0_runtime_truth --log artifacts/logs/finding_enrichment_e0_runtime_truth.log --out-json artifacts/validation/finding_enrichment_e0_runtime_truth.json --heartbeat-seconds 30 --timeout-seconds 900 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_rational_escape_numeric_truth.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/finding_enrichment_e0_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label finding_enrichment_e0_diff_check --log artifacts/logs/finding_enrichment_e0_diff_check.log --out-json artifacts/validation/finding_enrichment_e0_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/finding_enrichment_engine_authority_v1_PHASED_PLAN.md --out-json artifacts/validation/finding_enrichment_e0_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "e0_contract_schema_valid",
+      "description": "The Rational Escape E0 contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_rational_escape_numeric_truth_e0_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "e0_sample_kernel_passed",
+      "description": "Canonical CUDA sample tests prove float32 continuity and truthful float64 behavior.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_e0_sample_kernel.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "e0_published_runtime_truth_passed",
+      "description": "The exact published runtime passes the controlled Rational Escape numeric-truth witness.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_e0_runtime_truth.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "e0_hostile_audit_ok",
+      "description": "The E0 hostile audit is complete before checkpoint closure.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/finding_enrichment_e0_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

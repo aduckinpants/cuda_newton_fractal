@@ -32,6 +32,7 @@ enum class TerminationKind : uint8_t {
     far_field_settled = 3,
     max_iterations = 4,
     nonfinite = 5,
+    pole = 6,
 };
 
 struct OrbitTerminationConfig {

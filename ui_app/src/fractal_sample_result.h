@@ -13,7 +13,7 @@ struct FractalSampleResult {
     int iterations;     // iteration count at exit
     float final_z_x;   // Re(z) at exit
     float final_z_y;   // Im(z) at exit
-    float residual;     // |P(z)| or escape magnitude at exit
+    float residual;     // family-specific exit metric: residual, escape magnitude, or pole distance
     bool converged;     // root-finding convergence
     bool escaped;       // escape-time divergence
     TerminationKind termination_kind{TerminationKind::none};

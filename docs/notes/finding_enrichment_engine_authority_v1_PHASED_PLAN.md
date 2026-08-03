@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 0 complete - engine-native plan and workflow-only contract are locked at a clean review checkpoint. Product mutation has not begun.
+Phase 1 / E0 product implementation and native/runtime proof are complete. A clean product checkpoint and exact-checkpoint republish remain before E0 closure; E1 remains deferred.
 
 ## Phase Checklist
 
@@ -300,6 +300,12 @@ The campaign does not authorize engine merge. At the end of each implementation 
 - Phase 0 contract validation and phased-plan sync passed against the locked successor contract.
 - Focused workflow-tool rail: 30 passed, 2 explicitly deselected after the unfiltered run exposed unrelated baseline failures in stale FITS workbench expectations and a stale 47-selector contract count versus the live 51-selector catalog.
 - The inherited catalog contract was restored byte-for-byte after successor lock; product source has no Phase 0 diff.
+- E0 RED: `artifacts/validation/finding_enrichment_e0_red_sample_kernel.json` records the expected missing `TerminationKind::pole` compile failure.
+- E0 focused GREEN: `finding_enrichment_e0_sample_kernel.json` reports 1,052 passed CUDA sample assertions; `finding_enrichment_e0_fractal_types.json` reports 140 passed type/ordinal assertions.
+- E0 full native: `finding_enrichment_e0_full_native.json` reports the complete helper suite passed.
+- E0 working-tree publication: published executable SHA-256 `b550c769e868952cfe7752d5a2777a8167f1e9d19d6faa26b81379dfff095193`; exact clean-checkpoint republication remains pending.
+- E0 published runtime: `finding_enrichment_e0_runtime_truth.json` passes a tracked zero-warp Rational Escape fixture with deterministic, distinct float32/float64 frames.
+- E0 raw witness: `.local/finding_enrichment_e0/postchange_b550c769/runtime-witness.json` records float32 frame continuity `8290c8cf...e046ebd == 8290c8cf...e046ebd` and controlled tier hashes `cc92e38c...743c9bb` versus `d989246a...e873439`.
 
 ## Hostile Audit
 
@@ -323,6 +329,9 @@ Audit questions:
 - [x] Pass 1 - separated source-proven defects, packet-binary proof, provider/runtime authority, and tool-owned presentation responsibilities.
 - [x] Pass 2 - clean re-read after contract validation, plan sync, and the focused workflow-tool baseline found no additional real defect in the repaired planning state.
 - [x] Pass 3 - final clean re-read confirmed the repaired state does not authorize product mutation or engine merge and preserves the state-tool repository untouched.
+- [x] Pass 4 - reviewed the E0 diff for float32 operation-order continuity, an actual double-precision branch, append-only termination identity, and absence of host-probe mutation.
+- [x] Pass 5 - re-read the repaired E0 state after focused and full native GREEN; no additional real defect was found in enum consumers or canonical sampler ownership.
+- [x] Pass 6 - clean re-read of published-runtime evidence confirmed the inert 729x fixture was not forced and the tracked 2^16 zoom fixture proves deterministic tier separation.
 
 ## Audit Findings
 
@@ -333,9 +342,13 @@ Audit questions:
 - [x] A point/subsample result is not exact final pixel authority under SSAA and color aggregation. Public wording and tests preserve that boundary.
 - [x] V9 cost work remains economically necessary but must be reassessed item by item after deterministic enrichment is concrete.
 - [x] The unfiltered workflow-tool run exposed two unrelated baseline failures. They remain visible and out of scope; the focused planning rail excludes only those exact tests and passes its other 30 tests.
+- [x] The first published-runtime fixture at approximately 729x was visually inert and produced identical tier frames. It was classified as inert, then replaced by the same tracked state at `log2_zoom = 16`, where the tier effect is deterministic and visible.
+- [x] Building the runtime fixture from a generic ExplainO baseline produced an invalid Rational Escape state. The repair promotes the exact zero-warp capture state into `tests/fixtures/rational_escape_numeric_truth_v1/state.json`; production does not depend on the external capture path.
+- [x] The pre-change binary normalized a loaded `fast` state to `standard`, confirming the Phase 0 source-to-binary provenance warning. Float32 continuity is therefore proven with the old and new binaries' shared default low-zoom command, not by pretending that loaded-state comparison was authoritative.
+- [x] E0 changes only the canonical device sampler and shared termination serialization. The duplicated host `SamplePoint` implementation remains unchanged and explicitly deferred to E1.
 
 ## Notes
 
 - The state-tool repository remains clean and untouched during engine planning and implementation.
-- The first approved boundary after this checkpoint is user review of the engine-native plan. Product mutation begins only after explicit approval and a new E0 contract lock.
-- No CUDA engine merge is authorized by this plan or by approval to begin Phase 0.
+- E0 was explicitly authorized after Phase 0 review. Its next boundary is exact-checkpoint runtime republication, receipts, push, and user review before E1.
+- No CUDA engine merge is authorized by this plan or by approval to implement E0.
