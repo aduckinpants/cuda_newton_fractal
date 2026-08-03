@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2A complete - five source-proven float32-only dispatch owners covering six selectors now have truthful standard-tier arithmetic, canonical execution evidence, owner-level inventory attribution, and published-runtime proof. Phase 3 is the next approved execution boundary after the Phase 2A checkpoint.
+Phase 3A checkpoint closed - the shared general-double editor now uses source-owned round-trip text, direct binary64 and mixed combined-seed identity are distinguished, and the published viewer reports exact combined-seed readback. Phase 3B state-I/O owner classification is the next approved boundary.
 
 ## Phase Checklist
 
@@ -11,6 +11,9 @@ Phase 2A complete - five source-proven float32-only dispatch owners covering six
 - [x] Phase 2 - repair false runtime-tier declarations or dispatch only where the matrix and focused RED witnesses prove them.
   - [x] Phase 2A - repair ExplainO Y, ExplainO Julia, ExplainO Lambda, Multicorn, and the shared McMullen/Collatz owner; preserve fast arithmetic; prove canonical execution and published-runtime truth.
 - [ ] Phase 3 - repair numeric authoring and readback identity across the general schema route, Color Pipeline UI-Salt route, and `state.json` route.
+  - [x] Phase 3A - replace the shared six-decimal general-double editor format with one source-owned binary64 round-trip format and prove the Rational Escape combined seed through the published viewer.
+  - [ ] Phase 3B - classify state-load numeric casts by destination owner and repair only proven state-I/O identity loss.
+  - [ ] Phase 3C - classify Color Pipeline contract carriers against runtime consumers and repair only proven authoring/readback loss.
 - [ ] Phase 4 - make only evidence-driven storage or arithmetic precision promotions, preserving intentionally truthful float32 domains.
 - [ ] Phase 5 - run full qualification, publish from an exact clean checkpoint, reconcile the provisional fractal `ui.salt` reality-contact note, and stop at the engine merge-approval boundary.
 
@@ -196,6 +199,20 @@ Repair only matrix-proven authoring defects. Required behavior:
 
 The Rational Escape combined seed is the first required witness. Wider fixes must be driven by mechanically identified peers and focused tests, not by a global decimal-format change made on intuition.
 
+### Phase 3A - General-Schema Double Authoring Identity
+
+The Phase 1 inventory reduces this sub-slice to one shared editor owner serving four `slider_double` controls. All currently route through `RenderDoubleControl`, which hardcodes `%.6f`; the two combined-seed controls delegate to `RenderExplainoSeedDoubleControl` using that same format.
+
+Required behavior:
+
+- expose one C++ source-owned binary64 round-trip input/display format (`%.17g`) for the general-schema double route;
+- use it for both direct-double and combined ExplainO seed widgets without changing slider ranges, steps, schema JSON, model storage, or derived seed decomposition;
+- prove the captured Rational Escape witness `0.21797676384449005` survives format/parse and the combined edit route exactly;
+- make the precision inventory derive the active double format from `schema_binding.cpp` rather than maintaining a Python-owned duplicate literal;
+- publish and prove the exact control edit through the viewer automation path and engine-emitted state/readback evidence.
+
+This sub-slice does not authorize camera formatting, Color Pipeline carriers, state JSON casts, model-width changes, or a general UI precision redesign. Those remain Phase 3 successor work after this checkpoint.
+
 ## Phase 4 - Evidence-Driven Precision Promotions
 
 A field or arithmetic path may move from float32 to float64 only when all are established:
@@ -279,6 +296,13 @@ Forbidden without a new user-approved plan:
 - Phase 2A published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `30d143a5baf81b7eb79ea46874eefe687ac08cf8d9e2e60dc1f4c3ae1ea288e9`.
 - Phase 2A published-runtime matrix: six selectors passed fast/standard resolution and deterministic action-free standard replay in `tests/test_fractal_runtime_precision_tier_truth.py`.
 - Phase 2A code-quality audit: 93/100 with baseline check passed; no new critical, error, or warning class was introduced.
+- Phase 3A contract: `docs/contracts/precision_authority_general_double_authoring_p3a.contract.json`; checkpoint token `ck:cc990b2c`.
+- Phase 3A RED: focused native compile failed because the canonical round-trip format owner did not exist.
+- Phase 3A focused proof: `test_schema_binding` passes exact format/parse, direct-double automation, and captured combined-seed model-readback identity; eight inventory tests pass.
+- Phase 3A inventory: 107 controls now classify as 86 authoring identity losses, 15 intentional mixed-precision routes, four truthful float32 routes, and two truthful float64 routes. The two combined seed controls are intentionally mixed because their fractional component remains float-backed.
+- Phase 3A full native rail: all helper tests passed.
+- Phase 3A published runtime: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, SHA-256 `0cc8b94ee13cffd5166fed5d464324cf2589725e0241ad317ac4ab9109cd2bb3`.
+- Phase 3A runtime proof: the published Rational Escape control consumed `0.21797676384449005` and reported the exact same engine-model combined seed; one runtime test passed with no skips.
 
 ## Hostile Audit
 
@@ -307,6 +331,11 @@ Audit questions:
 - [x] Pass 8 - the first full native rail found the intentional evidence-field addition conflicted with a stale exact two-field layout assertion; the test now locks the legacy prefix, witness offset, and padded three-field size, and the complete native rail passes.
 - [x] Pass 9 - final marker review found mechanically inserted assignments inside nearest-root postprocessing blocks. Those assignments were removed so the witness records actual iteration arithmetic only; the generic direct-iteration fallback marker was retained and correctly indented.
 - [x] Pass 10 - post-repair re-read plus focused, full-native, publication, and six-selector runtime reruns found no additional real defect.
+- [x] Pass 11 - found that the existing UI automation report proved command consumption but exposed no exact combined-seed readback; added one engine-model field and a published-viewer witness.
+- [x] Pass 12 - the full native rail found that the standalone automation-report test target did not link the canonical seed owner; repaired build wiring instead of duplicating arithmetic.
+- [x] Pass 13 - found that the first inventory repair overclaimed combined seed as truthful binary64 even though fractional drift remains float-backed; reclassified it as intentional mixed precision and added direct-versus-combined assertions.
+- [x] Pass 14 - the closure validator rejected `Phase 3A complete` because it truthfully interpreted that phrase as whole-campaign closure while Phases 3B-5 remain open; repaired the current-phase wording to `checkpoint closed`.
+- [x] Pass 15 - final source, diff, focused, full-native, publication, runtime, contract, and plan-sync re-read found no additional Phase 3A defect.
 
 ## Audit Findings
 
@@ -319,6 +348,10 @@ Audit questions:
 - [x] Selector counts were misleading as repair counts. The owner-aware inventory now attributes helper predicates and the generic fallback mechanically from source, while retaining the native CUDA witness as behavioral authority.
 - [x] The first Phase 2A execution witness marked float64 postprocessing as well as recurrence execution. Hostile review removed the postprocess-only assignments and reran every affected proof rail.
 - [x] The widened evidence seam intentionally changes only `FractalSampleEvidence`; `FractalSampleResult`, renderer behavior, state contracts, and the fast float32 route remain unchanged.
+- [x] UI automation command consumption was insufficient readback evidence; the report now exposes the canonical combined seed at 17 digits.
+- [x] The automation-report test target needed the same `explaino_seed.cpp` owner as the product route; no duplicate combination formula was introduced.
+- [x] `%.17g` repairs the shared editor text, but it does not widen combined-seed storage. The inventory now distinguishes direct double controls from double-plus-float combined seed routes.
+- [x] Sub-slice closure wording must not use whole-plan completion vocabulary while successor phases remain open; the plan now says `checkpoint closed` and passes the deterministic sync gate.
 
 ## Notes
 

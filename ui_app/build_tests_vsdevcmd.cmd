@@ -176,7 +176,7 @@ exit /b 0
 
 :full_build_start
 cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /I. /I.\src ^
-  .\src\viewer_ui_automation_report.cpp .\tests\test_viewer_ui_automation_report.cpp ^
+  .\src\viewer_ui_automation_report.cpp .\src\explaino_seed.cpp .\tests\test_viewer_ui_automation_report.cpp ^
   /Fe:"%TESTROOT%\test_viewer_ui_automation_report.exe" ^
   /link user32.lib
 if errorlevel 1 exit /b 1
@@ -769,7 +769,7 @@ exit /b 0
 
 :focused_test_viewer_ui_automation_report
 cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /I. /I.\src ^
-  .\src\viewer_ui_automation_report.cpp .\tests\test_viewer_ui_automation_report.cpp ^
+  .\src\viewer_ui_automation_report.cpp .\src\explaino_seed.cpp .\tests\test_viewer_ui_automation_report.cpp ^
   /Fe:"%TESTROOT%\test_viewer_ui_automation_report.exe" ^
   /link user32.lib
 if errorlevel 1 exit /b 1

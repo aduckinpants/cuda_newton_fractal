@@ -14,6 +14,10 @@
 #include <string>
 #include <vector>
 
+const char* GeneralDoubleControlRoundTripFormat() {
+    return "%.17g";
+}
+
 namespace {
 
 std::string EnumIdOrEmpty(const char* id) {
@@ -2128,7 +2132,7 @@ bool RenderDoubleControl(
     const double maxValue = range.has_widget_max ? range.widget_max : (control.type == "slider_double" ? 1.0 : 0.0);
     const NumericDragWidgetBounds dragBounds = ResolveNumericDragWidgetBounds(control);
     const double speed = control.has_step ? control.step : 0.001;
-    const char* valueFormat = "%.6f";
+    const char* valueFormat = GeneralDoubleControlRoundTripFormat();
 
     if ((binding.path == "fractal.params.explaino_seed" ||
          binding.path == "fractal.root_pattern.dynamics.seed") &&

@@ -98,9 +98,18 @@ def _binding_path_types(schema_binding: str) -> dict[str, str]:
     return typed_paths
 
 
+def _general_double_input_format(schema_binding: str) -> str:
+    body = _function_body(schema_binding, "const char* GeneralDoubleControlRoundTripFormat")
+    match = re.search(r'return\s+"([^"]+)"\s*;', body)
+    if not match:
+        raise ValueError("general double round-trip format is not source-proven")
+    return match.group(1)
+
+
 def _numeric_controls(ui_schema: dict[str, Any], schema_binding: str) -> list[dict[str, Any]]:
     binding_types = _binding_path_types(schema_binding)
     special_routes = _special_numeric_routes(schema_binding)
+    general_double_input_format = _general_double_input_format(schema_binding)
     controls: list[dict[str, Any]] = []
     for panel in ui_schema.get("panels", []):
         for control in panel.get("controls", []):
@@ -110,7 +119,7 @@ def _numeric_controls(ui_schema: dict[str, Any], schema_binding: str) -> list[di
             binding = control.get("binding") or {}
             path = str(binding.get("path", ""))
             storage = binding_types.get(path, "unresolved")
-            input_format = _input_format(control, path)
+            input_format = _input_format(control, path, general_double_input_format)
             route = special_routes.get(
                 path,
                 {
@@ -218,10 +227,10 @@ def _special_numeric_routes(schema_binding: str) -> dict[str, dict[str, str]]:
     return routes
 
 
-def _input_format(control: dict[str, Any], path: str) -> str:
+def _input_format(control: dict[str, Any], path: str, general_double_input_format: str) -> str:
     control_type = str(control.get("type", ""))
     if control_type in {"slider_double", "drag_double"}:
-        return "%.6f"
+        return general_double_input_format
     if control_type in {"slider_float", "drag_float"}:
         if path == "fractal.view.zoom" or bool(control.get("logarithmic", False)):
             return "%.9g"
@@ -237,6 +246,11 @@ def _authoring_classification(
 ) -> tuple[str, str]:
     declared = str(control.get("value_type", ""))
     control_id = str(control.get("id", ""))
+    if route["edit_route"] == "combined_explaino_seed_double":
+        return (
+            "INTENTIONAL_MIXED_PRECISION",
+            "roundtrip_double_editor_projects_fraction_to_float_backed_seed_drift",
+        )
     if route["edit_route"] == "resolution_long_edge_to_int2":
         return (
             "INTENTIONAL_MIXED_PRECISION",

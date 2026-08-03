@@ -8,6 +8,8 @@
 #include "../src/explaino_seed.h"
 #include "../third_party/imgui/imgui.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -1165,6 +1167,23 @@ bool ValidateAnimationTargetVisibilityMirrorsControls() {
 } // namespace
 
 int main() {
+    {
+        constexpr double kRationalEscapeSeed = 0.21797676384449005;
+        const char* format = GeneralDoubleControlRoundTripFormat();
+        if (!format || std::strcmp(format, "%.17g") != 0) {
+            std::cerr << "General double controls must use the canonical binary64 round-trip format\n";
+            return 1;
+        }
+        char text[64]{};
+        const int written = std::snprintf(text, sizeof(text), format, kRationalEscapeSeed);
+        char* end = nullptr;
+        const double parsed = std::strtod(text, &end);
+        if (written <= 0 || written >= static_cast<int>(sizeof(text)) || !end || *end != '\0' || parsed != kRationalEscapeSeed) {
+            std::cerr << "General double format failed exact Rational Escape seed round trip: " << text << "\n";
+            return 1;
+        }
+    }
+
     {
         ViewState view{};
         KernelParams params{};
@@ -4931,14 +4950,14 @@ int main() {
         seedBControl.ui_max = 10.0;
         params.explaino_seed_b = 1.0;
         ctx.ui_automation_set_control_id = &doubleAutomationControlId;
-        ctx.ui_automation_set_control_value = 2.25;
+        ctx.ui_automation_set_control_value = 0.21797676384449005;
         ctx.ui_automation_set_consumed = &doubleAutomationConsumed;
         ctx.ui_automation_set_error = &doubleAutomationError;
         if (!RenderControlFromSchema(seedBControl, ctx, &doubleAutomationDirty, nullptr, &doubleAutomationInteracted)) {
             std::cerr << "Visible schema-driven set-value automation should apply through the double edit path\n";
             return 1;
         }
-        if (!doubleAutomationConsumed || !doubleAutomationDirty || !doubleAutomationInteracted || !doubleAutomationError.empty() || !NearlyEqual(params.explaino_seed_b, 2.25)) {
+        if (!doubleAutomationConsumed || !doubleAutomationDirty || !doubleAutomationInteracted || !doubleAutomationError.empty() || params.explaino_seed_b != 0.21797676384449005) {
             std::cerr << "Schema-driven double set-value automation should consume, dirty, interact, and write explaino_seed_b\n";
             return 1;
         }
@@ -4966,7 +4985,7 @@ int main() {
         combinedSeedControl.ui_max = 10.0;
         ExplainoSeedSetCombined(view, params, 0.0);
         ctx.ui_automation_set_control_id = &combinedSeedAutomationControlId;
-        ctx.ui_automation_set_control_value = 3.5;
+        ctx.ui_automation_set_control_value = 0.21797676384449005;
         ctx.ui_automation_set_consumed = &combinedSeedAutomationConsumed;
         ctx.ui_automation_set_error = &combinedSeedAutomationError;
         if (!RenderControlFromSchema(combinedSeedControl, ctx, &combinedSeedAutomationDirty, nullptr, &combinedSeedAutomationInteracted)) {
@@ -4974,7 +4993,7 @@ int main() {
             return 1;
         }
         if (!combinedSeedAutomationConsumed || !combinedSeedAutomationDirty || !combinedSeedAutomationInteracted ||
-            !combinedSeedAutomationError.empty() || !NearlyEqual(ExplainoSeedCombined(view, params), 3.5)) {
+            !combinedSeedAutomationError.empty() || ExplainoSeedCombined(view, params) != 0.21797676384449005) {
             std::cerr << "Schema-driven combined Explaino seed set-value automation should consume, dirty, interact, and write the combined seed\n";
             return 1;
         }

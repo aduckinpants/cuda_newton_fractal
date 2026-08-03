@@ -138,6 +138,14 @@ separate from exact editable text. Prove unchanged readback, edited value
 survival, saved state, reload, and engine-emitted state. Do not infer a generic
 camera fix from ordinary float controls.
 
+Phase 3A resolution: the four general-schema double controls now share a C++
+source-owned `%.17g` editor format. The two direct double controls classify as
+`TRUTHFUL_FLOAT64`. The primary and dynamics combined-seed controls classify as
+`INTENTIONAL_MIXED_PRECISION` because their fractional component remains
+float-backed; the published runtime proves exact readback for the captured
+Rational Escape model value rather than claiming arbitrary binary64 retention.
+Camera routes remain unresolved successor work.
+
 ### P1 - mechanically identified float peers
 
 After the double/camera witness is green, address the 83 ordinary float inputs as

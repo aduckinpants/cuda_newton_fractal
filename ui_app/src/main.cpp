@@ -4657,6 +4657,7 @@ static void RunViewerFrame(
             &equationPackReport,
             &sdfPackReport,
             view,
+            params,
             render,
             stats,
             renderPacing,

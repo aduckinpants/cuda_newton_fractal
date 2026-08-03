@@ -29,7 +29,7 @@ def test_inventory_is_deterministic_and_source_grounded() -> None:
     assert "branch" not in first["authority"]
 
 
-def test_general_schema_inventory_exposes_double_display_identity_risk() -> None:
+def test_general_schema_inventory_exposes_repaired_double_display_identity() -> None:
     inventory = build_inventory(REPO_ROOT)
     controls = inventory["general_schema"]["numeric_controls"]
     doubles = [item for item in controls if item["control_type"] in {"slider_double", "drag_double"}]
@@ -41,14 +41,19 @@ def test_general_schema_inventory_exposes_double_display_identity_risk() -> None
         "color_root_field_seed",
     ]
     assert {item["binding_storage"] for item in doubles} == {"double"}
-    assert {item["input_format"] for item in doubles} == {"%.6f"}
+    assert {item["input_format"] for item in doubles} == {"%.17g"}
     combined = next(item for item in doubles if item["control_id"] == "explaino_seed")
-    assert combined["classification"] == "AUTHORING_IDENTITY_LOSS"
-    assert combined["classification_basis"] == "combined_double_seed_uses_fixed_six_decimal_edit_format"
+    assert combined["classification"] == "INTENTIONAL_MIXED_PRECISION"
+    assert combined["classification_basis"] == (
+        "roundtrip_double_editor_projects_fraction_to_float_backed_seed_drift"
+    )
     assert combined["authorability_status"] == "schema_ui_numeric_authoring_route"
     assert combined["classification_confidence"] == "source_proven_authoring_route"
     assert combined["state_load_conversion"] == "not_joined_requires_phase3_owner_trace"
     assert combined["runtime_consumption"] == "not_proven_by_ui_binding"
+    direct = next(item for item in doubles if item["control_id"] == "explaino_seed_b")
+    assert direct["classification"] == "TRUTHFUL_FLOAT64"
+    assert direct["classification_basis"] == "double_binding_and_roundtrip_capable_input"
 
 
 def test_general_schema_inventory_exposes_specialized_camera_authority_routes() -> None:

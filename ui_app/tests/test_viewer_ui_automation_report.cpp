@@ -263,6 +263,7 @@ void TestLensSdfProbeTimingFields() {
     std::vector<ViewerUiAutomationRect> viewerRects;
     ColorPipelineWindowState colorPipelineWindow{};
     ViewState view{};
+    KernelParams params{};
     RenderSettings render{};
     RenderStats stats{};
     ViewerRenderPacingDecision pacing{};
@@ -290,6 +291,7 @@ void TestLensSdfProbeTimingFields() {
         nullptr,
         nullptr,
         view,
+        params,
         render,
         stats,
         pacing,
@@ -433,6 +435,7 @@ void TestAutomationReportIncludesColorPipelineGraphReceipt() {
     ViewerUiAutomationLensSdfProbe probe{};
     probe.source_stack_kind = "sdf_only";
     ViewState view{};
+    KernelParams params{};
     RenderSettings render{};
     RenderStats stats{};
     ViewerRenderPacingDecision pacing{};
@@ -460,6 +463,7 @@ void TestAutomationReportIncludesColorPipelineGraphReceipt() {
         nullptr,
         nullptr,
         view,
+        params,
         render,
         stats,
         pacing,
