@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fractal_types.h"
+#include "fractal_family_rules.h"
 #include "function_descriptor.h"
 #include "color_pipeline_metadata_contract.h"
 #include "enum_id_utils.h"
@@ -3106,79 +3107,80 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         *outPaletteFunctionId = nullptr;
     }
 
-    const bool isEscapeLikeGrading =
-        pipeline.grading == ColorGradingPreset::escape_default ||
-        pipeline.grading == ColorGradingPreset::neutral_default ||
-        pipeline.grading == ColorGradingPreset::tone_map_default ||
-        pipeline.grading == ColorGradingPreset::glow_default ||
-        pipeline.grading == ColorGradingPreset::balance_void_default;
+    ColoringMode mirroredMode = ColoringMode::root_basin;
+    if (!TryMirroredColoringModeForPipeline(pipeline, &mirroredMode)) {
+        return false;
+    }
+    const bool isEscapeLikeMode =
+        mirroredMode == ColoringMode::iteration_count ||
+        mirroredMode == ColoringMode::smooth_escape;
 
     if (pipeline.signal == ColorSignal::smooth_escape &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        isEscapeLikeGrading) {
+        isEscapeLikeMode) {
         if (outSourceFunctionId) *outSourceFunctionId = "smooth_escape_ramp";
         if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
         return true;
     }
     if (pipeline.signal == ColorSignal::phase_angle &&
         pipeline.palette == ColorPalette::phase_wheel &&
-        pipeline.grading == ColorGradingPreset::phase_default) {
+        mirroredMode == ColoringMode::phase) {
         if (outSourceFunctionId) *outSourceFunctionId = "phase_orbit";
         if (outPaletteFunctionId) *outPaletteFunctionId = "phase_wheel_palette";
         return true;
     }
     if (pipeline.signal == ColorSignal::iteration_bands &&
         pipeline.palette == ColorPalette::banded_escape &&
-        pipeline.grading == ColorGradingPreset::bands_default) {
+        mirroredMode == ColoringMode::iteration_bands) {
         if (outSourceFunctionId) *outSourceFunctionId = "banded_signal";
         if (outPaletteFunctionId) *outPaletteFunctionId = "banded_heatmap";
         return true;
     }
     if (pipeline.signal == ColorSignal::escape_magnitude &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        isEscapeLikeGrading) {
+        isEscapeLikeMode) {
         if (outSourceFunctionId) *outSourceFunctionId = "escape_magnitude";
         if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
         return true;
     }
     if (pipeline.signal == ColorSignal::orbit_stripe &&
         pipeline.palette == ColorPalette::phase_wheel &&
-        pipeline.grading == ColorGradingPreset::phase_default) {
+        mirroredMode == ColoringMode::phase) {
         if (outSourceFunctionId) *outSourceFunctionId = "orbit_stripe";
         if (outPaletteFunctionId) *outPaletteFunctionId = "phase_wheel_palette";
         return true;
     }
     if (pipeline.signal == ColorSignal::root_phase &&
         pipeline.palette == ColorPalette::phase_wheel &&
-        pipeline.grading == ColorGradingPreset::phase_default) {
+        mirroredMode == ColoringMode::phase) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_phase";
         if (outPaletteFunctionId) *outPaletteFunctionId = "phase_wheel_palette";
         return true;
     }
     if (pipeline.signal == ColorSignal::root_proximity &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        isEscapeLikeGrading) {
+        isEscapeLikeMode) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_proximity";
         if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
         return true;
     }
     if (pipeline.signal == ColorSignal::smooth_escape &&
         pipeline.palette == ColorPalette::explaino_cmap &&
-        isEscapeLikeGrading) {
+        isEscapeLikeMode) {
         if (outSourceFunctionId) *outSourceFunctionId = "smooth_escape_ramp";
         if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
         return true;
     }
     if (pipeline.signal == ColorSignal::escape_magnitude &&
         pipeline.palette == ColorPalette::explaino_cmap &&
-        isEscapeLikeGrading) {
+        isEscapeLikeMode) {
         if (outSourceFunctionId) *outSourceFunctionId = "escape_magnitude";
         if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
         return true;
     }
     if (pipeline.signal == ColorSignal::root_proximity &&
         pipeline.palette == ColorPalette::explaino_cmap &&
-        isEscapeLikeGrading) {
+        isEscapeLikeMode) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_proximity";
         if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
         return true;
@@ -3199,7 +3201,7 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
     }
     if (pipeline.signal == ColorSignal::sdf_normal_angle &&
         pipeline.palette == ColorPalette::phase_wheel &&
-        pipeline.grading == ColorGradingPreset::phase_default) {
+        mirroredMode == ColoringMode::phase) {
         if (outSourceFunctionId) *outSourceFunctionId = "sdf_normal_angle";
         if (outPaletteFunctionId) *outPaletteFunctionId = "phase_wheel_palette";
         return true;
@@ -3212,7 +3214,7 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         pipeline.signal == ColorSignal::lens_field_v2_distance;
     if (isSdfHeatmapSignal &&
         (pipeline.palette == ColorPalette::cyclic_escape || pipeline.palette == ColorPalette::explaino_cmap) &&
-        isEscapeLikeGrading) {
+        isEscapeLikeMode) {
         if (outSourceFunctionId) *outSourceFunctionId = AdvancedColorSignalFunctionId(pipeline.signal);
         if (outPaletteFunctionId) {
             *outPaletteFunctionId = pipeline.palette == ColorPalette::explaino_cmap ? "explaino_cmap" : "heatmap";
