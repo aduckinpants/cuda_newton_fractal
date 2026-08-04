@@ -1010,11 +1010,34 @@ void TestSelectionAndScheduleBridgeIds() {
                 std::string(paletteFunction ? paletteFunction : "") == "heatmap",
             "TestSelectionAndScheduleBridgeIds_ShippedSmoothEscapeGradingRowsBridge");
     }
-    const ColorPipelineSelection bandsPipeline = {ColorSignal::iteration_bands, ColorPalette::banded_escape, ColorGradingPreset::bands_default};
-    Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(bandsPipeline, &sourceFunction, &paletteFunction) &&
-            std::string(sourceFunction ? sourceFunction : "") == "banded_signal" &&
-            std::string(paletteFunction ? paletteFunction : "") == "banded_heatmap",
-        "TestSelectionAndScheduleBridgeIds_BandsBridge");
+    const ColorGradingPreset bandGradingRows[] = {
+        ColorGradingPreset::bands_default,
+        ColorGradingPreset::neutral_default,
+        ColorGradingPreset::balance_void_default,
+    };
+    for (ColorGradingPreset grading : bandGradingRows) {
+        sourceFunction = nullptr;
+        paletteFunction = nullptr;
+        const ColorPipelineSelection bandsPipeline = {ColorSignal::iteration_bands, ColorPalette::banded_escape, grading};
+        Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(bandsPipeline, &sourceFunction, &paletteFunction) &&
+                std::string(sourceFunction ? sourceFunction : "") == "banded_signal" &&
+                std::string(paletteFunction ? paletteFunction : "") == "banded_heatmap",
+            "TestSelectionAndScheduleBridgeIds_ShippedBandGradingRowsBridge");
+    }
+    const ColorGradingPreset phaseGradingRows[] = {
+        ColorGradingPreset::phase_default,
+        ColorGradingPreset::neutral_default,
+        ColorGradingPreset::balance_void_default,
+    };
+    for (ColorGradingPreset grading : phaseGradingRows) {
+        sourceFunction = nullptr;
+        paletteFunction = nullptr;
+        const ColorPipelineSelection phasePipeline = {ColorSignal::phase_angle, ColorPalette::phase_wheel, grading};
+        Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(phasePipeline, &sourceFunction, &paletteFunction) &&
+                std::string(sourceFunction ? sourceFunction : "") == "phase_orbit" &&
+                std::string(paletteFunction ? paletteFunction : "") == "phase_wheel_palette",
+            "TestSelectionAndScheduleBridgeIds_ShippedPhaseGradingRowsBridge");
+    }
     const ColorPipelineSelection rootPipeline = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
     Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(rootPipeline, &sourceFunction, &paletteFunction) &&
             std::string(sourceFunction ? sourceFunction : "") == "root_index" &&

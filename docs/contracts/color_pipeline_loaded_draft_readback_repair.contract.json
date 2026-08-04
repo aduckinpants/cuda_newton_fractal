@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_loaded_draft_readback_repair",
+  "feature_id": "color_pipeline_loaded_draft_readback_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/color_pipeline_loaded_draft_readback_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/color_pipeline_loaded_draft_readback_repair.contract.json",
+    "docs/notes/color_pipeline_loaded_draft_readback_repair_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_loaded_draft.cpp",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_loaded_draft.cpp",
+    "tests",
+    "HANDOFF_LOG.md",
+    "docs/handoffs",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean reviewed master checkpoint deca3d93fac92ad93742e8d47714f91329808ead",
+    "Fixture F Packet V8 state and exact accepted palette.band_emphasis override",
+    "compiled UI-Salt Color Pipeline contract",
+    "canonical ApplyLoadedColorPipelineDraftToRuntime authority",
+    "canonical TryBuildColorPipelineLiveSnapshot authority",
+    "published runtime at D:/salt-fractal/cuda_newton_fractal_clone/runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "weaken or bypass authoritative loaded-draft readback",
+    "whitelist explaino_balance_void or Fixture F by selector",
+    "change Color Pipeline functions parameters ranges defaults recipes compatibility or rendering behavior",
+    "change state schema serialization or ordinary state loading",
+    "add state-tool fallback behavior or mutate the state-tool repository",
+    "continue Fixture G before repaired Fixture F proof",
+    "merge the engine PR without separate user approval"
+  ],
+  "required_defaults": {
+    "loaded_draft_application_is_transactional": true,
+    "normalized_runtime_readback_required": true,
+    "captured_lane_count": 4,
+    "captured_source_function": "banded_signal",
+    "captured_shape_function": "offset_scale",
+    "captured_palette_function": "banded_heatmap",
+    "captured_grading_function": "balance_void_grade",
+    "requested_band_emphasis": 1.8,
+    "engine_merge_authorized": false
+  },
+  "forbidden_defaults": {
+    "selector_specific_exception": "forbidden",
+    "readback_bypass": "forbidden",
+    "parallel_pipeline_metadata": "forbidden",
+    "state_tool_product_mutation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_loaded_draft_readback_repair.contract.json --out-json artifacts/validation/color_pipeline_loaded_draft_readback_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_readback_focused --log artifacts/logs/color_pipeline_loaded_draft_readback_focused.log --out-json artifacts/validation/color_pipeline_loaded_draft_readback_focused.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_loaded_draft",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_readback_full_native --log artifacts/logs/color_pipeline_loaded_draft_readback_full_native.log --out-json artifacts/validation/color_pipeline_loaded_draft_readback_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_readback_runtime_publish --log artifacts/logs/color_pipeline_loaded_draft_readback_runtime_publish.log --out-json artifacts/validation/color_pipeline_loaded_draft_readback_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_readback_runtime_truth --log artifacts/logs/color_pipeline_loaded_draft_readback_runtime_truth.log --out-json artifacts/validation/color_pipeline_loaded_draft_readback_runtime_truth.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_color_pipeline_loaded_draft_readback.py",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_loaded_draft_readback_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_loaded_draft_readback_diff_check --log artifacts/logs/color_pipeline_loaded_draft_readback_diff_check.log --out-json artifacts/validation/color_pipeline_loaded_draft_readback_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_loaded_draft_readback_repair_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_loaded_draft_readback_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "color_pipeline_loaded_draft_readback_contract_valid",
+      "description": "The bounded loaded-draft readback repair contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_loaded_draft_readback_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "color_pipeline_loaded_draft_readback_focused_passed",
+      "description": "The focused native regression proves the captured four-lane composition applies transactionally and reads back the exact normalized runtime value.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_loaded_draft_readback_focused.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "color_pipeline_loaded_draft_readback_runtime_passed",
+      "description": "The published runtime explicitly applies, materializes, and action-free replays the representative four-lane draft.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_loaded_draft_readback_runtime_truth.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "color_pipeline_loaded_draft_readback_hostile_audit_ok",
+      "description": "The repair's hostile audit is complete before checkpoint.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_loaded_draft_readback_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
