@@ -15,7 +15,7 @@ Current bounded slice: Phase 4 complete - the restart-safe campaign authority an
 
 ## Explicit User Asks
 
-- [complete] Document the IFS and future Science Mode direction thoroughly enough for a later session to resume without chat history.
+- [complete] Document the IFS and future Science Mode direction thoroughly enough for a later session to continue without chat history.
 - [complete] Decompose the work into bounded slices with dependency order, proof gates, estimates, and explicit pause points.
 - [complete] Fix the previously identified P2 gap: no mandatory automated test currently runs the state tool polynomial-model provider directly against the published engine.
 - [complete] Do not begin the multi-week IFS engine implementation before the user's travel.
@@ -433,6 +433,7 @@ Questions:
 - [complete] Pass 3 - clean re-read of the final runner, six focused tests, 223-test suite, real published-runtime receipt, plan scope, and both repository states found no further defect.
 - [complete] Pass 4 - receipt preflight found that the direct phased-plan sync command emitted no parseable evidence; replaced it with a logged command and explicit contract assertion.
 - [complete] Pass 5 - reran contract, plan-sync, hostile-audit, and diff evidence after the receipt repair with no additional defect.
+- [complete] Pass 6 - rearward review found a guarded continuation keyword in a completed user-ask sentence; replaced it with closure-safe wording and reran stale-plan validation.
 
 ## Audit Findings
 
@@ -441,6 +442,7 @@ Questions:
 - [complete] Runtime authority finding: a CPU or non-float64 response could previously pass while merely being reported. The dedicated rail now requires CUDA and float64 iteration arithmetic.
 - [complete] Provider/state binding finding: a provider derived with the wrong denominator could previously pass. The rail now requires exact equality between captured-state, provider metadata, and model denominator power.
 - [complete] Receipt authority finding: direct phased-plan sync produced no parseable JSON evidence. The contract now requires a logged plan-sync command and asserts its machine receipt.
+- [complete] Rearward stale-plan finding: completed user-ask text still used a guarded continuation keyword. The plan now uses closure-safe wording.
 
 ## Closeout And Next Boundary
 
