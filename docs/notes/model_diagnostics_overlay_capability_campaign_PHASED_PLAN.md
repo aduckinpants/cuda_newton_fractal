@@ -8,7 +8,7 @@ Documentation planning, truth sync, and hostile validation are complete. Product
 
 ## Explicit User Asks
 
-- [x] Document the general scientific/math diagnostics overlay idea in enough detail for a later session to resume without chat history.
+- [x] Document the general scientific/math diagnostics overlay idea in enough detail for a later session to pick it up without chat history.
 - [x] Treat one-provider or one-fractal usefulness as a near showstopper.
 - [x] Plan bounded slices, comparable to the IFS campaign, instead of beginning a large implementation now.
 - [x] Preserve an optional annotated Capture Finding path without changing the canonical frame.
