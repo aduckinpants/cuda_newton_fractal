@@ -7,12 +7,10 @@
   "allowed_mutation_scope": [
     "docs/contracts/curated_color_recipe_authority_campaign.contract.json",
     "docs/notes/curated_color_recipe_authority_campaign_PHASED_PLAN.md",
-    "tests/test_curated_color_recipe_baseline.py",
     "tests/test_fractal_runtime_color_pipeline_presets.py",
     "tests/test_fractal_runtime_ui_salt_contract.py",
     "ui_app/tests/test_color_pipeline_core.cpp",
     "ui_app/tests/test_color_pipeline_window.cpp",
-    "tools/viewer_host_curated_recipe_baseline.py",
     "spec_intake/_STATUS.md",
     "DEFERRED_THREADS.md",
     "KNOWN_ISSUES.md",

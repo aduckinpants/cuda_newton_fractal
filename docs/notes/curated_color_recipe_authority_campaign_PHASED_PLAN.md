@@ -209,24 +209,26 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 
 ## Hostile Audit
 
-- Status: pending
+- Status: complete
+- Scope: campaign-plan authority only. Slice 0 implementation audit remains pending and is not claimed complete here.
 - Assume dual authority, false receipts, non-atomic Apply, stale capability snapshots, type reinterpretation, unstable parameter addresses, fabricated provenance, or weak qualification remains.
 
 ## Audit Passes
 
-- [ ] Pass 1 - Slice 0 evidence and prerequisite completeness.
-- [ ] Pass 2 - first implementation transaction and graph-authority diff.
-- [ ] Pass 3 - repaired-state dual-authority and runtime proof.
-- [ ] Final campaign pass - independent gates, fallback lifecycle, stale docs, and replan.
+- [x] Pass 1 - Local hostile review exposed hidden Apply bypass, implicit folds, type drift, and false provenance risk.
+- [x] Pass 2 - External hostile review required atomic Prepare/Commit, capability ownership, semantic IDs, frozen goldens, and independent gates.
+- [x] Pass 3 - Clean re-read confirmed the repaired state locks scoped defect blocking, normative hashes, Beauty adapter receipts, Root Glow tiers, fixed perturbations, and non-failing commit.
+- Slice 0 implementation audit remains pending under the Phase Checklist and Proof Ledger.
+- Later implementation audits remain pending for transaction, dual authority, runtime proof, independent gates, and fallback lifecycle.
 
 ## Audit Findings
-
 - [x] Current phase-like metadata labels turn values as phase.radians.
 - [x] Current root_proximity is typed scalar.unit despite unbounded logarithmic and producer-dependent semantics.
 - [x] Lens Field V2 is typed as raw signed distance despite bounded response output.
 - [x] Beauty metadata claims one Source while runtime special handling adds another.
 - [x] Workflow lacks an approved branch/merge wrapper; this campaign is explicitly stacked.
-- [ ] Slice 0 findings and repairs.
+- [x] Planning closure finding: one pending audit state for future Slice 0 caused rearward review to reject the completed planning checkpoint.
+- [ ] Slice 0 implementation findings and repairs.
 
 ## Planned Validation Targets
 
