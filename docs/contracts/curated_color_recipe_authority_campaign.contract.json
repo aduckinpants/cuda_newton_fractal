@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "contract_id": "curated_color_recipe_authority_campaign",
+  "feature_id": "curated_color_recipe_authority_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/curated_color_recipe_authority_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/curated_color_recipe_authority_campaign.contract.json",
+    "docs/notes/curated_color_recipe_authority_campaign_PHASED_PLAN.md",
+    "tests/test_curated_color_recipe_baseline.py",
+    "tests/test_fractal_runtime_color_pipeline_presets.py",
+    "tests/test_fractal_runtime_ui_salt_contract.py",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "tools/viewer_host_curated_recipe_baseline.py",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "accepted external hostile review amendments",
+    "clean rearward-reviewed base 061ec748585282ff388e11eaa247ff3d69c7bb86",
+    "current recipe_v2 graph projection and legacy fallback",
+    "public recipe selector and Apply command",
+    "current SDF Beauty special expansion",
+    "current precision and Color Pipeline binding rails"
+  ],
+  "forbidden_operator_prompts": [
+    "change recipe behavior during Slice 0",
+    "add visible graph editor or arbitrary graph execution",
+    "add SDF operators or fractal families",
+    "use external state tool as engine authority",
+    "use physical mouse automation",
+    "invent recipe provenance after reload"
+  ],
+  "required_defaults": {
+    "accepted_base_head": "061ec748585282ff388e11eaa247ff3d69c7bb86",
+    "active_slice": "slice_0_baseline_lock",
+    "product_behavior_change_authorized": false,
+    "ui_layout_frozen": true,
+    "state_json_replay_authority": true,
+    "public_apply_path_proof_required": true,
+    "bit_exact_existing_recipe_parity_required": true,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "external_state_tool_dependency": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "recipe_behavior_mutation_in_slice_0": "forbidden",
+    "graph_editor_ui": "forbidden",
+    "new_sdf_ops": "forbidden",
+    "new_fractal_family": "forbidden",
+    "silent_fallback": "forbidden",
+    "host_side_root_resolve_as_runtime_authority": "forbidden",
+    "unrecorded_arithmetic_narrowing": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/curated_color_recipe_authority_campaign.contract.json --out-json artifacts/validation/curated_color_recipe_authority_campaign_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_plan_sync --log artifacts/logs/curated_recipe_plan_sync.log --out-json artifacts/validation/curated_recipe_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/curated_color_recipe_authority_campaign_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/curated_color_recipe_authority_campaign_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_baseline_native --log artifacts/logs/curated_recipe_baseline_native.log --out-json artifacts/validation/curated_recipe_baseline_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_baseline_runtime_publish --log artifacts/logs/curated_recipe_baseline_runtime_publish.log --out-json artifacts/validation/curated_recipe_baseline_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_curated_color_recipe_baseline.py tests/test_fractal_runtime_color_pipeline_presets.py tests/test_fractal_runtime_ui_salt_contract.py -q --junitxml artifacts/pytest/curated_color_recipe_baseline_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/curated_color_recipe_authority_campaign_PHASED_PLAN.md --out-json artifacts/validation/curated_color_recipe_authority_campaign_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_diff_check --log artifacts/logs/curated_recipe_diff_check.log --out-json artifacts/validation/curated_recipe_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "Campaign contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/curated_color_recipe_authority_campaign_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "slice_0_native_ok",
+      "description": "Focused native baseline rails pass.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/curated_recipe_baseline_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "slice_0_runtime_publish_ok",
+      "description": "Published viewer runtime is rebuilt.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/curated_recipe_baseline_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "slice_0_public_apply_runtime_ok",
+      "description": "Published no-mouse proof exercises public selector and Apply.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/curated_color_recipe_baseline_runtime.junit.xml",
+      "test_nodeid": "tests/test_curated_color_recipe_baseline.py::test_public_recipe_apply_baseline_packet"
+    },
+    {
+      "assertion_id": "slice_0_hostile_audit_ok",
+      "description": "Slice 0 hostile audit is complete.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/curated_color_recipe_authority_campaign_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
