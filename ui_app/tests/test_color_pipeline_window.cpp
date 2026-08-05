@@ -801,6 +801,125 @@ void TestRecipeExpansionUsesExistingWindowDraftRows() {
         "TestRecipeExpansionUsesExistingWindowDraftRows_DiagnosticRuntimeClearsBeautyGate");
 }
 
+void TestRecipePresetApplicationRejectsAtomically() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::multibrot, &params),
+        "TestRecipePresetApplicationRejectsAtomically_SyncsBaseline");
+
+    const std::vector<ColorPipelineLaneState> lanesBefore = state.lanes;
+    const std::uint64_t nextRowIdBefore = state.next_row_id;
+    const ColoringMode modeBefore = params.coloring_mode;
+    const ColorPipelineSelection pipelineBefore = params.color_pipeline;
+    bool dirty = false;
+    ColorPipelineRenderInteractionState interaction{};
+
+    Check(!ApplyColorPipelineRecipePresetToLive(
+            &state,
+            "root_phase_wheel",
+            FractalType::multibrot,
+            &params,
+            &dirty,
+            &interaction),
+        "TestRecipePresetApplicationRejectsAtomically_DisallowedRecipeRejects");
+    Check(state.lanes.size() == lanesBefore.size() &&
+            ColorPipelineLaneStatesEqual(state.lanes[0], lanesBefore[0]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[1], lanesBefore[1]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[2], lanesBefore[2]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[3], lanesBefore[3]) &&
+            state.next_row_id == nextRowIdBefore,
+        "TestRecipePresetApplicationRejectsAtomically_DraftUnchanged");
+    Check(params.coloring_mode == modeBefore &&
+            ColorPipelineSelectionsEqual(params.color_pipeline, pipelineBefore),
+        "TestRecipePresetApplicationRejectsAtomically_LiveParamsUnchanged");
+    Check(!dirty && !interaction.interacted && !interaction.has_active_item,
+        "TestRecipePresetApplicationRejectsAtomically_DirtyAndInteractionUnchanged");
+    Check(!state.validation_messages.empty() &&
+            state.validation_messages.back().find("not allowed") != std::string::npos,
+        "TestRecipePresetApplicationRejectsAtomically_RejectionIsReportable");    state.last_recipe_application_error = "stale recipe rejection";
+    PushColorPipelineValidationMessage(&state, state.last_recipe_application_error);
+    bool manualChanged = true;
+    Check(ApplyColorPipelineDraftToLiveState(
+            &state,
+            FractalType::multibrot,
+            &params,
+            &manualChanged) && !manualChanged &&
+            state.last_recipe_application_error.empty() &&
+            state.validation_messages.empty(),
+        "TestRecipePresetApplicationRejectsAtomically_ManualApplyClearsStaleRecipeRejection");
+    Check(ApplyColorPipelineRecipePresetToLive(
+            &state,
+            "default_smooth_escape",
+            FractalType::multibrot,
+            &params,
+            &dirty,
+            &interaction) && state.validation_messages.empty(),
+        "TestRecipePresetApplicationRejectsAtomically_SuccessfulRecoveryClearsRejection");
+}
+
+void TestRecipePresetApplicationCommitsOnlyAfterPreparation() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    params.color_phase_signal_offset = 0.37f;
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::multibrot, &params),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_SyncsBaseline");
+
+    const std::vector<ColorPipelineLaneState> lanesBefore = state.lanes;
+    const ColorPipelineSelection pipelineBefore = params.color_pipeline;
+    std::string error = "stale";
+    ResolvedColorPipelineRecipe resolved;
+    Check(ResolveColorPipelineRecipe(state, "phase_orbit_wheel", &resolved, &error) &&
+            resolved.valid && error.empty(),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_ResolvesWithoutStaleError");
+    Check(ColorPipelineLaneStatesEqual(state.lanes[0], lanesBefore[0]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[1], lanesBefore[1]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[2], lanesBefore[2]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[3], lanesBefore[3]) &&
+            ColorPipelineSelectionsEqual(params.color_pipeline, pipelineBefore) &&
+            Near(params.color_phase_signal_offset, 0.37),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_ResolveDoesNotMutateAuthority");
+
+    PreparedColorPipelineApplication prepared;
+    error = "stale";
+    Check(PrepareColorPipelineApplication(
+            resolved,
+            FractalType::multibrot,
+            &params,
+            &prepared,
+            &error) && prepared.valid && prepared.live_changed && error.empty(),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_PreparesWithoutStaleError");
+    Check(ColorPipelineLaneStatesEqual(state.lanes[0], lanesBefore[0]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[1], lanesBefore[1]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[2], lanesBefore[2]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[3], lanesBefore[3]) &&
+            ColorPipelineSelectionsEqual(params.color_pipeline, pipelineBefore) &&
+            Near(params.color_phase_signal_offset, 0.37),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_PrepareDoesNotMutateAuthority");
+
+    bool dirty = false;
+    ColorPipelineRenderInteractionState interaction{};
+    Check(CommitPreparedColorPipelineApplication(
+            &prepared,
+            &state,
+            &params,
+            &dirty,
+            &interaction),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_CommitsPreparedState");
+    Check(!prepared.valid && dirty && interaction.interacted &&
+            params.color_pipeline.signal == ColorSignal::phase_angle &&
+            params.color_pipeline.palette == ColorPalette::phase_wheel &&
+            Near(params.color_phase_signal_offset, 0.0),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_CommitOwnsAllAuthorityChanges");
+    Check(!CommitPreparedColorPipelineApplication(
+            &prepared,
+            &state,
+            &params,
+            &dirty,
+            &interaction),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_ConsumedPreparationCannotRecommit");
+}
 void TestCandidateDraftOnlyTruthAndCopySurfaces() {
     ColorPipelineWindowState inheritedUnsupportedState{};
     KernelParams params = SmoothEscapeParams();
@@ -1285,6 +1404,8 @@ int main() {
     TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries();
     TestPresetWorkflowTruthSurface();
     TestRecipeExpansionUsesExistingWindowDraftRows();
+    TestRecipePresetApplicationRejectsAtomically();
+    TestRecipePresetApplicationCommitsOnlyAfterPreparation();
     TestFloatIdentityPreservesAdjacentBinary32Edits();
     TestFloatAuthoringUsesBinary32RoundTripText();
     TestWindowUtilityContracts();

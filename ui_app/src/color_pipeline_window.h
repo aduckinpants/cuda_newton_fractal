@@ -50,6 +50,7 @@ struct ColorPipelineWindowState {
     std::string ui_automation_set_error;
     std::uint64_t next_row_id = 1;
     std::string selected_recipe_id;
+    std::string last_recipe_application_error;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
     std::vector<std::string> validation_messages;
@@ -81,6 +82,19 @@ struct ColorPipelineDraftApplyState {
 struct ColorPipelineRenderInteractionState {
     bool has_active_item = false;
     bool interacted = false;
+};
+struct ResolvedColorPipelineRecipe {
+    bool valid = false;
+    std::string recipe_id;
+    ColorPipelineWindowState draft_state;
+};
+
+struct PreparedColorPipelineApplication {
+    bool valid = false;
+    std::string recipe_id;
+    ColorPipelineWindowState next_window_state;
+    KernelParams next_live_params{};
+    bool live_changed = false;
 };
 
 inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
@@ -4069,10 +4083,150 @@ inline bool ApplyColorPipelineDraftToLiveState(
             return false;
         }
     }
+    ioState->last_recipe_application_error.clear();
+    ClearColorPipelineValidationMessages(ioState);
     if (outChanged) {
         *outChanged = changed || paramChanged;
     }
     return true;
+}
+
+
+inline bool ResolveColorPipelineRecipe(
+    const ColorPipelineWindowState& currentState,
+    const char* recipeId,
+    ResolvedColorPipelineRecipe* outResolved,
+    std::string* outError = nullptr) {
+    if (outResolved) {
+        *outResolved = {};
+    }
+    if (outError) {
+        outError->clear();
+    }
+    if (!outResolved || !recipeId || recipeId[0] == '\0') {
+        if (outError) *outError = "Color Pipeline recipe resolution requires a recipe id and output storage";
+        return false;
+    }
+
+    ColorPipelineWindowState candidate = currentState;
+    ClearColorPipelineValidationMessages(&candidate);
+    candidate.last_recipe_application_error.clear();
+    const std::size_t priorMessageCount = candidate.validation_messages.size();
+    if (!ApplyColorPipelineRecipeToDraft(&candidate, recipeId)) {
+        if (outError) {
+            *outError = candidate.validation_messages.size() > priorMessageCount
+                ? candidate.validation_messages.back()
+                : std::string("Color Pipeline recipe resolution failed: ") + recipeId;
+        }
+        return false;
+    }
+
+    outResolved->valid = true;
+    outResolved->recipe_id = recipeId;
+    outResolved->draft_state = std::move(candidate);
+    return true;
+}
+
+inline bool PrepareColorPipelineApplication(
+    const ResolvedColorPipelineRecipe& resolved,
+    FractalType liveFractalType,
+    const KernelParams* liveParams,
+    PreparedColorPipelineApplication* outPrepared,
+    std::string* outError = nullptr) {
+    if (outPrepared) {
+        *outPrepared = {};
+    }
+    if (outError) {
+        outError->clear();
+    }
+    if (!outPrepared || !resolved.valid || !liveParams) {
+        if (outError) *outError = "Color Pipeline application preparation requires a resolved recipe and live parameters";
+        return false;
+    }
+
+    ColorPipelineWindowState candidateState = resolved.draft_state;
+    KernelParams candidateParams = *liveParams;
+    const std::size_t priorMessageCount = candidateState.validation_messages.size();
+    bool changed = false;
+    if (!ApplyColorPipelineDraftToLiveState(
+            &candidateState,
+            liveFractalType,
+            &candidateParams,
+            &changed)) {
+        if (outError) {
+            *outError = candidateState.validation_messages.size() > priorMessageCount
+                ? candidateState.validation_messages.back()
+                : std::string("Color Pipeline recipe preparation failed: ") + resolved.recipe_id;
+        }
+        return false;
+    }
+
+    outPrepared->valid = true;
+    outPrepared->recipe_id = resolved.recipe_id;
+    outPrepared->next_window_state = std::move(candidateState);
+    outPrepared->next_live_params = candidateParams;
+    outPrepared->live_changed = changed;
+    return true;
+}
+
+inline bool CommitPreparedColorPipelineApplication(
+    PreparedColorPipelineApplication* prepared,
+    ColorPipelineWindowState* ioState,
+    KernelParams* ioParams,
+    bool* ioDirty,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) noexcept {
+    static_assert(std::is_nothrow_move_assignable<ColorPipelineWindowState>::value,
+        "Prepared Color Pipeline commit requires non-throwing window-state move assignment");
+    static_assert(std::is_nothrow_copy_assignable<KernelParams>::value,
+        "Prepared Color Pipeline commit requires non-throwing KernelParams assignment");
+    if (!prepared || !prepared->valid || !ioState || !ioParams) {
+        return false;
+    }
+
+    const bool changed = prepared->live_changed;
+    *ioState = std::move(prepared->next_window_state);
+    *ioParams = prepared->next_live_params;
+    if (changed && ioDirty) {
+        *ioDirty = true;
+    }
+    if (changed && ioInteraction) {
+        ioInteraction->interacted = true;
+    }
+    prepared->valid = false;
+    return true;
+}
+
+inline bool ApplyColorPipelineRecipePresetToLive(
+    ColorPipelineWindowState* ioState,
+    const char* recipeId,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    bool* ioDirty,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    if (!ioState) {
+        return false;
+    }
+
+    std::string error;
+    ResolvedColorPipelineRecipe resolved;
+    if (!ResolveColorPipelineRecipe(*ioState, recipeId, &resolved, &error)) {
+        ioState->last_recipe_application_error = error;
+        PushColorPipelineValidationMessage(ioState, error);
+        return false;
+    }
+
+    PreparedColorPipelineApplication prepared;
+    if (!PrepareColorPipelineApplication(resolved, liveFractalType, liveParams, &prepared, &error)) {
+        ioState->last_recipe_application_error = error;
+        PushColorPipelineValidationMessage(ioState, error);
+        return false;
+    }
+    return CommitPreparedColorPipelineApplication(
+        &prepared,
+        ioState,
+        liveParams,
+        ioDirty,
+        ioInteraction);
 }
 
 #ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
@@ -4598,30 +4752,6 @@ inline bool ConsumeColorPipelineAutomationClick(
     return true;
 }
 
-inline bool ApplyColorPipelineRecipePresetToLive(
-    ColorPipelineWindowState* ioState,
-    const char* recipeId,
-    FractalType liveFractalType,
-    KernelParams* liveParams,
-    bool* ioDirty,
-    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
-    if (!ApplyColorPipelineRecipeToDraft(ioState, recipeId)) {
-        return false;
-    }
-    bool changed = false;
-    if (liveParams && ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed)) {
-        if (changed && ioDirty) {
-            *ioDirty = true;
-        }
-        if (changed && ioInteraction) {
-            ioInteraction->interacted = true;
-        }
-    } else if (ioInteraction) {
-        ioInteraction->interacted = true;
-    }
-    return true;
-}
-
 inline void RenderColorPipelineRecipePresetControls(
     ColorPipelineWindowState* ioState,
     FractalType liveFractalType,
@@ -5053,6 +5183,9 @@ inline bool RenderColorPipelineWindow(
     }
 
     ClearColorPipelineValidationMessages(ioState);
+    if (!ioState->last_recipe_application_error.empty()) {
+        PushColorPipelineValidationMessage(ioState, ioState->last_recipe_application_error);
+    }
     if (liveParams) {
         SyncColorPipelineWindowFromLiveState(ioState, liveFractalType, liveParams);
     }

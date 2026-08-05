@@ -333,6 +333,16 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
         ):
             assert f"color_pipeline.recipe.{recipe_id}.apply" not in visible_controls, controls_report
 
+        rejected_selected = viewer.click_control(
+            "color_pipeline.recipe.root_phase_wheel.select",
+            timeout_seconds=60.0,
+        )
+        assert rejected_selected.get("click_consumed") is True, rejected_selected
+        rejected = viewer.click_control("color_pipeline.recipe.apply_selected", timeout_seconds=60.0)
+        assert rejected.get("click_consumed") is True, rejected
+        assert rejected.get("rendered_frame_hash") == base_hash, rejected
+        assert rejected.get("lane_rows") == ready_report.get("lane_rows"), rejected
+        assert any("not allowed" in message for message in rejected.get("validation_messages", [])), rejected
         selected = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_diagnostic.select", timeout_seconds=60.0)
         assert selected.get("click_consumed") is True, selected
         applied = viewer.click_control("color_pipeline.recipe.apply_selected", timeout_seconds=60.0)
@@ -359,6 +369,7 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
         )
 
     assert applied.get("click_consumed") is True, applied
+    assert applied.get("validation_messages") == [], applied
     assert "source:sdf_normal_angle" in applied.get("lane_rows", []), applied
     assert "palette:phase_wheel_palette" in applied.get("lane_rows", []), applied
     assert "grading:phase_finish" in applied.get("lane_rows", []), applied

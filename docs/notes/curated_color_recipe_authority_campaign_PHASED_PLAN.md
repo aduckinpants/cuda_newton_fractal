@@ -11,11 +11,11 @@
 
 ## Current Phase
 
-Slice 0 - Baseline Lock And Entry Gate is active from clean rearward-reviewed base 061ec748585282ff388e11eaa247ff3d69c7bb86.
+Slice 1 - Application Authority is active from the clean, receipted, rearward-reviewed Slice 0 checkpoint 0819dd98bd97a6106a880b838a9cadf3738bf266.
 
 The hard-denial workflow blocks raw branch mutation but this checkout has no approved branch/merge wrapper. This campaign therefore starts as an explicitly stacked slice on codex/model-diagnostics-overlay-preplanning. Eventual upstream integration must preserve both closed planning campaigns.
 
-Slice 0 implementation, hostile review, and validation are complete. Slice 1 is next only after this checkpoint receives machine receipts and a final rearward-ok artifact.
+Slice 0 is closed. Slice 1 implementation, hostile review, native validation, runtime publish, and published no-mouse proof are complete. Checkpoint, machine receipts, and final rearward review remain before Slice 2 may start.
 
 ## Phase Checklist
 
@@ -26,7 +26,10 @@ Slice 0 implementation, hostile review, and validation are complete. Slice 1 is 
 - [x] Slice 0: freeze recipes, Beauty, state, captures, reports, hashes, fallback, and timing.
 - [x] Slice 0: hostile audit and focused validation.
 - [x] Slice 0: checkpoint closure prepared; machine receipts and rearward review follow the committed state.
-- [ ] Slice 1: Application Authority.
+- [x] Slice 1: add RED proof for partial draft mutation and false success on rejected live Apply.
+- [x] Slice 1: add Resolve/Prepare/Commit and route the public Apply path through it.
+- [x] Slice 1: prove failed preparation has no authoritative draft/live/dirty/interaction side effects.
+- [x] Slice 1: hostile audit and focused validation are complete; checkpoint closure is prepared and receipts/rearward review follow the committed state.
 - [ ] Slice 2: Canonical Recipe Contract.
 - [ ] Slice 3: Capability And Applicability Authority.
 - [ ] Slice 4: Existing Recipe Parity.
@@ -213,11 +216,12 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 | Slice 0 prerequisite authority | complete | Lens V2, SDF angle/curvature, root proximity f32/f64, and seed auto-increment runtime rails |
 | Slice 0 fallback baseline | complete | all six recipe graph/legacy tuple projections match exactly |
 | Validation and receipts | complete | focused native/runtime green; machine receipts are written against the committed checkpoint |
+| Slice 1 transactional Apply | complete | Resolve/Prepare/Commit; non-failing commit assertions; native reject/success/manual-recovery rails; published public Apply proof |
 
 ## Hostile Audit
 
 - Status: complete
-- Scope: campaign-plan authority only. Slice 0 implementation audit remains pending and is not claimed complete here.
+- Scope: Slice 1 transactional application authority, rejection reporting, successful recovery, and public no-mouse Apply path.
 - Assume dual authority, false receipts, non-atomic Apply, stale capability snapshots, type reinterpretation, unstable parameter addresses, fabricated provenance, or weak qualification remains.
 
 ## Audit Passes
@@ -228,7 +232,10 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Slice 0 pass 1 - the RED witness proved all-recipe public Apply/state/timing evidence was absent.
 - [x] Slice 0 pass 2 - the first implementation exposed stale Apply-frame and re-Apply timing reports; the witness now settles with Render Once and measures fresh headless renders.
 - [x] Slice 0 pass 3 - fallback review found only the default recipe was compared; all six current recipe projections now have exact graph/fallback parity.
-- Later implementation audits remain pending for transaction, dual authority, runtime proof, independent gates, and fallback lifecycle.
+- [x] Slice 1 pass 1 - the old public Apply path mutated the draft before live validation, returned success after rejection, marked interaction, and was hidden inside the ImGui-only test exclusion.
+- [x] Slice 1 pass 2 - successful staging lacked direct non-mutation proof and stale output errors were not cleared; native tests now freeze Resolve/Prepare/Commit behavior.
+- [x] Slice 1 pass 3 - runtime proof exposed one-frame rejection messages and manual Apply recovery left stale recipe errors; persistent rejection state now clears at the shared successful application boundary.
+- Later implementation audits remain pending for canonical graph authority, dual authority, capability snapshots, independent recipe gates, and fallback lifecycle.
 
 ## Audit Findings
 - [x] Current phase-like metadata labels turn values as phase.radians.
@@ -243,6 +250,11 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Forced-legacy parity covered only default_smooth_escape; the native rail now compares all six current graph/legacy recipe projections.
 - [x] The first packet revision paired a settled frame with the earlier Apply receipt; receipts and lane rows now come from the same settled report.
 - [x] The broad native helper sweep exceeded 15 minutes and left an orphaned NVCC process; it was terminated and no broad-sweep success is claimed. Required focused core/window rails passed.
+- [x] Recipe Apply committed draft changes before live-family validation and returned true after rejection; Resolve/Prepare now operate on copies and Commit is statically constrained to non-throwing assignments.
+- [x] The recipe application helper lived inside the ImGui-only block, preventing native public-path regression coverage; only rendering controls remain ImGui-gated.
+- [x] Recipe rejection diagnostics lasted one UI frame and survived later manual recovery; a persistent UI-only rejection field now remains reportable and clears on any successful application.
+- [x] The first Slice 1 publish wrapper was cut off by an incorrectly short outer terminal timeout while the compiler child continued; the orphan completed, and all claimed publish evidence comes from later fully receipted runs.
+- [x] The final normal runtime executable was locked by an existing process; the checked-in publish fallback staged fractal_ui_dev.exe and the active-runtime runtime lane passed against that fresh executable.
 
 ## Planned Validation Targets
 
@@ -256,4 +268,4 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 
 ## Stop Point
 
-Only Slice 0 is currently authorized for mutation. Slice 1 starts only after Slice 0 is green, hostile-audited, checkpointed, receipted, and rearward-reviewed. Later campaign slices are preplanned and are not exhausted.
+Only Slice 1 is currently authorized for product mutation. Slice 2 starts only after Slice 1 is checkpointed, receipted, and rearward-reviewed. Later campaign slices remain preplanned and are not exhausted.
