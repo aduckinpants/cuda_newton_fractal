@@ -458,3 +458,11 @@ After closeout, preplanned IFS product implementation remains deferred. Stop and
 
 
 Preplanned sliced work for this bounded docs/test repair is exhausted; stop for replan before IFS product mutation.
+
+## Action Hostile Review
+
+- Action ID: model-diagnostics-overlay-preplanning-bootstrap-2
+- Suspected Failure Mode: A tempting one-provider overlay demonstration could be documented as a general diagnostics feature even though most catalog selectors lack truthful model-space feature coverage.
+- Correct Owner/Action: Create a separate workflow-only campaign plan and contract that classify all catalog selectors, distinguish coordinate spaces, require meaningful per-selector diagnostics, and keep product mutation paused.
+- Proof Surface: New checked-in campaign plan and contract, catalog-grounded coverage matrix, status/deferred truth sync, plan validation, hostile audit, code-quality baseline, and diff check.
+- Blocked Action: Do not add a diagnostics button, overlay renderer, model solver, capture artifact, probe behavior, or product code under the closed IFS contract.

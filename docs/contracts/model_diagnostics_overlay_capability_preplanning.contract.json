@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "contract_id": "model_diagnostics_overlay_capability_preplanning",
+  "feature_id": "model_diagnostics_overlay_capability_campaign",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md",
+    "docs/contracts/model_diagnostics_overlay_capability_preplanning.contract.json",
+    "docs/notes/engineering_diagnostics_panel_RESEARCH_SPEC.md",
+    "docs/notes/ifs_engine_foundation_campaign_PHASED_PLAN.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean rearward-reviewed engine head d346d5820b301520c6d59df7c6220d26e4cf7f59",
+    "current 51-entry public fractal catalog",
+    "current active-model provider and viewport-facts authority",
+    "current Capture Finding canonical and review-sidecar authority",
+    "external cuda-fractal-engine-state-tool provider and annotation proof",
+    "center critical point annotated image supplied by the operator"
+  ],
+  "forbidden_operator_prompts": [
+    "implement the diagnostics panel or overlay in this slice",
+    "add a one-provider demo and call it generally useful",
+    "project facts across parameter dynamical field root-layout or screen spaces without a declared adapter",
+    "change canonical Capture Finding pixels or state replay authority",
+    "add a Python runtime dependency to the viewer",
+    "begin IFS product work"
+  ],
+  "required_defaults": {
+    "product_mutation_authorized": false,
+    "all_selectors_require_capability_classification": true,
+    "coordinate_spaces_are_explicit": true,
+    "unsupported_features_fail_closed": true,
+    "canonical_finding_frame_unchanged": true,
+    "state_json_replay_authority_unchanged": true,
+    "external_state_tool_runtime_dependency": false
+  },
+  "forbidden_defaults": {
+    "single_provider_as_general_product": "forbidden",
+    "complex_storage_implies_same_coordinate_space": "forbidden",
+    "silent_feature_substitution": "forbidden",
+    "canonical_frame_annotation_overwrite": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/model_diagnostics_overlay_capability_preplanning.contract.json --out-json artifacts/validation/model_diagnostics_overlay_capability_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label model_diagnostics_overlay_plan_sync --log artifacts/logs/model_diagnostics_overlay_plan_sync.log --out-json artifacts/validation/model_diagnostics_overlay_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/model_diagnostics_overlay_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label model_diagnostics_overlay_diff_check --log artifacts/logs/model_diagnostics_overlay_diff_check.log --out-json artifacts/validation/model_diagnostics_overlay_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md --out-json artifacts/validation/model_diagnostics_overlay_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "model_diagnostics_contract_valid",
+      "description": "The documentation-only capability campaign contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/model_diagnostics_overlay_capability_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "model_diagnostics_plan_sync_ok",
+      "description": "The phased plan is synchronized.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/model_diagnostics_overlay_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "model_diagnostics_hostile_audit_ok",
+      "description": "The capability-first hostile audit passes.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/model_diagnostics_overlay_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "model_diagnostics_diff_check_ok",
+      "description": "The documentation diff is structurally clean.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/model_diagnostics_overlay_diff_check.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

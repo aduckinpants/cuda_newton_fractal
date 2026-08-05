@@ -4,6 +4,8 @@
 
 Research/specification only. This document does not authorize implementation of a new panel, UI controls, runtime probes, production behavior changes, or new tests.
 
+> **2026-08-05 general-coverage amendment:** This selected-target probe specification is a narrower predecessor, not the governing implementation plan for a public diagnostics panel. Before any panel, live overlay, or annotated capture work, the catalog-wide capability and coordinate-space gates in [model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md](model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md) must be satisfied. Its MD-0 through MD-6 foundation replaces the earlier recommendation to begin directly with a Newton/ExplainO orbit UI. The target/registry/result-envelope concepts here remain useful inputs to that campaign.
+
 ## Summary Recommendation
 
 Proceed, but narrow the first implementation to a selected-target probe registry vertical rather than a broad diagnostics workspace.
@@ -476,4 +478,4 @@ Expected implementation shape: 2-4 bounded slices, depending on whether CLI and 
 
 ## Final Recommendation
 
-Proceed after review, but only with the selected-pixel Newton/ExplainO orbit inspector vertical. Defer neighborhood scans, precision matrices, Science Mode integration, arbitrary scripting, and full workspace UI until the registry, target identity, result envelope, lifecycle, and automation contracts have one proven end-to-end probe.
+Do not begin with a selected-pixel Newton/ExplainO UI. Resume through MD-0 of the catalog-wide [Model Diagnostics Overlay Capability Campaign](model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md), then complete its capability-foundation gates before any public panel, live overlay, or annotated-capture product work. The selected-target registry, identity, result-envelope, lifecycle, and automation concepts in this document remain inputs to that broader foundation.

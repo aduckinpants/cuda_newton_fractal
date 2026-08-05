@@ -7,6 +7,25 @@ Last reconciled: 2026-05-28 on `codex/sdf-postprocess-roadmap-truth-sync` after 
 
 ---
 
+## P1 - Model Diagnostics has one native model provider, not catalog-wide capability authority
+
+**Status:** planned and deferred; product UI is blocked
+**Area:** diagnostics / model authority / scientific overlay
+
+The native active-model path currently has one concrete provider for the zero-warp `explaino_rational_escape` polynomial-over-power case, while the public selector catalog contains 51 entries across incompatible mathematical and coordinate-space classes. A diagnostics button built on the current seam would look general while producing useful exact model features for only a narrow case.
+
+Required prerequisite:
+
+- generate a catalog-wide model-class/capability court;
+- distinguish parameter, dynamical, field, root-layout, state-projection, screen, and nonspatial facts;
+- require each selector to provide at least one meaningful capability or a structured denial;
+- preserve canonical Capture Finding pixels and state replay authority;
+- prove bounded lifecycle, cancellation, no-mouse automation, and external-tool parity before product launch.
+
+Planning authority: `docs/notes/model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md`.
+
+---
+
 ## P2 - State-tool polynomial provider lacks a mandatory published-runtime integration rail
 
 **Status:** fixed and pushed as `80d0dd0` on `codex/published-runtime-provider-integration-test`; engine planning authority recorded in the IFS campaign

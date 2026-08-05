@@ -378,3 +378,42 @@ Resume constraints:
 - Treat this as a new bounded thread, not a reopening of a half-finished feature.
 - Prove frame-delta behavior with deterministic artifact or hash-based harness before attempting live-window proof.
 - Keep `state.json` as the only replay authority.
+
+
+## 11. Model Diagnostics Overlay Capability Campaign
+
+Status: decision-complete preplanning; product implementation paused.
+
+Why this is deferred:
+
+- The current native active-model path has only one concrete polynomial provider and cannot support a generally useful diagnostics product.
+- The public catalog has 51 selectors spanning parameter-plane, dynamical-plane, root-layout, stateful, field, generic-pack, and composite models.
+- Reusing complex coordinates without explicit space semantics would produce mathematically false overlays.
+- A quick UI would harden the wrong abstraction before provider coverage, cost policy, cancellation, capture authority, and automation are proven.
+
+Planned order:
+
+1. MD-0 catalog coverage court.
+2. MD-1 target/binding/typed receipt envelope.
+3. MD-2 bounded iterative evidence substrate.
+4. MD-3 root and polynomial providers.
+5. MD-4 analytic and rational providers.
+6. MD-5 folded, stateful, and transcendental providers.
+7. MD-6 field, generic-pack, and composite providers.
+8. Only after the coverage gate: panel shell, live overlay, annotated Capture Finding, and hardening.
+
+Estimated effort:
+
+- capability foundation: 21-36 engineering days;
+- product panel/overlay/capture vertical: 10-17 engineering days;
+- later symbolic, region, Science Mode, and graph integrations are separate campaigns.
+
+Resume constraints:
+
+- Start with MD-0, not a viewer button.
+- Every public selector must be classified and provide at least one meaningful capability or a tested structured denial.
+- Every drawable feature must name its source and target coordinate spaces.
+- Keep canonical `frame.png` and `state.json` unchanged; annotated output is a sibling artifact.
+- Do not add a Python or external state-tool runtime dependency to the viewer.
+
+Detailed authority: `docs/notes/model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md`.
