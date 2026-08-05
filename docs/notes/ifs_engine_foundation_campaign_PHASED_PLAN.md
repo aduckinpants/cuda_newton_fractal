@@ -431,6 +431,8 @@ Questions:
 - [complete] Pass 1 - found that duplicate JSON keys were accepted and backend/arithmetic were reported without being enforced; added regressions and fail-closed checks.
 - [complete] Pass 2 - found that the derived provider denominator was reported but not compared to the exact captured-state denominator; added a mismatch regression and exact equality check.
 - [complete] Pass 3 - clean re-read of the final runner, six focused tests, 223-test suite, real published-runtime receipt, plan scope, and both repository states found no further defect.
+- [complete] Pass 4 - receipt preflight found that the direct phased-plan sync command emitted no parseable evidence; replaced it with a logged command and explicit contract assertion.
+- [complete] Pass 5 - reran contract, plan-sync, hostile-audit, and diff evidence after the receipt repair with no additional defect.
 
 ## Audit Findings
 
@@ -438,6 +440,7 @@ Questions:
 - [complete] State authority finding: duplicate keys in the captured-state JSON could make the integration witness ambiguous. The runner now uses duplicate-key-rejecting JSON parsing.
 - [complete] Runtime authority finding: a CPU or non-float64 response could previously pass while merely being reported. The dedicated rail now requires CUDA and float64 iteration arithmetic.
 - [complete] Provider/state binding finding: a provider derived with the wrong denominator could previously pass. The rail now requires exact equality between captured-state, provider metadata, and model denominator power.
+- [complete] Receipt authority finding: direct phased-plan sync produced no parseable JSON evidence. The contract now requires a logged plan-sync command and asserts its machine receipt.
 
 ## Closeout And Next Boundary
 

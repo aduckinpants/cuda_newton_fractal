@@ -44,7 +44,7 @@
   },
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ifs_engine_foundation_preplanning_and_state_tool_runtime_test.contract.json --out-json artifacts/validation/ifs_engine_foundation_preplanning_contract.json",
-    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/ifs_engine_foundation_campaign_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ifs_engine_foundation_preplanning_plan_sync --log artifacts/logs/ifs_engine_foundation_preplanning_plan_sync.log --out-json artifacts/validation/ifs_engine_foundation_preplanning_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/ifs_engine_foundation_campaign_PHASED_PLAN.md",
     "py -3.14 tools/viewer_host_run_logged_command.py --label state_tool_published_runtime_provider_integration --log artifacts/logs/state_tool_published_runtime_provider_integration.log --out-json artifacts/validation/state_tool_published_runtime_provider_integration.json --heartbeat-seconds 30 --timeout-seconds 120 -- powershell -NoProfile -Command \"Set-Location C:/code/cuda-fractal-engine-state-tool; py -3.14 -m cuda_fractal_state_tool.published_runtime_provider_integration --runtime-cmd D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.cmd --state-json D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-08-02/160241_458__explaino_rational_escape/state.json --out-json .local/validation/published_runtime_provider_integration.json\"",
     "py -3.14 tools/viewer_host_run_logged_command.py --label state_tool_full_suite --log artifacts/logs/state_tool_full_suite.log --out-json artifacts/validation/state_tool_full_suite.json --heartbeat-seconds 30 --timeout-seconds 300 -- powershell -NoProfile -Command \"Set-Location C:/code/cuda-fractal-engine-state-tool; py -3.14 -m unittest discover -s tests\"",
     "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ifs_engine_foundation_preplanning_code_quality.json",
@@ -58,6 +58,14 @@
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/ifs_engine_foundation_preplanning_contract.json",
       "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "ifs_preplanning_plan_sync_ok",
+      "description": "The IFS campaign phased plan is synchronized and machine-receipted.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ifs_engine_foundation_preplanning_plan_sync.json",
+      "json_path": "ok",
       "equals": true
     },
     {
