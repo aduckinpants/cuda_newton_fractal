@@ -7,6 +7,25 @@ Agent protocol: see `AGENT_WORKING_PROTOCOL.md` for working rules.
 
 Last reconciled: 2026-05-28 on `codex/sdf-postprocess-roadmap-truth-sync` after the measured SDF postprocess optimization merged to `master`.
 
+## Deferred IFS Engine Foundation Campaign - 2026-08-05
+
+Status: decision-complete preplanning; implementation is intentionally deferred until a later multi-week campaign.
+
+Authority:
+
+- `docs/notes/ifs_engine_foundation_campaign_PHASED_PLAN.md`
+
+The campaign is split into an independently useful ordinary affine IFS vertical followed by a mandatory client review/replan. The first campaign has six bounded slices: model authority, two independent CPU references, deterministic CUDA integer accumulation, a headless `ifs.accumulate` operation, a normal `ifs_scene` viewer lane, and measured realtime/cache hardening.
+
+The first campaign explicitly does not include:
+
+- graph-directed/address-aware IFS;
+- an IFS-to-SDF bridge;
+- Flame/nonlinear density variations;
+- ExplainO IFS mutation policy;
+- History Horn, quotient geometry, FITS analysis, or Salticid Science Mode coupling.
+
+Resume rule: start with Slice IFS-0 under a fresh plan/contract only when a multi-week engine campaign is acceptable. Do not compress the work into a formula branch inside the pointwise renderer. Stop after IFS-5 for manual acceptance and replan.
 ## ~~Urgent Deferred Interrupt - Deploy/Findings Disk Pressure~~ RESOLVED
 
 Status: resolved by the deploy_diagnostics_disk_pressure slice.

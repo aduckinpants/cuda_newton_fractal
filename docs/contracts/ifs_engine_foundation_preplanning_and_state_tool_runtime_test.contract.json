@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "contract_id": "ifs_engine_foundation_preplanning_and_state_tool_runtime_test",
+  "feature_id": "ifs_engine_foundation_campaign",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/ifs_engine_foundation_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes",
+    "docs/contracts",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "docs/handoffs",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean reviewed engine master e6b90cc4fba09618957f861d904501d59ef5dbca",
+    "Salticid Runtime IFS Science Mode consolidated report dated 2026-07-30",
+    "current pointwise renderer and SDF producer architecture",
+    "P2 review finding for missing direct state-tool provider to published-engine automation",
+    "published runtime at D:/salt-fractal/cuda_newton_fractal_clone/runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "begin IFS product implementation in this slice",
+    "change renderer sampler Color Pipeline SDF or viewer behavior",
+    "treat SDF infrastructure as the IFS domain implementation",
+    "claim universal exact CPU/CUDA pixels for arbitrary floating affine maps",
+    "allow the dedicated provider integration rail to skip and still pass",
+    "begin graph-directed IFS Flame History Horn or Science Mode work"
+  ],
+  "required_defaults": {
+    "ifs_product_mutation_authorized": false,
+    "ordinary_affine_ifs_precedes_graph_directed_ifs": true,
+    "pointwise_renderer_unchanged": true,
+    "state_json_replay_authority_unchanged": true,
+    "published_runtime_provider_integration_required": true
+  },
+  "forbidden_defaults": {
+    "kernel_params_as_ifs_authority": "forbidden",
+    "render_fractal_cuda_ifs_dispatch": "forbidden",
+    "seed_only_determinism_claim": "forbidden",
+    "synthetic_only_provider_proof": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ifs_engine_foundation_preplanning_and_state_tool_runtime_test.contract.json --out-json artifacts/validation/ifs_engine_foundation_preplanning_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/ifs_engine_foundation_campaign_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label state_tool_published_runtime_provider_integration --log artifacts/logs/state_tool_published_runtime_provider_integration.log --out-json artifacts/validation/state_tool_published_runtime_provider_integration.json --heartbeat-seconds 30 --timeout-seconds 120 -- powershell -NoProfile -Command \"Set-Location C:/code/cuda-fractal-engine-state-tool; py -3.14 -m cuda_fractal_state_tool.published_runtime_provider_integration --runtime-cmd D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.cmd --state-json D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-08-02/160241_458__explaino_rational_escape/state.json --out-json .local/validation/published_runtime_provider_integration.json\"",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label state_tool_full_suite --log artifacts/logs/state_tool_full_suite.log --out-json artifacts/validation/state_tool_full_suite.json --heartbeat-seconds 30 --timeout-seconds 300 -- powershell -NoProfile -Command \"Set-Location C:/code/cuda-fractal-engine-state-tool; py -3.14 -m unittest discover -s tests\"",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/ifs_engine_foundation_preplanning_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label ifs_engine_foundation_preplanning_diff_check --log artifacts/logs/ifs_engine_foundation_preplanning_diff_check.log --out-json artifacts/validation/ifs_engine_foundation_preplanning_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ifs_engine_foundation_campaign_PHASED_PLAN.md --out-json artifacts/validation/ifs_engine_foundation_preplanning_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "ifs_preplanning_contract_valid",
+      "description": "The bounded preplanning and cross-repo test-repair contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ifs_engine_foundation_preplanning_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "ifs_preplanning_hostile_audit_ok",
+      "description": "The plan and P2 integration repair pass the recorded hostile audit.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ifs_engine_foundation_preplanning_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "state_tool_provider_integration_passed",
+      "description": "The production state-tool provider runs directly against the published engine without a skip.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/state_tool_published_runtime_provider_integration.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "state_tool_full_suite_passed",
+      "description": "The complete hermetic state-tool suite remains green after the integration rail is added.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/state_tool_full_suite.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "ifs_preplanning_diff_check_ok",
+      "description": "The engine planning diff is structurally clean.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ifs_engine_foundation_preplanning_diff_check.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

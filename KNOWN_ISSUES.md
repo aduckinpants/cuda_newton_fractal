@@ -7,6 +7,23 @@ Last reconciled: 2026-05-28 on `codex/sdf-postprocess-roadmap-truth-sync` after 
 
 ---
 
+## P2 - State-tool polynomial provider lacks a mandatory published-runtime integration rail
+
+**Status:** fixed and pushed as `80d0dd0` on `codex/published-runtime-provider-integration-test`; engine planning authority recorded in the IFS campaign
+**Area:** cross-repo test authority / published runtime
+
+The engine's active-model and canonical-sampling surfaces have native and runtime tests, and the state tool provider has synthetic unit tests. Before this repair, no mandatory automated rail instantiated the state tool production `ActiveModelRuntimeClient` against the real published engine and one exact captured state. Contract drift between the independently tested repositories could therefore escape isolated suites.
+
+Required closure:
+
+- dedicated, non-skipping integration command against the published runtime;
+- exact state and executable hash binding;
+- real describe, derive, and canonical sample calls;
+- complete state-tool unit suite remains green;
+- ordinary hermetic CI is not made dependent on the operator's `D:` runtime tree.
+
+---
+
 ## ~~P0 - Nova violates its own escape-time contract~~ RESOLVED
 
 **Status:** fixed (common-fractal wave + Nova repair slice)
