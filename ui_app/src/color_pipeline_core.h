@@ -2283,12 +2283,24 @@ inline bool TryProjectColorPipelineRecipeV2ToLanes(
         return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' does not have three linear projection edges");
     }
 
+    const MaterializedColorPipelineRecipeSourceFold& sourceFold = recipe.source_fold;
+    if (sourceFold.operation != "ordered_destination_weighted_lerp" ||
+        sourceFold.source_nodes.size() != 1 ||
+        sourceFold.source_nodes[0] != recipe.nodes[0].id ||
+        !sourceFold.fold_nodes.empty() ||
+        !sourceFold.fold_edges.empty() ||
+        sourceFold.output_node != recipe.nodes[0].id ||
+        sourceFold.first_source_blend != 1.0) {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid canonical source fold");
+    }
+
     std::vector<ColorPipelineLaneState> lanes;
     lanes.reserve(4);
     for (std::size_t index = 0; index < 4; ++index) {
         const MaterializedColorPipelineRecipeV2Node& node = recipe.nodes[index];
-        if (node.id != kExpectedLanes[index] || node.lane != kExpectedLanes[index]) {
-            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid linear node order");
+        const std::string expectedPrefix = std::string(kExpectedLanes[index]) + ".";
+        if (node.lane != kExpectedLanes[index] || node.id.rfind(expectedPrefix, 0) != 0) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid semantic linear node order");
         }
         const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(node.lane);
         if (!catalog) {
@@ -2308,7 +2320,7 @@ inline bool TryProjectColorPipelineRecipeV2ToLanes(
 
     for (std::size_t index = 0; index < 3; ++index) {
         const MaterializedColorPipelineRecipeV2Edge& edge = recipe.edges[index];
-        if (edge.from_node != kExpectedLanes[index] || edge.to_node != kExpectedLanes[index + 1]) {
+        if (edge.from_node != recipe.nodes[index].id || edge.to_node != recipe.nodes[index + 1].id) {
             return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid linear edge order");
         }
         if (edge.from_function != recipe.nodes[index].function ||

@@ -4,6 +4,7 @@
 #include <vector>
 
 struct MaterializedColorPipelineParam {
+    std::string descriptor_parameter_id;
     std::string path;
     std::string type;
     std::string label;
@@ -108,6 +109,38 @@ struct MaterializedSignalType {
     std::string coordinate_space;
 };
 
+struct MaterializedSignalTypeAlias {
+    std::string id;
+    std::string canonical;
+    std::string numeric_conversion;
+    std::string warning;
+};
+
+struct MaterializedRecipeExecutableAdapter {
+    std::string id;
+    std::string source;
+    std::string target;
+    std::string runtime_operation;
+    bool requires_explicit_consent = false;
+};
+
+struct MaterializedCanonicalRecipeContract {
+    std::string schema_id;
+    int max_source_rows = 0;
+    std::string fold_operation;
+    double first_source_blend = 0.0;
+    std::string blend_parameter_id;
+    std::string blend_ownership;
+    std::string nonfinite_policy;
+    std::string out_of_range_policy;
+    std::string canonicalization_id;
+    std::string default_policy;
+    bool exclude_display_text = false;
+    std::string hash_algorithm;
+    std::vector<MaterializedSignalTypeAlias> type_aliases;
+    std::vector<MaterializedRecipeExecutableAdapter> executable_adapters;
+};
+
 struct MaterializedColorPipelineFunction {
     std::string id;
     std::string label;
@@ -171,6 +204,15 @@ struct MaterializedColorPipelineRecipe {
     std::string fail_closed_reason;
 };
 
+struct MaterializedColorPipelineRecipeSourceFold {
+    std::string operation;
+    std::vector<std::string> source_nodes;
+    std::vector<std::string> fold_nodes;
+    std::vector<std::string> fold_edges;
+    std::string output_node;
+    double first_source_blend = 0.0;
+};
+
 struct MaterializedColorPipelineRecipeV2Node {
     std::string id;
     std::string lane;
@@ -194,6 +236,9 @@ struct MaterializedColorPipelineRecipeV2Edge {
 
 struct MaterializedColorPipelineRecipeV2 {
     std::string id;
+    int recipe_version = 0;
+    std::string canonicalization_id;
+    std::string metadata_content_hash;
     std::string label;
     std::string source_recipe_id;
     std::string ui_projection;
@@ -201,6 +246,7 @@ struct MaterializedColorPipelineRecipeV2 {
     std::string live_authority;
     std::string status;
     std::vector<MaterializedColorPipelineRecipeV2Node> nodes;
+    MaterializedColorPipelineRecipeSourceFold source_fold;
     std::vector<MaterializedColorPipelineRecipeV2Edge> edges;
     std::vector<std::string> chosen_adapters;
     int adapter_hops = 0;
@@ -250,7 +296,10 @@ struct MaterializedColorPipelineContract {
     int schema_version = 0;
     std::string source_path;
     std::vector<MaterializedSignalType> signal_types;
+    std::vector<MaterializedSignalTypeAlias> signal_type_aliases;
     std::vector<MaterializedColorPipelineAdapter> adapters;
+    bool has_canonical_recipe_contract = false;
+    MaterializedCanonicalRecipeContract canonical_recipe_contract;
     MaterializedColorPipelineEdgePolicy edge_policy;
     std::vector<MaterializedColorPipelineEdgeLink> edge_links;
     std::vector<MaterializedColorPipelineResolutionCase> resolution_cases;

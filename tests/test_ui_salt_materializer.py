@@ -219,6 +219,45 @@ def test_materializer_accepts_valid_contract(tmp_path):
 
 
 
+def test_materializer_normalizes_legacy_phase_alias_without_numeric_conversion(tmp_path):
+    text = COLOR_PIPELINE_UI_SALT.read_text(encoding="utf-8")
+    text = text.replace(
+        'function(lane="source", id="phase_orbit", label="Phase Orbit", description="Use orbit phase as the upstream signal.", taxonomy_group="phase", signal_kind="phase", typed_signal="phase.turns"',
+        'function(lane="source", id="phase_orbit", label="Phase Orbit", description="Use orbit phase as the upstream signal.", taxonomy_group="phase", signal_kind="phase", typed_signal="phase.radians"',
+        1,
+    )
+    text = text.replace(
+        'port(function="phase_orbit", direction="output", id="signal", type="phase.turns", canonical=True)',
+        'port(function="phase_orbit", direction="output", id="signal", type="phase.radians", canonical=True)',
+        1,
+    )
+    text = text.replace(
+        'adapter(id="identity.phase_turns", source="phase.turns", target="phase.turns"',
+        'adapter(id="identity.phase_turns", source="phase.radians", target="phase.radians"',
+        1,
+    )
+    text = text.replace(
+        'recipe_adapter(id="unit_cycle_as_phase_turns_v1", source="scalar.unit", target="phase.turns"',
+        'recipe_adapter(id="unit_cycle_as_phase_turns_v1", source="scalar.unit", target="phase.radians"',
+        1,
+    )
+
+    proc, out = run_materializer(tmp_path, text)
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    source_functions = {
+        item["id"]: item
+        for lane in payload["function_library"]["lanes"]
+        for item in lane["functions"]
+    }
+    assert source_functions["phase_orbit"]["typed_signal"] == "phase.turns"
+    assert source_functions["phase_orbit"]["ports"][0]["type"] == "phase.turns"
+    adapters = {item["id"]: item for item in payload["adapter_library_contract"]["adapters"]}
+    assert adapters["identity.phase_turns"]["source"] == "phase.turns"
+    assert adapters["identity.phase_turns"]["target"] == "phase.turns"
+    recipe_adapter = payload["composition_recipe_contract"]["canonical_recipe_contract"]["executable_adapters"][0]
+    assert recipe_adapter["target"] == "phase.turns"
+
 def test_materializer_rejects_duplicate_signal_type_ids(tmp_path):
     text = VALID_UI_SALT + 'signal_type(id="scalar.unit", kind="scalar", domain="unit", topology="linear", arity=1, default_adapter_policy="safe")\n'
     proc, _ = run_materializer(tmp_path, text)
@@ -265,12 +304,12 @@ def test_materializer_rejects_adapter_unknown_source_or_target_type(tmp_path):
     text = VALID_UI_SALT + 'adapter(id="bad.unknown", source="scalar.missing", target="scalar.unit", policy="explicit_only", lossy=False, reversible=False, cost=1, fail_closed_reason="missing source")\n'
     proc, _ = run_materializer(tmp_path, text)
     assert proc.returncode != 0
-    assert "adapter bad.unknown references unknown source type" in proc.stderr
+    assert "adapter bad.unknown source references unknown signal type" in proc.stderr
 
     text = VALID_UI_SALT + 'adapter(id="bad.unknown.target", source="scalar.unit", target="scalar.missing", policy="explicit_only", lossy=False, reversible=False, cost=1, fail_closed_reason="missing target")\n'
     proc, _ = run_materializer(tmp_path, text)
     assert proc.returncode != 0
-    assert "adapter bad.unknown.target references unknown target type" in proc.stderr
+    assert "adapter bad.unknown.target target references unknown signal type" in proc.stderr
 
 
 def test_materializer_rejects_adapter_missing_or_invalid_policy(tmp_path):
@@ -555,7 +594,7 @@ def test_materializer_accepts_compat_override_audit(tmp_path):
 
 def test_materializer_rejects_recipe_v2_shadow_route_that_cannot_resolve(tmp_path):
     text = EDGE_RESOLUTION_FIXTURE + '''
-recipe(id="bad_root_heatmap", label="Bad Root Heatmap", source="root_index", shape="repeat", palette="heatmap", grading="contrast_lift")
+recipe(id="bad_root_heatmap", version=1, label="Bad Root Heatmap", source="root_index", source_node_id="source.root_index", source_blend=1.0, shape="repeat", shape_node_id="shape.repeat", palette="heatmap", palette_node_id="palette.heatmap", grading="contrast_lift", grading_node_id="grading.contrast_lift")
 '''
     proc, _ = run_materializer(tmp_path, text)
     assert proc.returncode != 0
@@ -676,6 +715,53 @@ def test_materializer_rejects_missing_canonical_output_port(tmp_path):
     assert proc.returncode != 0
     assert "function heatmap port signatures require exactly one canonical output" in proc.stderr
 
+
+def test_materializer_rejects_noncanonical_first_source_blend(tmp_path):
+    text = EDGE_RESOLUTION_FIXTURE + """
+recipe(id="bad_blend", version=1, label="Bad Blend", source="smooth_escape_ramp", source_node_id="source.escape", source_blend=0.5, shape="identity", shape_node_id="shape.identity", palette="heatmap", palette_node_id="palette.heatmap", grading="contrast_lift", grading_node_id="grading.contrast_lift")
+"""
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "first Source blend must be exactly 1.0" in proc.stderr
+
+
+def test_recipe_hash_excludes_display_label_but_includes_descriptor_defaults(tmp_path):
+    source_text = COLOR_PIPELINE_UI_SALT.read_text(encoding="utf-8")
+    proc, out = run_materializer(tmp_path, source_text)
+    assert proc.returncode == 0, proc.stderr
+    baseline = json.loads(out.read_text(encoding="utf-8"))
+    baseline_hash = baseline["composition_recipe_contract"]["recipe_v2"][0]["metadata_content_hash"]
+
+    label_text = source_text.replace(
+        'label="Default Smooth Escape"',
+        'label="Renamed Display Only"',
+        1,
+    )
+    proc, out = run_materializer(tmp_path, label_text)
+    assert proc.returncode == 0, proc.stderr
+    label_hash = json.loads(out.read_text(encoding="utf-8"))["composition_recipe_contract"]["recipe_v2"][0]["metadata_content_hash"]
+    assert label_hash == baseline_hash
+
+    default_text = source_text.replace(
+        '["signal.scale", "float", "Scale", 0.25, 4.0, 0.01, 1.0]',
+        '["signal.scale", "float", "Scale", 0.25, 4.0, 0.01, 1.25]',
+        1,
+    )
+    proc, out = run_materializer(tmp_path, default_text)
+    assert proc.returncode == 0, proc.stderr
+    default_hash = json.loads(out.read_text(encoding="utf-8"))["composition_recipe_contract"]["recipe_v2"][0]["metadata_content_hash"]
+    assert default_hash != baseline_hash
+
+
+def test_materializer_rejects_recipe_without_semantic_identity(tmp_path):
+    text = EDGE_RESOLUTION_FIXTURE + """
+recipe(id="missing_identity", label="Missing Identity", source="smooth_escape_ramp", shape="identity", palette="heatmap", grading="contrast_lift")
+"""
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "requires integer version 1" in proc.stderr
+
+
 def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     out = tmp_path / "materialized.json"
     proc = subprocess.run(
@@ -719,7 +805,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "scalar.unit",
         "scalar.signed",
         "scalar.sdf_signed_distance",
-        "phase.radians",
+        "phase.turns",
         "category.root_index",
         "category.inside_outside",
         "palette.discrete_index",
@@ -729,12 +815,15 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     }.issubset(signal_types)
     assert signal_types["field.sdf_signed_distance"]["kind"] == "field"
     assert signal_types["scalar.sdf_signed_distance"]["kind"] == "scalar"
+    assert signal_types["phase.turns"]["units"] == "turns"
+    assert signal_types["phase.turns"]["period"] == 1.0
     typed_signals = {fn["id"]: fn.get("typed_signal") for fn in lanes["source"]["functions"]}
     assert typed_signals["smooth_escape_ramp"] == "scalar.unit"
     assert typed_signals["sdf_signed_distance"] == "scalar.sdf_signed_distance"
-    assert typed_signals["sdf_normal_angle"] == "phase.radians"
+    assert typed_signals["sdf_normal_angle"] == "phase.turns"
     assert typed_signals["root_index"] == "category.root_index"
     assert typed_signals["sdf_inside_outside"] == "category.inside_outside"
+    assert typed_signals["lens_field_v2_distance"] == "scalar.unit"
     taxonomy_groups = {
         fn["id"]: fn.get("taxonomy_group")
         for lane in actual["function_library"]["lanes"]
@@ -848,6 +937,35 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert audit_cases["phase_root_palette_bad"]["status"] == "fail_closed"
     assert audit_cases["sdf_signed_distance_phase_palette_bad"]["status"] == "fail_closed"
 
+    aliases = actual["signal_type_registry"]["aliases"]
+    assert aliases == [{
+        "id": "phase.radians",
+        "canonical": "phase.turns",
+        "numeric_conversion": "none",
+        "warning": "legacy phase.radians values were already turns; tag normalized without numeric conversion",
+    }]
+    for lane in actual["function_library"]["lanes"]:
+        for function in lane["functions"]:
+            parameter_ids = [param["descriptor_parameter_id"] for param in function["params"]]
+            assert parameter_ids == [param["path"] for param in function["params"]]
+            assert len(parameter_ids) == len(set(parameter_ids))
+
+    canonical_contract = actual["composition_recipe_contract"]["canonical_recipe_contract"]
+    assert canonical_contract["schema_id"] == "viewer.canonical_recipe_contract.v1"
+    assert canonical_contract["max_source_rows"] == 8
+    assert canonical_contract["source_fold"]["operation"] == "ordered_destination_weighted_lerp"
+    assert canonical_contract["source_fold"]["first_source_blend"] == 1.0
+    assert canonical_contract["source_fold"]["nonfinite_policy"] == "fail_closed"
+    assert canonical_contract["canonicalization"]["default_policy"] == "expand_all_descriptor_defaults"
+    assert canonical_contract["canonicalization"]["exclude_display_text"] is True
+    assert canonical_contract["executable_adapters"] == [{
+        "id": "unit_cycle_as_phase_turns_v1",
+        "source": "scalar.unit",
+        "target": "phase.turns",
+        "runtime_operation": "none",
+        "requires_explicit_consent": True,
+    }]
+
     recipe_v2 = actual["composition_recipe_contract"]["recipe_v2"]
     assert [recipe["id"] for recipe in recipe_v2] == [
         "default_smooth_escape",
@@ -866,13 +984,26 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         assert recipe["fail_closed_reason"] == ""
         assert recipe["source_recipe_id"] == recipe["id"]
         assert recipe["tie_break_rule"] == "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order"
+        assert recipe["recipe_version"] == 1
+        assert recipe["canonicalization_id"] == "viewer.recipe_canonicalization.v1"
+        assert len(recipe["metadata_content_hash"]) == 64
+        int(recipe["metadata_content_hash"], 16)
         assert len(recipe["nodes"]) == 4
-        assert [node["id"] for node in recipe["nodes"]] == [
+        assert [node["id"].split(".", 1)[0] for node in recipe["nodes"]] == [
             "source",
             "shape",
             "palette",
             "grading",
         ]
+        assert len({node["id"] for node in recipe["nodes"]}) == 4
+        assert recipe["source_fold"] == {
+            "operation": "ordered_destination_weighted_lerp",
+            "source_nodes": [recipe["nodes"][0]["id"]],
+            "fold_nodes": [],
+            "fold_edges": [],
+            "output_node": recipe["nodes"][0]["id"],
+            "first_source_blend": 1.0,
+        }
         assert [node["lane"] for node in recipe["nodes"]] == [
             "source",
             "shape",
@@ -880,8 +1011,8 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
             "grading",
         ]
         assert len(recipe["edges"]) == 3
-        assert [edge["from_node"] for edge in recipe["edges"]] == ["source", "shape", "palette"]
-        assert [edge["to_node"] for edge in recipe["edges"]] == ["shape", "palette", "grading"]
+        assert [edge["from_node"] for edge in recipe["edges"]] == [node["id"] for node in recipe["nodes"][:3]]
+        assert [edge["to_node"] for edge in recipe["edges"]] == [node["id"] for node in recipe["nodes"][1:]]
 
     default_v2 = recipe_by_id["default_smooth_escape"]
     assert [node["function"] for node in default_v2["nodes"]] == [
@@ -902,10 +1033,13 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         {"direction": "output", "id": "signal", "type": "scalar.sdf_signed_distance", "canonical": True}
     ]
     assert _ports(actual, "source", "sdf_normal_angle") == [
-        {"direction": "output", "id": "signal", "type": "phase.radians", "canonical": True}
+        {"direction": "output", "id": "signal", "type": "phase.turns", "canonical": True}
     ]
     assert _ports(actual, "source", "sdf_inside_outside") == [
         {"direction": "output", "id": "signal", "type": "category.inside_outside", "canonical": True}
+    ]
+    assert _ports(actual, "source", "lens_field_v2_distance") == [
+        {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True}
     ]
     assert _ports(actual, "shape", "identity") == [
         {"direction": "input", "id": "signal", "type": "generic.T", "generic_group": "T"},
@@ -932,7 +1066,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
     ]
     assert _ports(actual, "palette", "phase_wheel_palette") == [
-        {"direction": "input", "id": "signal", "type": "phase.radians"},
+        {"direction": "input", "id": "signal", "type": "phase.turns"},
         {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
     ]
     assert _ports(actual, "palette", "root_classic_palette") == [

@@ -2,6 +2,7 @@
 
 #include "json_min.h"
 
+#include <cctype>
 #include <cmath>
 #include <fstream>
 #include <set>
@@ -228,6 +229,63 @@ bool ReadSignalType(
     return true;
 }
 
+bool ReadSignalTypeAlias(
+    const json_min::Value& value,
+    MaterializedSignalTypeAlias* outAlias,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Signal type alias entry must be an object");
+    }
+    MaterializedSignalTypeAlias alias;
+    if (!ReadString(value, "id", &alias.id, outError) ||
+        !ReadString(value, "canonical", &alias.canonical, outError) ||
+        !ReadString(value, "numeric_conversion", &alias.numeric_conversion, outError) ||
+        !ReadString(value, "warning", &alias.warning, outError)) {
+        return false;
+    }
+    *outAlias = std::move(alias);
+    return true;
+}
+
+bool ReadRecipeExecutableAdapter(
+    const json_min::Value& value,
+    MaterializedRecipeExecutableAdapter* outAdapter,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Recipe executable adapter entry must be an object");
+    }
+    MaterializedRecipeExecutableAdapter adapter;
+    if (!ReadString(value, "id", &adapter.id, outError) ||
+        !ReadString(value, "source", &adapter.source, outError) ||
+        !ReadString(value, "target", &adapter.target, outError) ||
+        !ReadString(value, "runtime_operation", &adapter.runtime_operation, outError) ||
+        !ReadBool(value, "requires_explicit_consent", &adapter.requires_explicit_consent, outError)) {
+        return false;
+    }
+    *outAdapter = std::move(adapter);
+    return true;
+}
+
+bool ReadRecipeSourceFold(
+    const json_min::Value& value,
+    MaterializedColorPipelineRecipeSourceFold* outFold,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Recipe source_fold must be an object");
+    }
+    MaterializedColorPipelineRecipeSourceFold fold;
+    if (!ReadString(value, "operation", &fold.operation, outError) ||
+        !ReadStringArray(value, "source_nodes", &fold.source_nodes, outError) ||
+        !ReadStringArray(value, "fold_nodes", &fold.fold_nodes, outError) ||
+        !ReadStringArray(value, "fold_edges", &fold.fold_edges, outError) ||
+        !ReadString(value, "output_node", &fold.output_node, outError) ||
+        !ReadNumber(value, "first_source_blend", &fold.first_source_blend, outError)) {
+        return false;
+    }
+    *outFold = std::move(fold);
+    return true;
+}
+
 bool ReadParam(
     const json_min::Value& value,
     MaterializedColorPipelineParam* outParam,
@@ -236,7 +294,8 @@ bool ReadParam(
         return SetError(outError, "Param entry must be an object");
     }
     MaterializedColorPipelineParam param;
-    if (!ReadString(value, "path", &param.path, outError) ||
+    if (!ReadOptionalString(value, "descriptor_parameter_id", &param.descriptor_parameter_id, outError) ||
+        !ReadString(value, "path", &param.path, outError) ||
         !ReadString(value, "type", &param.type, outError) ||
         !ReadString(value, "label", &param.label, outError) ||
         !ReadOptionalNumber(value, "min", &param.has_min, &param.min_value, outError) ||
@@ -244,6 +303,9 @@ bool ReadParam(
         !ReadOptionalNumber(value, "step", &param.has_step, &param.step_value, outError) ||
         !ReadDefaultValue(value, &param, outError)) {
         return false;
+    }
+    if (param.descriptor_parameter_id.empty()) {
+        param.descriptor_parameter_id = param.path;
     }
     if (param.has_min && param.has_max && param.min_value > param.max_value) {
         return SetError(outError, "Param min cannot exceed max");
@@ -634,6 +696,9 @@ bool ReadRecipeV2(
     }
     MaterializedColorPipelineRecipeV2 recipe;
     if (!ReadString(value, "id", &recipe.id, outError) ||
+        !ReadPositiveInteger(value, "recipe_version", &recipe.recipe_version, outError) ||
+        !ReadString(value, "canonicalization_id", &recipe.canonicalization_id, outError) ||
+        !ReadString(value, "metadata_content_hash", &recipe.metadata_content_hash, outError) ||
         !ReadString(value, "label", &recipe.label, outError) ||
         !ReadString(value, "source_recipe_id", &recipe.source_recipe_id, outError) ||
         !ReadString(value, "ui_projection", &recipe.ui_projection, outError) ||
@@ -657,6 +722,10 @@ bool ReadRecipeV2(
             return false;
         }
         recipe.nodes.push_back(std::move(node));
+    }
+    const json_min::Value* sourceFold = RequiredField(value, "source_fold", outError);
+    if (!sourceFold || !ReadRecipeSourceFold(*sourceFold, &recipe.source_fold, outError)) {
+        return false;
     }
     const json_min::Value* edges = RequiredField(value, "edges", outError);
     if (!edges || !edges->is_array()) {
@@ -747,6 +816,57 @@ bool ReadExplainoEntry(
         return SetError(outError, std::string("Explaino contract entry '") + entry.id + "' has empty proof metadata");
     }
     *outEntry = std::move(entry);
+    return true;
+}
+
+bool ValidateCanonicalRecipeContract(
+    const MaterializedColorPipelineContract& contract,
+    const std::set<std::string>& signalTypeIds,
+    std::string* outError) {
+    if (!contract.has_canonical_recipe_contract) {
+        return true;
+    }
+    const MaterializedCanonicalRecipeContract& canonical = contract.canonical_recipe_contract;
+    if (canonical.schema_id != "viewer.canonical_recipe_contract.v1" ||
+        canonical.max_source_rows != 8 ||
+        canonical.fold_operation != "ordered_destination_weighted_lerp" ||
+        canonical.first_source_blend != 1.0 ||
+        canonical.blend_parameter_id != "signal.blend_weight" ||
+        canonical.blend_ownership != "source_descriptor_parameter" ||
+        canonical.nonfinite_policy != "fail_closed" ||
+        canonical.out_of_range_policy != "fail_closed" ||
+        canonical.canonicalization_id != "viewer.recipe_canonicalization.v1" ||
+        canonical.default_policy != "expand_all_descriptor_defaults" ||
+        !canonical.exclude_display_text ||
+        canonical.hash_algorithm != "sha256") {
+        return SetError(outError, "Canonical recipe contract does not match v1 authority locks");
+    }
+    if (contract.signal_type_aliases.size() != 1 ||
+        canonical.type_aliases.size() != contract.signal_type_aliases.size()) {
+        return SetError(outError, "Canonical recipe contract requires exactly one mirrored type alias");
+    }
+    const MaterializedSignalTypeAlias& alias = canonical.type_aliases[0];
+    const MaterializedSignalTypeAlias& registryAlias = contract.signal_type_aliases[0];
+    if (alias.id != "phase.radians" || alias.canonical != "phase.turns" ||
+        alias.numeric_conversion != "none" || alias.warning.empty() ||
+        alias.id != registryAlias.id || alias.canonical != registryAlias.canonical ||
+        alias.numeric_conversion != registryAlias.numeric_conversion ||
+        alias.warning != registryAlias.warning ||
+        signalTypeIds.find(alias.canonical) == signalTypeIds.end() ||
+        signalTypeIds.find(alias.id) != signalTypeIds.end()) {
+        return SetError(outError, "Canonical phase.radians alias is invalid");
+    }
+    if (canonical.executable_adapters.size() != 1) {
+        return SetError(outError, "Canonical recipe contract requires one closed executable adapter");
+    }
+    const MaterializedRecipeExecutableAdapter& adapter = canonical.executable_adapters[0];
+    if (adapter.id != "unit_cycle_as_phase_turns_v1" ||
+        adapter.source != "scalar.unit" ||
+        adapter.target != "phase.turns" ||
+        adapter.runtime_operation != "none" ||
+        !adapter.requires_explicit_consent) {
+        return SetError(outError, "Canonical recipe executable adapter inventory is invalid");
+    }
     return true;
 }
 
@@ -1055,7 +1175,20 @@ bool ValidateMaterializedParams(
     const MaterializedColorPipelineFunction& function,
     std::string* outError) {
     std::set<std::string> paramPaths;
+    std::set<std::string> descriptorParameterIds;
     for (const MaterializedColorPipelineParam& param : function.params) {
+        if (param.descriptor_parameter_id.empty()) {
+            return SetError(outError, std::string("Materialized function '") + function.id +
+                "' contains an empty descriptor_parameter_id");
+        }
+        if (!descriptorParameterIds.insert(param.descriptor_parameter_id).second) {
+            return SetError(outError, std::string("Duplicate descriptor_parameter_id '") +
+                param.descriptor_parameter_id + "' for function '" + function.id + "'");
+        }
+        if (param.descriptor_parameter_id != param.path) {
+            return SetError(outError, std::string("Materialized function '") + function.id +
+                "' descriptor_parameter_id must match its stable parameter path");
+        }
         if (param.path.empty()) {
             return SetError(outError, std::string("Materialized function '") + function.id + "' contains an empty parameter path");
         }
@@ -1283,7 +1416,7 @@ bool ValidateMaterializedRecipeV2(
     }
 
     std::set<std::string> recipeV2Ids;
-    static const char* const kExpectedNodeIds[] = {"source", "shape", "palette", "grading"};
+    static const char* const kExpectedLanes[] = {"source", "shape", "palette", "grading"};
     for (const MaterializedColorPipelineRecipeV2& recipe : recipeV2) {
         if (!recipeV2Ids.insert(recipe.id).second) {
             return SetError(outError, std::string("Duplicate materialized recipe_v2 id '") + recipe.id + "'");
@@ -1308,6 +1441,24 @@ bool ValidateMaterializedRecipeV2(
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
                 "' must use recipe_v2_graph live_authority");
         }
+        if (recipe.recipe_version != 1) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' has unsupported recipe_version");
+        }
+        if (recipe.canonicalization_id != "viewer.recipe_canonicalization.v1") {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' has unsupported canonicalization_id");
+        }
+        if (recipe.metadata_content_hash.size() != 64) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' has invalid metadata_content_hash");
+        }
+        for (char ch : recipe.metadata_content_hash) {
+            if (!std::isxdigit(static_cast<unsigned char>(ch))) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' has non-hex metadata_content_hash");
+            }
+        }
         if (recipe.status != "resolved" && recipe.status != "fail_closed") {
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
                 "' has invalid status");
@@ -1324,16 +1475,32 @@ bool ValidateMaterializedRecipeV2(
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
                 "' must declare four linear projection nodes");
         }
+        std::set<std::string> semanticNodeIds;
         for (std::size_t index = 0; index < recipe.nodes.size(); ++index) {
             const MaterializedColorPipelineRecipeV2Node& node = recipe.nodes[index];
-            if (node.id != kExpectedNodeIds[index] || node.lane != kExpectedNodeIds[index]) {
+            const std::string expectedPrefix = std::string(kExpectedLanes[index]) + ".";
+            if (node.lane != kExpectedLanes[index] || !StartsWith(node.id, expectedPrefix.c_str())) {
                 return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
-                    "' has invalid linear projection node order");
+                    "' has invalid semantic linear projection node order");
+            }
+            if (!semanticNodeIds.insert(node.id).second) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' has duplicate semantic node id");
             }
             if (functionIds.find(node.function) == functionIds.end()) {
                 return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
                     "' references a missing node function");
             }
+        }
+        if (recipe.source_fold.operation != "ordered_destination_weighted_lerp" ||
+            recipe.source_fold.source_nodes.size() != 1 ||
+            recipe.source_fold.source_nodes[0] != recipe.nodes[0].id ||
+            !recipe.source_fold.fold_nodes.empty() ||
+            !recipe.source_fold.fold_edges.empty() ||
+            recipe.source_fold.output_node != recipe.nodes[0].id ||
+            recipe.source_fold.first_source_blend != 1.0) {
+            return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                "' has invalid canonical single-source fold");
         }
         if (recipe.edges.size() != 3) {
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
@@ -1341,7 +1508,7 @@ bool ValidateMaterializedRecipeV2(
         }
         for (std::size_t index = 0; index < recipe.edges.size(); ++index) {
             const MaterializedColorPipelineRecipeV2Edge& edge = recipe.edges[index];
-            if (edge.from_node != kExpectedNodeIds[index] || edge.to_node != kExpectedNodeIds[index + 1]) {
+            if (edge.from_node != recipe.nodes[index].id || edge.to_node != recipe.nodes[index + 1].id) {
                 return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
                     "' has invalid linear projection edge order");
             }
@@ -1500,6 +1667,7 @@ bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, s
     std::set<std::string> functionIds;
     std::set<std::string> signalTypeIds;
     return ValidateMaterializedSignalTypes(contract.signal_types, &signalTypeIds, outError) &&
+        ValidateCanonicalRecipeContract(contract, signalTypeIds, outError) &&
         ValidateMaterializedAdapters(contract.adapters, signalTypeIds, outError) &&
         ValidateMaterializedLanes(contract.lanes, &functionIds, signalTypeIds, outError) &&
         ValidateMaterializedEdgeResolution(contract, functionIds, signalTypeIds, outError) &&
@@ -1572,6 +1740,19 @@ bool LoadColorPipelineMaterializedContractJson(
         contract.signal_types.push_back(std::move(signalType));
     }
 
+    if (const json_min::Value* signalAliases = signalTypeRegistry->get("aliases")) {
+        if (!signalAliases->is_array()) {
+            return SetError(outError, "signal_type_registry.aliases must be an array");
+        }
+        for (const json_min::Value& aliasValue : signalAliases->as_array()) {
+            MaterializedSignalTypeAlias alias;
+            if (!ReadSignalTypeAlias(aliasValue, &alias, outError)) {
+                return false;
+            }
+            contract.signal_type_aliases.push_back(std::move(alias));
+        }
+    }
+
     if (adapterLibrary) {
         if (!adapterLibrary->is_object()) {
             return SetError(outError, "adapter_library_contract must be an object");
@@ -1637,6 +1818,56 @@ bool LoadColorPipelineMaterializedContractJson(
             return false;
         }
         contract.lanes.push_back(std::move(lane));
+    }
+
+    const json_min::Value* canonicalRecipe = compositionContract->get("canonical_recipe_contract");
+    if (canonicalRecipe && !canonicalRecipe->is_object()) {
+        return SetError(outError, "composition_recipe_contract.canonical_recipe_contract must be an object");
+    }
+    if (canonicalRecipe) {
+        contract.has_canonical_recipe_contract = true;
+    if (!ReadString(*canonicalRecipe, "schema_id", &contract.canonical_recipe_contract.schema_id, outError) ||
+        !ReadPositiveInteger(*canonicalRecipe, "max_source_rows", &contract.canonical_recipe_contract.max_source_rows, outError)) {
+        return false;
+    }
+    const json_min::Value* foldPolicy = RequiredField(*canonicalRecipe, "source_fold", outError);
+    if (!foldPolicy || !foldPolicy->is_object() ||
+        !ReadString(*foldPolicy, "operation", &contract.canonical_recipe_contract.fold_operation, outError) ||
+        !ReadNumber(*foldPolicy, "first_source_blend", &contract.canonical_recipe_contract.first_source_blend, outError) ||
+        !ReadString(*foldPolicy, "blend_parameter_id", &contract.canonical_recipe_contract.blend_parameter_id, outError) ||
+        !ReadString(*foldPolicy, "blend_ownership", &contract.canonical_recipe_contract.blend_ownership, outError) ||
+        !ReadString(*foldPolicy, "nonfinite_policy", &contract.canonical_recipe_contract.nonfinite_policy, outError) ||
+        !ReadString(*foldPolicy, "out_of_range_policy", &contract.canonical_recipe_contract.out_of_range_policy, outError)) {
+        return false;
+    }
+    const json_min::Value* canonicalization = RequiredField(*canonicalRecipe, "canonicalization", outError);
+    if (!canonicalization || !canonicalization->is_object() ||
+        !ReadString(*canonicalization, "id", &contract.canonical_recipe_contract.canonicalization_id, outError) ||
+        !ReadString(*canonicalization, "default_policy", &contract.canonical_recipe_contract.default_policy, outError) ||
+        !ReadBool(*canonicalization, "exclude_display_text", &contract.canonical_recipe_contract.exclude_display_text, outError) ||
+        !ReadString(*canonicalization, "hash_algorithm", &contract.canonical_recipe_contract.hash_algorithm, outError)) {
+        return false;
+    }
+    const json_min::Value* canonicalAliases = RequiredField(*canonicalRecipe, "type_aliases", outError);
+    const json_min::Value* executableAdapters = RequiredField(*canonicalRecipe, "executable_adapters", outError);
+    if (!canonicalAliases || !canonicalAliases->is_array() ||
+        !executableAdapters || !executableAdapters->is_array()) {
+        return SetError(outError, "canonical recipe aliases and executable adapters must be arrays");
+    }
+    for (const json_min::Value& aliasValue : canonicalAliases->as_array()) {
+        MaterializedSignalTypeAlias alias;
+        if (!ReadSignalTypeAlias(aliasValue, &alias, outError)) {
+            return false;
+        }
+        contract.canonical_recipe_contract.type_aliases.push_back(std::move(alias));
+    }
+    for (const json_min::Value& adapterValue : executableAdapters->as_array()) {
+        MaterializedRecipeExecutableAdapter adapter;
+        if (!ReadRecipeExecutableAdapter(adapterValue, &adapter, outError)) {
+            return false;
+        }
+        contract.canonical_recipe_contract.executable_adapters.push_back(std::move(adapter));
+    }
     }
 
     const json_min::Value* compatibility = RequiredField(*compositionContract, "compatibility", outError);

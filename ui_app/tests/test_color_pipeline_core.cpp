@@ -238,19 +238,19 @@ void CheckMaterializedPort(
 const char* ExpectedTypedSignalForFunction(const char* functionId) {
     if (!functionId) return "";
     if (std::strcmp(functionId, "smooth_escape_ramp") == 0) return "scalar.unit";
-    if (std::strcmp(functionId, "phase_orbit") == 0) return "phase.radians";
+    if (std::strcmp(functionId, "phase_orbit") == 0) return "phase.turns";
     if (std::strcmp(functionId, "banded_signal") == 0) return "scalar.unit";
     if (std::strcmp(functionId, "escape_magnitude") == 0) return "scalar.unit";
-    if (std::strcmp(functionId, "orbit_stripe") == 0) return "phase.radians";
+    if (std::strcmp(functionId, "orbit_stripe") == 0) return "phase.turns";
     if (std::strcmp(functionId, "root_proximity") == 0) return "scalar.unit";
-    if (std::strcmp(functionId, "root_phase") == 0) return "phase.radians";
+    if (std::strcmp(functionId, "root_phase") == 0) return "phase.turns";
     if (std::strcmp(functionId, "root_index") == 0) return "category.root_index";
     if (std::strcmp(functionId, "sdf_signed_distance") == 0) return "scalar.sdf_signed_distance";
     if (std::strcmp(functionId, "sdf_inside_outside") == 0) return "category.inside_outside";
     if (std::strcmp(functionId, "sdf_boundary_band") == 0) return "scalar.unit";
-    if (std::strcmp(functionId, "sdf_normal_angle") == 0) return "phase.radians";
+    if (std::strcmp(functionId, "sdf_normal_angle") == 0) return "phase.turns";
     if (std::strcmp(functionId, "sdf_curvature") == 0) return "scalar.signed";
-    if (std::strcmp(functionId, "lens_field_v2_distance") == 0) return "scalar.sdf_signed_distance";
+    if (std::strcmp(functionId, "lens_field_v2_distance") == 0) return "scalar.unit";
     return "";
 }
 
@@ -1194,6 +1194,24 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfSourceCapabilityCount");
     Check(contract.signal_types.size() == 10, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SignalTypeCount");
     Check(contract.adapters.size() == 11, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_AdapterCount");
+    Check(contract.has_canonical_recipe_contract &&
+            contract.canonical_recipe_contract.schema_id == "viewer.canonical_recipe_contract.v1" &&
+            contract.canonical_recipe_contract.max_source_rows == 8 &&
+            contract.canonical_recipe_contract.fold_operation == "ordered_destination_weighted_lerp" &&
+            contract.canonical_recipe_contract.first_source_blend == 1.0 &&
+            contract.canonical_recipe_contract.default_policy == "expand_all_descriptor_defaults" &&
+            contract.canonical_recipe_contract.exclude_display_text &&
+            contract.canonical_recipe_contract.hash_algorithm == "sha256",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CanonicalRecipeContract");
+    Check(contract.signal_type_aliases.size() == 1 &&
+            contract.signal_type_aliases[0].id == "phase.radians" &&
+            contract.signal_type_aliases[0].canonical == "phase.turns" &&
+            contract.signal_type_aliases[0].numeric_conversion == "none",
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_PhaseTurnsAlias");
+    Check(contract.canonical_recipe_contract.executable_adapters.size() == 1 &&
+            contract.canonical_recipe_contract.executable_adapters[0].id == "unit_cycle_as_phase_turns_v1" &&
+            contract.canonical_recipe_contract.executable_adapters[0].requires_explicit_consent,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ClosedRecipeAdapterInventory");
     Check(contract.edge_policy.id == "current_linear_color_stack" &&
             contract.edge_policy.max_adapter_hops == 2 &&
             !contract.edge_policy.allow_lossy &&
@@ -1281,7 +1299,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_PhaseBadRouteFailsClosed");
     const MaterializedSignalType* scalarSdf = FindSignalType(contract, "scalar.sdf_signed_distance");
     const MaterializedSignalType* fieldSdf = FindSignalType(contract, "field.sdf_signed_distance");
-    const MaterializedSignalType* normalPhase = FindSignalType(contract, "phase.radians");
+    const MaterializedSignalType* normalPhase = FindSignalType(contract, "phase.turns");
     const MaterializedSignalType* rootCategory = FindSignalType(contract, "category.root_index");
     const MaterializedSignalType* insideOutsideCategory = FindSignalType(contract, "category.inside_outside");
     const MaterializedSignalType* paletteIndex = FindSignalType(contract, "palette.discrete_index");
@@ -1289,8 +1307,9 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SampledSdfIsScalar");
     Check(fieldSdf && fieldSdf->kind == "field" && fieldSdf->topology == "field",
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RawSdfIsField");
-    Check(normalPhase && normalPhase->kind == "phase" && normalPhase->topology == "circular" && normalPhase->has_period,
-        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_NormalAngleIsPhase");
+    Check(normalPhase && normalPhase->kind == "phase" && normalPhase->topology == "circular" &&
+            normalPhase->units == "turns" && normalPhase->has_period && normalPhase->period == 1.0,
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_NormalAngleIsPhaseTurns");
     Check(rootCategory && rootCategory->kind == "category" && rootCategory->domain == "root_index",
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RootIndexIsCategory");
     Check(insideOutsideCategory && insideOutsideCategory->kind == "category" && insideOutsideCategory->domain == "inside_outside",
@@ -1320,12 +1339,13 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_FieldMaskAdapter");
 
     CheckMaterializedPort(contract, "source", "smooth_escape_ramp", 0, 1, "output", "signal", "scalar.unit", true, "");
-    CheckMaterializedPort(contract, "source", "phase_orbit", 0, 1, "output", "signal", "phase.radians", true, "");
-    CheckMaterializedPort(contract, "source", "root_phase", 0, 1, "output", "signal", "phase.radians", true, "");
+    CheckMaterializedPort(contract, "source", "phase_orbit", 0, 1, "output", "signal", "phase.turns", true, "");
+    CheckMaterializedPort(contract, "source", "root_phase", 0, 1, "output", "signal", "phase.turns", true, "");
     CheckMaterializedPort(contract, "source", "root_index", 0, 1, "output", "signal", "category.root_index", true, "");
     CheckMaterializedPort(contract, "source", "sdf_signed_distance", 0, 1, "output", "signal", "scalar.sdf_signed_distance", true, "");
-    CheckMaterializedPort(contract, "source", "sdf_normal_angle", 0, 1, "output", "signal", "phase.radians", true, "");
+    CheckMaterializedPort(contract, "source", "sdf_normal_angle", 0, 1, "output", "signal", "phase.turns", true, "");
     CheckMaterializedPort(contract, "source", "sdf_inside_outside", 0, 1, "output", "signal", "category.inside_outside", true, "");
+    CheckMaterializedPort(contract, "source", "lens_field_v2_distance", 0, 1, "output", "signal", "scalar.unit", true, "");
     CheckMaterializedPort(contract, "shape", "identity", 0, 2, "input", "signal", "generic.T", false, "T");
     CheckMaterializedPort(contract, "shape", "identity", 1, 2, "output", "signal", "generic.T", true, "T");
     CheckMaterializedPort(contract, "shape", "repeat", 0, 2, "input", "signal", "scalar.unit", false, "");
@@ -1338,7 +1358,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     CheckMaterializedPort(contract, "shape", "smoothstep_range", 1, 2, "output", "signal", "scalar.unit", true, "");
     CheckMaterializedPort(contract, "palette", "heatmap", 0, 2, "input", "signal", "scalar.unit", false, "");
     CheckMaterializedPort(contract, "palette", "heatmap", 1, 2, "output", "color", "color.linear_rgb", true, "");
-    CheckMaterializedPort(contract, "palette", "phase_wheel_palette", 0, 2, "input", "signal", "phase.radians", false, "");
+    CheckMaterializedPort(contract, "palette", "phase_wheel_palette", 0, 2, "input", "signal", "phase.turns", false, "");
     CheckMaterializedPort(contract, "palette", "phase_wheel_palette", 1, 2, "output", "color", "color.linear_rgb", true, "");
     CheckMaterializedPort(contract, "palette", "root_classic_palette", 0, 2, "input", "signal", "category.root_index", false, "");
     CheckMaterializedPort(contract, "palette", "root_classic_palette", 1, 2, "output", "color", "color.linear_rgb", true, "");
@@ -1519,30 +1539,41 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                     recipeV2->status == "resolved" &&
                     recipeV2->fail_closed_reason.empty(),
                 "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2LiveAuthorityMetadata");
-            Check(recipeV2->nodes.size() == 4 && recipeV2->edges.size() == 3,
+            Check(recipeV2->recipe_version == 1 &&
+                    recipeV2->canonicalization_id == "viewer.recipe_canonicalization.v1" &&
+                    recipeV2->metadata_content_hash.size() == 64,
+                "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2CanonicalIdentity");
+            Check(recipeV2->nodes.size() == 4 && recipeV2->edges.size() == 3 &&
+                    recipeV2->source_fold.operation == "ordered_destination_weighted_lerp" &&
+                    recipeV2->source_fold.source_nodes.size() == 1 &&
+                    recipeV2->source_fold.source_nodes[0] == recipeV2->nodes[0].id &&
+                    recipeV2->source_fold.fold_nodes.empty() &&
+                    recipeV2->source_fold.fold_edges.empty() &&
+                    recipeV2->source_fold.output_node == recipeV2->nodes[0].id &&
+                    recipeV2->source_fold.first_source_blend == 1.0,
                 "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2LinearProjectionShape");
             if (recipeV2->nodes.size() == 4) {
-                Check(recipeV2->nodes[0].id == "source" &&
+                Check(recipeV2->nodes[0].id.rfind("source.", 0) == 0 &&
                         recipeV2->nodes[0].lane == "source" &&
                         recipeV2->nodes[0].function == recipe.source &&
-                        recipeV2->nodes[1].id == "shape" &&
+                        recipeV2->nodes[1].id.rfind("shape.", 0) == 0 &&
                         recipeV2->nodes[1].lane == "shape" &&
                         recipeV2->nodes[1].function == recipe.shape &&
-                        recipeV2->nodes[2].id == "palette" &&
+                        recipeV2->nodes[2].id.rfind("palette.", 0) == 0 &&
                         recipeV2->nodes[2].lane == "palette" &&
                         recipeV2->nodes[2].function == recipe.palette &&
-                        recipeV2->nodes[3].id == "grading" &&
+                        recipeV2->nodes[3].id.rfind("grading.", 0) == 0 &&
                         recipeV2->nodes[3].lane == "grading" &&
                         recipeV2->nodes[3].function == recipe.grading,
                     "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2NodesMatchRecipe");
             }
             if (recipeV2->edges.size() == 3) {
-                Check(recipeV2->edges[0].from_node == "source" &&
-                        recipeV2->edges[0].to_node == "shape" &&
-                        recipeV2->edges[1].from_node == "shape" &&
-                        recipeV2->edges[1].to_node == "palette" &&
-                        recipeV2->edges[2].from_node == "palette" &&
-                        recipeV2->edges[2].to_node == "grading",
+                Check(recipeV2->edges[0].from_node == recipeV2->nodes[0].id &&
+                        recipeV2->edges[0].to_node == recipeV2->nodes[1].id &&
+                        recipeV2->edges[1].from_node == recipeV2->nodes[1].id &&
+                        recipeV2->edges[1].to_node == recipeV2->nodes[2].id &&
+                        recipeV2->edges[2].from_node == recipeV2->nodes[2].id &&
+                        recipeV2->edges[2].to_node == recipeV2->nodes[3].id,
                     "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2EdgesAreLinear");
             }
         }
@@ -2103,6 +2134,20 @@ void TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph() {
     Check(!color_pipeline_core::TryProjectColorPipelineRecipeV2ToLanes(mismatchedEdgeRecipe, &lanes, &error) &&
             lanes.empty() && error.find("edge functions do not match") != std::string::npos,
         "TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_EdgeFunctionMismatchRejected");
+
+    MaterializedColorPipelineRecipeV2 invalidFoldRecipe = *baseRecipe;
+    invalidFoldRecipe.source_fold.first_source_blend = 0.5;
+    error.clear();
+    Check(!color_pipeline_core::TryProjectColorPipelineRecipeV2ToLanes(invalidFoldRecipe, &lanes, &error) &&
+            lanes.empty() && error.find("source fold") != std::string::npos,
+        "TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_NoncanonicalFirstSourceBlendRejected");
+
+    invalidFoldRecipe = *baseRecipe;
+    invalidFoldRecipe.source_fold.output_node = "source.not_the_recipe_source";
+    error.clear();
+    Check(!color_pipeline_core::TryProjectColorPipelineRecipeV2ToLanes(invalidFoldRecipe, &lanes, &error) &&
+            lanes.empty() && error.find("source fold") != std::string::npos,
+        "TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_FoldOutputMismatchRejected");
 
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
 }

@@ -11,11 +11,11 @@
 
 ## Current Phase
 
-Slice 1 - Application Authority is active from the clean, receipted, rearward-reviewed Slice 0 checkpoint 0819dd98bd97a6106a880b838a9cadf3738bf266.
+Slice 2 - Canonical Recipe Contract is implementation-complete and validation-green from the clean, receipted, rearward-reviewed Slice 1 checkpoint 6ddef4a6ab900828f223face1bd4c53a65bdeaac. Checkpoint, receipts, and rearward review remain before Slice 3 may start.
 
 The hard-denial workflow blocks raw branch mutation but this checkout has no approved branch/merge wrapper. This campaign therefore starts as an explicitly stacked slice on codex/model-diagnostics-overlay-preplanning. Eventual upstream integration must preserve both closed planning campaigns.
 
-Slice 0 is closed. Slice 1 implementation, hostile review, native validation, runtime publish, and published no-mouse proof are complete. Checkpoint, machine receipts, and final rearward review remain before Slice 2 may start.
+Slices 0 and 1 are closed. Slice 2 is metadata-contract work only: semantic identities, explicit source-fold representation, stable parameter addresses, canonical fingerprints, legacy type aliases, and the closed recipe adapter inventory. UI layout, runtime row execution, recipe pixels, and state authority remain unchanged.
 
 ## Phase Checklist
 
@@ -30,7 +30,7 @@ Slice 0 is closed. Slice 1 implementation, hostile review, native validation, ru
 - [x] Slice 1: add Resolve/Prepare/Commit and route the public Apply path through it.
 - [x] Slice 1: prove failed preparation has no authoritative draft/live/dirty/interaction side effects.
 - [x] Slice 1: hostile audit and focused validation are complete; checkpoint closure is prepared and receipts/rearward review follow the committed state.
-- [ ] Slice 2: Canonical Recipe Contract.
+- [x] Slice 2: Canonical Recipe Contract adds semantic IDs, explicit source folds, stable parameter addresses, canonical hashes, normalized legacy aliases, and the closed adapter inventory.
 - [ ] Slice 3: Capability And Applicability Authority.
 - [ ] Slice 4: Existing Recipe Parity.
 - [ ] Slice 5: SDF Beauty Migration.
@@ -216,12 +216,13 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 | Slice 0 prerequisite authority | complete | Lens V2, SDF angle/curvature, root proximity f32/f64, and seed auto-increment runtime rails |
 | Slice 0 fallback baseline | complete | all six recipe graph/legacy tuple projections match exactly |
 | Validation and receipts | complete | focused native/runtime green; machine receipts are written against the committed checkpoint |
-| Slice 1 transactional Apply | complete | Resolve/Prepare/Commit; non-failing commit assertions; native reject/success/manual-recovery rails; published public Apply proof |
+| Slice 1 transactional Apply | complete | Resolve/Prepare/Commit; non-failing commit assertions; native reject/success/manual-recovery rails; published public Apply proof; commit 6ddef4a6; receipts and rearward review are ok. |
+| Slice 2 canonical recipe contract | complete, awaiting checkpoint | 43 materializer tests; 3364 Color Pipeline core assertions; published staged-contract and public Apply runtime proofs; hostile audit complete. |
 
 ## Hostile Audit
 
 - Status: complete
-- Scope: Slice 1 transactional application authority, rejection reporting, successful recovery, and public no-mouse Apply path.
+- Scope: Slice 2 semantic identities, source-fold representation, parameter addresses, canonical hashes, aliases, adapter inventory, parser strictness, and behavior preservation.
 - Assume dual authority, false receipts, non-atomic Apply, stale capability snapshots, type reinterpretation, unstable parameter addresses, fabricated provenance, or weak qualification remains.
 
 ## Audit Passes
@@ -235,6 +236,9 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Slice 1 pass 1 - the old public Apply path mutated the draft before live validation, returned success after rejection, marked interaction, and was hidden inside the ImGui-only test exclusion.
 - [x] Slice 1 pass 2 - successful staging lacked direct non-mutation proof and stale output errors were not cleared; native tests now freeze Resolve/Prepare/Commit behavior.
 - [x] Slice 1 pass 3 - runtime proof exposed one-frame rejection messages and manual Apply recovery left stale recipe errors; persistent rejection state now clears at the shared successful application boundary.
+- [x] Slice 2 pass 1 - the first green native rail still concealed semantic metadata defects: phase.turns retained radians units/period, Lens Field V2 remained typed signed-distance, and the legacy alias was declared but not normalized.
+- [x] Slice 2 pass 2 - projection hardening found malformed source-fold values lacked direct negative C++ proof; noncanonical first-source blend and output-node mismatch now fail closed in the native rail.
+- [x] Slice 2 pass 3 - a clean re-read of canonical types, adapters, generated metadata, parser validation, projection, and published runtime staging found no additional Slice 2 defect.
 - Later implementation audits remain pending for canonical graph authority, dual authority, capability snapshots, independent recipe gates, and fallback lifecycle.
 
 ## Audit Findings
@@ -255,6 +259,11 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Recipe rejection diagnostics lasted one UI frame and survived later manual recovery; a persistent UI-only rejection field now remains reportable and clears on any successful application.
 - [x] The first Slice 1 publish wrapper was cut off by an incorrectly short outer terminal timeout while the compiler child continued; the orphan completed, and all claimed publish evidence comes from later fully receipted runs.
 - [x] The final normal runtime executable was locked by an existing process; the checked-in publish fallback staged fractal_ui_dev.exe and the active-runtime runtime lane passed against that fresh executable.
+- [x] phase.turns initially retained units=radians and period=2*pi, while runtime phase signals are normalized cycles; metadata now declares units=turns and period=1, with no numeric state change.
+- [x] The phase.radians compatibility alias was listed but authoring references were not normalized; typed signals, ports, adapter endpoints, and recipe-adapter endpoints now normalize to phase.turns during materialization.
+- [x] Lens Field V2 remained typed scalar.sdf_signed_distance despite its bounded unit response; its descriptor and canonical output port now use scalar.unit while sign_contrast remains an internal source parameter.
+- [x] The first focused native invocation incorrectly used an environment variable even though build_tests_vsdevcmd.cmd dispatches focused tests through positional arguments; that command started the broad suite and hit the outer timeout. All claimed native evidence comes from the corrected positional focused command.
+- [x] The first Slice 2 runtime publish used a 240-second outer timeout while CUDA compilation remained active. No failure is claimed; the clean retry used the checked-in command with a 900-second ceiling and completed successfully in 724.6 seconds.
 
 ## Planned Validation Targets
 
@@ -268,4 +277,4 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 
 ## Stop Point
 
-Only Slice 1 is currently authorized for product mutation. Slice 2 starts only after Slice 1 is checkpointed, receipted, and rearward-reviewed. Later campaign slices remain preplanned and are not exhausted.
+Slice 2 is implementation-complete and validation-green. Do not start Slice 3 until Slice 2 is checkpointed, receipted, and rearward-reviewed. Slices 3 through 7 remain checked-in preplanned work; preplanned sliced work is not exhausted.

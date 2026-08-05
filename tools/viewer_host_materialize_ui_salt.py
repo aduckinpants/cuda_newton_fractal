@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import math
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -35,7 +37,9 @@ VALID_SDF_FIELD_SOURCES = {"lens_sdf", "lens_field_v2"}
 VALID_STATEMENTS = {
     "contract",
     "signal_type",
+    "type_alias",
     "adapter",
+    "recipe_adapter",
     "lane",
     "function",
     "param",
@@ -206,6 +210,7 @@ def _build_param_from_sequence(function_id: str, raw: Any) -> dict[str, Any]:
     if not isinstance(label, str):
         raise MaterializerError(f"param {path} requires label")
     param = {
+        "descriptor_parameter_id": path,
         "path": path,
         "type": type_id,
         "label": label,
@@ -273,7 +278,27 @@ def _append_port(record: FunctionRecord, port: dict[str, Any]) -> None:
     record.function.setdefault("ports", []).append(port)
 
 
-def _build_port(function_id: str, kwargs: dict[str, Any], signal_type_ids: set[str]) -> dict[str, Any]:
+def _normalize_signal_type_id(
+    type_id: str,
+    signal_type_ids: set[str],
+    type_aliases_by_id: dict[str, dict[str, Any]],
+    *,
+    context: str,
+) -> str:
+    if type_id in signal_type_ids:
+        return type_id
+    alias = type_aliases_by_id.get(type_id)
+    if alias is not None:
+        return str(alias["canonical"])
+    raise MaterializerError(f"{context} references unknown signal type '{type_id}'")
+
+
+def _build_port(
+    function_id: str,
+    kwargs: dict[str, Any],
+    signal_type_ids: set[str],
+    type_aliases_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
     direction = _require_string(kwargs, "direction", statement="port")
     if direction not in VALID_PORT_DIRECTIONS:
         raise MaterializerError(f"port for {function_id} invalid direction '{direction}'")
@@ -289,9 +314,14 @@ def _build_port(function_id: str, kwargs: dict[str, Any], signal_type_ids: set[s
             raise MaterializerError("generic_group 'any' is forbidden")
         if type_id != f"generic.{generic_group}":
             raise MaterializerError(f"port {function_id}.{port_id} generic_group must match type '{type_id}'")
-    elif type_id not in signal_type_ids:
-        raise MaterializerError(f"port references unknown signal type '{type_id}'")
-    elif generic_group:
+    else:
+        type_id = _normalize_signal_type_id(
+            type_id,
+            signal_type_ids,
+            type_aliases_by_id,
+            context="port",
+        )
+    if not _is_generic_type(type_id) and generic_group:
         raise MaterializerError(f"port {function_id}.{port_id} non-generic type cannot declare generic_group")
     port = {
         "direction": direction,
@@ -338,14 +368,24 @@ def _validate_adapter_semantics(adapter: dict[str, Any]) -> None:
         raise MaterializerError(f"adapter {adapter_id} signed-to-unit adapters require explicit normalization policy")
 
 
-def _build_adapter(kwargs: dict[str, Any], signal_type_ids: set[str]) -> dict[str, Any]:
+def _build_adapter(
+    kwargs: dict[str, Any],
+    signal_type_ids: set[str],
+    type_aliases_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
     adapter_id = _require_string(kwargs, "id", statement="adapter")
-    source = _require_string(kwargs, "source", statement=f"adapter {adapter_id}")
-    target = _require_string(kwargs, "target", statement=f"adapter {adapter_id}")
-    if source not in signal_type_ids:
-        raise MaterializerError(f"adapter {adapter_id} references unknown source type '{source}'")
-    if target not in signal_type_ids:
-        raise MaterializerError(f"adapter {adapter_id} references unknown target type '{target}'")
+    source = _normalize_signal_type_id(
+        _require_string(kwargs, "source", statement=f"adapter {adapter_id}"),
+        signal_type_ids,
+        type_aliases_by_id,
+        context=f"adapter {adapter_id} source",
+    )
+    target = _normalize_signal_type_id(
+        _require_string(kwargs, "target", statement=f"adapter {adapter_id}"),
+        signal_type_ids,
+        type_aliases_by_id,
+        context=f"adapter {adapter_id} target",
+    )
     policy = _require_string(kwargs, "policy", statement=f"adapter {adapter_id}")
     if policy not in VALID_ADAPTER_POLICIES:
         raise MaterializerError(f"adapter {adapter_id} has invalid policy '{policy}'")
@@ -706,6 +746,68 @@ def _resolve_case(
     }
 
 
+def _canonical_parameter_default(param: dict[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "descriptor_parameter_id": param["descriptor_parameter_id"],
+        "type": param["type"],
+    }
+    if "default" not in param:
+        result["default_kind"] = "unset"
+        return result
+    value = param["default"]
+    if isinstance(value, bool):
+        result["default_kind"] = "bool"
+        result["value"] = value
+    elif isinstance(value, int):
+        result["default_kind"] = "int"
+        result["value"] = str(value)
+    elif isinstance(value, float):
+        result["default_kind"] = "number"
+        result["value"] = format(value, ".17g")
+    else:
+        result["default_kind"] = "string"
+        result["value"] = str(value)
+    return result
+
+
+def _canonical_recipe_hash(
+    recipe: dict[str, Any],
+    nodes: list[dict[str, Any]],
+    edges: list[dict[str, Any]],
+    source_fold: dict[str, Any],
+    functions: dict[str, FunctionRecord],
+) -> str:
+    canonical_nodes = []
+    for node in nodes:
+        function = functions[node["function"]].function
+        parameters = sorted(
+            (_canonical_parameter_default(param) for param in function.get("params", [])),
+            key=lambda item: item["descriptor_parameter_id"],
+        )
+        canonical_nodes.append({
+            "id": node["id"],
+            "lane": node["lane"],
+            "function": node["function"],
+            "parameters": parameters,
+        })
+    document = {
+        "recipe_id": recipe["id"],
+        "recipe_version": recipe["version"],
+        "ui_projection": "linear_color_stack",
+        "nodes": canonical_nodes,
+        "source_fold": source_fold,
+        "edges": edges,
+        "capability_requirements": [],
+        "approved_adapters": sorted(
+            adapter_id
+            for edge in edges
+            for adapter_id in edge["adapters"]
+        ),
+    }
+    encoded = json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return hashlib.sha256(encoded.encode("ascii")).hexdigest()
+
+
 def _build_recipe_v2_shadow(
     recipe: dict[str, Any],
     functions: dict[str, FunctionRecord],
@@ -734,10 +836,10 @@ def _build_recipe_v2_shadow(
         raise MaterializerError(message) from exc
 
     node_specs = [
-        ("source", "source", recipe["source"]),
-        ("shape", "shape", recipe["shape"]),
-        ("palette", "palette", recipe["palette"]),
-        ("grading", "grading", recipe["grading"]),
+        (recipe["source_node_id"], "source", recipe["source"]),
+        (recipe["shape_node_id"], "shape", recipe["shape"]),
+        (recipe["palette_node_id"], "palette", recipe["palette"]),
+        (recipe["grading_node_id"], "grading", recipe["grading"]),
     ]
     node_ids = [node_id for node_id, _lane, _function in node_specs]
     edges: list[dict[str, Any]] = []
@@ -747,18 +849,32 @@ def _build_recipe_v2_shadow(
         edge["to_node"] = node_ids[edge_index + 1]
         edges.append(edge)
 
+    nodes = [
+        {"id": node_id, "lane": lane, "function": function_id}
+        for node_id, lane, function_id in node_specs
+    ]
+    source_fold = {
+        "operation": "ordered_destination_weighted_lerp",
+        "source_nodes": [recipe["source_node_id"]],
+        "fold_nodes": [],
+        "fold_edges": [],
+        "output_node": recipe["source_node_id"],
+        "first_source_blend": 1.0,
+    }
+
     return {
         "id": recipe_id,
+        "recipe_version": recipe["version"],
+        "canonicalization_id": "viewer.recipe_canonicalization.v1",
+        "metadata_content_hash": _canonical_recipe_hash(recipe, nodes, edges, source_fold, functions),
         "label": recipe["label"],
         "source_recipe_id": recipe_id,
         "ui_projection": "linear_color_stack",
         "shadow_only": False,
         "live_authority": "recipe_v2_graph",
         "status": resolved["status"],
-        "nodes": [
-            {"id": node_id, "lane": lane, "function": function_id}
-            for node_id, lane, function_id in node_specs
-        ],
+        "nodes": nodes,
+        "source_fold": source_fold,
         "edges": edges,
         "chosen_adapters": resolved["chosen_adapters"],
         "adapter_hops": resolved["adapter_hops"],
@@ -894,9 +1010,14 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     contract_keys: set[tuple[str, str]] = set()
     signal_types: list[dict[str, Any]] = []
     signal_type_ids: set[str] = set()
+    type_aliases: list[dict[str, Any]] = []
+    type_alias_ids: set[str] = set()
+    type_aliases_by_id: dict[str, dict[str, Any]] = {}
     adapter_library_declared = False
     adapters: list[dict[str, Any]] = []
     adapter_ids: set[str] = set()
+    recipe_adapters: list[dict[str, Any]] = []
+    recipe_adapter_ids: set[str] = set()
     compat_override_audit_declared = False
     compat_overrides: list[dict[str, Any]] = []
     edge_policy: dict[str, Any] | None = None
@@ -987,6 +1108,56 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             if kind == "phase" and topology != "circular":
                 raise MaterializerError(f"signal_type {type_id} phase kind requires circular topology")
             signal_types.append(signal_type)
+        elif name == "type_alias":
+            _check_known_args(name, kwargs, {"id", "canonical", "numeric_conversion", "warning"})
+            alias_id = _require_string(kwargs, "id", statement=name)
+            canonical_id = _require_string(kwargs, "canonical", statement=f"type_alias {alias_id}")
+            if alias_id in signal_type_ids or alias_id in type_alias_ids:
+                raise MaterializerError(f"duplicate type alias id '{alias_id}'")
+            if canonical_id not in signal_type_ids:
+                raise MaterializerError(f"type_alias {alias_id} references unknown canonical type '{canonical_id}'")
+            numeric_conversion = _require_string(kwargs, "numeric_conversion", statement=f"type_alias {alias_id}")
+            if numeric_conversion != "none":
+                raise MaterializerError(f"type_alias {alias_id} only supports numeric_conversion='none'")
+            type_alias_ids.add(alias_id)
+            alias = {
+                "id": alias_id,
+                "canonical": canonical_id,
+                "numeric_conversion": numeric_conversion,
+                "warning": _require_string(kwargs, "warning", statement=f"type_alias {alias_id}"),
+            }
+            type_aliases.append(alias)
+            type_aliases_by_id[alias_id] = alias
+        elif name == "recipe_adapter":
+            _check_known_args(name, kwargs, {"id", "source", "target", "runtime_operation", "requires_explicit_consent"})
+            adapter_id = _require_string(kwargs, "id", statement=name)
+            if adapter_id in recipe_adapter_ids:
+                raise MaterializerError(f"duplicate recipe_adapter id '{adapter_id}'")
+            source_type = _normalize_signal_type_id(
+                _require_string(kwargs, "source", statement=f"recipe_adapter {adapter_id}"),
+                signal_type_ids,
+                type_aliases_by_id,
+                context=f"recipe_adapter {adapter_id} source",
+            )
+            target_type = _normalize_signal_type_id(
+                _require_string(kwargs, "target", statement=f"recipe_adapter {adapter_id}"),
+                signal_type_ids,
+                type_aliases_by_id,
+                context=f"recipe_adapter {adapter_id} target",
+            )
+            runtime_operation = _require_string(kwargs, "runtime_operation", statement=f"recipe_adapter {adapter_id}")
+            if runtime_operation != "none":
+                raise MaterializerError(f"recipe_adapter {adapter_id} has unsupported runtime_operation '{runtime_operation}'")
+            recipe_adapter_ids.add(adapter_id)
+            recipe_adapters.append({
+                "id": adapter_id,
+                "source": source_type,
+                "target": target_type,
+                "runtime_operation": runtime_operation,
+                "requires_explicit_consent": _require_bool(
+                    kwargs, "requires_explicit_consent", statement=f"recipe_adapter {adapter_id}"
+                ),
+            })
         elif name == "adapter":
             _check_known_args(
                 name,
@@ -1002,7 +1173,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                     "fail_closed_reason",
                 },
             )
-            adapter = _build_adapter(kwargs, signal_type_ids)
+            adapter = _build_adapter(kwargs, signal_type_ids, type_aliases_by_id)
             adapter_id = adapter["id"]
             if adapter_id in adapter_ids:
                 raise MaterializerError(f"duplicate adapter id '{adapter_id}'")
@@ -1059,6 +1230,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             if function_id not in functions:
                 raise MaterializerError(f"param references unknown function '{function_id}'")
             param = {
+                "descriptor_parameter_id": _require_string(kwargs, "path", statement=name),
                 "path": _require_string(kwargs, "path", statement=name),
                 "type": _require_string(kwargs, "type", statement=name),
                 "label": _optional_string(kwargs, "label", ""),
@@ -1073,7 +1245,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             function_id = _require_string(kwargs, "function", statement=name)
             if function_id not in functions:
                 raise MaterializerError(f"port references unknown function '{function_id}'")
-            _append_port(functions[function_id], _build_port(function_id, kwargs, signal_type_ids))
+            _append_port(functions[function_id], _build_port(function_id, kwargs, signal_type_ids, type_aliases_by_id))
         elif name == "compat":
             _check_known_args(name, kwargs, {"source", "palette", "signal", "palette_runtime", "grading", "mode", "reason"})
             compatibility.append({
@@ -1089,14 +1261,51 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             _check_known_args(name, kwargs, {"id", "source", "palette", "grading", "classification", "owner_seam", "reason", "proof"})
             compat_overrides.append(_build_compat_override(kwargs))
         elif name == "recipe":
-            _check_known_args(name, kwargs, {"id", "label", "source", "shape", "palette", "grading", "fail_closed_reason"})
+            _check_known_args(
+                name,
+                kwargs,
+                {
+                    "id", "version", "label", "source", "source_node_id", "source_blend",
+                    "shape", "shape_node_id", "palette", "palette_node_id",
+                    "grading", "grading_node_id", "fail_closed_reason",
+                },
+            )
+            recipe_id = _require_string(kwargs, "id", statement=name)
+            version = kwargs.get("version")
+            if not isinstance(version, int) or isinstance(version, bool) or version != 1:
+                raise MaterializerError(f"recipe {recipe_id} requires integer version 1")
+            semantic_nodes = {
+                "source_node_id": _require_string(kwargs, "source_node_id", statement=f"recipe {recipe_id}"),
+                "shape_node_id": _require_string(kwargs, "shape_node_id", statement=f"recipe {recipe_id}"),
+                "palette_node_id": _require_string(kwargs, "palette_node_id", statement=f"recipe {recipe_id}"),
+                "grading_node_id": _require_string(kwargs, "grading_node_id", statement=f"recipe {recipe_id}"),
+            }
+            for field_name, node_id in semantic_nodes.items():
+                lane = field_name.split("_", 1)[0]
+                if not re.fullmatch(rf"{lane}\.[a-z0-9_]+", node_id):
+                    raise MaterializerError(
+                        f"recipe {recipe_id} {field_name} must be a semantic id in the {lane} namespace"
+                    )
+            if len(set(semantic_nodes.values())) != 4:
+                raise MaterializerError(f"recipe {recipe_id} has duplicate semantic node ids")
+            source_blend = kwargs.get("source_blend")
+            if not isinstance(source_blend, (int, float)) or isinstance(source_blend, bool) or not math.isfinite(float(source_blend)):
+                raise MaterializerError(f"recipe {recipe_id} source_blend must be finite")
+            if float(source_blend) != 1.0:
+                raise MaterializerError(f"recipe {recipe_id} first Source blend must be exactly 1.0")
             recipes.append({
-                "id": _require_string(kwargs, "id", statement=name),
+                "id": recipe_id,
+                "version": version,
                 "label": _require_string(kwargs, "label", statement=name),
                 "source": _require_string(kwargs, "source", statement=name),
+                "source_node_id": semantic_nodes["source_node_id"],
+                "source_blend": 1.0,
                 "shape": _require_string(kwargs, "shape", statement=name),
+                "shape_node_id": semantic_nodes["shape_node_id"],
                 "palette": _require_string(kwargs, "palette", statement=name),
+                "palette_node_id": semantic_nodes["palette_node_id"],
                 "grading": _require_string(kwargs, "grading", statement=name),
+                "grading_node_id": semantic_nodes["grading_node_id"],
                 "fail_closed_reason": _optional_string(kwargs, "fail_closed_reason", ""),
             })
         elif name == "row_applicator":
@@ -1221,9 +1430,12 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         if record.lane not in lane_ids:
             raise MaterializerError(f"function '{record.function['id']}' references unknown lane '{record.lane}'")
         typed_signal = record.function.get("typed_signal", "")
-        if typed_signal and typed_signal not in signal_type_ids:
-            raise MaterializerError(
-                f"function {record.function['id']} typed_signal references unknown signal type '{typed_signal}'"
+        if typed_signal:
+            record.function["typed_signal"] = _normalize_signal_type_id(
+                typed_signal,
+                signal_type_ids,
+                type_aliases_by_id,
+                context=f"function {record.function['id']} typed_signal",
             )
         _validate_function_ports(record)
     lane_by_id = {lane["id"]: lane for lane in lanes}
@@ -1280,10 +1492,34 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         "schema_version": 1,
         "source_path": source_path,
         "contracts": contracts,
-        "signal_type_registry": {"types": signal_types},
+        "signal_type_registry": {"types": signal_types, "aliases": type_aliases},
         "adapter_library_contract": {"adapters": adapters},
         "function_library": {"lanes": lanes},
         "composition_recipe_contract": {
+            "canonical_recipe_contract": {
+                "schema_id": "viewer.canonical_recipe_contract.v1",
+                "max_source_rows": 8,
+                "source_fold": {
+                    "operation": "ordered_destination_weighted_lerp",
+                    "first_source_blend": 1.0,
+                    "blend_parameter_id": "signal.blend_weight",
+                    "blend_ownership": "source_descriptor_parameter",
+                    "nonfinite_policy": "fail_closed",
+                    "out_of_range_policy": "fail_closed",
+                },
+                "canonicalization": {
+                    "id": "viewer.recipe_canonicalization.v1",
+                    "legacy_alias_normalization": True,
+                    "node_order": "recipe_author_order",
+                    "override_order": "node_id_then_descriptor_parameter_id",
+                    "typed_value_normalization": "canonical_kind_and_text_v1",
+                    "default_policy": "expand_all_descriptor_defaults",
+                    "exclude_display_text": True,
+                    "hash_algorithm": "sha256",
+                },
+                "type_aliases": type_aliases,
+                "executable_adapters": recipe_adapters,
+            },
             "compatibility": compatibility,
             "row_applicators": row_applicators,
             "recipes": recipes,
