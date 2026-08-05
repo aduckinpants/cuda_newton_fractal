@@ -6,7 +6,7 @@
 - [x] Repair recipe application authority before shipping the curated recipe pack.
 - [x] Preserve the current Color Pipeline layout and public selector/Apply workflow.
 - [x] Keep external state-tool integration deferred; engine-native rails remain authoritative.
-- [ ] Execute Slice 0 baseline lock before product mutation.
+- [x] Execute Slice 0 baseline lock before product mutation.
 - [ ] Continue through independent authority, Beauty, and recipe gates only while prerequisites remain green.
 
 ## Current Phase
@@ -15,14 +15,17 @@ Slice 0 - Baseline Lock And Entry Gate is active from clean rearward-reviewed ba
 
 The hard-denial workflow blocks raw branch mutation but this checkout has no approved branch/merge wrapper. This campaign therefore starts as an explicitly stacked slice on codex/model-diagnostics-overlay-preplanning. Eventual upstream integration must preserve both closed planning campaigns.
 
+Slice 0 implementation, hostile review, and validation are complete. Slice 1 is next only after this checkpoint receives machine receipts and a final rearward-ok artifact.
+
 ## Phase Checklist
 
 - [x] Bootstrap, repo status, code-quality audit, and rearward review.
 - [x] Accept the revised campaign direction and external amendments.
-- [ ] Checkpoint and lock this campaign plan/contract.
-- [ ] Slice 0: prove prerequisite precision and UI-to-engine bindings.
-- [ ] Slice 0: freeze recipes, Beauty, state, captures, reports, hashes, fallback, and timing.
-- [ ] Slice 0: hostile audit, validation, checkpoint, receipts, rearward review.
+- [x] Checkpoint and lock this campaign plan/contract.
+- [x] Slice 0: prove prerequisite precision and UI-to-engine bindings.
+- [x] Slice 0: freeze recipes, Beauty, state, captures, reports, hashes, fallback, and timing.
+- [x] Slice 0: hostile audit and focused validation.
+- [x] Slice 0: checkpoint closure prepared; machine receipts and rearward review follow the committed state.
 - [ ] Slice 1: Application Authority.
 - [ ] Slice 2: Canonical Recipe Contract.
 - [ ] Slice 3: Capability And Applicability Authority.
@@ -200,12 +203,16 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 
 | Item | Status | Evidence |
 | --- | --- | --- |
-| Base | ready | clean 061ec748; rearward ok |
+| Base | complete | clean 061ec748; rearward ok; campaign setup checkpoint be9516a |
 | Existing graph/fallback substrate | observed | recipe_v2_graph and explicit fallback ID |
 | Known authority defects | observed | phase tag, Root Proximity type/semantics, Lens V2 type, hidden Beauty expansion |
-| Campaign plan/contract | in progress | this plan and contract |
-| Slice 0 baseline | pending | artifacts/curated_color_recipe_authority_campaign/baseline |
-| Validation and receipts | pending | contract commands |
+| Campaign plan/contract | complete | plan/contract validators green at be9516a |
+| Slice 0 public Apply baseline | complete | test_public_recipe_apply_baseline_packet |
+| Slice 0 capture/replay baseline | complete | six exact 256x192 SHA-256 capture/replay pairs and frozen state files |
+| Slice 0 timing baseline | complete | five warm-ups plus twenty renderer samples per recipe |
+| Slice 0 prerequisite authority | complete | Lens V2, SDF angle/curvature, root proximity f32/f64, and seed auto-increment runtime rails |
+| Slice 0 fallback baseline | complete | all six recipe graph/legacy tuple projections match exactly |
+| Validation and receipts | complete | focused native/runtime green; machine receipts are written against the committed checkpoint |
 
 ## Hostile Audit
 
@@ -218,7 +225,9 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Pass 1 - Local hostile review exposed hidden Apply bypass, implicit folds, type drift, and false provenance risk.
 - [x] Pass 2 - External hostile review required atomic Prepare/Commit, capability ownership, semantic IDs, frozen goldens, and independent gates.
 - [x] Pass 3 - Clean re-read confirmed the repaired state locks scoped defect blocking, normative hashes, Beauty adapter receipts, Root Glow tiers, fixed perturbations, and non-failing commit.
-- Slice 0 implementation audit remains pending under the Phase Checklist and Proof Ledger.
+- [x] Slice 0 pass 1 - the RED witness proved all-recipe public Apply/state/timing evidence was absent.
+- [x] Slice 0 pass 2 - the first implementation exposed stale Apply-frame and re-Apply timing reports; the witness now settles with Render Once and measures fresh headless renders.
+- [x] Slice 0 pass 3 - fallback review found only the default recipe was compared; all six current recipe projections now have exact graph/fallback parity.
 - Later implementation audits remain pending for transaction, dual authority, runtime proof, independent gates, and fallback lifecycle.
 
 ## Audit Findings
@@ -228,7 +237,12 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Beauty metadata claims one Source while runtime special handling adds another.
 - [x] Workflow lacks an approved branch/merge wrapper; this campaign is explicitly stacked.
 - [x] Planning closure finding: one pending audit state for future Slice 0 caused rearward review to reject the completed planning checkpoint.
-- [ ] Slice 0 implementation findings and repairs.
+- [x] Public Apply command acknowledgement can precede the rendered recipe frame; baseline proof now requires one explicit full-quality settle render.
+- [x] Reapplying an unchanged recipe does not force a render, so repeated Apply reports cannot be used as timing samples; baseline timing uses fresh headless renders.
+- [x] Recipe option IDs are public command IDs but not always-visible rectangles; the witness waits for the selector then drives the scoped selection command.
+- [x] Forced-legacy parity covered only default_smooth_escape; the native rail now compares all six current graph/legacy recipe projections.
+- [x] The first packet revision paired a settled frame with the earlier Apply receipt; receipts and lane rows now come from the same settled report.
+- [x] The broad native helper sweep exceeded 15 minutes and left an orphaned NVCC process; it was terminated and no broad-sweep success is claimed. Required focused core/window rails passed.
 
 ## Planned Validation Targets
 

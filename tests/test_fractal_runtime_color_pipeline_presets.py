@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import statistics
 import sys
 from pathlib import Path
 
@@ -19,6 +21,225 @@ from tests.runtime_harness import (
 def _serialize_runtime_automation():
     with runtime_automation_lock():
         yield
+
+
+PUBLIC_RECIPE_BASELINE_CASES = (
+    ("default_smooth_escape", "mandelbrot"),
+    ("phase_orbit_wheel", "mandelbrot"),
+    ("root_phase_wheel", "explaino_magnet_root_well"),
+    ("root_proximity_heatmap", "explaino_magnet_root_well"),
+    ("sdf_normal_angle_diagnostic", "mandelbrot"),
+    ("sdf_normal_angle_beauty", "mandelbrot"),
+)
+
+
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _headless_actions_from_graph_receipt(receipt: dict[str, object]) -> list[str]:
+    nodes = receipt.get("nodes")
+    assert isinstance(nodes, list), receipt
+    actions: list[str] = []
+    for lane_id in ("source", "shape", "palette", "grading"):
+        lane_nodes = sorted(
+            (
+                node
+                for node in nodes
+                if isinstance(node, dict)
+                and node.get("lane_id") == lane_id
+                and node.get("enabled") is True
+            ),
+            key=lambda node: int(node["row_index"]),
+        )
+        assert lane_nodes, (lane_id, receipt)
+        for row_index, node in enumerate(lane_nodes):
+            function_id = node.get("function_id")
+            assert isinstance(function_id, str), node
+            if row_index == 0:
+                actions.append(f"select_function:{lane_id}:0:{function_id}")
+            else:
+                actions.append(f"add_row:{lane_id}:{function_id}")
+            params = node.get("params")
+            assert isinstance(params, list), node
+            for param in params:
+                assert isinstance(param, dict), node
+                path = param.get("path")
+                param_type = param.get("type")
+                assert isinstance(path, str) and isinstance(param_type, str), param
+                if param_type == "enum":
+                    value_kind = "enum"
+                    value = param.get("enum_value")
+                elif param_type == "bool":
+                    value_kind = "bool"
+                    value = "true" if param.get("bool_value") is True else "false"
+                else:
+                    value_kind = "number"
+                    value = param.get("number_value")
+                actions.append(f"set_param:{lane_id}:{row_index}:{path}:{value_kind}:{value}")
+    return actions
+
+
+def _capture_graph_receipt_state(
+    exe_path: Path,
+    state_path: Path,
+    receipt: dict[str, object],
+) -> dict[str, object]:
+    args = [str(exe_path), "--load-state-json", str(state_path)]
+    for action in _headless_actions_from_graph_receipt(receipt):
+        args.extend(["--color-pipeline-action", action])
+    args.append("--capture-diagnostic")
+    return run_headless_capture(*args)
+
+
+def test_public_recipe_apply_baseline_packet(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline recipe baseline packet is Windows-only")
+
+    exe_path = active_runtime_exe()
+    generated_contract = Path("docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json")
+    contract_payload = json.loads(generated_contract.read_text(encoding="utf-8"))
+    recipe_authority = {
+        recipe["id"]: recipe["live_authority"]
+        for recipe in contract_payload["composition_recipe_contract"]["recipe_v2"]
+    }
+    assert set(recipe_authority) == {case[0] for case in PUBLIC_RECIPE_BASELINE_CASES}
+    assert set(recipe_authority.values()) == {"recipe_v2_graph"}
+    cases: list[dict[str, object]] = []
+    for recipe_id, fractal_type in PUBLIC_RECIPE_BASELINE_CASES:
+        neutral_capture = run_headless_capture(
+            str(exe_path),
+            "--capture-diagnostic",
+            "--fractal-type",
+            fractal_type,
+            "--width",
+            "256",
+            "--height",
+            "192",
+        )
+        state_path = write_state_bundle(
+            tmp_path / f"{recipe_id}_seed",
+            json.loads(json.dumps(neutral_capture["state"])),
+        )
+        with PersistentRuntimeViewerAutomation(
+            exe_path=exe_path,
+            state_path=state_path,
+            report_path=tmp_path / f"{recipe_id}_report.json",
+            command_path=tmp_path / f"{recipe_id}_command.json",
+            open_color_pipeline=True,
+        ) as viewer:
+            viewer.wait_for_control("color_pipeline.recipe.selector", timeout_seconds=30.0)
+            selected = viewer.click_control(
+                f"color_pipeline.recipe.{recipe_id}.select",
+                timeout_seconds=60.0,
+            )
+            assert selected.get("click_consumed") is True, selected
+            applied = viewer.click_control(
+                "color_pipeline.recipe.apply_selected",
+                timeout_seconds=60.0,
+            )
+            assert applied.get("click_consumed") is True, applied
+            settled = viewer.click_control(
+                "render_once",
+                timeout_seconds=60.0,
+            )
+            assert settled.get("click_consumed") is True, settled
+            frame_hash = settled.get("rendered_frame_hash")
+            assert isinstance(frame_hash, str), applied
+
+        receipt = settled.get("color_pipeline_graph_receipt")
+        assert isinstance(receipt, dict), applied
+        captured = _capture_graph_receipt_state(exe_path, state_path, receipt)
+        replay_state_path = write_state_bundle(
+            tmp_path / f"{recipe_id}_replay",
+            json.loads(json.dumps(captured["state"])),
+        )
+        replay = run_headless_capture(
+            str(exe_path),
+            "--load-state-json",
+            str(replay_state_path),
+            "--capture-diagnostic",
+        )
+        assert replay["frame_hash"] == captured["frame_hash"], (captured, replay)
+
+        for _ in range(5):
+            warmup = run_headless_capture(
+                str(exe_path),
+                "--load-state-json",
+                str(replay_state_path),
+                "--capture-diagnostic",
+            )
+            assert warmup["frame_hash"] == captured["frame_hash"], warmup
+        timing_samples: list[float] = []
+        for _ in range(20):
+            measured = run_headless_capture(
+                str(exe_path),
+                "--load-state-json",
+                str(replay_state_path),
+                "--capture-diagnostic",
+            )
+            assert measured["frame_hash"] == captured["frame_hash"], measured
+            measured_state = measured.get("state")
+            assert isinstance(measured_state, dict), measured
+            stats = measured_state.get("stats")
+            assert isinstance(stats, dict), measured_state
+            render_ms = stats.get("last_render_ms")
+            assert isinstance(render_ms, (int, float)) and render_ms > 0.0, stats
+            timing_samples.append(float(render_ms))
+        timing_median = statistics.median(timing_samples)
+        timing_mad = statistics.median(abs(value - timing_median) for value in timing_samples)
+
+        state_json = json.dumps(captured["state"], sort_keys=True, separators=(",", ":"))
+        frozen_state_path = Path(
+            f"artifacts/curated_color_recipe_authority_campaign/baseline/states/{recipe_id}.state.json"
+        )
+        frozen_state_path.parent.mkdir(parents=True, exist_ok=True)
+        frozen_state_path.write_text(json.dumps(captured["state"], indent=2) + "\n", encoding="utf-8")
+        cases.append(
+            {
+                "recipe_id": recipe_id,
+                "fractal_type": fractal_type,
+                "frame_hash": frame_hash,
+                "public_render_width": settled.get("rendered_frame_width"),
+                "public_render_height": settled.get("rendered_frame_height"),
+                "metadata_live_authority": recipe_authority[recipe_id],
+                "lane_rows": settled.get("lane_rows"),
+                "graph_receipt": receipt,
+                "headless_frame_sha256": captured["frame_hash"],
+                "replay_frame_sha256": replay["frame_hash"],
+                "captured_state_sha256": hashlib.sha256(state_json.encode("utf-8")).hexdigest(),
+                "frozen_state_file": str(frozen_state_path),
+                "renderer_timing_ms": {
+                    "warmups": 5,
+                    "samples": 20,
+                    "median": timing_median,
+                    "mad": timing_mad,
+                    "p95": sorted(timing_samples)[18],
+                    "values": timing_samples,
+                },
+            }
+        )
+
+    beauty = next(case for case in cases if case["recipe_id"] == "sdf_normal_angle_beauty")
+    beauty_nodes = beauty["graph_receipt"]["nodes"]
+    beauty_sources = [
+        node["function_id"]
+        for node in beauty_nodes
+        if node.get("lane_id") == "source" and node.get("active_execution") is True
+    ]
+    assert beauty_sources == ["sdf_normal_angle", "lens_field_v2_distance"], beauty
+
+    artifact = {
+        "schema_id": "viewer.color_recipe_public_apply_baseline.v1",
+        "runtime_exe": str(exe_path),
+        "materialized_contract_sha256": _sha256_file(generated_contract),
+        "comparison_contract": "public Apply receipt plus settled live hash; exact 256x192 headless capture/replay SHA-256",
+        "timing_contract": "five warm-ups and twenty 256x192 headless renderer samples; process startup excluded by stats.last_render_ms",
+        "cases": cases,
+    }
+    artifact_path = Path("artifacts/curated_color_recipe_authority_campaign/baseline/public_recipe_baseline.json")
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
 
 
 NON_SDF_SOURCE_ROWS = (

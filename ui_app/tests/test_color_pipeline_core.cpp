@@ -32,6 +32,45 @@ bool Near(double actual, double expected, double eps = 1.0e-9) {
     return std::fabs(actual - expected) <= eps;
 }
 
+bool ColorPipelineParamStatesEquivalent(
+    const ColorPipelineParamState& left,
+    const ColorPipelineParamState& right) {
+    return left.path == right.path &&
+        left.type == right.type &&
+        Near(left.number_value, right.number_value) &&
+        left.bool_value == right.bool_value &&
+        left.enum_value == right.enum_value;
+}
+
+bool ColorPipelineLaneVectorsEquivalent(
+    const std::vector<ColorPipelineLaneState>& left,
+    const std::vector<ColorPipelineLaneState>& right) {
+    if (left.size() != right.size()) return false;
+    for (std::size_t laneIndex = 0; laneIndex < left.size(); ++laneIndex) {
+        if (left[laneIndex].lane_id != right[laneIndex].lane_id ||
+            left[laneIndex].rows.size() != right[laneIndex].rows.size()) {
+            return false;
+        }
+        for (std::size_t rowIndex = 0; rowIndex < left[laneIndex].rows.size(); ++rowIndex) {
+            const ColorPipelineRowState& leftRow = left[laneIndex].rows[rowIndex];
+            const ColorPipelineRowState& rightRow = right[laneIndex].rows[rowIndex];
+            if (leftRow.enabled != rightRow.enabled ||
+                leftRow.function_id != rightRow.function_id ||
+                leftRow.parameter_values.size() != rightRow.parameter_values.size()) {
+                return false;
+            }
+            for (std::size_t paramIndex = 0; paramIndex < leftRow.parameter_values.size(); ++paramIndex) {
+                if (!ColorPipelineParamStatesEquivalent(
+                        leftRow.parameter_values[paramIndex],
+                        rightRow.parameter_values[paramIndex])) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 bool HasFunction(const ColorPipelineLaneCatalog& catalog, const char* id) {
     return color_pipeline_core::FindColorPipelineFunctionDescriptor(catalog, id) != nullptr;
 }
@@ -1952,6 +1991,7 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackSwitchId");
     Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Count");
+    std::vector<std::vector<ColorPipelineLaneState>> graphRecipeLanes;
 
     for (const MaterializedColorPipelineRecipe& expectedRecipe : hardcodedRecipes) {
         const MaterializedColorPipelineRecipe* actualRecipe =
@@ -1991,29 +2031,29 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
                     recipeLanes[3].rows[0].function_id == expectedRecipe.grading,
                 "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_GradingLane");
         }
+        graphRecipeLanes.push_back(recipeLanes);
     }
 
     color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(true);
     Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() ==
             std::string("materialized_json_legacy_recipe_tuple"),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackAuthority");
-    std::vector<ColorPipelineLaneState> fallbackLanes;
-    error.clear();
-    Check(color_pipeline_core::TryBuildColorPipelineRecipeLanes(
-            "default_smooth_escape",
-            &fallbackLanes,
-            &error),
-        (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackBuildRecipeLanes: ") + error).c_str());
-    Check(fallbackLanes.size() == 4 &&
-            fallbackLanes[0].rows.size() == 1 &&
-            fallbackLanes[0].rows[0].function_id == "smooth_escape_ramp" &&
-            fallbackLanes[1].rows.size() == 1 &&
-            fallbackLanes[1].rows[0].function_id == "identity" &&
-            fallbackLanes[2].rows.size() == 1 &&
-            fallbackLanes[2].rows[0].function_id == "heatmap" &&
-            fallbackLanes[3].rows.size() == 1 &&
-            fallbackLanes[3].rows[0].function_id == "contrast_lift",
-        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackTuple");
+    Check(graphRecipeLanes.size() == hardcodedRecipes.size(),
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_GraphBaselineCount");
+    for (std::size_t recipeIndex = 0; recipeIndex < hardcodedRecipes.size(); ++recipeIndex) {
+        std::vector<ColorPipelineLaneState> fallbackLanes;
+        error.clear();
+        Check(color_pipeline_core::TryBuildColorPipelineRecipeLanes(
+                hardcodedRecipes[recipeIndex].id,
+                &fallbackLanes,
+                &error),
+            (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackBuildRecipeLanes: ") +
+                hardcodedRecipes[recipeIndex].id + ": " + error).c_str());
+        Check(recipeIndex < graphRecipeLanes.size() &&
+                ColorPipelineLaneVectorsEquivalent(graphRecipeLanes[recipeIndex], fallbackLanes),
+            (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_AllRecipeFallbackParity: ") +
+                hardcodedRecipes[recipeIndex].id).c_str());
+    }
     color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(false);
     Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("recipe_v2_graph"),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackRestoresGraphAuthority");
