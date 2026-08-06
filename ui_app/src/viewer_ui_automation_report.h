@@ -85,6 +85,43 @@ struct ViewerUiAutomationRootPatternConsumerProbe {
     std::string fail_closed_reason;
 };
 
+struct ViewerUiAutomationScalarDistributionProbe {
+    std::uint64_t finite_count = 0;
+    std::uint64_t nonfinite_count = 0;
+    std::uint64_t below_histogram_range_count = 0;
+    std::uint64_t above_histogram_range_count = 0;
+    double minimum = 0.0;
+    double maximum = 0.0;
+    double mean = 0.0;
+    double standard_deviation = 0.0;
+    double p01 = 0.0;
+    double p05 = 0.0;
+    double p50 = 0.0;
+    double p95 = 0.0;
+    double p99 = 0.0;
+    double histogram_minimum = 0.0;
+    double histogram_maximum = 0.0;
+    std::vector<std::uint64_t> histogram;
+};
+
+struct ViewerUiAutomationColorSourceMeasurementProbe {
+    bool requested = false;
+    bool valid = false;
+    std::string error;
+    std::string producer_id = "none";
+    std::string source_id = "none";
+    int row_index = -1;
+    std::string shape_id = "none";
+    std::string root_pattern_ref = "dynamics_root_field";
+    std::uint64_t root_pattern_hash = 0;
+    std::string evaluator_id = "unknown";
+    std::string fractal_precision_tier = "unknown";
+    std::string color_metric_arithmetic_tier = "unknown";
+    std::string color_metric_narrowing = "unknown";
+    ViewerUiAutomationScalarDistributionProbe source_raw;
+    ViewerUiAutomationScalarDistributionProbe shape_output;
+};
+
 struct ViewerUiAutomationLensSdfProbe {
     bool enabled = false;
     bool valid = false;
@@ -159,6 +196,7 @@ struct ViewerUiAutomationLensSdfProbe {
     std::string overlay_mode = "off";
     bool overlay_active = false;
     float overlay_opacity = 0.55f;
+    ViewerUiAutomationColorSourceMeasurementProbe color_source_measurement;
 };
 
 struct ViewerUiAutomationEnumCommandReport {
@@ -173,6 +211,12 @@ void WriteAutomationReportString(std::ostream& out, const std::string& value);
 ViewerUiAutomationFrameProbe BuildViewerUiAutomationFrameProbe(
     const std::vector<uint32_t>& rgba,
     const RenderedFrameState& renderedFrame);
+ViewerUiAutomationColorSourceMeasurementProbe BuildViewerUiAutomationColorSourceMeasurementProbe(
+    const float* rawValues,
+    std::size_t valueCount,
+    const KernelParams& params,
+    int rowIndex,
+    const char* sourceId);
 ViewerUiAutomationRenderPacingProbe BuildViewerUiAutomationRenderPacingProbe(
     const RenderSettings& render,
     const RenderStats& stats,

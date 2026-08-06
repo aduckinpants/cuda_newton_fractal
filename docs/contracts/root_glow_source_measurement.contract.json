@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "contract_id": "root_glow_source_measurement",
+  "feature_id": "root_glow_source_measurement",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/root_glow_source_measurement_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/root_glow_source_measurement.contract.json",
+    "docs/notes/root_glow_source_measurement_PHASED_PLAN.md",
+    "docs/contracts/curated_color_recipe_authority_campaign.contract.json",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean pushed rearward-reviewed base b7ab9c8bffaaed8828fd82d70337b85cb90295b6",
+    "disabled Root Glow recipe qualification packet",
+    "root_log_proximity_v1 Source authority",
+    "signed_unit_map_v1 Shape authority",
+    "public no-mouse runtime report path"
+  ],
+  "forbidden_operator_prompts": [
+    "enable Root Glow in this slice",
+    "add a transfer function in this slice",
+    "change root metric semantics",
+    "change visible UI",
+    "use RGB as raw Source authority",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "accepted_base_head": "b7ab9c8bffaaed8828fd82d70337b85cb90295b6",
+    "active_slice": "measurement_only",
+    "product_behavior_change_authorized": false,
+    "diagnostic_report_change_authorized": true,
+    "ui_layout_frozen": true,
+    "root_glow_recipe_remains_disabled": true,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "root_glow_enablement": "forbidden",
+    "new_color_pipeline_function": "forbidden",
+    "root_metric_semantic_change": "forbidden",
+    "visible_ui_change": "forbidden",
+    "rgb_proxy_as_source_authority": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/root_glow_source_measurement.contract.json --out-json artifacts/validation/root_glow_source_measurement_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_glow_measurement_plan_sync --log artifacts/logs/root_glow_measurement_plan_sync.log --out-json artifacts/validation/root_glow_measurement_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/root_glow_source_measurement_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/root_glow_source_measurement_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_glow_measurement_coloring_native --log artifacts/logs/root_glow_measurement_coloring_native.log --out-json artifacts/validation/root_glow_measurement_coloring_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_escape_time_coloring",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_glow_measurement_report_native --log artifacts/logs/root_glow_measurement_report_native.log --out-json artifacts/validation/root_glow_measurement_report_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_glow_measurement_runtime_publish --log artifacts/logs/root_glow_measurement_runtime_publish.log --out-json artifacts/validation/root_glow_measurement_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_root_glow_source_measurement.py -q --junitxml artifacts/pytest/root_glow_source_measurement_runtime.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_runtime_color_recipe_qualification.py -q --junitxml artifacts/pytest/root_glow_source_measurement_preservation.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/root_glow_source_measurement_PHASED_PLAN.md --out-json artifacts/validation/root_glow_source_measurement_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_glow_measurement_diff_check --log artifacts/logs/root_glow_measurement_diff_check.log --out-json artifacts/validation/root_glow_source_measurement_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "Measurement contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_glow_source_measurement_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "coloring_native_ok",
+      "description": "Raw Source and shaped Source diagnostics match the renderer color functions.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_glow_measurement_coloring_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "report_native_ok",
+      "description": "Automation report serializes diagnostic authority and distribution fields.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_glow_measurement_report_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_publish_ok",
+      "description": "Published viewer contains the diagnostic measurement surface.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_glow_measurement_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_measurement_ok",
+      "description": "Published no-mouse matrix records raw Source and shaped distributions with a decision classification.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/root_glow_source_measurement_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_root_glow_source_measurement.py::test_root_glow_source_measurement_no_mouse"
+    },
+    {
+      "assertion_id": "root_glow_preservation_ok",
+      "description": "Root Glow remains disabled and prior qualification behavior remains deterministic.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/root_glow_source_measurement_preservation.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_color_recipe_qualification.py::test_curated_color_recipe_qualification_no_mouse"
+    }
+  ]
+}
+

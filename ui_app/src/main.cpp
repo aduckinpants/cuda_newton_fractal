@@ -749,6 +749,18 @@ static int FirstNonSdfSourceRowIndex(const KernelParams& params, ColorSignal* ou
     return -1;
 }
 
+static int FindColorSourceStackRowIndex(
+    const KernelParams& params,
+    ColorSignal requestedSignal) {
+    const int sourceStackCount = ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count);
+    for (int index = 0; index < sourceStackCount; ++index) {
+        if (params.color_source_stack[index].signal == requestedSignal) {
+            return index;
+        }
+    }
+    return -1;
+}
+
 static std::string UnsupportedSourceForProducerMessage(FractalType fractalType, const KernelParams& params) {
     const char* fractalTypeId = FractalTypeId(fractalType);
     std::string id = fractalTypeId ? fractalTypeId : "unknown";
@@ -1399,6 +1411,7 @@ static void DispatchRenderFrame(
     const LensSettings& lens, const ViewerRenderPacingDecision& renderPacing,
     bool forceFullQuality, bool autoRefresh, bool dirty,
     bool renderOnce, bool captureDiag, bool captureFinding,
+    bool collectColorSourceMeasurement,
     std::vector<uint32_t>& rgba, std::vector<uint8_t>& maskBuffer,
     std::vector<uint32_t>& lensSdfRgba,
     const GenericEquationPackWorkbenchState* equationPackWorkbench,
@@ -1477,7 +1490,25 @@ static void DispatchRenderFrame(
     uint8_t* maskPtr = nullptr;
     const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
     const bool mixedSourceStack = ColorPipelineSourceStackIsMixed(params);
-    const int sourceSignalRowCount = mixedSourceStack ? ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count) : 0;
+    const int colorSourceMeasurementRowIndex = collectColorSourceMeasurement
+        ? FindColorSourceStackRowIndex(params, ColorSignal::root_log_proximity_v1)
+        : -1;
+    const int activeSourceStackCount =
+        ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count);
+    const bool colorSourceMeasurementEligible =
+        colorSourceMeasurementRowIndex == 0 && activeSourceStackCount == 1;
+    if (colorSourceMeasurementRowIndex >= 0 && !colorSourceMeasurementEligible) {
+        lensSdfProbe.color_source_measurement.requested = true;
+        lensSdfProbe.color_source_measurement.source_id = "root_log_proximity_v1";
+        lensSdfProbe.color_source_measurement.row_index = colorSourceMeasurementRowIndex;
+        lensSdfProbe.color_source_measurement.error =
+            "color_source_measurement_requires_single_active_source_row";
+    }
+    const bool sourceSignalSidecarNeeded =
+        mixedSourceStack || colorSourceMeasurementEligible;
+    const int sourceSignalRowCount = sourceSignalSidecarNeeded
+        ? activeSourceStackCount
+        : 0;
     lensSdfProbe.source_stack_kind = ColorPipelineSourceStackKindId(params);
     const bool lensSdfOverlayEnabled = LensSdfOverlayEnabled(lens);
     const bool needsLensSdfField = lens.enabled || colorPipelineNeedsSdf || lensSdfOverlayEnabled;
@@ -1525,12 +1556,12 @@ static void DispatchRenderFrame(
         lensSdfProbe.field_capability_fail_closed_reason = genericRenderError;
         lensSdfProbe.field_source_error = genericRenderError;
         sourceSignalFramePrepared = false;
-    } else if (mixedSourceStack && !FractalTypeCanEmitRendererColorSourceSignals(view.fractal_type)) {
+    } else if (sourceSignalSidecarNeeded && !FractalTypeCanEmitRendererColorSourceSignals(view.fractal_type)) {
         genericRenderError = UnsupportedSourceForProducerMessage(view.fractal_type, params);
         lensSdfProbe.field_capability_fail_closed_reason = genericRenderError;
         lensSdfProbe.field_source_error = genericRenderError;
         sourceSignalFramePrepared = false;
-    } else if (mixedSourceStack && !PrepareColorPipelineSourceSignalFrame(dispatchRender, sourceSignalRowCount, sourceSignalValues, sourceSignalFrame, &genericRenderError)) {
+    } else if (sourceSignalSidecarNeeded && !PrepareColorPipelineSourceSignalFrame(dispatchRender, sourceSignalRowCount, sourceSignalValues, sourceSignalFrame, &genericRenderError)) {
         sourceSignalFramePrepared = false;
     }
     RenderStats newStats{};
@@ -1571,7 +1602,7 @@ static void DispatchRenderFrame(
                 genericRenderError = "ExplainO Root SDF base frame failed";
             }
         }
-    } else if (mixedSourceStack) {
+    } else if (sourceSignalSidecarNeeded) {
         if (!sourceSignalFramePrepared) {
             renderOk = false;
         } else {
@@ -1585,7 +1616,7 @@ static void DispatchRenderFrame(
                 sourceSignalRowCount,
                 &newStats,
                 &err);
-            lensSdfProbe.mixed_source_signal_frame_used = renderOk;
+            lensSdfProbe.mixed_source_signal_frame_used = renderOk && mixedSourceStack;
         }
     } else {
         renderOk = RenderFractalCUDA(view, params, dispatchRender, rgba.data(), maskPtr, &newStats, &err);
@@ -1602,6 +1633,48 @@ static void DispatchRenderFrame(
     } else {
         stats = newStats;
         lensSdfProbe.base_render_ms = newStats.last_render_ms;
+        if (colorSourceMeasurementEligible &&
+            sourceSignalFramePrepared &&
+            sourceSignalFrame.row_major_values &&
+            colorSourceMeasurementRowIndex < sourceSignalFrame.row_count) {
+            const float* measuredRow =
+                sourceSignalFrame.row_major_values +
+                static_cast<std::size_t>(colorSourceMeasurementRowIndex) *
+                    static_cast<std::size_t>(sourceSignalFrame.row_stride);
+            lensSdfProbe.color_source_measurement =
+                BuildViewerUiAutomationColorSourceMeasurementProbe(
+                    measuredRow,
+                    static_cast<std::size_t>(sourceSignalFrame.width) *
+                        static_cast<std::size_t>(sourceSignalFrame.height),
+                    params,
+                    colorSourceMeasurementRowIndex,
+                    "root_log_proximity_v1");
+            ViewerUiAutomationColorSourceMeasurementProbe& measurement =
+                lensSdfProbe.color_source_measurement;
+            const char* producerId = FractalTypeId(view.fractal_type);
+            measurement.producer_id = producerId ? producerId : "unknown";
+            measurement.fractal_precision_tier =
+                ColorPipelineNumericBackendId(newStats.resolved_eval.backend);
+            measurement.evaluator_id = std::string("cuda.") +
+                ColorPipelineIterationStrategyId(newStats.resolved_eval.strategy) + "." +
+                measurement.fractal_precision_tier;
+            measurement.color_metric_arithmetic_tier = "float32";
+            measurement.color_metric_narrowing =
+                measurement.fractal_precision_tier == "float64"
+                    ? "fractal_coordinate_to_float32" : "none";
+            const ColorPipelineSourceStackEntry& measuredEntry =
+                params.color_source_stack[colorSourceMeasurementRowIndex];
+            const char* patternRefId =
+                ExplainoRootPatternRefId(measuredEntry.params.root_pattern_ref);
+            measurement.root_pattern_ref =
+                patternRefId ? patternRefId : "dynamics_root_field";
+            for (const ViewerUiAutomationRootPatternProbe& pattern : lensSdfProbe.root_patterns) {
+                if (pattern.ref == measurement.root_pattern_ref) {
+                    measurement.root_pattern_hash = pattern.effective_root_hash;
+                    break;
+                }
+            }
+        }
         MarkRenderedFrameReady(dispatchRender, &renderedFrame);
         bool postprocessOk = true;
         std::string postprocessError;
@@ -4646,6 +4719,7 @@ static void RunViewerFrame(
     DispatchRenderFrame(view, params, render, lens, renderPacing,
         forceFullQualityRender, view.auto_refresh, dirty,
         actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
+        cli.have_ui_automation_report_json,
         rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, sdfPackViewer, renderedFrame, stats, lensSdfProbe,
         lensSdfFieldCaches, dirty);
     RefreshColorPipelineProducerCapabilitySnapshot(

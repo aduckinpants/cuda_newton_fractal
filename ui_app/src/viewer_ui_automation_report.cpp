@@ -2,8 +2,10 @@
 
 #include "color_pipeline_graph_receipt.h"
 #include "enum_id_utils.h"
+#include "escape_time_coloring.h"
 #include "explaino_seed.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
@@ -13,6 +15,145 @@
 #include <sstream>
 
 namespace {
+
+constexpr std::size_t kColorSourceMeasurementHistogramBins = 32;
+
+void WriteHashOrNull(std::ostream& out, std::uint64_t hash);
+
+double ColorSourceMeasurementPercentile(
+    const std::vector<double>& sortedValues,
+    double fraction) {
+    if (sortedValues.empty()) {
+        return 0.0;
+    }
+    const double position = fraction * static_cast<double>(sortedValues.size() - 1);
+    const std::size_t lower = static_cast<std::size_t>(position);
+    const std::size_t upper = (std::min)(lower + 1, sortedValues.size() - 1);
+    const double blend = position - static_cast<double>(lower);
+    return sortedValues[lower] + (sortedValues[upper] - sortedValues[lower]) * blend;
+}
+
+ViewerUiAutomationScalarDistributionProbe BuildColorSourceDistribution(
+    const std::vector<double>& values,
+    std::uint64_t nonfiniteCount,
+    double histogramMinimum,
+    double histogramMaximum) {
+    ViewerUiAutomationScalarDistributionProbe out{};
+    out.nonfinite_count = nonfiniteCount;
+    out.histogram_minimum = histogramMinimum;
+    out.histogram_maximum = histogramMaximum;
+    out.histogram.assign(kColorSourceMeasurementHistogramBins, 0);
+    if (values.empty()) {
+        return out;
+    }
+    std::vector<double> sortedValues = values;
+    std::sort(sortedValues.begin(), sortedValues.end());
+    out.finite_count = static_cast<std::uint64_t>(sortedValues.size());
+    out.minimum = sortedValues.front();
+    out.maximum = sortedValues.back();
+    double sum = 0.0;
+    for (double value : sortedValues) {
+        sum += value;
+    }
+    out.mean = sum / static_cast<double>(sortedValues.size());
+    double squaredDeltaSum = 0.0;
+    for (double value : sortedValues) {
+        const double delta = value - out.mean;
+        squaredDeltaSum += delta * delta;
+        if (value < histogramMinimum) {
+            ++out.below_histogram_range_count;
+            continue;
+        }
+        if (value > histogramMaximum) {
+            ++out.above_histogram_range_count;
+            continue;
+        }
+        const double unit = (value - histogramMinimum) / (histogramMaximum - histogramMinimum);
+        const std::size_t bin = (std::min)(
+            static_cast<std::size_t>(unit * static_cast<double>(kColorSourceMeasurementHistogramBins)),
+            kColorSourceMeasurementHistogramBins - 1);
+        ++out.histogram[bin];
+    }
+    out.standard_deviation = std::sqrt(
+        squaredDeltaSum / static_cast<double>(sortedValues.size()));
+    out.p01 = ColorSourceMeasurementPercentile(sortedValues, 0.01);
+    out.p05 = ColorSourceMeasurementPercentile(sortedValues, 0.05);
+    out.p50 = ColorSourceMeasurementPercentile(sortedValues, 0.50);
+    out.p95 = ColorSourceMeasurementPercentile(sortedValues, 0.95);
+    out.p99 = ColorSourceMeasurementPercentile(sortedValues, 0.99);
+    return out;
+}
+
+void WriteColorSourceDistribution(
+    std::ostream& out,
+    const ViewerUiAutomationScalarDistributionProbe& distribution) {
+    out << "{\"finite_count\":" << distribution.finite_count
+        << ",\"nonfinite_count\":" << distribution.nonfinite_count
+        << ",\"minimum\":" << std::setprecision(17) << distribution.minimum
+        << ",\"maximum\":" << distribution.maximum
+        << ",\"mean\":" << distribution.mean
+        << ",\"standard_deviation\":" << distribution.standard_deviation
+        << ",\"p01\":" << distribution.p01
+        << ",\"p05\":" << distribution.p05
+        << ",\"p50\":" << distribution.p50
+        << ",\"p95\":" << distribution.p95
+        << ",\"p99\":" << distribution.p99
+        << ",\"histogram_minimum\":" << distribution.histogram_minimum
+        << ",\"histogram_maximum\":" << distribution.histogram_maximum
+        << ",\"below_histogram_range_count\":" << distribution.below_histogram_range_count
+        << ",\"above_histogram_range_count\":" << distribution.above_histogram_range_count
+        << ",\"histogram_32\":[";
+    for (std::size_t index = 0; index < distribution.histogram.size(); ++index) {
+        if (index > 0) {
+            out << ',';
+        }
+        out << distribution.histogram[index];
+    }
+    out << "]}";
+}
+
+void WriteColorSourceMeasurementReportField(
+    std::ostream& out,
+    const ViewerUiAutomationColorSourceMeasurementProbe& probe) {
+    out << "  \"color_source_measurement\": ";
+    if (!probe.requested) {
+        out << "null,\n";
+        return;
+    }
+    out << "{\"schema_id\":\"viewer.color_source_measurement.v1\""
+        << ",\"requested\":true"
+        << ",\"valid\":" << (probe.valid ? "true" : "false")
+        << ",\"error\":";
+    if (probe.error.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, probe.error);
+    }
+    out << ",\"producer_id\":";
+    WriteAutomationReportString(out, probe.producer_id);
+    out << ",\"source_id\":";
+    WriteAutomationReportString(out, probe.source_id);
+    out << ",\"row_index\":" << probe.row_index
+        << ",\"shape_id\":";
+    WriteAutomationReportString(out, probe.shape_id);
+    out << ",\"root_pattern_ref\":";
+    WriteAutomationReportString(out, probe.root_pattern_ref);
+    out << ",\"root_pattern_hash\":";
+    WriteHashOrNull(out, probe.root_pattern_hash);
+    out << ",\"evaluator_id\":";
+    WriteAutomationReportString(out, probe.evaluator_id);
+    out << ",\"fractal_precision_tier\":";
+    WriteAutomationReportString(out, probe.fractal_precision_tier);
+    out << ",\"color_metric_arithmetic_tier\":";
+    WriteAutomationReportString(out, probe.color_metric_arithmetic_tier);
+    out << ",\"color_metric_narrowing\":";
+    WriteAutomationReportString(out, probe.color_metric_narrowing);
+    out << ",\"source_raw\":";
+    WriteColorSourceDistribution(out, probe.source_raw);
+    out << ",\"shape_output\":";
+    WriteColorSourceDistribution(out, probe.shape_output);
+    out << "},\n";
+}
 
 std::uint64_t HashAutomationFrameBytes(const std::vector<uint32_t>& rgba, std::size_t pixelCount) {
     std::uint64_t hash = 1469598103934665603ull;
@@ -368,6 +509,57 @@ void WriteLensSdfReportFields(
 }
 
 } // namespace
+
+ViewerUiAutomationColorSourceMeasurementProbe BuildViewerUiAutomationColorSourceMeasurementProbe(
+    const float* rawValues,
+    std::size_t valueCount,
+    const KernelParams& params,
+    int rowIndex,
+    const char* sourceId) {
+    ViewerUiAutomationColorSourceMeasurementProbe out{};
+    out.requested = true;
+    out.source_id = sourceId ? sourceId : "unknown";
+    out.row_index = rowIndex;
+    if (!rawValues || valueCount == 0 || rowIndex < 0) {
+        out.error = "invalid_color_source_measurement_input";
+        return out;
+    }
+    std::vector<double> rawFinite;
+    std::vector<double> shapedFinite;
+    rawFinite.reserve(valueCount);
+    shapedFinite.reserve(valueCount);
+    std::uint64_t rawNonfinite = 0;
+    std::uint64_t shapedNonfinite = 0;
+    for (std::size_t index = 0; index < valueCount; ++index) {
+        const float raw = rawValues[index];
+        if (!std::isfinite(raw)) {
+            ++rawNonfinite;
+            ++shapedNonfinite;
+            continue;
+        }
+        rawFinite.push_back(static_cast<double>(raw));
+        const float shaped = ApplyColorPipelineShapeValue(raw, params);
+        if (std::isfinite(shaped)) {
+            shapedFinite.push_back(static_cast<double>(shaped));
+        } else {
+            ++shapedNonfinite;
+        }
+    }
+    out.source_raw = BuildColorSourceDistribution(rawFinite, rawNonfinite, -16.0, 16.0);
+    out.shape_output = BuildColorSourceDistribution(shapedFinite, shapedNonfinite, 0.0, 1.0);
+    if (params.color_shape_stack_count > 0) {
+        const char* shapeId = ColorPipelineShapeId(params.color_shape_stack[0].shape);
+        out.shape_id = shapeId ? shapeId : "unknown";
+    } else {
+        const char* shapeId = ColorPipelineShapeId(params.color_shape);
+        out.shape_id = shapeId ? shapeId : "unknown";
+    }
+    out.valid = out.source_raw.finite_count > 0 && out.shape_output.finite_count > 0;
+    if (!out.valid) {
+        out.error = "no_finite_color_source_measurements";
+    }
+    return out;
+}
 
 std::string JsonEscapeAutomationReportString(const std::string& value) {
     std::string out;
@@ -807,6 +999,7 @@ void WriteColorPipelineUiAutomationReport(
     const ViewerUiAutomationRenderPacingProbe pacingProbe = BuildViewerUiAutomationRenderPacingProbe(render, stats, renderPacing);
     WriteRenderPacingAndFrameReportFields(out, pacingProbe, frameProbe);
     WriteLensSdfReportFields(out, lensSdfProbe);
+    WriteColorSourceMeasurementReportField(out, lensSdfProbe.color_source_measurement);
     out << "  \"color_pipeline_graph_receipt\": ";
     color_pipeline_graph_receipt::WriteColorPipelineGraphReceiptJson(
         out,

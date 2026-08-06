@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -18,6 +19,28 @@ void Check(bool condition, const char* message) {
         ++g_failed;
         std::printf("  FAIL: %s\n", message);
     }
+}
+
+bool InstallMaterializedRecipeContractForTest(const char* checkName) {
+    const char* candidates[] = {
+        "..\\docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+        "docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+    };
+    std::string contractPath;
+    for (const char* candidate : candidates) {
+        if (std::filesystem::exists(candidate)) {
+            contractPath = candidate;
+            break;
+        }
+    }
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    const bool loaded = !contractPath.empty() &&
+        LoadColorPipelineMaterializedContractJson(contractPath, &contract, &error);
+    const bool installed = loaded &&
+        color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error);
+    Check(installed, (std::string(checkName) + ": " + error).c_str());
+    return installed;
 }
 
 void TestJsonStringEscaping() {
@@ -197,6 +220,17 @@ void TestLensSdfProbeTimingFields() {
         "lens_field_v2_distance",
     };
     probe.field_capability_fail_closed_reason = "mixed Source rows require renderer-backed non-SDF source signals";
+    KernelParams measurementParams{};
+    measurementParams.color_shape_stack_count = 1;
+    measurementParams.color_shape_stack[0].shape = ColorPipelineShape::signed_unit_map_v1;
+    measurementParams.color_shape_stack[0].params.scale = 0.25f;
+    measurementParams.color_shape_stack[0].params.offset = 0.10f;
+    const std::vector<float> measurementValues{-2.0f, -1.0f, 0.0f, 1.0f, 2.0f};
+    probe.color_source_measurement = BuildViewerUiAutomationColorSourceMeasurementProbe(
+        measurementValues.data(), measurementValues.size(), measurementParams, 0,
+        "root_log_proximity_v1");
+    probe.color_source_measurement.color_metric_narrowing =
+        "fractal_coordinate_to_float32";
     ViewerUiAutomationLensSdfFieldGroupProbe group{};
     group.group_index = 0;
     group.requested_downsample = 1;
@@ -349,6 +383,14 @@ void TestLensSdfProbeTimingFields() {
             json.find("\"pattern_ref\": \"color_root_field\"") != std::string::npos &&
             json.find("\"pattern_ref\": \"primary\"") == std::string::npos,
         "automation report writes explicit scoped root-pattern consumer refs");
+    Check(json.find("\"color_source_measurement\": {\"schema_id\":\"viewer.color_source_measurement.v1\"") != std::string::npos &&
+            json.find("\"source_id\":\"root_log_proximity_v1\"") != std::string::npos &&
+            json.find("\"color_metric_narrowing\":\"fractal_coordinate_to_float32\"") != std::string::npos &&
+            json.find("\"source_raw\":{\"finite_count\":5") != std::string::npos &&
+            json.find("\"minimum\":-2") != std::string::npos &&
+            json.find("\"shape_output\":{\"finite_count\":5") != std::string::npos &&
+            json.find("\"maximum\":1") != std::string::npos,
+        "automation report serializes separate raw Source and shaped distributions");
 }
 
 
@@ -419,6 +461,10 @@ void TestColorPipelineGraphReceiptBuilderReportsLinearStackTruth() {
 void TestAutomationReportIncludesColorPipelineGraphReceipt() {
     const std::filesystem::path reportPath =
         std::filesystem::temp_directory_path() / "test_viewer_ui_automation_graph_receipt.json";
+    if (!InstallMaterializedRecipeContractForTest(
+            "TestAutomationReportIncludesColorPipelineGraphReceipt_InstallsMaterializedContract")) {
+        return;
+    }
     ColorPipelineWindowState colorPipelineWindow{};
     KernelParams params{};
     SyncColorPipelineWindowFromLiveState(
@@ -563,6 +609,42 @@ void TestRenderPacingProbeReportsTimingAndDecision() {
         "render pacing probe reports preview decision dimensions");
 }
 
+void TestColorSourceMeasurementSeparatesRawAndShapedSignals() {
+    KernelParams params{};
+    params.color_shape_stack_count = 1;
+    params.color_shape_stack[0].shape = ColorPipelineShape::signed_unit_map_v1;
+    params.color_shape_stack[0].params.scale = 0.25f;
+    params.color_shape_stack[0].params.offset = 0.10f;
+    const std::vector<float> rawValues{-2.0f, -1.0f, 0.0f, 1.0f, 2.0f};
+    const ViewerUiAutomationColorSourceMeasurementProbe probe =
+        BuildViewerUiAutomationColorSourceMeasurementProbe(
+            rawValues.data(), rawValues.size(), params, 0, "root_log_proximity_v1");
+    Check(probe.valid && probe.source_id == "root_log_proximity_v1" && probe.row_index == 0,
+        "color Source measurement identifies the measured renderer row");
+    Check(probe.source_raw.finite_count == 5 && probe.source_raw.nonfinite_count == 0 &&
+            probe.source_raw.minimum == -2.0 && probe.source_raw.maximum == 2.0 &&
+            probe.source_raw.p50 == 0.0,
+        "color Source measurement reports raw renderer values before Shape");
+    Check(probe.shape_output.finite_count == 5 &&
+            probe.shape_output.minimum > 0.09 && probe.shape_output.minimum < 0.11 &&
+            probe.shape_output.maximum == 1.0 &&
+            probe.shape_output.p50 > 0.59 && probe.shape_output.p50 < 0.61,
+        "color Source measurement separately reports signed-unit Shape output");
+
+    const float nanValue = std::numeric_limits<float>::quiet_NaN();
+    const float infiniteValue = std::numeric_limits<float>::infinity();
+    const std::vector<float> nonfiniteValues{nanValue, infiniteValue, 0.0f};
+    const ViewerUiAutomationColorSourceMeasurementProbe nonfiniteProbe =
+        BuildViewerUiAutomationColorSourceMeasurementProbe(
+            nonfiniteValues.data(), nonfiniteValues.size(), params, 0,
+            "root_log_proximity_v1");
+    Check(nonfiniteProbe.valid &&
+            nonfiniteProbe.source_raw.finite_count == 1 &&
+            nonfiniteProbe.source_raw.nonfinite_count == 2 &&
+            nonfiniteProbe.shape_output.finite_count == 1 &&
+            nonfiniteProbe.shape_output.nonfinite_count == 2,
+        "color Source measurement accounts for nonfinite input in both raw and shaped domains");
+}
 void TestRenderedFrameProbeHash() {
     RenderedFrameState frame{};
     std::vector<uint32_t> rgba = {0xff000000u, 0xff112233u, 0xff445566u, 0xff778899u};
@@ -594,6 +676,7 @@ int main() {
     TestColorPipelineGraphReceiptBuilderReportsLinearStackTruth();
     TestAutomationReportIncludesColorPipelineGraphReceipt();
     TestRenderPacingProbeReportsTimingAndDecision();
+    TestColorSourceMeasurementSeparatesRawAndShapedSignals();
     TestRenderedFrameProbeHash();
     if (g_failed != 0) {
         std::printf("test_viewer_ui_automation_report: %d failure(s)\n", g_failed);
