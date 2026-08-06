@@ -1496,147 +1496,44 @@ inline bool ApplyColorPipelineRecipeToDraft(
         return false;
     }
 
-    if (color_pipeline_core::IsColorPipelineRecipeV2GraphAuthorityActive()) {
-        std::vector<ColorPipelineLaneState> projectedLanes;
-        std::string projectionError;
-        if (!color_pipeline_core::TryBuildColorPipelineRecipeLanes(
-                recipeId,
-                &projectedLanes,
-                &projectionError)) {
-            PushColorPipelineValidationMessage(ioState, projectionError);
-            return false;
-        }
-        ColorPipelineWindowState probe = *ioState;
-        for (const ColorPipelineLaneState& projectedLane : projectedLanes) {
-            bool foundLane = false;
-            for (ColorPipelineLaneState& lane : probe.lanes) {
-                if (lane.lane_id != projectedLane.lane_id) {
-                    continue;
-                }
-                lane.rows = projectedLane.rows;
-                foundLane = true;
-                break;
-            }
-            if (!foundLane) {
-                PushColorPipelineValidationMessage(
-                    ioState,
-                    std::string("Missing Color Pipeline recipe lane: ") + projectedLane.lane_id);
-                return false;
-            }
-        }
-        for (ColorPipelineLaneState& lane : probe.lanes) {
-            if (!EnsureColorPipelineLaneRowsInitialized(&lane, &probe.next_row_id)) {
-                PushColorPipelineValidationMessage(
-                    ioState,
-                    std::string("Failed to initialize Color Pipeline recipe row ids for lane: ") + lane.lane_id);
-                return false;
-            }
-        }
-        *ioState = std::move(probe);
-        return true;
-    }
-
-    const MaterializedColorPipelineRecipe* recipe =
-        color_pipeline_core::FindActiveColorPipelineRecipe(recipeId);
-    if (!recipe) {
-        PushColorPipelineValidationMessage(ioState, std::string("Unknown Color Pipeline recipe: ") + recipeId);
+    std::vector<ColorPipelineLaneState> projectedLanes;
+    std::string projectionError;
+    if (!color_pipeline_core::TryBuildColorPipelineRecipeLanes(
+            recipeId,
+            &projectedLanes,
+            &projectionError)) {
+        PushColorPipelineValidationMessage(ioState, projectionError);
         return false;
     }
-
-    struct RecipeLaneSpec {
-        const char* lane_id;
-        const std::string* function_id;
-    };
-    const RecipeLaneSpec laneSpecs[] = {
-        {"source", &recipe->source},
-        {"shape", &recipe->shape},
-        {"palette", &recipe->palette},
-        {"grading", &recipe->grading},
-    };
-
     ColorPipelineWindowState probe = *ioState;
-    for (const RecipeLaneSpec& laneSpec : laneSpecs) {
+    for (const ColorPipelineLaneState& projectedLane : projectedLanes) {
         bool foundLane = false;
-        for (std::size_t laneIndex = 0; laneIndex < probe.lanes.size(); ++laneIndex) {
-            ColorPipelineLaneState& lane = probe.lanes[laneIndex];
-            if (lane.lane_id != laneSpec.lane_id) {
+        for (ColorPipelineLaneState& lane : probe.lanes) {
+            if (lane.lane_id != projectedLane.lane_id) {
                 continue;
             }
+            lane.rows = projectedLane.rows;
             foundLane = true;
-            while (lane.rows.size() > 1) {
-                lane.rows.pop_back();
-            }
-            if (lane.rows.empty() && !AddColorPipelineLaneRow(&probe, laneIndex, laneSpec.function_id->c_str())) {
-                return false;
-            }
-            if (!SetColorPipelineRecipeLaneFunction(&probe, lane, laneSpec.function_id->c_str())) {
-                return false;
-            }
             break;
         }
         if (!foundLane) {
-            PushColorPipelineValidationMessage(ioState, std::string("Missing Color Pipeline recipe lane: ") + laneSpec.lane_id);
+            PushColorPipelineValidationMessage(
+                ioState,
+                std::string("Missing Color Pipeline recipe lane: ") + projectedLane.lane_id);
             return false;
         }
     }
-
-    if (std::string(recipeId) == "sdf_normal_angle_beauty") {
-        bool appliedBeautyDefaults = false;
-        for (std::size_t laneIndex = 0; laneIndex < probe.lanes.size(); ++laneIndex) {
-            ColorPipelineLaneState& lane = probe.lanes[laneIndex];
-            if (lane.lane_id != "source" || lane.rows.empty()) {
-                continue;
-            }
-            ColorPipelineRowState& sourceRow = lane.rows[0];
-            std::string error;
-            if (!color_pipeline_core::SetColorPipelineParamEnum(
-                    &sourceRow,
-                    "signal.sdf_gate",
-                    "boundary_band",
-                    &error) ||
-                !color_pipeline_core::SetColorPipelineParamNumber(
-                    &sourceRow,
-                    "signal.sdf_gate_width_px",
-                    6.0,
-                    &error) ||
-                !color_pipeline_core::SetColorPipelineParamNumber(
-                    &sourceRow,
-                    "signal.blend_weight",
-                    1.0,
-                    &error)) {
-                PushColorPipelineValidationMessage(ioState, error);
-                return false;
-            }
-            if (!AddColorPipelineLaneRow(&probe, laneIndex, "lens_field_v2_distance")) {
-                return false;
-            }
-            ColorPipelineRowState& lensRow = lane.rows.back();
-            if (!color_pipeline_core::SetColorPipelineParamNumber(
-                    &lensRow,
-                    "signal.sign_contrast",
-                    0.35,
-                    &error) ||
-                !color_pipeline_core::SetColorPipelineParamNumber(
-                    &lensRow,
-                    "signal.blend_weight",
-                    0.48,
-                    &error)) {
-                PushColorPipelineValidationMessage(ioState, error);
-                return false;
-            }
-            appliedBeautyDefaults = true;
-            break;
-        }
-        if (!appliedBeautyDefaults) {
-            PushColorPipelineValidationMessage(ioState, "SDF Normal Angle Beauty recipe could not find a Source row");
+    for (ColorPipelineLaneState& lane : probe.lanes) {
+        if (!EnsureColorPipelineLaneRowsInitialized(&lane, &probe.next_row_id)) {
+            PushColorPipelineValidationMessage(
+                ioState,
+                std::string("Failed to initialize Color Pipeline recipe row ids for lane: ") + lane.lane_id);
             return false;
         }
     }
-
     *ioState = std::move(probe);
     return true;
 }
-
 inline bool AddColorPipelineLaneRow(
     ColorPipelineWindowState* ioState,
     std::size_t laneIndex,
@@ -4556,12 +4453,8 @@ inline bool ResolveColorPipelineRecipe(
     outResolved->capability_producer_generation =
         currentState.producer_capability_snapshot.producer_generation;
     outResolved->required_capability_ids = std::move(requiredCapabilities);
-    outResolved->application_authority =
-        color_pipeline_core::IsColorPipelineRecipeV2GraphAuthorityActive()
-            ? "recipe_v2_graph"
-            : "legacy_recipe_tuple";
-    outResolved->fallback_active =
-        color_pipeline_core::IsColorPipelineRecipeGraphFallbackEnabledForTests();
+    outResolved->application_authority = "recipe_v2_graph";
+    outResolved->fallback_active = false;
     outResolved->prior_runtime_generation = currentState.recipe_application_generation;
     if (const MaterializedColorPipelineRecipeV2* recipeV2 =
             color_pipeline_core::FindActiveColorPipelineRecipeV2(recipeId)) {
@@ -4627,17 +4520,12 @@ inline bool PrepareColorPipelineApplication(
         return false;
     }
 
-    const std::string currentAuthority =
-        color_pipeline_core::IsColorPipelineRecipeV2GraphAuthorityActive()
-            ? "recipe_v2_graph"
-            : "legacy_recipe_tuple";
-    if (currentAuthority != resolved.application_authority ||
-        color_pipeline_core::IsColorPipelineRecipeGraphFallbackEnabledForTests() !=
-            resolved.fallback_active) {
-        if (outError) *outError = "recipe_application_authority_changed: recipe authority changed after Resolve";
+    if (!color_pipeline_core::IsColorPipelineRecipeV2GraphAuthorityActive() ||
+        resolved.application_authority != "recipe_v2_graph" ||
+        resolved.fallback_active) {
+        if (outError) *outError = "recipe_application_authority_changed: recipe_v2 graph authority changed after Resolve";
         return false;
     }
-
     const ColorPipelineRecipeApplicability applicability =
         DescribeResolvedColorPipelineRecipeApplicability(
             resolved,
@@ -4684,10 +4572,8 @@ inline bool PrepareColorPipelineApplication(
     receipt.capability_snapshot_id = currentCapabilities->snapshot_id;
     receipt.capability_producer_generation = currentCapabilities->producer_generation;
     receipt.application_authority = resolved.application_authority;
-    receipt.fallback_active = resolved.fallback_active;
-    receipt.fallback_switch_id = resolved.fallback_active
-        ? color_pipeline_core::ColorPipelineRecipeGraphFallbackSwitchId()
-        : std::string{};
+    receipt.fallback_active = false;
+    receipt.fallback_switch_id.clear();
     receipt.semantic_node_ids = resolved.semantic_node_ids;
     receipt.source_fold_node_ids = resolved.source_fold_node_ids;
     receipt.source_fold_edge_ids = resolved.source_fold_edge_ids;

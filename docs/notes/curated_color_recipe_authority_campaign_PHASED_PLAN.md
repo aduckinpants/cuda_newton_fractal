@@ -7,11 +7,11 @@
 - [x] Preserve the current Color Pipeline layout and public selector/Apply workflow.
 - [x] Keep external state-tool integration deferred; engine-native rails remain authoritative.
 - [x] Execute Slice 0 baseline lock before product mutation.
-- [ ] Continue through independent authority, Beauty, and recipe gates only while prerequisites remain green.
+- [x] Continue through independent authority, Beauty, and recipe gates only while prerequisites remain green.
 
 ## Current Phase
 
-Slice 6 - Curated Qualification implementation and hostile audit are complete from clean, pushed, receipted, rearward-reviewed Slice 5 checkpoint 3047baf88828452bb7090153eb49caf56dcb722f. Final validation, checkpoint, receipts, push, and rearward review remain before Slice 7 Runtime Closure.
+Slice 7 - Runtime Closure implementation, validation, and hostile audit are complete. The expired legacy tuple fallback is retired, the freshly published graph-only runtime passed the campaign public Apply/replay matrix, and checkpoint receipts, rearward review, and push follow this prepared closure commit.
 
 The hard-denial workflow blocks raw branch mutation but this checkout has no approved branch/merge wrapper. This campaign therefore starts as an explicitly stacked slice on codex/model-diagnostics-overlay-preplanning. Eventual upstream integration must preserve both closed planning campaigns.
 
@@ -45,8 +45,8 @@ Slices 0 through 5 are closed. Slice 6 adds only the minimum truthful source/sha
 - [x] Slice 6: lock dedicated Root Glow metric semantics and truthful color-metric arithmetic tier.
 - [x] Slice 6: add the signed-to-unit normalization shape and three graph-authoritative recipe descriptors.
 - [x] Slice 6: independently qualify Lens Topography, Curvature Relief, and Root Glow or leave a failed recipe visible-disabled with an authoritative reason.
-- [ ] Slice 6: hostile audit, focused native/runtime validation, checkpoint, receipts, push, and rearward review.
-- [ ] Slice 7: Runtime Closure and replan.
+- [x] Slice 6: hostile audit, focused native/runtime validation, checkpoint, receipts, push, and rearward review.
+- [x] Slice 7: Runtime Closure implementation, validation, hostile audit, and checkpoint preparation; machine receipts, rearward review, and push follow the committed state.
 
 ## Scope Lock
 
@@ -154,7 +154,7 @@ The committed receipt comes from the prepared object actually committed and cont
 
 ## Fallback Lifecycle
 
-color_pipeline.recipe_v2.force_legacy_recipe_tuple defaults false, is internal/test-only, is not persisted, is reported whenever active, is tested in CI, and never reports graph authority. It expires after all current recipes and Beauty are bit-exact under graph authority plus one subsequent checkpoint campaign without rollback use.
+The temporary `color_pipeline.recipe_v2.force_legacy_recipe_tuple` switch expired in Slice 7 after Beauty and all current recipes proved graph-authoritative and Slice 6 closed without rollback use. Legacy tuple descriptors remain non-executable reference/catalog data. Receipt compatibility fields remain present but are always `fallback_active=false` with an empty switch id; missing recipe_v2 authority now fails closed.
 
 ## Qualification Standard
 
@@ -226,7 +226,7 @@ Slice 5 authoring contract:
 - `recipe_edge_adapter(recipe, from_node, to_node, adapter)` grants explicit consent to one closed-inventory adapter on one edge. Automatic insertion and unknown adapters fail closed.
 - Beauty declares Source nodes `source.normal_angle` and `source.lens_response`, fold node `fold.lens_response`, and explicit adapter node/edge receipt `fold.lens_response -> adapter.unit_cycle_as_phase_turns -> shape.identity`.
 - Graph projection materializes Source rows in source-fold order, then one Shape, Palette, and Grading row. The first Source initializes the accumulator at blend `1.0`; later Source blend remains the existing destination-weighted row blend.
-- Normal graph authority consumes recipe_v2 projection directly. The old Beauty special expansion remains reachable only under `color_pipeline.recipe_v2.force_legacy_recipe_tuple`, reports legacy authority, and is not persisted.
+- Normal graph authority consumes recipe_v2 projection directly. Slice 5 retained the old Beauty expansion behind a temporary test-only rollback switch; Slice 7 retired that switch after its bounded expiry condition was met.
 - No visible UI change, row arithmetic change, new function, new recipe, SDF operator, or graph editor belongs in Slice 5.
 
 
@@ -275,13 +275,15 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 | Slice 3 capability/applicability authority | complete | runtime-owned snapshot and shared query; 467 window assertions; report and finding-sidecar native rails; published public selector/Apply proof; current SDF validity proof; final checkpoint/receipts follow. |
 | Slice 4 existing recipe parity | complete | prepared/committed graph and fallback receipts; exact/modified/none/unknown-after-reload provenance; 3364 core and 477 window assertions; report/capture/state rails; six frozen live FNV and headless SHA-256 recipe goldens; published runtime and JUnit proof green; commit 9654db0; receipts and rearward review are ok. |
 | Slice 5 SDF Beauty migration | complete | commits 2399e14 and 3047baf; explicit multi-Source metadata/fold, typed overrides, explicit adapter receipt, graph-only normal expansion, legacy fallback preservation, 48 materializer tests, 3367 core assertions, 479 window assertions, published runtime, frozen live/headless Beauty parity, repeated public-path stability proof, receipts, push, and rearward review are green. |
-| Slice 6 curated qualification | checkpoint closure prepared | Lens Topography and Curvature Relief are independently enabled. Root Glow remains `visible_disabled_recipe_specific` because its locked candidate reached only 5/32 occupied palette bins and all three fixed sensitivity deltas stayed below 0.01. The dedicated Root Glow source and signed normalization remain available for custom rows; public Apply rejection is atomic. Materializer, core, window, coloring, capture, schema, state IO, sample-tier, published runtime, exact replay, fixed perturbation, scoped consumer receipt, and timing evidence are green. |
+| Slice 6 curated qualification | complete | Lens Topography and Curvature Relief are independently enabled. Root Glow remains `visible_disabled_recipe_specific` because its locked candidate reached only 5/32 occupied palette bins and all three fixed sensitivity deltas stayed below 0.01. The dedicated Root Glow source and signed normalization remain available for custom rows; public Apply rejection is atomic. Materializer, core, window, coloring, capture, schema, state IO, sample-tier, published runtime, exact replay, fixed perturbation, scoped consumer receipt, and timing evidence are green. |
+
+| Slice 7 runtime closure | complete | Campaign-level public selector/Apply and replay proof is green on the freshly published graph-only runtime. Fallback-lifecycle audit found and removed the expired tuple execution path; missing graph authority fails closed; graph-only core/window native rails and the final hostile reread pass. Checkpoint receipts, rearward review, and push follow the prepared commit. |
 
 ## Hostile Audit
 
 - Status: complete
-- Scope: Slice 6 dedicated metric/shape authority, independent recipe gates, capability precision, public Apply, committed receipts, capture IDs, deterministic qualification, and publish/test workflow.
-- Result: pass 1 found real metadata, schedule-bridge, capture-wire-ID, timeout, and qualification defects. Pass 2 repaired cross-surface schema, report, state, capture, sample-tier, and code-quality omissions. Pass 3 found no additional defect after focused native and published-runtime closure proof.
+- Scope: Slice 7 whole-campaign public Apply, graph/fallback authority, rejected-recipe atomicity, committed receipts, capture/reload provenance, fallback lifecycle, and workflow closure.
+- Result: pass 1 found the temporary tuple rollback path had outlived its locked expiry condition. RED rails proved missing graph metadata still executed legacy tuples; the switch and executable tuple path are now removed, missing graph authority fails closed, formerly implicit fixtures install graph metadata explicitly, and the freshly published public-path/replay matrix is green.
 
 ## Audit Passes
 
@@ -309,7 +311,9 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Slice 6 pass 1 - found and repaired generated-metadata drift, missing Root Glow schedule bridge, capture IDs serialized as `unknown`, an unsafe publish timeout, and a Root Glow candidate that failed locked gates.
 - [x] Slice 6 pass 2 - repaired schema visibility, live and finding consumer reports, state compatibility mirrors, sample-tier dispatch, and the code-quality regression exposed by the broader authority inventory.
 - [x] Slice 6 pass 3 - clean re-read plus focused native, generated-metadata, published public-path, replay, fixed-perturbation, and qualification proof found no additional Slice 6 defect.
-- Slice 7 fallback-lifecycle and whole-campaign closure audit remains pending.
+- [x] Slice 7 pass 1 - campaign-level public selector/Apply, committed graph receipt, rejected-recipe non-mutation, and replay proof passed; lifecycle review found the expired legacy tuple switch still executable.
+- [x] Slice 7 pass 2 - RED core/window rails proved missing graph authority still executed tuples; the expired switch and executable tuple path were removed, missing graph authority now fails closed, and graph-only native rails pass.
+- [x] Slice 7 pass 3 - clean graph-only reread plus freshly published selector/Apply, capture/reload provenance, Beauty migration, and independent qualification proof found no additional defect.
 
 ## Audit Findings
 - [x] Current phase-like metadata labels turn values as phase.radians.
@@ -368,6 +372,8 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Capture Finding root-pattern review and automatic sample-tier selection still recognized only older root metrics. The new source now appears as a scoped finding consumer and preserves the established root-metric evaluator-tier policy; dedicated native rails cover both.
 - [x] The first state-mirror repair increased an already tracked catch-all function from 33 to 34 lines. Equivalent case labels were consolidated, restoring the 93/100 code-quality baseline without changing behavior.
 - [x] The clean neighbor-dispatch inventory is retained under `artifacts/curated_color_recipe_authority_campaign/qualification/` so future source/shape additions can compare enum coverage instead of relying on local search memory.
+- [x] Slice 7 fallback-lifecycle audit found the temporary legacy tuple switch had met its expiry condition but remained executable. Core and public draft-application RED rails failed first; the switch and tuple execution path are retired, reference descriptors remain non-executable, and missing graph authority now fails closed.
+
 ## Planned Validation Targets
 
 - contract validation and phased-plan sync
@@ -380,4 +386,4 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 
 ## Stop Point
 
-Slice 6 Curated Qualification is active. Continue through independent recipe gates and Slice 7 Runtime Closure while authority remains green. Preplanned sliced work is not exhausted; after Slice 7, stop explicitly for replan before more product mutation.
+Slice 7 Runtime Closure implementation, validation, and hostile audit are complete; machine receipts, rearward review, and push follow the prepared commit. Preplanned sliced work is exhausted; stop for replan before more product mutation.

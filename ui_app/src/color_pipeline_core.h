@@ -1175,22 +1175,6 @@ inline void SetColorPipelineTypedCompatibilityPilotEnabledForTests(bool enabled)
     MutableColorPipelineTypedCompatibilityPilotEnabledStorage() = enabled;
 }
 
-inline bool& MutableColorPipelineRecipeGraphFallbackEnabledStorage() {
-    static bool enabled = false;
-    return enabled;
-}
-
-inline bool IsColorPipelineRecipeGraphFallbackEnabledForTests() {
-    return MutableColorPipelineRecipeGraphFallbackEnabledStorage();
-}
-
-inline void SetColorPipelineRecipeGraphFallbackEnabledForTests(bool enabled) {
-    MutableColorPipelineRecipeGraphFallbackEnabledStorage() = enabled;
-}
-
-inline const char* ColorPipelineRecipeGraphFallbackSwitchId() {
-    return "color_pipeline.recipe_v2.force_legacy_recipe_tuple";
-}
 
 inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
     const char* sourceFunctionId,
@@ -1536,7 +1520,6 @@ inline bool TryInstallColorPipelineMetadataCatalog(
 inline void ClearColorPipelineMetadataCatalogForTests() {
     MutableColorPipelineMetadataCatalogStorage() = ColorPipelineMetadataCatalogStorage{};
     SetColorPipelineTypedCompatibilityPilotEnabledForTests(true);
-    SetColorPipelineRecipeGraphFallbackEnabledForTests(false);
 }
 
 inline bool IsColorPipelineMetadataCatalogActive() {
@@ -2048,8 +2031,7 @@ inline bool IsColorPipelineMetadataRecipeExpansionActive() {
 
 inline bool IsColorPipelineRecipeV2GraphAuthorityActive() {
     const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
-    return storage.active && !storage.recipe_v2.empty() &&
-        !IsColorPipelineRecipeGraphFallbackEnabledForTests();
+    return storage.active && !storage.recipe_v2.empty();
 }
 
 inline std::string ColorPipelineRecipeExpansionAuthorityId() {
@@ -2057,11 +2039,9 @@ inline std::string ColorPipelineRecipeExpansionAuthorityId() {
         return "recipe_v2_graph";
     }
     if (IsColorPipelineMetadataRecipeExpansionActive()) {
-        return IsColorPipelineRecipeGraphFallbackEnabledForTests()
-            ? "materialized_json_legacy_recipe_tuple"
-            : "materialized_json";
+        return "materialized_json_descriptors_only";
     }
-    return "hardcoded";
+    return "hardcoded_descriptors_only";
 }
 
 inline const std::vector<MaterializedColorPipelineRecipe>& GetActiveColorPipelineRecipes() {
@@ -2537,62 +2517,24 @@ inline bool TryBuildColorPipelineRecipeLanes(
         if (outError) *outError = "Color Pipeline recipe expansion requires a recipe id and output lanes";
         return false;
     }
-
-    if (IsColorPipelineRecipeV2GraphAuthorityActive()) {
-        const MaterializedColorPipelineRecipeV2* recipeV2 = FindActiveColorPipelineRecipeV2(recipeId);
-        if (recipeV2) {
-            return TryProjectColorPipelineRecipeV2ToLanes(*recipeV2, outLanes, outError);
-        }
-        if (FindActiveColorPipelineRecipe(recipeId)) {
-            if (outError) {
-                *outError = std::string("Missing recipe_v2 graph metadata for Color Pipeline recipe: ") + recipeId;
-            }
-            return false;
-        }
-    }
-
-    const MaterializedColorPipelineRecipe* recipe = FindActiveColorPipelineRecipe(recipeId);
-    if (!recipe) {
-        if (outError) *outError = std::string("Unknown Color Pipeline recipe: ") + recipeId;
+    if (!IsColorPipelineRecipeV2GraphAuthorityActive()) {
+        if (outError) *outError = "recipe_v2 graph authority unavailable; legacy tuple application is retired";
         return false;
     }
 
-    const struct RecipeLaneSpec {
-        const char* lane_id;
-        const std::string* function_id;
-    } laneSpecs[] = {
-        {"source", &recipe->source},
-        {"shape", &recipe->shape},
-        {"palette", &recipe->palette},
-        {"grading", &recipe->grading},
-    };
-
-    std::vector<ColorPipelineLaneState> lanes;
-    lanes.reserve(4);
-    for (std::size_t index = 0; index < 4; ++index) {
-        const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(laneSpecs[index].lane_id);
-        if (!catalog) {
-            if (outError) *outError = std::string("Color Pipeline recipe references missing lane: ") + laneSpecs[index].lane_id;
-            return false;
-        }
-        ColorPipelineLaneState lane;
-        if (!BuildColorPipelineLaneWithSingleRow(
-                *catalog,
-                laneSpecs[index].function_id->c_str(),
-                static_cast<std::uint64_t>(index + 1),
-                &lane,
-                outError)) {
-            return false;
-        }
-        lanes.push_back(std::move(lane));
+    const MaterializedColorPipelineRecipeV2* recipeV2 = FindActiveColorPipelineRecipeV2(recipeId);
+    if (recipeV2) {
+        return TryProjectColorPipelineRecipeV2ToLanes(*recipeV2, outLanes, outError);
     }
-    *outLanes = std::move(lanes);
-    if (outError) {
-        outError->clear();
+    if (FindActiveColorPipelineRecipe(recipeId)) {
+        if (outError) {
+            *outError = std::string("Missing recipe_v2 graph metadata for Color Pipeline recipe: ") + recipeId;
+        }
+        return false;
     }
-    return true;
+    if (outError) *outError = std::string("Unknown Color Pipeline recipe: ") + recipeId;
+    return false;
 }
-
 inline bool TryGetColorPipelineParamNumber(
     const ColorPipelineRowState& row,
     const char* path,

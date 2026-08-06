@@ -119,7 +119,7 @@ Required questions:
 ## Audit Passes
 
 - [x] Pass 1 - review graph projection/parity seam; found missing negative projection coverage and added fail-closed tests for `shadow_only` and edge-function mismatch.
-- [x] Pass 2 - review fallback/fail-closed behavior; fallback switch now has a stable id and native proof of `materialized_json_legacy_recipe_tuple` authority.
+- [x] Pass 2 - historical Slice A proof made fallback/fail-closed authority explicit. The temporary fallback switch was later retired by Curated Color Recipe Authority Slice 7 after its bounded expiry condition was met.
 - [x] Pass 3 - review runtime/UI surfaces; found stale no-mouse contract count expecting 4 recipes while published runtime reports 6, then repaired the test and reran runtime proof.
 - [x] Pass 4 - clean re-read after repairs; no visible UI scope leak, graph editor work, arbitrary graph recipes, new functions, SDF ops, or Salticid runtime dependency added.
 
@@ -127,7 +127,7 @@ Required questions:
 
 - [x] Finding 1: Native graph projection had no direct negative test for malformed `recipe_v2` projection metadata. Added `TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph`; native rail passed `test_color_pipeline_core` 3325/0.
 - [x] Finding 2: Published runtime UI-Salt contract test was stale and expected 4 active recipes while the staged contract/runtime correctly expose 6. Updated the no-mouse test to assert 6 recipes and reran runtime proof 4/4.
-- [x] Clean pass: fallback authority is explicit as `materialized_json_legacy_recipe_tuple`, graph authority is explicit as `recipe_v2_graph`, and visible Color Pipeline UI remains the unchanged dropdown/apply workflow.
+- [x] Clean pass: Slice A distinguished temporary fallback from `recipe_v2_graph` authority. Current architecture is graph-only for recipe application; missing graph authority fails closed, while the visible dropdown/apply workflow remains unchanged.
 
 ## Planned Validation Targets
 

@@ -715,6 +715,19 @@ void TestPresetWorkflowTruthSurface() {
 
 void TestRecipeExpansionUsesExistingWindowDraftRows() {
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    ColorPipelineWindowState unavailableState{};
+    Check(EnsureColorPipelineWindowInitialized(&unavailableState),
+        "TestRecipeExpansionUsesExistingWindowDraftRows_InitializesUnavailableState");
+    const std::vector<ColorPipelineLaneState> unavailableBefore = unavailableState.lanes;
+    Check(!ApplyColorPipelineRecipeToDraft(&unavailableState, "default_smooth_escape") &&
+            unavailableState.lanes.size() == unavailableBefore.size() &&
+            !unavailableState.validation_messages.empty() &&
+            unavailableState.validation_messages.back().find("recipe_v2 graph authority unavailable") != std::string::npos,
+        "TestRecipeExpansionUsesExistingWindowDraftRows_MissingGraphAuthorityFailsWithoutMutation");
+    if (!InstallMaterializedRecipeContractForTest(
+            "TestRecipeExpansionUsesExistingWindowDraftRows_InstallsGraphAuthority")) {
+        return;
+    }
     ColorPipelineWindowState state{};
     Check(EnsureColorPipelineWindowInitialized(&state),
         "TestRecipeExpansionUsesExistingWindowDraftRows_Initializes");
@@ -826,6 +839,10 @@ void TestRecipeExpansionUsesExistingWindowDraftRows() {
 
 void TestRecipePresetApplicationRejectsAtomically() {
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    if (!InstallMaterializedRecipeContractForTest(
+            "TestRecipePresetApplicationRejectsAtomically_InstallsGraphAuthority")) {
+        return;
+    }
     ColorPipelineWindowState state{};
     KernelParams params = SmoothEscapeParams();
     Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::multibrot, &params),
@@ -996,38 +1013,6 @@ void TestRecipePresetApplicationCommitsOnlyAfterPreparation() {
             &interaction),
         "TestRecipePresetApplicationCommitsOnlyAfterPreparation_ConsumedPreparationCannotRecommit");
 
-    color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(true);
-    ColorPipelineWindowState fallbackState{};
-    KernelParams fallbackParams = SmoothEscapeParams();
-    Check(SyncColorPipelineWindowFromLiveState(
-            &fallbackState, FractalType::multibrot, &fallbackParams),
-        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FallbackSyncsBaseline");
-    bool fallbackDirty = false;
-    Check(ApplyColorPipelineRecipePresetToLive(
-            &fallbackState,
-            "default_smooth_escape",
-            FractalType::multibrot,
-            &fallbackParams,
-            &fallbackDirty) &&
-            fallbackState.recipe_application_receipt.valid &&
-            fallbackState.recipe_application_receipt.application_authority ==
-                "legacy_recipe_tuple" &&
-            fallbackState.recipe_application_receipt.fallback_active &&
-            fallbackState.recipe_application_receipt.semantic_node_ids.empty() &&
-            DescribeCurrentColorPipelineRecipeMatch(fallbackState) == "exact",
-        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FallbackNeverClaimsGraphAuthority");
-    Check(ApplyColorPipelineRecipeToDraft(&fallbackState, "sdf_normal_angle_beauty"),
-        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FallbackBeautyStillExpands");
-    const ColorPipelineLaneState* fallbackBeautySource = FindLane(fallbackState, "source");
-    Check(fallbackBeautySource && fallbackBeautySource->rows.size() == 2 &&
-            fallbackBeautySource->rows[0].function_id == "sdf_normal_angle" &&
-            fallbackBeautySource->rows[1].function_id == "lens_field_v2_distance" &&
-            RowEnum(fallbackBeautySource->rows[0], "signal.sdf_gate", "boundary_band") &&
-            RowNumber(fallbackBeautySource->rows[0], "signal.sdf_gate_width_px", 6.0) &&
-            RowNumber(fallbackBeautySource->rows[1], "signal.sign_contrast", 0.35) &&
-            RowNumber(fallbackBeautySource->rows[1], "signal.blend_weight", 0.48),
-        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FallbackBeautyOwnsLegacySpecialCase");
-    color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(false);
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
 }
 void TestCandidateDraftOnlyTruthAndCopySurfaces() {
@@ -1502,6 +1487,10 @@ void TestFloatAuthoringUsesBinary32RoundTripText() {
 
 void TestRecipeCapabilitySnapshotSharedAuthority() {
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    if (!InstallMaterializedRecipeContractForTest(
+            "TestRecipeCapabilitySnapshotSharedAuthority_InstallsGraphAuthority")) {
+        return;
+    }
     ColorPipelineWindowState state{};
     KernelParams params = SmoothEscapeParams();
     Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::multibrot, &params),

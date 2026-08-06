@@ -1998,12 +1998,19 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
     Check(!color_pipeline_core::IsColorPipelineMetadataRecipeExpansionActive(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcoded");
-    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("hardcoded"),
+    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("hardcoded_descriptors_only"),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcodedAuthority");
     Check(color_pipeline_core::CountHardcodedColorPipelineRecipes() == 9,
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeCount");
     Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedFallbackCountIsTruthful");
+    std::vector<ColorPipelineLaneState> unavailableLanes;
+    std::string unavailableError;
+    Check(!color_pipeline_core::TryBuildColorPipelineRecipeLanes(
+            "default_smooth_escape", &unavailableLanes, &unavailableError) &&
+            unavailableLanes.empty() &&
+            unavailableError.find("recipe_v2 graph authority unavailable") != std::string::npos,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_MissingGraphAuthorityFailsClosed");
 
     const std::vector<MaterializedColorPipelineRecipe>& hardcodedRecipes =
         color_pipeline_core::GetHardcodedColorPipelineRecipes();
@@ -2049,12 +2056,8 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_MetadataActive");
     Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("recipe_v2_graph"),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Authority");
-    Check(std::string(color_pipeline_core::ColorPipelineRecipeGraphFallbackSwitchId()) ==
-            std::string("color_pipeline.recipe_v2.force_legacy_recipe_tuple"),
-        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackSwitchId");
     Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Count");
-    std::vector<std::vector<ColorPipelineLaneState>> graphRecipeLanes;
 
     for (const MaterializedColorPipelineRecipe& expectedRecipe : hardcodedRecipes) {
         const MaterializedColorPipelineRecipe* actualRecipe =
@@ -2097,46 +2100,8 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
                     recipeLanes[3].rows[0].function_id == expectedRecipe.grading,
                 "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_GradingLane");
         }
-        graphRecipeLanes.push_back(recipeLanes);
     }
 
-    color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(true);
-    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() ==
-            std::string("materialized_json_legacy_recipe_tuple"),
-        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackAuthority");
-    Check(graphRecipeLanes.size() == hardcodedRecipes.size(),
-        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_GraphBaselineCount");
-    for (std::size_t recipeIndex = 0; recipeIndex < hardcodedRecipes.size(); ++recipeIndex) {
-        std::vector<ColorPipelineLaneState> fallbackLanes;
-        error.clear();
-        Check(color_pipeline_core::TryBuildColorPipelineRecipeLanes(
-                hardcodedRecipes[recipeIndex].id,
-                &fallbackLanes,
-                &error),
-            (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackBuildRecipeLanes: ") +
-                hardcodedRecipes[recipeIndex].id + ": " + error).c_str());
-        if (hardcodedRecipes[recipeIndex].id == "sdf_normal_angle_beauty") {
-            Check(recipeIndex < graphRecipeLanes.size() &&
-                    graphRecipeLanes[recipeIndex][0].rows.size() == 2 &&
-                    fallbackLanes[0].rows.size() == 1,
-                "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_BeautyFallbackRemainsLegacyTupleOnly");
-        } else {
-            const bool curatedRecipe =
-                hardcodedRecipes[recipeIndex].id == "root_glow" ||
-                hardcodedRecipes[recipeIndex].id == "curvature_relief" ||
-                hardcodedRecipes[recipeIndex].id == "lens_topography";
-            const bool equivalent = recipeIndex < graphRecipeLanes.size() &&
-                ColorPipelineLaneVectorsEquivalent(graphRecipeLanes[recipeIndex], fallbackLanes);
-            Check(curatedRecipe ? !equivalent : equivalent,
-                (std::string(curatedRecipe
-                    ? "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_CuratedRecipeFallbackReportsUntunedLegacyTuple: "
-                    : "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_AllExistingRecipeFallbackParity: ") +
-                    hardcodedRecipes[recipeIndex].id).c_str());
-        }
-    }
-    color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(false);
-    Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("recipe_v2_graph"),
-        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackRestoresGraphAuthority");
 
     std::vector<ColorPipelineLaneState> rejectedLanes;
     error.clear();
