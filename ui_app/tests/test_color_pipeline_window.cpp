@@ -836,8 +836,10 @@ void TestRecipePresetApplicationRejectsAtomically() {
     Check(!dirty && !interaction.interacted && !interaction.has_active_item,
         "TestRecipePresetApplicationRejectsAtomically_DirtyAndInteractionUnchanged");
     Check(!state.validation_messages.empty() &&
-            state.validation_messages.back().find("not allowed") != std::string::npos,
-        "TestRecipePresetApplicationRejectsAtomically_RejectionIsReportable");    state.last_recipe_application_error = "stale recipe rejection";
+            state.validation_messages.back().find("missing_required_capability") != std::string::npos &&
+            state.validation_messages.back().find("color_pipeline.source.root_phase") != std::string::npos,
+        "TestRecipePresetApplicationRejectsAtomically_RejectionIsReportable");
+    state.last_recipe_application_error = "stale recipe rejection";
     PushColorPipelineValidationMessage(&state, state.last_recipe_application_error);
     bool manualChanged = true;
     Check(ApplyColorPipelineDraftToLiveState(
@@ -1339,6 +1341,105 @@ void TestFloatAuthoringUsesBinary32RoundTripText() {
     Check(end && *end == '\0' && parsed == value,
         "TestFloatAuthoringUsesBinary32RoundTripText_FormatParsePreservesExactFloat");
 }
+
+void TestRecipeCapabilitySnapshotSharedAuthority() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::multibrot, &params),
+        "TestRecipeCapabilitySnapshotSharedAuthority_SyncsMultibrot");
+    Check(state.producer_capability_snapshot.initialized &&
+            !state.producer_capability_snapshot.snapshot_id.empty() &&
+            state.producer_capability_snapshot.producer_id == "multibrot" &&
+            state.producer_capability_snapshot.quality_observations.empty(),
+        "TestRecipeCapabilitySnapshotSharedAuthority_OwnsSeparatedRuntimeSnapshot");
+
+    const ColorPipelineRecipeApplicability phaseApplicability =
+        DescribeColorPipelineRecipeApplicability(state, "phase_orbit_wheel");
+    const ColorPipelineRecipeApplicability rootApplicability =
+        DescribeColorPipelineRecipeApplicability(state, "root_phase_wheel");
+    Check(phaseApplicability.available &&
+            phaseApplicability.capability_snapshot_id == state.producer_capability_snapshot.snapshot_id,
+        "TestRecipeCapabilitySnapshotSharedAuthority_PhaseUsesCurrentSnapshot");
+    Check(!rootApplicability.available &&
+            rootApplicability.reason_code == "missing_required_capability" &&
+            rootApplicability.missing_capability_ids.size() == 1 &&
+            rootApplicability.missing_capability_ids[0] == "color_pipeline.source.root_phase",
+        "TestRecipeCapabilitySnapshotSharedAuthority_RootRecipeFailsWithStableMissingCapability");
+
+    ResolvedColorPipelineRecipe rootResolved;
+    std::string error;
+    Check(ResolveColorPipelineRecipe(state, "root_phase_wheel", &rootResolved, &error) &&
+            rootResolved.valid && error.empty(),
+        "TestRecipeCapabilitySnapshotSharedAuthority_ResolveRemainsNonMutating");
+    PreparedColorPipelineApplication prepared;
+    Check(!PrepareColorPipelineApplication(
+            rootResolved,
+            FractalType::multibrot,
+            &params,
+            &state.producer_capability_snapshot,
+            &prepared,
+            &error) &&
+            error.find("missing_required_capability") != std::string::npos &&
+            error.find("color_pipeline.source.root_phase") != std::string::npos,
+        "TestRecipeCapabilitySnapshotSharedAuthority_PrepareRechecksSharedApplicability");
+
+    ColorPipelineCapabilityRuntimeObservation fieldObservation{};
+    fieldObservation.frame_observed = true;
+    fieldObservation.frame_valid = true;
+    fieldObservation.sdf_field_requested = true;
+    fieldObservation.sdf_field_valid = false;
+    fieldObservation.sdf_field_producer_id = "lens_sdf";
+    fieldObservation.sdf_field_fail_closed_reason = "field_generation_failed";
+    ResolvedEvalMode float64Direct{};
+    float64Direct.backend = NumericBackend::float64;
+    RefreshColorPipelineProducerCapabilitySnapshot(
+        &state,
+        FractalType::explaino_magnet_root_well,
+        float64Direct,
+        fieldObservation);
+    const ColorPipelineCurrentFieldValidity* sdfValidity =
+        FindColorPipelineCurrentFieldValidity(
+            state.producer_capability_snapshot,
+            "sdf.field.signed_distance");
+    Check(state.producer_capability_snapshot.fractal_precision_tier == "float64" &&
+            state.producer_capability_snapshot.color_metric_arithmetic_tier == "float32" &&
+            sdfValidity && sdfValidity->status == "invalid" &&
+            sdfValidity->reason == "field_generation_failed" &&
+            HasColorPipelineProducerCapability(
+                state.producer_capability_snapshot,
+                "sdf.field.signed_distance"),
+        "TestRecipeCapabilitySnapshotSharedAuthority_ValidityDoesNotRewriteStaticSupport");
+
+    ColorPipelineWindowState rootState = state;
+    Check(SyncColorPipelineWindowFromLiveState(
+            &rootState,
+            FractalType::explaino_magnet_root_well,
+            &params),
+        "TestRecipeCapabilitySnapshotSharedAuthority_SyncsRootConsumer");
+    ResolvedColorPipelineRecipe resolvedOnRoot;
+    Check(ResolveColorPipelineRecipe(
+            rootState,
+            "root_phase_wheel",
+            &resolvedOnRoot,
+            &error),
+        "TestRecipeCapabilitySnapshotSharedAuthority_ResolvesRootRecipe");
+    RefreshColorPipelineProducerCapabilitySnapshot(
+        &rootState,
+        FractalType::multibrot,
+        ResolvedEvalMode{},
+        {});
+    Check(!PrepareColorPipelineApplication(
+            resolvedOnRoot,
+            FractalType::multibrot,
+            &params,
+            &rootState.producer_capability_snapshot,
+            &prepared,
+            &error) &&
+            error.find("capability_snapshot_stale") != std::string::npos,
+        "TestRecipeCapabilitySnapshotSharedAuthority_StaleResolveFailsClosed");
+}
+
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -1406,6 +1507,7 @@ int main() {
     TestRecipeExpansionUsesExistingWindowDraftRows();
     TestRecipePresetApplicationRejectsAtomically();
     TestRecipePresetApplicationCommitsOnlyAfterPreparation();
+    TestRecipeCapabilitySnapshotSharedAuthority();
     TestFloatIdentityPreservesAdjacentBinary32Edits();
     TestFloatAuthoringUsesBinary32RoundTripText();
     TestWindowUtilityContracts();

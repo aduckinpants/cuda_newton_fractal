@@ -4394,6 +4394,22 @@ static bool ProcessRuntimeWalkViewerPerFrame(
     return true;
 }
 
+static ColorPipelineCapabilityRuntimeObservation BuildColorPipelineCapabilityRuntimeObservation(
+    const RenderedFrameState& renderedFrame,
+    const ViewerUiAutomationLensSdfProbe& lensSdfProbe) {
+    ColorPipelineCapabilityRuntimeObservation observation{};
+    observation.frame_observed = renderedFrame.ready;
+    observation.frame_valid = renderedFrame.ready;
+    observation.sdf_field_requested = lensSdfProbe.color_pipeline_active;
+    observation.sdf_field_valid = lensSdfProbe.valid;
+    observation.sdf_field_producer_id = lensSdfProbe.field_producer_kind;
+    observation.sdf_field_fail_closed_reason =
+        !lensSdfProbe.field_capability_fail_closed_reason.empty()
+            ? lensSdfProbe.field_capability_fail_closed_reason
+            : lensSdfProbe.field_source_error;
+    return observation;
+}
+
 static void RunViewerFrame(
     HWND hwnd,
     const ImGuiIO& io,
@@ -4561,6 +4577,11 @@ static void RunViewerFrame(
         ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, actions.interactionChanged);
     }
 
+    RefreshColorPipelineProducerCapabilitySnapshot(
+        &colorPipelineWindow,
+        view.fractal_type,
+        stats.resolved_eval,
+        BuildColorPipelineCapabilityRuntimeObservation(renderedFrame, lensSdfProbe));
     RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &lens, &dirty, &actions.interactionChanged);
     {
         GenericEquationPackWorkbenchSetValueAutomation equationPackSetValue;
@@ -4625,6 +4646,11 @@ static void RunViewerFrame(
         actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
         rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, sdfPackViewer, renderedFrame, stats, lensSdfProbe,
         lensSdfFieldCaches, dirty);
+    RefreshColorPipelineProducerCapabilitySnapshot(
+        &colorPipelineWindow,
+        view.fractal_type,
+        stats.resolved_eval,
+        BuildColorPipelineCapabilityRuntimeObservation(renderedFrame, lensSdfProbe));
 
     RunPendingInLoopCaptures(exeDir, actions, view, params, render, lens, stats, rgba,
         renderedFrame, colorPipelineWindow, sdfPackViewer, sidecarState, sidecarStateValid,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "color_pipeline_core.h"
+#include "color_pipeline_recipe_capabilities.h"
 #include "enum_id_utils.h"
 #include "fractal_family_rules.h"
 #include "schema_binding.h"
@@ -51,6 +52,7 @@ struct ColorPipelineWindowState {
     std::uint64_t next_row_id = 1;
     std::string selected_recipe_id;
     std::string last_recipe_application_error;
+    ColorPipelineProducerCapabilitySnapshot producer_capability_snapshot;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
     std::vector<std::string> validation_messages;
@@ -86,6 +88,9 @@ struct ColorPipelineRenderInteractionState {
 struct ResolvedColorPipelineRecipe {
     bool valid = false;
     std::string recipe_id;
+    std::string capability_snapshot_id;
+    std::uint64_t capability_producer_generation = 0;
+    std::vector<std::string> required_capability_ids;
     ColorPipelineWindowState draft_state;
 };
 
@@ -1012,6 +1017,15 @@ inline bool SyncColorPipelineWindowFromLiveState(
     ColorPipelineWindowState* ioState,
     FractalType liveFractalType,
     const KernelParams* liveParams) {
+    if (ioState && (!ioState->producer_capability_snapshot.initialized ||
+        ioState->producer_capability_snapshot.producer_id !=
+            (FractalTypeId(liveFractalType) ? FractalTypeId(liveFractalType) : "unknown"))) {
+        ioState->producer_capability_snapshot = BuildColorPipelineProducerCapabilitySnapshot(
+            ioState->producer_capability_snapshot,
+            liveFractalType,
+            ResolvedEvalMode{},
+            {});
+    }
     if (!ioState || !liveParams) {
         return false;
     }
@@ -4092,6 +4106,103 @@ inline bool ApplyColorPipelineDraftToLiveState(
 }
 
 
+inline void RefreshColorPipelineProducerCapabilitySnapshot(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    const ResolvedEvalMode& resolvedEval,
+    const ColorPipelineCapabilityRuntimeObservation& observation) {
+    if (!ioState) {
+        return;
+    }
+    ioState->producer_capability_snapshot = BuildColorPipelineProducerCapabilitySnapshot(
+        ioState->producer_capability_snapshot,
+        liveFractalType,
+        resolvedEval,
+        observation);
+}
+
+inline bool CollectColorPipelineRecipeRequiredCapabilities(
+    const ColorPipelineWindowState& resolvedDraft,
+    std::vector<std::string>* outCapabilityIds,
+    std::string* outError = nullptr) {
+    if (outCapabilityIds) {
+        outCapabilityIds->clear();
+    }
+    if (!outCapabilityIds) {
+        if (outError) *outError = "recipe capability collection requires output storage";
+        return false;
+    }
+    AddUniqueColorPipelineCapability(
+        outCapabilityIds,
+        "color_pipeline.recipe_application");
+    const ColorPipelineLaneState* sourceLane =
+        FindColorPipelineLaneState(resolvedDraft, "source");
+    if (!sourceLane) {
+        if (outError) *outError = "recipe capability collection requires a Source lane";
+        return false;
+    }
+    bool haveEnabledSource = false;
+    for (const ColorPipelineRowState& row : sourceLane->rows) {
+        if (!row.enabled) {
+            continue;
+        }
+        haveEnabledSource = true;
+        AddUniqueColorPipelineCapability(
+            outCapabilityIds,
+            ColorPipelineSourceCapabilityId(row.function_id));
+        if (row.function_id == "sdf_normal_angle") {
+            AddUniqueColorPipelineCapability(outCapabilityIds, "sdf.field.signed_distance");
+            AddUniqueColorPipelineCapability(outCapabilityIds, "sdf.field.normal_angle");
+        } else if (row.function_id == "lens_field_v2_distance") {
+            AddUniqueColorPipelineCapability(
+                outCapabilityIds,
+                "sdf.field.lens_field_v2_response");
+        }
+    }
+    if (!haveEnabledSource) {
+        if (outError) *outError = "recipe capability collection requires an enabled Source row";
+        return false;
+    }
+    std::sort(outCapabilityIds->begin(), outCapabilityIds->end());
+    return true;
+}
+
+inline ColorPipelineRecipeApplicability DescribeResolvedColorPipelineRecipeApplicability(
+    const ResolvedColorPipelineRecipe& resolved,
+    const ColorPipelineProducerCapabilitySnapshot& snapshot,
+    bool requireResolvedSnapshotMatch) {
+    if (!resolved.valid) {
+        ColorPipelineRecipeApplicability result{};
+        result.recipe_id = resolved.recipe_id;
+        result.reason_code = "recipe_resolution_failed";
+        result.reason = "recipe did not resolve to a candidate application";
+        result.capability_snapshot_id = snapshot.snapshot_id;
+        result.producer_generation = snapshot.producer_generation;
+        return result;
+    }
+    return EvaluateColorPipelineRecipeApplicability(
+        snapshot,
+        resolved.recipe_id,
+        resolved.required_capability_ids,
+        requireResolvedSnapshotMatch ? resolved.capability_snapshot_id : std::string_view{});
+}
+
+inline ColorPipelineRecipeApplicability DescribeColorPipelineRecipeApplicability(
+    const ColorPipelineWindowState& currentState,
+    const char* recipeId);
+
+inline std::vector<ColorPipelineRecipeApplicability> BuildColorPipelineRecipeApplicabilityReport(
+    const ColorPipelineWindowState& state) {
+    std::vector<ColorPipelineRecipeApplicability> report;
+    for (const MaterializedColorPipelineRecipe& recipe :
+         color_pipeline_core::GetActiveColorPipelineRecipes()) {
+        report.push_back(DescribeColorPipelineRecipeApplicability(
+            state,
+            recipe.id.c_str()));
+    }
+    return report;
+}
+
 inline bool ResolveColorPipelineRecipe(
     const ColorPipelineWindowState& currentState,
     const char* recipeId,
@@ -4121,16 +4232,53 @@ inline bool ResolveColorPipelineRecipe(
         return false;
     }
 
+    std::vector<std::string> requiredCapabilities;
+    std::string capabilityError;
+    if (!CollectColorPipelineRecipeRequiredCapabilities(
+            candidate,
+            &requiredCapabilities,
+            &capabilityError)) {
+        if (outError) *outError = capabilityError;
+        return false;
+    }
     outResolved->valid = true;
     outResolved->recipe_id = recipeId;
+    outResolved->capability_snapshot_id =
+        currentState.producer_capability_snapshot.snapshot_id;
+    outResolved->capability_producer_generation =
+        currentState.producer_capability_snapshot.producer_generation;
+    outResolved->required_capability_ids = std::move(requiredCapabilities);
     outResolved->draft_state = std::move(candidate);
     return true;
+}
+
+inline ColorPipelineRecipeApplicability DescribeColorPipelineRecipeApplicability(
+    const ColorPipelineWindowState& currentState,
+    const char* recipeId) {
+    ResolvedColorPipelineRecipe resolved;
+    std::string error;
+    if (!ResolveColorPipelineRecipe(currentState, recipeId, &resolved, &error)) {
+        ColorPipelineRecipeApplicability result{};
+        result.recipe_id = recipeId ? recipeId : "";
+        result.reason_code = "recipe_resolution_failed";
+        result.reason = error.empty() ? "recipe resolution failed" : error;
+        result.capability_snapshot_id =
+            currentState.producer_capability_snapshot.snapshot_id;
+        result.producer_generation =
+            currentState.producer_capability_snapshot.producer_generation;
+        return result;
+    }
+    return DescribeResolvedColorPipelineRecipeApplicability(
+        resolved,
+        currentState.producer_capability_snapshot,
+        false);
 }
 
 inline bool PrepareColorPipelineApplication(
     const ResolvedColorPipelineRecipe& resolved,
     FractalType liveFractalType,
     const KernelParams* liveParams,
+    const ColorPipelineProducerCapabilitySnapshot* currentCapabilities,
     PreparedColorPipelineApplication* outPrepared,
     std::string* outError = nullptr) {
     if (outPrepared) {
@@ -4139,8 +4287,29 @@ inline bool PrepareColorPipelineApplication(
     if (outError) {
         outError->clear();
     }
-    if (!outPrepared || !resolved.valid || !liveParams) {
-        if (outError) *outError = "Color Pipeline application preparation requires a resolved recipe and live parameters";
+    if (!outPrepared || !resolved.valid || !liveParams || !currentCapabilities) {
+        if (outError) *outError = "Color Pipeline application preparation requires a resolved recipe, live parameters, and current capability snapshot";
+        return false;
+    }
+
+    const ColorPipelineRecipeApplicability applicability =
+        DescribeResolvedColorPipelineRecipeApplicability(
+            resolved,
+            *currentCapabilities,
+            true);
+    if (!applicability.available) {
+        if (outError) {
+            *outError = applicability.reason_code + ": " + applicability.reason;
+            if (!applicability.missing_capability_ids.empty()) {
+                *outError += "; missing=";
+                for (std::size_t index = 0;
+                     index < applicability.missing_capability_ids.size();
+                     ++index) {
+                    if (index > 0) *outError += ",";
+                    *outError += applicability.missing_capability_ids[index];
+                }
+            }
+        }
         return false;
     }
 
@@ -4167,6 +4336,21 @@ inline bool PrepareColorPipelineApplication(
     outPrepared->next_live_params = candidateParams;
     outPrepared->live_changed = changed;
     return true;
+}
+
+inline bool PrepareColorPipelineApplication(
+    const ResolvedColorPipelineRecipe& resolved,
+    FractalType liveFractalType,
+    const KernelParams* liveParams,
+    PreparedColorPipelineApplication* outPrepared,
+    std::string* outError = nullptr) {
+    return PrepareColorPipelineApplication(
+        resolved,
+        liveFractalType,
+        liveParams,
+        &resolved.draft_state.producer_capability_snapshot,
+        outPrepared,
+        outError);
 }
 
 inline bool CommitPreparedColorPipelineApplication(
@@ -4216,7 +4400,13 @@ inline bool ApplyColorPipelineRecipePresetToLive(
     }
 
     PreparedColorPipelineApplication prepared;
-    if (!PrepareColorPipelineApplication(resolved, liveFractalType, liveParams, &prepared, &error)) {
+    if (!PrepareColorPipelineApplication(
+            resolved,
+            liveFractalType,
+            liveParams,
+            &ioState->producer_capability_snapshot,
+            &prepared,
+            &error)) {
         ioState->last_recipe_application_error = error;
         PushColorPipelineValidationMessage(ioState, error);
         return false;
@@ -4761,10 +4951,22 @@ inline void RenderColorPipelineRecipePresetControls(
     if (!ioState) {
         return;
     }
-    const std::vector<MaterializedColorPipelineRecipe>& recipes = color_pipeline_core::GetActiveColorPipelineRecipes();
+    const std::vector<MaterializedColorPipelineRecipe>& recipes =
+        color_pipeline_core::GetActiveColorPipelineRecipes();
     if (recipes.empty()) {
         return;
     }
+    const std::vector<ColorPipelineRecipeApplicability> applicability =
+        BuildColorPipelineRecipeApplicabilityReport(*ioState);
+    const auto findApplicability = [&applicability](
+        const std::string& recipeId) -> const ColorPipelineRecipeApplicability* {
+        for (const ColorPipelineRecipeApplicability& item : applicability) {
+            if (item.recipe_id == recipeId) {
+                return &item;
+            }
+        }
+        return nullptr;
+    };
 
     const MaterializedColorPipelineRecipe* selectedRecipe = nullptr;
     for (const MaterializedColorPipelineRecipe& recipe : recipes) {
@@ -4806,9 +5008,20 @@ inline void RenderColorPipelineRecipePresetControls(
     if (comboOpen) {
         for (const MaterializedColorPipelineRecipe& recipe : recipes) {
             const bool selected = recipe.id == ioState->selected_recipe_id;
-            if (ImGui::Selectable(recipe.label.c_str(), selected)) {
+            const ColorPipelineRecipeApplicability* item = findApplicability(recipe.id);
+            const bool available = item && item->available;
+            const std::string itemLabel = available
+                ? recipe.label
+                : recipe.label + " (Unavailable)";
+            if (!available) {
+                ImGui::BeginDisabled();
+            }
+            if (ImGui::Selectable(itemLabel.c_str(), selected)) {
                 ioState->selected_recipe_id = recipe.id;
                 selectedRecipe = &recipe;
+            }
+            if (!available) {
+                ImGui::EndDisabled();
             }
             if (selected) {
                 ImGui::SetItemDefaultFocus();
@@ -4818,7 +5031,17 @@ inline void RenderColorPipelineRecipePresetControls(
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
+    const ColorPipelineRecipeApplicability* selectedApplicability =
+        selectedRecipe ? findApplicability(selectedRecipe->id) : nullptr;
+    const bool selectedAvailable =
+        selectedApplicability && selectedApplicability->available;
+    if (!selectedAvailable) {
+        ImGui::BeginDisabled();
+    }
     const bool clicked = ImGui::Button("Apply Recipe");
+    if (!selectedAvailable) {
+        ImGui::EndDisabled();
+    }
     NoteColorPipelineUiAutomationRect(ioState, BuildColorPipelineRecipeApplySelectedControlId());
     const bool automationClicked = ConsumeColorPipelineAutomationClick(
         ioState,
@@ -4831,6 +5054,12 @@ inline void RenderColorPipelineRecipePresetControls(
             liveParams,
             ioDirty,
             ioInteraction);
+    }
+    if (selectedApplicability && !selectedApplicability->available) {
+        ImGui::TextDisabled(
+            "Unavailable: %s (%s)",
+            selectedApplicability->reason.c_str(),
+            selectedApplicability->reason_code.c_str());
     }
 }
 

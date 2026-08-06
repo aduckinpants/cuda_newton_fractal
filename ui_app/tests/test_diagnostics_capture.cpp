@@ -588,7 +588,8 @@ void TestFindingFractalStateSidecarIncludesColorPipelineGraphReceipt() {
     params.color_source_stack[1].signal = ColorSignal::sdf_signed_distance;
 
     ColorPipelineWindowState colorWindow{};
-    colorWindow.initialized = true;
+    SyncColorPipelineWindowFromLiveState(
+        &colorWindow, view.fractal_type, &params);
     ColorPipelineLaneState sourceLane{};
     sourceLane.lane_id = "source";
     ColorPipelineRowState row{};
@@ -599,7 +600,26 @@ void TestFindingFractalStateSidecarIncludesColorPipelineGraphReceipt() {
     row.parameter_values.push_back({"signal.sdf_field_downsample", "enum", 0.0, false, "4"});
     row.parameter_values.push_back({"signal.blend_weight", "float", 0.5, false, ""});
     sourceLane.rows.push_back(row);
-    colorWindow.lanes.push_back(sourceLane);
+    ColorPipelineLaneState* liveSourceLane = nullptr;
+    for (ColorPipelineLaneState& lane : colorWindow.lanes) {
+        if (lane.lane_id == "source") {
+            liveSourceLane = &lane;
+            break;
+        }
+    }
+    Check(liveSourceLane != nullptr, "finding graph receipt test resolves its Source lane");
+    if (liveSourceLane) *liveSourceLane = sourceLane;
+    ColorPipelineCapabilityRuntimeObservation observation{};
+    observation.frame_observed = true;
+    observation.frame_valid = true;
+    observation.sdf_field_requested = true;
+    observation.sdf_field_valid = true;
+    observation.sdf_field_producer_id = "lens_sdf";
+    RefreshColorPipelineProducerCapabilitySnapshot(
+        &colorWindow,
+        view.fractal_type,
+        ResolvedEvalMode{},
+        observation);
 
     const std::string json = BuildFindingFractalStateJson(view, params, render, stats, &colorWindow, nullptr);
     Check(json.find("\"color_pipeline\":") != std::string::npos &&
@@ -620,6 +640,12 @@ void TestFindingFractalStateSidecarIncludesColorPipelineGraphReceipt() {
         "finding graph receipt is comma-separated after grading rows as valid JSON");
     Check(json.find("\"color_pipeline_draft\"") != std::string::npos,
         "finding sidecar still emits the existing draft block separately for compatibility");
+    Check(json.find("\"recipe_capability_report\":") != std::string::npos &&
+          json.find("viewer.color_pipeline_recipe_capability_report.v1") != std::string::npos &&
+          json.find("\"producer_id\": \"julia\"") != std::string::npos &&
+          json.find("\"sdf_field_producer_id\": \"lens_sdf\"") != std::string::npos &&
+          json.find("\"capability_id\": \"sdf.field.signed_distance\", \"status\": \"valid\"") != std::string::npos,
+        "finding sidecar emits the same producer capability snapshot and current field validity");
 }
 
 void TestFindingFractalStateSidecarIncludesExplainoActiveControls() {

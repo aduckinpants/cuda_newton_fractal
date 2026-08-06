@@ -286,6 +286,105 @@ def _assert_color_pipeline_state(
     assert params.get("color_palette") == expected_palette
 
 
+def _recipe_capability(report: dict[str, object], recipe_id: str) -> dict[str, object]:
+    capability_report = report.get("color_pipeline_recipe_capability_report")
+    assert isinstance(capability_report, dict), report
+    applicability = capability_report.get("recipe_applicability")
+    assert isinstance(applicability, list), capability_report
+    for item in applicability:
+        if isinstance(item, dict) and item.get("recipe_id") == recipe_id:
+            return item
+    raise AssertionError((recipe_id, capability_report))
+
+
+def test_color_pipeline_recipe_capability_snapshot_is_shared_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline capability runtime regression is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "192",
+        "--height",
+        "120",
+    )
+    state_path = write_state_bundle(
+        tmp_path / "color_pipeline_capability_seed",
+        json.loads(json.dumps(neutral_capture["state"])),
+    )
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "color_pipeline_capability_report.json",
+        command_path=tmp_path / "color_pipeline_capability_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        viewer.wait_for_control("color_pipeline.recipe.selector", timeout_seconds=20.0)
+        ready = viewer.wait_for_report(timeout_seconds=20.0)
+        capability_report = ready.get("color_pipeline_recipe_capability_report")
+        assert isinstance(capability_report, dict), ready
+        snapshot = capability_report.get("snapshot")
+        assert isinstance(snapshot, dict), capability_report
+        snapshot_id = snapshot.get("snapshot_id")
+        assert isinstance(snapshot_id, str) and snapshot_id.startswith("cap:"), snapshot
+        assert snapshot.get("producer_id") == "mandelbrot", snapshot
+        assert _recipe_capability(ready, "phase_orbit_wheel").get("available") is True
+        root_recipe = _recipe_capability(ready, "root_phase_wheel")
+        assert root_recipe.get("available") is False, root_recipe
+        assert root_recipe.get("reason_code") == "missing_required_capability", root_recipe
+        assert "color_pipeline.source.root_phase" in root_recipe.get("missing_capability_ids", []), root_recipe
+        for item in capability_report.get("recipe_applicability", []):
+            assert item.get("capability_snapshot_id") == snapshot_id, item
+
+        base_hash = ready.get("rendered_frame_hash")
+        base_rows = ready.get("lane_rows")
+        selected = viewer.click_control(
+            "color_pipeline.recipe.root_phase_wheel.select",
+            timeout_seconds=60.0,
+        )
+        assert selected.get("click_consumed") is True, selected
+        rejected = viewer.click_control(
+            "color_pipeline.recipe.apply_selected",
+            timeout_seconds=60.0,
+        )
+        assert rejected.get("click_consumed") is True, rejected
+        assert rejected.get("rendered_frame_hash") == base_hash, rejected
+        assert rejected.get("lane_rows") == base_rows, rejected
+        assert any(
+            "missing_required_capability" in message
+            and "color_pipeline.source.root_phase" in message
+            for message in rejected.get("validation_messages", [])
+        ), rejected
+
+        selected_sdf = viewer.click_control(
+            "color_pipeline.recipe.sdf_normal_angle_diagnostic.select",
+            timeout_seconds=60.0,
+        )
+        assert selected_sdf.get("click_consumed") is True, selected_sdf
+        applied_sdf = viewer.click_control(
+            "color_pipeline.recipe.apply_selected",
+            timeout_seconds=60.0,
+        )
+        assert applied_sdf.get("click_consumed") is True, applied_sdf
+        settled = viewer.click_control("render_once", timeout_seconds=60.0)
+        settled_capability_report = settled.get("color_pipeline_recipe_capability_report")
+        assert isinstance(settled_capability_report, dict), settled
+        settled_snapshot = settled_capability_report.get("snapshot")
+        assert isinstance(settled_snapshot, dict), settled_capability_report
+        current_validity = {
+            item.get("capability_id"): item.get("status")
+            for item in settled_snapshot.get("current_field_validity", [])
+            if isinstance(item, dict)
+        }
+        assert current_validity.get("sdf.field.signed_distance") == "valid", settled_snapshot
+        assert current_validity.get("sdf.field.normal_angle") == "valid", settled_snapshot
+        assert settled_snapshot.get("quality_observations") == [], settled_snapshot
+
+
 def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Color Pipeline preset runtime regression is Windows-only")
@@ -342,7 +441,11 @@ def test_color_pipeline_recipe_presets_are_visible_and_apply_no_mouse(tmp_path: 
         assert rejected.get("click_consumed") is True, rejected
         assert rejected.get("rendered_frame_hash") == base_hash, rejected
         assert rejected.get("lane_rows") == ready_report.get("lane_rows"), rejected
-        assert any("not allowed" in message for message in rejected.get("validation_messages", [])), rejected
+        assert any(
+            "missing_required_capability" in message
+            and "color_pipeline.source.root_phase" in message
+            for message in rejected.get("validation_messages", [])
+        ), rejected
         selected = viewer.click_control("color_pipeline.recipe.sdf_normal_angle_diagnostic.select", timeout_seconds=60.0)
         assert selected.get("click_consumed") is True, selected
         applied = viewer.click_control("color_pipeline.recipe.apply_selected", timeout_seconds=60.0)

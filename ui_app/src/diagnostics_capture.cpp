@@ -1511,7 +1511,12 @@ std::string BuildFindingFractalStateJson(
         js << "    \"graph_receipt\": ";
         WriteColorPipelineGraphReceiptObjectJson(
             js, *colorPipelineWindow, FindingSourceStackKind(params));
-        js << "\n";
+        js << ",\n";
+        js << "    \"recipe_capability_report\": "
+            << BuildColorPipelineRecipeCapabilityReportJson(
+                colorPipelineWindow->producer_capability_snapshot,
+                BuildColorPipelineRecipeApplicabilityReport(*colorPipelineWindow))
+            << "\n";
     }
     js << "  }";
     if (HasSerializableColorPipelineDraft(colorPipelineWindow)) {

@@ -11,11 +11,11 @@
 
 ## Current Phase
 
-Slice 2 - Canonical Recipe Contract is implementation-complete and validation-green from the clean, receipted, rearward-reviewed Slice 1 checkpoint 6ddef4a6ab900828f223face1bd4c53a65bdeaac. Checkpoint, receipts, and rearward review remain before Slice 3 may start.
+Slice 3 - Capability And Applicability Authority implementation and hostile validation are complete from clean, receipted, rearward-reviewed Slice 2 checkpoint 1ae2f14771e7bd14d8dd37cded90a98f89f67855. Checkpoint closure is prepared; machine receipts and rearward review follow the committed state.
 
 The hard-denial workflow blocks raw branch mutation but this checkout has no approved branch/merge wrapper. This campaign therefore starts as an explicitly stacked slice on codex/model-diagnostics-overlay-preplanning. Eventual upstream integration must preserve both closed planning campaigns.
 
-Slices 0 and 1 are closed. Slice 2 is metadata-contract work only: semantic identities, explicit source-fold representation, stable parameter addresses, canonical fingerprints, legacy type aliases, and the closed recipe adapter inventory. UI layout, runtime row execution, recipe pixels, and state authority remain unchanged.
+Slices 0 through 2 are closed. Slice 3 adds one runtime-owned capability snapshot shared by selector status, Prepare-time revalidation, reports, automation, and Capture Finding. Static producer support, current field validity, and quality observations remain distinct. Runtime row execution, recipe pixels, state authority, and the linear Color Pipeline layout remain unchanged.
 
 ## Phase Checklist
 
@@ -31,7 +31,11 @@ Slices 0 and 1 are closed. Slice 2 is metadata-contract work only: semantic iden
 - [x] Slice 1: prove failed preparation has no authoritative draft/live/dirty/interaction side effects.
 - [x] Slice 1: hostile audit and focused validation are complete; checkpoint closure is prepared and receipts/rearward review follow the committed state.
 - [x] Slice 2: Canonical Recipe Contract adds semantic IDs, explicit source folds, stable parameter addresses, canonical hashes, normalized legacy aliases, and the closed adapter inventory.
-- [ ] Slice 3: Capability And Applicability Authority.
+- [x] Slice 3: add RED proof for selector/Prepare/report capability drift and stale snapshot rejection.
+- [x] Slice 3: add one runtime-owned producer capability snapshot with stable machine IDs and generation.
+- [x] Slice 3: share one applicability query across selector status, Prepare, automation, and Capture Finding.
+- [x] Slice 3: separate static support, current field validity, and quality observations.
+- [x] Slice 3: hostile audit and focused native/runtime validation are complete; checkpoint closure is prepared and receipts/rearward review follow the committed state.
 - [ ] Slice 4: Existing Recipe Parity.
 - [ ] Slice 5: SDF Beauty Migration.
 - [ ] Slice 6: New Recipe Qualification.
@@ -184,7 +188,13 @@ Add semantic IDs, descriptor parameter IDs, explicit folds, canonical hashing, t
 
 ### Slice 3 - Capability And Applicability
 
-Add runtime-owned snapshots shared by selector, Prepare, reports, automation, and captures.
+Add one runtime-owned producer snapshot stored with the Color Pipeline window state and refreshed by the live runtime. The snapshot owns stable producer/evaluator/precision identity, static capability IDs, current field validity, and separately named quality observations.
+
+One applicability query consumes that snapshot for selector status, Resolve/Prepare requirements, automation, and Capture Finding. Prepare rechecks the current snapshot and rejects stale or missing requirements with stable reason codes and missing capability IDs. Selector visibility may explain unavailable recipes, but UI inference is forbidden.
+
+Static support answers whether the active producer can supply a required signal. Current validity reports whether the latest active evaluation actually produced finite authoritative data. Quality observations are descriptive only and cannot become hidden recipe capabilities in this slice.
+
+No new recipe, graph execution, row behavior, pixel behavior, or replay authority is added in Slice 3.
 
 ### Slice 4 - Existing Recipe Parity (Gate A)
 
@@ -217,12 +227,13 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 | Slice 0 fallback baseline | complete | all six recipe graph/legacy tuple projections match exactly |
 | Validation and receipts | complete | focused native/runtime green; machine receipts are written against the committed checkpoint |
 | Slice 1 transactional Apply | complete | Resolve/Prepare/Commit; non-failing commit assertions; native reject/success/manual-recovery rails; published public Apply proof; commit 6ddef4a6; receipts and rearward review are ok. |
-| Slice 2 canonical recipe contract | complete, awaiting checkpoint | 43 materializer tests; 3364 Color Pipeline core assertions; published staged-contract and public Apply runtime proofs; hostile audit complete. |
+| Slice 2 canonical recipe contract | complete | commit 1ae2f14; 43 materializer tests; 3364 Color Pipeline core assertions; published staged-contract and public Apply runtime proofs; receipts and rearward review are ok. |
+| Slice 3 capability/applicability authority | complete | runtime-owned snapshot and shared query; 467 window assertions; report and finding-sidecar native rails; published public selector/Apply proof; current SDF validity proof; final checkpoint/receipts follow. |
 
 ## Hostile Audit
 
 - Status: complete
-- Scope: Slice 2 semantic identities, source-fold representation, parameter addresses, canonical hashes, aliases, adapter inventory, parser strictness, and behavior preservation.
+- Scope: Slice 3 snapshot ownership/freshness, selector/Prepare query identity, stable reason codes, current-validity separation, report/capture consistency, and behavior preservation.
 - Assume dual authority, false receipts, non-atomic Apply, stale capability snapshots, type reinterpretation, unstable parameter addresses, fabricated provenance, or weak qualification remains.
 
 ## Audit Passes
@@ -239,6 +250,9 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Slice 2 pass 1 - the first green native rail still concealed semantic metadata defects: phase.turns retained radians units/period, Lens Field V2 remained typed signed-distance, and the legacy alias was declared but not normalized.
 - [x] Slice 2 pass 2 - projection hardening found malformed source-fold values lacked direct negative C++ proof; noncanonical first-source blend and output-node mismatch now fail closed in the native rail.
 - [x] Slice 2 pass 3 - a clean re-read of canonical types, adapters, generated metadata, parser validation, projection, and published runtime staging found no additional Slice 2 defect.
+- [x] Slice 3 pass 1 - RED review proved the selector/report surfaces had no runtime-owned capability snapshot and Prepare had no stale-snapshot or stable missing-capability rejection.
+- [x] Slice 3 pass 2 - implementation review found the report helper omitted its recipe parser link input, the report fixture was only a partial Source lane, and the old runtime assertion expected vague `not allowed` text; each now has a focused repair and regression.
+- [x] Slice 3 pass 3 - clean re-read and published public-path proof confirmed selector status, Prepare, automation, and Capture Finding use one snapshot/query; field validity and empty quality observations do not grant static support.
 - Later implementation audits remain pending for canonical graph authority, dual authority, capability snapshots, independent recipe gates, and fallback lifecycle.
 
 ## Audit Findings
@@ -259,6 +273,10 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Recipe rejection diagnostics lasted one UI frame and survived later manual recovery; a persistent UI-only rejection field now remains reportable and clears on any successful application.
 - [x] The first Slice 1 publish wrapper was cut off by an incorrectly short outer terminal timeout while the compiler child continued; the orphan completed, and all claimed publish evidence comes from later fully receipted runs.
 - [x] The final normal runtime executable was locked by an existing process; the checked-in publish fallback staged fractal_ui_dev.exe and the active-runtime runtime lane passed against that fresh executable.
+- [x] Slice 3 contract bootstrap deadlocked because the validator required the newly allowed capability header to exist before relocking; one empty header was created directly to break the cycle, then every product mutation returned to the guarded wrapper.
+- [x] The first Slice 3 report build exposed a missing `json_min.cpp` link input now that the report calls the real recipe resolver; focused and full helper topology now declare the dependency.
+- [x] The first report fixture contained only a Source lane, so recipe resolution failed before capability evaluation; the fixture now starts from the complete live pipeline and overlays its diagnostic Source row.
+- [x] Existing runtime rejection proof asserted vague `not allowed` text; it now requires `missing_required_capability` plus the exact missing source capability while preserving frame and row state.
 - [x] phase.turns initially retained units=radians and period=2*pi, while runtime phase signals are normalized cycles; metadata now declares units=turns and period=1, with no numeric state change.
 - [x] The phase.radians compatibility alias was listed but authoring references were not normalized; typed signals, ports, adapter endpoints, and recipe-adapter endpoints now normalize to phase.turns during materialization.
 - [x] Lens Field V2 remained typed scalar.sdf_signed_distance despite its bounded unit response; its descriptor and canonical output port now use scalar.unit while sign_contrast remains an internal source parameter.
@@ -277,4 +295,4 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 
 ## Stop Point
 
-Slice 2 is implementation-complete and validation-green. Do not start Slice 3 until Slice 2 is checkpointed, receipted, and rearward-reviewed. Slices 3 through 7 remain checked-in preplanned work; preplanned sliced work is not exhausted.
+Slice 3 implementation and hostile validation are complete. Stop after capability/applicability authority is checkpointed, receipted, and rearward-reviewed. Slices 4 through 7 remain checked-in preplanned work; preplanned sliced work is not exhausted.

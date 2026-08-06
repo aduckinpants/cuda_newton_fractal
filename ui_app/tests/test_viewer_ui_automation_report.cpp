@@ -420,7 +420,9 @@ void TestAutomationReportIncludesColorPipelineGraphReceipt() {
     const std::filesystem::path reportPath =
         std::filesystem::temp_directory_path() / "test_viewer_ui_automation_graph_receipt.json";
     ColorPipelineWindowState colorPipelineWindow{};
-    colorPipelineWindow.initialized = true;
+    KernelParams params{};
+    SyncColorPipelineWindowFromLiveState(
+        &colorPipelineWindow, FractalType::mandelbrot, &params);
     ColorPipelineLaneState sourceLane{};
     sourceLane.lane_id = "source";
     ColorPipelineRowState row{};
@@ -429,13 +431,28 @@ void TestAutomationReportIncludesColorPipelineGraphReceipt() {
     row.parameter_values.push_back({"signal.sdf_gate", "enum", 0.0, false, "boundary_band"});
     row.parameter_values.push_back({"signal.sdf_field_downsample", "enum", 0.0, false, "8"});
     sourceLane.rows.push_back(row);
-    colorPipelineWindow.lanes.push_back(sourceLane);
+    ColorPipelineLaneState* liveSourceLane = nullptr;
+    for (ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {
+        if (lane.lane_id == "source") {
+            liveSourceLane = &lane;
+            break;
+        }
+    }
+    Check(liveSourceLane != nullptr, "automation graph receipt test resolves its Source lane");
+    if (liveSourceLane) *liveSourceLane = sourceLane;
     colorPipelineWindow.validation_messages.push_back("unsupported_source_for_producer");
+    ColorPipelineCapabilityRuntimeObservation observation{};
+    observation.frame_observed = true;
+    observation.frame_valid = true;
+    RefreshColorPipelineProducerCapabilitySnapshot(
+        &colorPipelineWindow,
+        FractalType::mandelbrot,
+        ResolvedEvalMode{},
+        observation);
 
     ViewerUiAutomationLensSdfProbe probe{};
     probe.source_stack_kind = "sdf_only";
     ViewState view{};
-    KernelParams params{};
     RenderSettings render{};
     RenderStats stats{};
     ViewerRenderPacingDecision pacing{};
@@ -485,6 +502,15 @@ void TestAutomationReportIncludesColorPipelineGraphReceipt() {
             json.find("\"function_id\": \"sdf_normal_angle\"") != std::string::npos &&
             json.find("unsupported_source_for_producer") != std::string::npos,
         "automation report emits color_pipeline_graph_receipt with row and unsupported-route truth");
+    Check(json.find("\"color_pipeline_recipe_capability_report\":") != std::string::npos &&
+            json.find("viewer.color_pipeline_recipe_capability_report.v1") != std::string::npos &&
+            json.find("\"producer_id\": \"mandelbrot\"") != std::string::npos &&
+            json.find("\"snapshot_id\": \"cap:") != std::string::npos,
+        "automation report emits the runtime-owned recipe capability snapshot");
+    Check(json.find("\"recipe_id\": \"phase_orbit_wheel\", \"available\": true") != std::string::npos &&
+            json.find("\"recipe_id\": \"root_phase_wheel\", \"available\": false") != std::string::npos &&
+            json.find("color_pipeline.source.root_phase") != std::string::npos,
+        "automation report uses one applicability query for available and missing-capability recipes");
 }
 
 void TestRenderPacingProbeReportsTimingAndDecision() {
