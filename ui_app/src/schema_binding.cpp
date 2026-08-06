@@ -103,7 +103,8 @@ bool SchemaColorPipelineUsesSdfSource(const KernelParams& params) {
 }
 
 bool IsSchemaRootAwareColorSignal(ColorSignal signal) {
-    return signal == ColorSignal::root_proximity || signal == ColorSignal::root_phase;
+    return signal == ColorSignal::root_proximity ||
+        signal == ColorSignal::root_log_proximity_v1 || signal == ColorSignal::root_phase;
 }
 
 bool SchemaColorPipelineUsesColorRootField(const KernelParams& params) {

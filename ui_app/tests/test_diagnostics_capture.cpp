@@ -116,6 +116,48 @@ void TestBundleWritesFrameAndState() {
     Check(json.find("\"coloring_mode\": \"joy_basins\"") != std::string::npos, "state derives legacy coloring mirror from coherent root-basin pair");
 }
 
+void TestBundlePersistsSignedUnitMapShape() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+
+    params.color_root_basin_pair_count = 0;
+    params.color_pipeline.signal = ColorSignal::root_log_proximity_v1;
+    params.color_source_stack_count = 1;
+    params.color_source_stack[0].signal = ColorSignal::root_log_proximity_v1;
+    params.color_shape = ColorPipelineShape::signed_unit_map_v1;
+    params.color_shape_stack_count = 1;
+    params.color_shape_stack[0].shape = ColorPipelineShape::signed_unit_map_v1;
+    params.color_shape_stack[0].params.scale = 1.5f;
+    params.color_shape_stack[0].params.bias = 0.1f;
+
+    const fs::path outputDir = FreshTempRoot("signed_unit_map") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff0000ffu, 0xff00ff00u, 0xffff0000u, 0xffffffffu};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(
+        outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "signed-unit-map capture succeeds");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"color_signal\": \"root_log_proximity_v1\"") != std::string::npos,
+        "state persists root-log-proximity flat signal id");
+    Check(json.find("\"signal\": \"root_log_proximity_v1\"") != std::string::npos,
+        "state persists root-log-proximity stack signal id");
+    Check(json.find("\"color_shape\": \"signed_unit_map_v1\"") != std::string::npos,
+        "state persists signed-unit-map flat shape id");
+    Check(json.find("\"shape\": \"signed_unit_map_v1\"") != std::string::npos,
+        "state persists signed-unit-map stack shape id");
+    Check(json.find("\"unknown\"") == std::string::npos,
+        "state never degrades new curated source or shape ids to unknown");
+}
+
 void TestBundleSummarizesEffectiveColorSourceAuthority() {
     ViewState view{};
     KernelParams params{};
@@ -736,6 +778,9 @@ void TestFindingFractalStateSidecarIncludesActiveRootFieldAlias() {
     params.explaino_secondary_root_pattern_layout = ExplainoGeneratedRootLayout::legacy_quartic_v1;
     params.explaino_secondary_root_pattern_count = 4;
     params.explaino_root_field_pattern_ref = ExplainoRootPatternRef::secondary;
+    params.color_source_stack_count = 1;
+    params.color_source_stack[0].signal = ColorSignal::root_log_proximity_v1;
+    params.color_source_stack[0].params.root_pattern_ref = ExplainoRootPatternRef::secondary;
 
     const std::string json = BuildFindingFractalStateJson(view, params, render, stats, nullptr, nullptr);
     const std::size_t activeRootField = json.find("\"active_root_field\"");
@@ -752,6 +797,9 @@ void TestFindingFractalStateSidecarIncludesActiveRootFieldAlias() {
           activeBlock.find("\"layout_kind\": \"regular_ngon_v1\"") != std::string::npos &&
           activeBlock.find("\"root_count\": 7") != std::string::npos,
         "finding fractal-state sidecar Active Root Field reports the scoped dynamics generated root descriptor");
+    Check(json.find("\"consumer_kind\": \"color_source_row\"") != std::string::npos &&
+          json.find("\"consumer_id\": \"root_log_proximity_v1\"") != std::string::npos,
+        "finding fractal-state sidecar reports root_log_proximity_v1 as a scoped root-pattern consumer");
 }
 
 void TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority() {
@@ -806,6 +854,7 @@ void TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority() {
 
 int main() {
     TestBundleWritesFrameAndState();
+    TestBundlePersistsSignedUnitMapShape();
     TestBundleSummarizesEffectiveColorSourceAuthority();
     TestBundlePersistsCounterfactualPairFractalTypeId();
     TestBundlePersistsExplainoCounterfactualPairFractalTypeId();

@@ -1,4 +1,5 @@
 #include "../src/color_pipeline_core.h"
+#include "../src/color_pipeline_recipe_capabilities.h"
 #include "../src/escape_time_coloring.h"
 #include "../src/fractal_family_rules.h"
 
@@ -1911,6 +1912,64 @@ int main() {
         }
     }
 
+    {
+        ColorPipelineShapeRuntimeParams normalize{};
+        normalize.scale = 0.25f;
+        normalize.offset = 0.10f;
+        const float mapped = ApplyColorPipelineShapeRowValue(
+            -1.0f,
+            ColorPipelineShape::signed_unit_map_v1,
+            normalize,
+            1.0f);
+        if (!NearlyEqual(mapped, 0.35f) ||
+            !NearlyEqual(ApplyColorPipelineShapeRowValue(-100.0f, ColorPipelineShape::signed_unit_map_v1, normalize, 1.0f), 0.0f) ||
+            !NearlyEqual(ApplyColorPipelineShapeRowValue(100.0f, ColorPipelineShape::signed_unit_map_v1, normalize, 1.0f), 1.0f)) {
+            std::cerr << "signed_unit_map_v1 should apply the exact clamped signed-to-unit formula\n";
+            return 1;
+        }
+
+        KernelParams metricParams{};
+        metricParams.explaino_root_count = 2;
+        metricParams.explaino_roots[0] = {-1.0f, 0.0f};
+        metricParams.explaino_roots[1] = {1.0f, 0.0f};
+        metricParams.explaino_root_field_trap_strength = 0.0f;
+        ColorPipelineSourceRuntimeParams metricSource{};
+        metricSource.proximity_scale = 1.0f;
+        metricSource.proximity_bias = 0.0f;
+        const float neutralMetric = ResolveRootLogProximityV1Signal(
+            FractalType::newton,
+            TestComplex{0.75f, 0.0f},
+            metricParams,
+            nullptr,
+            metricSource);
+        metricParams.explaino_root_field_trap_strength = 2.0f;
+        const float trappedMetric = ResolveRootLogProximityV1Signal(
+            FractalType::newton,
+            TestComplex{0.75f, 0.0f},
+            metricParams,
+            nullptr,
+            metricSource);
+        if (!NearlyEqual(neutralMetric, 2.0f) || !NearlyEqual(neutralMetric, trappedMetric)) {
+            std::cerr << "root_log_proximity_v1 should use nearest authoritative root distance without trap-strength overloading\n";
+            return 1;
+        }
+
+        ColorPipelineProducerCapabilitySnapshot previous{};
+        ColorPipelineCapabilityRuntimeObservation observation{};
+        ResolvedEvalMode resolved{};
+        resolved.backend = NumericBackend::float64;
+        resolved.strategy = IterationStrategy::direct;
+        const auto snapshot = BuildColorPipelineProducerCapabilitySnapshot(
+            previous,
+            FractalType::newton,
+            resolved,
+            observation);
+        if (snapshot.fractal_precision_tier != "float64" ||
+            snapshot.color_metric_arithmetic_tier != "float32") {
+            std::cerr << "Color Pipeline capability receipt should report f64 fractal arithmetic and explicit f32 metric narrowing\n";
+            return 1;
+        }
+    }
     std::cout << "test_escape_time_coloring: all passed\n";
     return 0;
 }

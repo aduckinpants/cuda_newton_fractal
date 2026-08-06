@@ -881,8 +881,8 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "palette",
         "grading",
     ]
-    assert len(lanes["source"]["functions"]) == 14
-    assert len(lanes["shape"]["functions"]) == 9
+    assert len(lanes["source"]["functions"]) == 15
+    assert len(lanes["shape"]["functions"]) == 10
     assert len(lanes["palette"]["functions"]) == 6
     assert len(lanes["grading"]["functions"]) == 8
     signal_kinds = {fn["id"]: fn.get("signal_kind") for fn in lanes["source"]["functions"]}
@@ -967,11 +967,11 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert all(item["sample_step_param"] == "signal.sdf_sample_step" for item in sdf_capabilities)
     assert all(item["field_downsample_param"] == "signal.sdf_field_downsample" for item in sdf_capabilities)
     assert all(item["supported_applicators"] == ["none", "sdf_boundary_band", "sdf_inside", "sdf_outside"] for item in sdf_capabilities)
-    assert len(actual["composition_recipe_contract"]["compatibility"]) == 23
+    assert len(actual["composition_recipe_contract"]["compatibility"]) == 24
     compat_overrides = actual["composition_recipe_contract"]["compat_overrides"]
     compatibility_audit = actual["composition_recipe_contract"]["compatibility_audit"]
-    assert len(compat_overrides) == 17
-    assert len(compatibility_audit) == 23
+    assert len(compat_overrides) == 18
+    assert len(compatibility_audit) == 24
     audit_by_key = {
         (row["source"], row["palette"], row["grading"]): row
         for row in compatibility_audit
@@ -982,6 +982,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert audit_by_key[("root_phase", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
     assert audit_by_key[("root_proximity", "heatmap", "contrast_lift")]["classification"] == "typed_resolved"
     assert audit_by_key[("root_proximity", "heatmap", "contrast_lift")]["route_case_id"] == "root_proximity_heatmap"
+    assert audit_by_key[("root_log_proximity_v1", "heatmap", "contrast_lift")]["override_id"] == "recipe_root_log_proximity_signed_unit_map_heatmap"
     assert audit_by_key[("root_index", "root_classic_palette", "basin_default")]["classification"] == "typed_resolved"
     assert audit_by_key[("sdf_normal_angle", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
     assert audit_by_key[("sdf_signed_distance", "heatmap", "contrast_lift")]["classification"] == "runtime_legacy_override"
@@ -1064,6 +1065,9 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "root_proximity_heatmap",
         "sdf_normal_angle_diagnostic",
         "sdf_normal_angle_beauty",
+        "root_glow",
+        "curvature_relief",
+        "lens_topography",
     ]
     recipe_by_id = {recipe["id"]: recipe for recipe in recipe_v2}
     for recipe in recipe_v2:
@@ -1219,4 +1223,55 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert _ports(actual, "grading", "contrast_lift") == [
         {"direction": "input", "id": "color", "type": "color.linear_rgb"},
         {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+    ]
+
+
+def test_slice6_curated_recipe_contract_is_explicit_and_typed(tmp_path):
+    out = tmp_path / "materialized.json"
+    proc = subprocess.run(
+        [sys.executable, str(TOOL), "--ui-salt", str(COLOR_PIPELINE_UI_SALT), "--out", str(out)],
+        cwd=str(REPO_ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    actual = json.loads(out.read_text(encoding="utf-8"))
+    lanes = {lane["id"]: lane for lane in actual["function_library"]["lanes"]}
+    functions = {
+        function["id"]: function
+        for lane in lanes.values()
+        for function in lane["functions"]
+    }
+    assert functions["root_log_proximity_v1"]["typed_signal"] == "scalar.signed"
+    assert functions["signed_unit_map_v1"] in lanes["shape"]["functions"]
+    signed_ports = functions["signed_unit_map_v1"]["ports"]
+    assert [(port["direction"], port["type"]) for port in signed_ports] == [
+        ("input", "scalar.signed"),
+        ("output", "scalar.unit"),
+    ]
+
+    recipes = {
+        recipe["id"]: recipe
+        for recipe in actual["composition_recipe_contract"]["recipe_v2"]
+    }
+    assert {"root_glow", "curvature_relief", "lens_topography"} <= recipes.keys()
+    assert [node["id"] for node in recipes["root_glow"]["nodes"]] == [
+        "source.root_log_proximity",
+        "shape.signed_unit_map",
+        "palette.heatmap",
+        "grading.grade_glow",
+    ]
+    assert [node["id"] for node in recipes["curvature_relief"]["nodes"]] == [
+        "source.curvature",
+        "shape.signed_unit_map",
+        "palette.heatmap",
+        "grading.contrast_lift",
+    ]
+    assert [node["id"] for node in recipes["lens_topography"]["nodes"]] == [
+        "source.lens_response",
+        "shape.identity",
+        "palette.heatmap",
+        "grading.contrast_lift",
     ]

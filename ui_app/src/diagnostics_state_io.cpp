@@ -526,7 +526,7 @@ void ApplyLegacyColorSourceMirrorParams(const ColorPipelineSourceStackEntry& sou
         ioParams->color_orbit_stripe_frequency = sourceEntry.params.stripe_frequency;
         ioParams->color_orbit_stripe_phase = sourceEntry.params.stripe_phase;
         break;
-    case ColorSignal::root_proximity:
+    case ColorSignal::root_proximity: case ColorSignal::root_log_proximity_v1:
         ioParams->color_root_proximity_scale = sourceEntry.params.proximity_scale;
         ioParams->color_root_proximity_bias = sourceEntry.params.proximity_bias;
         break;
@@ -585,7 +585,7 @@ void MirrorLegacyColorShapeFromStackEntry(const ColorPipelineShapeStackEntry& sh
     ResetLegacyColorShapeMirror(ioParams);
     ioParams->color_shape = shapeEntry.shape;
     switch (shapeEntry.shape) {
-    case ColorPipelineShape::offset_scale:
+    case ColorPipelineShape::offset_scale: case ColorPipelineShape::signed_unit_map_v1:
         ioParams->color_shape_offset = shapeEntry.params.offset;
         ioParams->color_shape_scale = shapeEntry.params.scale;
         break;

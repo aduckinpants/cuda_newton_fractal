@@ -1343,6 +1343,12 @@ int main() {
             std::cerr << "Expected Color Root Field controls to show when root_proximity consumes Color Root Field\n";
             return 1;
         }
+        params.color_source_stack[0].signal = ColorSignal::root_log_proximity_v1;
+        if (!ctx.GetBoolValue("fractal.root_pattern.color.controls_active", colorRootControlsActive) ||
+            !colorRootControlsActive) {
+            std::cerr << "Expected Color Root Field controls to show when root_log_proximity_v1 consumes Color Root Field\n";
+            return 1;
+        }
         params.color_source_stack[0].params.root_pattern_ref = ExplainoRootPatternRef::primary;
         if (!ctx.GetBoolValue("fractal.root_pattern.color.controls_active", colorRootControlsActive) ||
             colorRootControlsActive) {
@@ -2568,21 +2574,22 @@ int main() {
         const ColorPipelineLaneCatalog* coreSourceCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("source");
         if (!coreSourceCatalog ||
             coreSourceCatalog->default_function_id != std::string("smooth_escape_ramp") ||
-            coreSourceCatalog->functions.size() != 14 ||
+            coreSourceCatalog->functions.size() != 15 ||
             coreSourceCatalog->functions[0].id != "smooth_escape_ramp" ||
             coreSourceCatalog->functions[1].id != "phase_orbit" ||
             coreSourceCatalog->functions[2].id != "banded_signal" ||
             coreSourceCatalog->functions[3].id != "escape_magnitude" ||
             coreSourceCatalog->functions[4].id != "orbit_stripe" ||
             coreSourceCatalog->functions[5].id != "root_proximity" ||
-            coreSourceCatalog->functions[6].id != "root_phase" ||
-            coreSourceCatalog->functions[7].id != "root_index" ||
-            coreSourceCatalog->functions[8].id != "sdf_signed_distance" ||
-            coreSourceCatalog->functions[9].id != "sdf_inside_outside" ||
-            coreSourceCatalog->functions[10].id != "sdf_boundary_band" ||
-            coreSourceCatalog->functions[11].id != "sdf_normal_angle" ||
-            coreSourceCatalog->functions[12].id != "sdf_curvature" ||
-            coreSourceCatalog->functions[13].id != "lens_field_v2_distance") {
+            coreSourceCatalog->functions[6].id != "root_log_proximity_v1" ||
+            coreSourceCatalog->functions[7].id != "root_phase" ||
+            coreSourceCatalog->functions[8].id != "root_index" ||
+            coreSourceCatalog->functions[9].id != "sdf_signed_distance" ||
+            coreSourceCatalog->functions[10].id != "sdf_inside_outside" ||
+            coreSourceCatalog->functions[11].id != "sdf_boundary_band" ||
+            coreSourceCatalog->functions[12].id != "sdf_normal_angle" ||
+            coreSourceCatalog->functions[13].id != "sdf_curvature" ||
+            coreSourceCatalog->functions[14].id != "lens_field_v2_distance") {
             std::cerr << "Expected the extracted advanced color core to widen the shipped Source catalog through runtime-real source rows, including root_index and Lens SDF source tuples\n";
             return 1;
         }
@@ -2614,7 +2621,16 @@ int main() {
             std::cerr << "Expected root_proximity to carry stable proximity-scale, proximity-bias, root-pattern-ref, and blend-weight source parameters\n";
             return 1;
         }
-        const FunctionDescriptor* coreRootPhaseDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_phase");
+        const FunctionDescriptor* coreRootLogProximityDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_log_proximity_v1");
+        if (!coreRootLogProximityDescriptor ||
+            coreRootLogProximityDescriptor->parameters.size() != 4 ||
+            coreRootLogProximityDescriptor->parameters[0].path != "signal.proximity_scale" ||
+            coreRootLogProximityDescriptor->parameters[1].path != "signal.proximity_bias" ||
+            coreRootLogProximityDescriptor->parameters[2].path != "signal.root_pattern_ref" ||
+            coreRootLogProximityDescriptor->parameters[3].path != "signal.blend_weight") {
+            std::cerr << "Expected root_log_proximity_v1 to carry stable proximity-scale, proximity-bias, root-pattern-ref, and blend-weight source parameters\n";
+            return 1;
+        }        const FunctionDescriptor* coreRootPhaseDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_phase");
         if (!coreRootPhaseDescriptor ||
             coreRootPhaseDescriptor->parameters.size() != 4 ||
             coreRootPhaseDescriptor->parameters[0].path != "signal.phase_offset" ||
@@ -2666,20 +2682,28 @@ int main() {
         const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
         if (!coreShapeCatalog ||
             coreShapeCatalog->default_function_id != std::string("identity") ||
-            coreShapeCatalog->functions.size() != 9 ||
+            coreShapeCatalog->functions.size() != 10 ||
             coreShapeCatalog->functions[0].id != "identity" ||
-            coreShapeCatalog->functions[1].id != "offset_scale" ||
-            coreShapeCatalog->functions[2].id != "repeat" ||
-            coreShapeCatalog->functions[3].id != "posterize" ||
-            coreShapeCatalog->functions[4].id != "mirror_repeat" ||
-            coreShapeCatalog->functions[5].id != "bias_gain_curve" ||
-            coreShapeCatalog->functions[6].id != "smooth_window" ||
-            coreShapeCatalog->functions[7].id != "log_compress" ||
-            coreShapeCatalog->functions[8].id != "smoothstep_range") {
+            coreShapeCatalog->functions[1].id != "signed_unit_map_v1" ||
+            coreShapeCatalog->functions[2].id != "offset_scale" ||
+            coreShapeCatalog->functions[3].id != "repeat" ||
+            coreShapeCatalog->functions[4].id != "posterize" ||
+            coreShapeCatalog->functions[5].id != "mirror_repeat" ||
+            coreShapeCatalog->functions[6].id != "bias_gain_curve" ||
+            coreShapeCatalog->functions[7].id != "smooth_window" ||
+            coreShapeCatalog->functions[8].id != "log_compress" ||
+            coreShapeCatalog->functions[9].id != "smoothstep_range") {
             std::cerr << "Expected the extracted advanced color core to widen the shipped Shape catalog with Batch 1 runtime-real rows\n";
             return 1;
         }
-        const FunctionDescriptor* coreRepeatDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "repeat");
+        const FunctionDescriptor* coreSignedUnitMapDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "signed_unit_map_v1");
+        if (!coreSignedUnitMapDescriptor ||
+            coreSignedUnitMapDescriptor->parameters.size() != 2 ||
+            coreSignedUnitMapDescriptor->parameters[0].path != "shape.scale" ||
+            coreSignedUnitMapDescriptor->parameters[1].path != "shape.bias") {
+            std::cerr << "Expected signed_unit_map_v1 to expose stable normalization scale and bias parameter paths\n";
+            return 1;
+        }        const FunctionDescriptor* coreRepeatDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "repeat");
         if (!coreRepeatDescriptor ||
             coreRepeatDescriptor->parameters.size() != 2 ||
             coreRepeatDescriptor->parameters[0].path != "shape.frequency" ||
@@ -3033,16 +3057,17 @@ int main() {
         }
         const ColorPipelineLaneCatalog* shapeCatalog = FindColorPipelineLaneCatalog("shape");
         if (!shapeCatalog ||
-            shapeCatalog->functions.size() != 9 ||
+            shapeCatalog->functions.size() != 10 ||
             shapeCatalog->functions[0].id != "identity" ||
-            shapeCatalog->functions[1].id != "offset_scale" ||
-            shapeCatalog->functions[2].id != "repeat" ||
-            shapeCatalog->functions[3].id != "posterize" ||
-            shapeCatalog->functions[4].id != "mirror_repeat" ||
-            shapeCatalog->functions[5].id != "bias_gain_curve" ||
-            shapeCatalog->functions[6].id != "smooth_window" ||
-            shapeCatalog->functions[7].id != "log_compress" ||
-            shapeCatalog->functions[8].id != "smoothstep_range") {
+            shapeCatalog->functions[1].id != "signed_unit_map_v1" ||
+            shapeCatalog->functions[2].id != "offset_scale" ||
+            shapeCatalog->functions[3].id != "repeat" ||
+            shapeCatalog->functions[4].id != "posterize" ||
+            shapeCatalog->functions[5].id != "mirror_repeat" ||
+            shapeCatalog->functions[6].id != "bias_gain_curve" ||
+            shapeCatalog->functions[7].id != "smooth_window" ||
+            shapeCatalog->functions[8].id != "log_compress" ||
+            shapeCatalog->functions[9].id != "smoothstep_range") {
             std::cerr << "Expected the shipped Shape catalog to expose Identity plus the real runtime-backed Shape rows including Batch 1\n";
             return 1;
         }

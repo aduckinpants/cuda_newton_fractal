@@ -791,6 +791,12 @@ ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeRowValue(
         value = ApplyLogCompressShapeValue(value, params, repeatWrap);
     } else if (shape == ColorPipelineShape::smoothstep_range) {
         value = ApplySmoothstepRangeShapeValue(value, params, repeatWrap);
+    } else if (shape == ColorPipelineShape::signed_unit_map_v1) {
+        value = EscapeTimeColorClamp(
+            0.5f + value * EscapeTimeColorClamp(params.scale, 0.01f, 8.0f) +
+                EscapeTimeColorClamp(params.offset, -2.0f, 2.0f),
+            0.0f,
+            1.0f);
     }
     return value;
 }
@@ -1285,6 +1291,36 @@ ESCAPE_TIME_COLOR_HD inline float ResolveRootPhaseSignal(
 }
 
 template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveRootLogProximityV1Signal(
+    FractalType fractalType,
+    Complex z,
+    const KernelParams& params,
+    const ViewState* view,
+    const ColorPipelineSourceRuntimeParams& sourceParams) {
+    Float2 root{0.0f, 0.0f};
+    bool resolved = false;
+    if (IsRootFieldConsumerFractal(fractalType)) {
+        resolved = TryResolveColorPipelineRootPhasePoint(
+            fractalType, z, params, view, sourceParams.root_pattern_ref, &root);
+    } else if (params.explaino_root_count > 0) {
+        resolved = TryResolveNearestRootPointList(
+            z, params.explaino_roots, params.explaino_root_count, &root);
+    } else {
+        resolved = TryResolveColorPipelineRootPhasePoint(
+            fractalType, z, params, view, sourceParams.root_pattern_ref, &root);
+    }
+    if (!resolved) {
+        return 0.0f;
+    }
+    const float dx = static_cast<float>(z.x) - root.x;
+    const float dy = static_cast<float>(z.y) - root.y;
+    const float distance = sqrtf(fmaxf(dx * dx + dy * dy, 0.0f));
+    const float scale = EscapeTimeColorClamp(sourceParams.proximity_scale, 0.25f, 8.0f);
+    const float bias = EscapeTimeColorClamp(sourceParams.proximity_bias, -1.0f, 1.0f);
+    return -log2f(fmaxf(scale * fmaxf(distance, 1.0e-12f), 1.0e-12f)) + bias;
+}
+
+template <typename Complex>
 ESCAPE_TIME_COLOR_HD inline float ResolveRootFieldConsumerTrapSignal(
     FractalType fractalType,
     int iteration,
@@ -1403,6 +1439,9 @@ ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineSourceStackEntryEscapeSign
         }
         return ResolveRootProximitySignal(z, params, entry.params);
     }
+    if (entry.signal == ColorSignal::root_log_proximity_v1) {
+        return ResolveRootLogProximityV1Signal(fractalType, z, params, view, entry.params);
+    }
     if (entry.signal == ColorSignal::phase_angle ||
         entry.signal == ColorSignal::orbit_stripe) {
         return ResolveAngularSignal(entry.signal, angle, entry.params);
@@ -1502,6 +1541,10 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableEscapeTimeSignal(
                 ColorPipelineSourceRuntimeParams{});
         }
         return ResolveRootProximitySignal(z, params);
+    }
+    if (params.color_pipeline.signal == ColorSignal::root_log_proximity_v1) {
+        return ResolveRootLogProximityV1Signal(
+            fractalType, z, params, view, ColorPipelineSourceRuntimeParams{});
     }
     if (params.color_pipeline.signal == ColorSignal::phase_angle ||
         params.color_pipeline.signal == ColorSignal::orbit_stripe) {
@@ -1771,6 +1814,9 @@ ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineSourceStackEntryBasinSigna
     if (entry.signal == ColorSignal::root_proximity) {
         return ResolveRootProximitySignal(z, params, entry.params);
     }
+    if (entry.signal == ColorSignal::root_log_proximity_v1) {
+        return ResolveRootLogProximityV1Signal(fractalType, z, params, nullptr, entry.params);
+    }
     if (entry.signal == ColorSignal::phase_angle ||
         entry.signal == ColorSignal::orbit_stripe) {
         return ResolveAngularSignal(entry.signal, angle, entry.params);
@@ -1844,6 +1890,10 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
     if (params.color_pipeline.signal == ColorSignal::root_proximity) {
         return ResolveRootProximitySignal(z, params);
     }
+    if (params.color_pipeline.signal == ColorSignal::root_log_proximity_v1) {
+        return ResolveRootLogProximityV1Signal(
+            fractalType, z, params, nullptr, ColorPipelineSourceRuntimeParams{});
+    }
     if (params.color_pipeline.signal == ColorSignal::phase_angle ||
         params.color_pipeline.signal == ColorSignal::orbit_stripe) {
         return ResolveAngularSignal(params.color_pipeline.signal, atan2f(z.y, z.x), params);
@@ -1869,6 +1919,7 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
 
 ESCAPE_TIME_COLOR_HD inline bool ShouldUseProgrammableColorForUnescapedSample(const KernelParams& params) {
     return params.color_pipeline.signal == ColorSignal::root_proximity ||
+        params.color_pipeline.signal == ColorSignal::root_log_proximity_v1 ||
         params.color_pipeline.signal == ColorSignal::root_phase ||
         params.color_pipeline.signal == ColorSignal::smooth_escape ||
         params.color_pipeline.palette == ColorPalette::phase_wheel;

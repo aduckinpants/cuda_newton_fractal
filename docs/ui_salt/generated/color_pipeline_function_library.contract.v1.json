@@ -561,6 +561,68 @@
             ]
           },
           {
+            "id": "root_log_proximity_v1",
+            "label": "Root Log Proximity",
+            "description": "Measure signed logarithmic distance to the nearest root in the selected authoritative root field.",
+            "taxonomy_group": "basin",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "signal.proximity_scale",
+                "path": "signal.proximity_scale",
+                "type": "float",
+                "label": "Proximity Scale",
+                "min": 0.25,
+                "max": 8.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "descriptor_parameter_id": "signal.proximity_bias",
+                "path": "signal.proximity_bias",
+                "type": "float",
+                "label": "Proximity Bias",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "descriptor_parameter_id": "signal.root_pattern_ref",
+                "path": "signal.root_pattern_ref",
+                "type": "enum",
+                "label": "Root Field",
+                "default": "dynamics_root_field",
+                "options": [
+                  "dynamics_root_field",
+                  "color_root_field"
+                ]
+              },
+              {
+                "descriptor_parameter_id": "signal.blend_weight",
+                "path": "signal.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "signal_kind": "scalar",
+            "typed_signal": "scalar.signed",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.signed",
+                "canonical": true
+              }
+            ]
+          },
+          {
             "id": "root_phase",
             "label": "Root Phase",
             "description": "Use the angular phase from the nearest authoritative root to the sample point.",
@@ -1129,7 +1191,15 @@
               }
             ],
             "signal_kind": "scalar",
-            "typed_signal": "scalar.signed"
+            "typed_signal": "scalar.signed",
+            "ports": [
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.signed",
+                "canonical": true
+              }
+            ]
           },
           {
             "id": "lens_field_v2_distance",
@@ -1268,6 +1338,50 @@
                 "id": "signal",
                 "type": "generic.T",
                 "generic_group": "T",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "signed_unit_map_v1",
+            "label": "Signed Unit Map",
+            "description": "Map a signed scalar into the unit interval with explicit scale, bias, and clamping.",
+            "taxonomy_group": "remap",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "shape.scale",
+                "path": "shape.scale",
+                "type": "float",
+                "label": "Normalization Scale",
+                "min": 0.01,
+                "max": 8.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "descriptor_parameter_id": "shape.bias",
+                "path": "shape.bias",
+                "type": "float",
+                "label": "Normalization Bias",
+                "min": -2.0,
+                "max": 2.0,
+                "step": 0.01,
+                "default": 0.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.signed"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.unit",
                 "canonical": true
               }
             ]
@@ -2155,6 +2269,19 @@
                 "step": 0.01,
                 "default": 0.25
               }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "color",
+                "type": "color.linear_rgb"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
             ]
           },
           {
@@ -2319,6 +2446,15 @@
         "source": "root_proximity",
         "palette": "heatmap",
         "signal": "root_proximity",
+        "palette_runtime": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "root_log_proximity_v1",
+        "palette": "heatmap",
+        "signal": "root_log_proximity_v1",
         "palette_runtime": "heatmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
@@ -2586,6 +2722,51 @@
         "palette_node_id": "palette.phase_wheel",
         "grading": "phase_finish",
         "grading_node_id": "grading.phase_finish",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_glow",
+        "version": 1,
+        "label": "Root Glow",
+        "source": "root_log_proximity_v1",
+        "source_node_id": "source.root_log_proximity",
+        "source_blend": 1.0,
+        "shape": "signed_unit_map_v1",
+        "shape_node_id": "shape.signed_unit_map",
+        "palette": "heatmap",
+        "palette_node_id": "palette.heatmap",
+        "grading": "grade_glow",
+        "grading_node_id": "grading.grade_glow",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "curvature_relief",
+        "version": 1,
+        "label": "Curvature Relief",
+        "source": "sdf_curvature",
+        "source_node_id": "source.curvature",
+        "source_blend": 1.0,
+        "shape": "signed_unit_map_v1",
+        "shape_node_id": "shape.signed_unit_map",
+        "palette": "heatmap",
+        "palette_node_id": "palette.heatmap",
+        "grading": "contrast_lift",
+        "grading_node_id": "grading.contrast_lift",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "lens_topography",
+        "version": 1,
+        "label": "Lens Topography",
+        "source": "lens_field_v2_distance",
+        "source_node_id": "source.lens_response",
+        "source_blend": 1.0,
+        "shape": "identity",
+        "shape_node_id": "shape.identity",
+        "palette": "heatmap",
+        "palette_node_id": "palette.heatmap",
+        "grading": "contrast_lift",
+        "grading_node_id": "grading.contrast_lift",
         "fail_closed_reason": ""
       }
     ],
@@ -3190,6 +3371,371 @@
         "adapter_cost": 0,
         "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
         "fail_closed_reason": ""
+      },
+      {
+        "id": "root_glow",
+        "recipe_version": 1,
+        "canonicalization_id": "viewer.recipe_canonicalization.v1",
+        "metadata_content_hash": "50f9d90c934ef2703ad9a05b90e2b3c98ef1fda71efdc59c205d77c7b96e7868",
+        "label": "Root Glow",
+        "source_recipe_id": "root_glow",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source.root_log_proximity",
+            "lane": "source",
+            "function": "root_log_proximity_v1"
+          },
+          {
+            "id": "shape.signed_unit_map",
+            "lane": "shape",
+            "function": "signed_unit_map_v1",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "shape.bias",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.0
+              },
+              {
+                "descriptor_parameter_id": "shape.scale",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.18
+              }
+            ]
+          },
+          {
+            "id": "palette.heatmap",
+            "lane": "palette",
+            "function": "heatmap"
+          },
+          {
+            "id": "grading.grade_glow",
+            "lane": "grading",
+            "function": "grade_glow",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "grade.glow",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.45
+              }
+            ]
+          }
+        ],
+        "source_fold": {
+          "operation": "ordered_destination_weighted_lerp",
+          "source_nodes": [
+            "source.root_log_proximity"
+          ],
+          "fold_nodes": [],
+          "fold_edges": [],
+          "output_node": "source.root_log_proximity",
+          "first_source_blend": 1.0
+        },
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_log_proximity_v1",
+            "to_function": "signed_unit_map_v1",
+            "from_type": "scalar.signed",
+            "to_type": "scalar.signed",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source.root_log_proximity",
+            "to_node": "shape.signed_unit_map"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "signed_unit_map_v1",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape.signed_unit_map",
+            "to_node": "palette.heatmap"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "grade_glow",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette.heatmap",
+            "to_node": "grading.grade_glow"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "curvature_relief",
+        "recipe_version": 1,
+        "canonicalization_id": "viewer.recipe_canonicalization.v1",
+        "metadata_content_hash": "f730b29f9d8fa328bd7f18cf7a9f55f79293b7c325c9efc9fd309f29911d7b69",
+        "label": "Curvature Relief",
+        "source_recipe_id": "curvature_relief",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source.curvature",
+            "lane": "source",
+            "function": "sdf_curvature",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "signal.bias",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.0
+              },
+              {
+                "descriptor_parameter_id": "signal.scale",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.0
+              }
+            ]
+          },
+          {
+            "id": "shape.signed_unit_map",
+            "lane": "shape",
+            "function": "signed_unit_map_v1",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "shape.bias",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.0
+              },
+              {
+                "descriptor_parameter_id": "shape.scale",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.5
+              }
+            ]
+          },
+          {
+            "id": "palette.heatmap",
+            "lane": "palette",
+            "function": "heatmap",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "palette.cycle_scale",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.4
+              }
+            ]
+          },
+          {
+            "id": "grading.contrast_lift",
+            "lane": "grading",
+            "function": "contrast_lift"
+          }
+        ],
+        "source_fold": {
+          "operation": "ordered_destination_weighted_lerp",
+          "source_nodes": [
+            "source.curvature"
+          ],
+          "fold_nodes": [],
+          "fold_edges": [],
+          "output_node": "source.curvature",
+          "first_source_blend": 1.0
+        },
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_curvature",
+            "to_function": "signed_unit_map_v1",
+            "from_type": "scalar.signed",
+            "to_type": "scalar.signed",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source.curvature",
+            "to_node": "shape.signed_unit_map"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "signed_unit_map_v1",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape.signed_unit_map",
+            "to_node": "palette.heatmap"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette.heatmap",
+            "to_node": "grading.contrast_lift"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "lens_topography",
+        "recipe_version": 1,
+        "canonicalization_id": "viewer.recipe_canonicalization.v1",
+        "metadata_content_hash": "fc4985c3e386ffa882be586e72ec0477cf5131e3248461fbfdd9a73651c06d46",
+        "label": "Lens Topography",
+        "source_recipe_id": "lens_topography",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source.lens_response",
+            "lane": "source",
+            "function": "lens_field_v2_distance",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "signal.bias",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.0
+              },
+              {
+                "descriptor_parameter_id": "signal.scale",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.85
+              },
+              {
+                "descriptor_parameter_id": "signal.sign_contrast",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.65
+              }
+            ]
+          },
+          {
+            "id": "shape.identity",
+            "lane": "shape",
+            "function": "identity"
+          },
+          {
+            "id": "palette.heatmap",
+            "lane": "palette",
+            "function": "heatmap",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "palette.cycle_scale",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.4
+              }
+            ]
+          },
+          {
+            "id": "grading.contrast_lift",
+            "lane": "grading",
+            "function": "contrast_lift"
+          }
+        ],
+        "source_fold": {
+          "operation": "ordered_destination_weighted_lerp",
+          "source_nodes": [
+            "source.lens_response"
+          ],
+          "fold_nodes": [],
+          "fold_edges": [],
+          "output_node": "source.lens_response",
+          "first_source_blend": 1.0
+        },
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "lens_field_v2_distance",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source.lens_response",
+            "to_node": "shape.identity"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape.identity",
+            "to_node": "palette.heatmap"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette.heatmap",
+            "to_node": "grading.contrast_lift"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
       }
     ],
     "compat_overrides": [
@@ -3252,6 +3798,16 @@
         "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
         "reason": "root proximity Explaino palette route remains a legacy runtime bridge",
         "proof": "color_pipeline_metadata_parity"
+      },
+      {
+        "id": "recipe_root_log_proximity_signed_unit_map_heatmap",
+        "source": "root_log_proximity_v1",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_window::PrepareColorPipelineApplication",
+        "reason": "root log proximity is palette-compatible only after the recipe-owned signed_unit_map_v1 shape normalizes the signed source",
+        "proof": "curated_recipe_qualification"
       },
       {
         "id": "legacy_root_index_joy_root_palette_basin_default",
@@ -3454,6 +4010,16 @@
         "route_case_id": "root_proximity_heatmap",
         "override_id": "",
         "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "root_log_proximity_v1",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "recipe_root_log_proximity_signed_unit_map_heatmap",
+        "reason": "root log proximity is palette-compatible only after the recipe-owned signed_unit_map_v1 shape normalizes the signed source"
       },
       {
         "source": "root_proximity",

@@ -103,7 +103,7 @@ def test_public_recipe_apply_baseline_packet(tmp_path: Path) -> None:
         recipe["id"]: recipe["live_authority"]
         for recipe in contract_payload["composition_recipe_contract"]["recipe_v2"]
     }
-    assert set(recipe_authority) == {case[0] for case in PUBLIC_RECIPE_BASELINE_CASES}
+    assert {case[0] for case in PUBLIC_RECIPE_BASELINE_CASES} <= set(recipe_authority)
     assert set(recipe_authority.values()) == {"recipe_v2_graph"}
     cases: list[dict[str, object]] = []
     for recipe_id, fractal_type in PUBLIC_RECIPE_BASELINE_CASES:

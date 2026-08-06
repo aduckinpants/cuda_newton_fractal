@@ -708,7 +708,9 @@ static void PublishRootPatternProbe(
     const int sourceStackCount = ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count);
     for (int index = 0; index < sourceStackCount; ++index) {
         const ColorPipelineSourceStackEntry& row = params.color_source_stack[index];
-        if (row.signal != ColorSignal::root_phase && row.signal != ColorSignal::root_proximity) {
+        if (row.signal != ColorSignal::root_phase &&
+            row.signal != ColorSignal::root_proximity &&
+            row.signal != ColorSignal::root_log_proximity_v1) {
             continue;
         }
         ViewerUiAutomationRootPatternConsumerProbe consumer{};

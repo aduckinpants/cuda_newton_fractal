@@ -376,6 +376,7 @@ inline ColorPipelineSourceSignalKind ColorPipelineSourceSignalKindForSignal(Colo
     case ColorSignal::iteration_bands:
     case ColorSignal::escape_magnitude:
     case ColorSignal::root_proximity:
+    case ColorSignal::root_log_proximity_v1:
     case ColorSignal::sdf_signed_distance:
     case ColorSignal::lens_field_v2_distance:
     case ColorSignal::sdf_boundary_band:
@@ -399,6 +400,8 @@ inline const char* AdvancedColorSignalFunctionId(ColorSignal value) {
         return "orbit_stripe";
     case ColorSignal::root_proximity:
         return "root_proximity";
+    case ColorSignal::root_log_proximity_v1:
+        return "root_log_proximity_v1";
     case ColorSignal::root_phase:
         return "root_phase";
     case ColorSignal::sdf_signed_distance:
@@ -442,6 +445,10 @@ inline bool TryParseAdvancedColorSignalFunctionId(const std::string& functionId,
     }
     if (functionId == "root_proximity") {
         if (outValue) *outValue = ColorSignal::root_proximity;
+        return true;
+    }
+    if (functionId == "root_log_proximity_v1") {
+        if (outValue) *outValue = ColorSignal::root_log_proximity_v1;
         return true;
     }
     if (functionId == "root_phase") {
@@ -618,6 +625,8 @@ inline const char* AdvancedColorShapeFunctionId(ColorPipelineShape value) {
         return "log_compress";
     case ColorPipelineShape::smoothstep_range:
         return "smoothstep_range";
+    case ColorPipelineShape::signed_unit_map_v1:
+        return "signed_unit_map_v1";
     }
     return nullptr;
 }
@@ -682,6 +691,17 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineFloatParam("signal.proximity_scale", "Proximity Scale", "Control how quickly root proximity falls off away from a root.", 0.25, 8.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.proximity_bias", "Proximity Bias", "Shift the root-proximity source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineRootPatternRefParam(),
+                MakeColorPipelineSourceBlendWeightParam(),
+            }),
+        MakeColorPipelineFunction(
+            "root_log_proximity_v1",
+            "Root Log Proximity",
+            "Measure signed logarithmic distance to the nearest root in the selected authoritative root field.",
+            "basin",
+            {
+                MakeColorPipelineFloatParam("signal.proximity_scale", "Proximity Scale", "Scale root distance before logarithmic normalization.", 0.25, 8.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("signal.proximity_bias", "Proximity Bias", "Shift the signed logarithmic root metric.", -1.0, 1.0, 0.01, 0.0),
                 MakeColorPipelineRootPatternRefParam(),
                 MakeColorPipelineSourceBlendWeightParam(),
             }),
@@ -862,6 +882,15 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineBaseShapeFunctions() {
             "identity",
             {}),
         MakeColorPipelineFunction(
+            "signed_unit_map_v1",
+            "Signed Unit Map",
+            "Map a signed scalar into the unit interval with explicit scale, bias, and clamping.",
+            "remap",
+            {
+                MakeColorPipelineFloatParam("shape.scale", "Normalization Scale", "Scale the signed signal before unit mapping.", 0.01, 8.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("shape.bias", "Normalization Bias", "Shift the signed signal before clamping.", -2.0, 2.0, 0.01, 0.0),
+            }),
+        MakeColorPipelineFunction(
             "offset_scale",
             "Offset + Scale",
             "Shift and scale the incoming signal before palette materialization.",
@@ -1040,6 +1069,7 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "escape_magnitude" ||
             functionId == "orbit_stripe" ||
             functionId == "root_proximity" ||
+            functionId == "root_log_proximity_v1" ||
             functionId == "root_phase" ||
             functionId == "root_index" ||
             functionId == "sdf_signed_distance" ||
@@ -1058,7 +1088,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "bias_gain_curve" ||
             functionId == "smooth_window" ||
             functionId == "log_compress" ||
-            functionId == "smoothstep_range";
+            functionId == "smoothstep_range" ||
+            functionId == "signed_unit_map_v1";
     }
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||
@@ -1705,7 +1736,8 @@ inline bool TrySuggestHardcodedColorPipelineCompanionFunction(
     const std::string lane(laneId);
     const std::string function(functionId);
     if (lane == "source") {
-        if (function == "smooth_escape_ramp" || function == "escape_magnitude" || function == "root_proximity") {
+        if (function == "smooth_escape_ramp" || function == "escape_magnitude" ||
+            function == "root_proximity" || function == "root_log_proximity_v1") {
             return SetColorPipelineCompanionSuggestion("palette", "heatmap", outCompanionLaneId, outCompanionFunctionId);
         }
         if (function == "phase_orbit" || function == "orbit_stripe" || function == "root_phase") {
@@ -1830,6 +1862,9 @@ inline const std::vector<MaterializedColorPipelineRecipe>& GetHardcodedColorPipe
         {"root_proximity_heatmap", "Root Proximity Heatmap", "root_proximity", "identity", "heatmap", "contrast_lift", ""},
         {"sdf_normal_angle_diagnostic", "SDF Normal Angle Diagnostic", "sdf_normal_angle", "identity", "phase_wheel_palette", "phase_finish", ""},
         {"sdf_normal_angle_beauty", "SDF Normal Angle Beauty", "sdf_normal_angle", "identity", "phase_wheel_palette", "phase_finish", ""},
+        {"root_glow", "Root Glow", "root_log_proximity_v1", "signed_unit_map_v1", "heatmap", "grade_glow", ""},
+        {"curvature_relief", "Curvature Relief", "sdf_curvature", "signed_unit_map_v1", "heatmap", "contrast_lift", ""},
+        {"lens_topography", "Lens Topography", "lens_field_v2_distance", "identity", "heatmap", "contrast_lift", ""},
     };
     return recipes;
 }
@@ -2809,6 +2844,11 @@ inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
         *outMode = ColoringMode::smooth_escape;
         return true;
     }
+    if (std::strcmp(sourceFunctionId, "root_log_proximity_v1") == 0 && std::strcmp(paletteFunctionId, "heatmap") == 0) {
+        *outPipeline = {ColorSignal::root_log_proximity_v1, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
     if (std::strcmp(sourceFunctionId, "root_index") == 0 && std::strcmp(paletteFunctionId, "root_classic_palette") == 0) {
         *outPipeline = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
         *outMode = ColoringMode::root_basin;
@@ -3325,6 +3365,13 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         pipeline.palette == ColorPalette::cyclic_escape &&
         isEscapeLikeMode) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_proximity";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_log_proximity_v1 &&
+        pipeline.palette == ColorPalette::cyclic_escape &&
+        isEscapeLikeMode) {
+        if (outSourceFunctionId) *outSourceFunctionId = "root_log_proximity_v1";
         if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
         return true;
     }

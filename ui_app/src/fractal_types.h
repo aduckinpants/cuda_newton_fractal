@@ -70,6 +70,7 @@ enum class ColorSignal : int {
     sdf_curvature = 12,
     lens_field_v2_distance = 13,
     root_phase = 14,
+    root_log_proximity_v1 = 15,
 };
 
 enum class ColorPalette : int {
@@ -102,6 +103,7 @@ enum class ColorPipelineShape : int {
     smooth_window = 6,
     log_compress = 7,
     smoothstep_range = 8,
+    signed_unit_map_v1 = 9,
 };
 
 constexpr int kColorPipelineMaxSourceStackCount = 8;

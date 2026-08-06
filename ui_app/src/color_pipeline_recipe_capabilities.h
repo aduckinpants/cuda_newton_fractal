@@ -94,8 +94,12 @@ inline bool ColorPipelineProducerSupportsSourceFunction(
         pipeline = {ColorSignal::root_phase, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
     } else if (functionId == "root_proximity") {
         pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    } else if (functionId == "root_log_proximity_v1") {
+        pipeline = {ColorSignal::root_log_proximity_v1, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
     } else if (functionId == "sdf_normal_angle") {
         pipeline = {ColorSignal::sdf_normal_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+    } else if (functionId == "sdf_curvature") {
+        pipeline = {ColorSignal::sdf_curvature, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
     } else if (functionId == "lens_field_v2_distance") {
         pipeline = {ColorSignal::lens_field_v2_distance, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
     } else {
@@ -160,8 +164,7 @@ inline ColorPipelineProducerCapabilitySnapshot BuildColorPipelineProducerCapabil
     snapshot.evaluator_id = std::string("cuda.") +
         ColorPipelineIterationStrategyId(resolvedEval.strategy) + "." +
         snapshot.fractal_precision_tier;
-    snapshot.color_metric_arithmetic_tier =
-        observation.sdf_field_requested ? "float32" : snapshot.fractal_precision_tier;
+    snapshot.color_metric_arithmetic_tier = "float32";
     snapshot.sdf_field_producer_id = observation.sdf_field_producer_id.empty()
         ? "none"
         : observation.sdf_field_producer_id;
@@ -174,7 +177,9 @@ inline ColorPipelineProducerCapabilitySnapshot BuildColorPipelineProducerCapabil
         "phase_orbit",
         "root_phase",
         "root_proximity",
+        "root_log_proximity_v1",
         "sdf_normal_angle",
+        "sdf_curvature",
         "lens_field_v2_distance",
     };
     for (std::string_view functionId : kSourceFunctions) {
@@ -213,7 +218,8 @@ inline ColorPipelineProducerCapabilitySnapshot BuildColorPipelineProducerCapabil
         snapshot.current_field_validity.push_back({capabilityId, sdfStatus, sdfReason});
     }
     if (ColorPipelineProducerSupportsSourceFunction(fractalType, "root_phase") ||
-        ColorPipelineProducerSupportsSourceFunction(fractalType, "root_proximity")) {
+        ColorPipelineProducerSupportsSourceFunction(fractalType, "root_proximity") ||
+        ColorPipelineProducerSupportsSourceFunction(fractalType, "root_log_proximity_v1")) {
         snapshot.current_field_validity.push_back({
             "root_field.authoritative",
             "not_observed",
@@ -252,6 +258,13 @@ inline const ColorPipelineCurrentFieldValidity* FindColorPipelineCurrentFieldVal
     return nullptr;
 }
 
+inline std::string_view ColorPipelineRecipeQualificationFailure(std::string_view recipeId) {
+    if (recipeId == "root_glow") {
+        return "Root Glow did not meet the locked palette-occupancy and owning-parameter sensitivity gates";
+    }
+    return {};
+}
+
 inline ColorPipelineRecipeApplicability EvaluateColorPipelineRecipeApplicability(
     const ColorPipelineProducerCapabilitySnapshot& snapshot,
     const std::string& recipeId,
@@ -279,6 +292,13 @@ inline ColorPipelineRecipeApplicability EvaluateColorPipelineRecipeApplicability
     if (!result.missing_capability_ids.empty()) {
         result.reason_code = "missing_required_capability";
         result.reason = "active producer does not support every required recipe capability";
+        return result;
+    }
+    const std::string_view qualificationFailure =
+        ColorPipelineRecipeQualificationFailure(recipeId);
+    if (!qualificationFailure.empty()) {
+        result.reason_code = "recipe_qualification_failed";
+        result.reason = std::string(qualificationFailure);
         return result;
     }
     result.available = true;

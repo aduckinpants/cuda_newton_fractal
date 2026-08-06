@@ -243,6 +243,7 @@ const char* ExpectedTypedSignalForFunction(const char* functionId) {
     if (std::strcmp(functionId, "escape_magnitude") == 0) return "scalar.unit";
     if (std::strcmp(functionId, "orbit_stripe") == 0) return "phase.turns";
     if (std::strcmp(functionId, "root_proximity") == 0) return "scalar.unit";
+    if (std::strcmp(functionId, "root_log_proximity_v1") == 0) return "scalar.signed";
     if (std::strcmp(functionId, "root_phase") == 0) return "phase.turns";
     if (std::strcmp(functionId, "root_index") == 0) return "category.root_index";
     if (std::strcmp(functionId, "sdf_signed_distance") == 0) return "scalar.sdf_signed_distance";
@@ -409,12 +410,12 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
     Check(source && shape && palette && grading, "TestLaneCatalogFiltersRuntimeBackedRows_AllCatalogsDiscoverable");
     if (!source || !shape || !palette || !grading) return;
 
-    Check(source->default_function_id == std::string("smooth_escape_ramp") && source->functions.size() == 14,
+    Check(source->default_function_id == std::string("smooth_escape_ramp") && source->functions.size() == 15,
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceShape");
     Check(HasFunction(*source, "smooth_escape_ramp") && HasFunction(*source, "phase_orbit") &&
             HasFunction(*source, "banded_signal") && HasFunction(*source, "escape_magnitude") &&
             HasFunction(*source, "orbit_stripe") && HasFunction(*source, "root_proximity") &&
-            HasFunction(*source, "root_phase") &&
+            HasFunction(*source, "root_log_proximity_v1") && HasFunction(*source, "root_phase") &&
             HasFunction(*source, "root_index") &&
             HasFunction(*source, "sdf_signed_distance") &&
             HasFunction(*source, "sdf_inside_outside") &&
@@ -423,10 +424,10 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*source, "sdf_curvature") &&
             HasFunction(*source, "lens_field_v2_distance"),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctions");
-    Check(shape->default_function_id == std::string("identity") && shape->functions.size() == 9 &&
+    Check(shape->default_function_id == std::string("identity") && shape->functions.size() == 10 &&
             HasFunction(*shape, "smooth_window") &&
             HasFunction(*shape, "log_compress") &&
-            HasFunction(*shape, "smoothstep_range"),
+            HasFunction(*shape, "smoothstep_range") && HasFunction(*shape, "signed_unit_map_v1"),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctions");
     Check(palette->default_function_id == std::string("heatmap") && palette->functions.size() == 6 &&
             HasFunction(*palette, "explaino_cmap") && HasFunction(*palette, "root_classic_palette") &&
@@ -442,6 +443,7 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             "escape_magnitude",
             "orbit_stripe",
             "root_proximity",
+            "root_log_proximity_v1",
             "root_phase",
             "root_index",
             "sdf_signed_distance",
@@ -453,6 +455,7 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctionOrder");
     Check(CatalogIdsEqual(*shape, {
             "identity",
+            "signed_unit_map_v1",
             "offset_scale",
             "repeat",
             "posterize",
@@ -1180,15 +1183,15 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
 
     Check(contract.lanes.size() == color_pipeline_core::GetColorPipelineLaneCatalogs().size(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
-    Check(contract.compatibility.size() == 23,
+    Check(contract.compatibility.size() == 24,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
-    Check(contract.compat_overrides.size() == 17,
+    Check(contract.compat_overrides.size() == 18,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatOverrideCount");
-    Check(contract.compatibility_audit.size() == 23,
+    Check(contract.compatibility_audit.size() == 24,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
-    Check(contract.recipes.size() == 6, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
+    Check(contract.recipes.size() == 9, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.has_recipe_v2, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Present");
-    Check(contract.recipe_v2.size() == 6, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Count");
+    Check(contract.recipe_v2.size() == 9, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Count");
     Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
     Check(contract.sdf_source_capabilities.size() == 6,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfSourceCapabilityCount");
@@ -1422,10 +1425,15 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     Check(!contract.explaino_entries.empty(), "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoEntriesPresent");
 
     const ColorPipelineMetadataParityReport parity = ValidateColorPipelineMetadataParity(contract);
+    if (!parity.ok) {
+        for (const std::string& parityError : parity.errors) {
+            std::fprintf(stderr, "  PARITY: %s\n", parityError.c_str());
+        }
+    }
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
-    Check(parity.lane_count == 4 && parity.function_count == 37 &&
-            parity.compatibility_count == 23 && parity.recipe_count == 6 &&
+    Check(parity.lane_count == 4 && parity.function_count == 39 &&
+            parity.compatibility_count == 24 && parity.recipe_count == 9 &&
             parity.taxonomy_group_count == 24 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
@@ -1639,7 +1647,8 @@ void TestMaterializedUiSaltMetadataCanOwnPublicCatalog() {
 
     const std::vector<ColorPipelineLaneCatalog>& hardcoded =
         color_pipeline_core::GetHardcodedColorPipelineLaneCatalogs();
-    Check(color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error),
+    const bool installed = color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error);
+    Check(installed,
         (std::string("TestMaterializedUiSaltMetadataCanOwnPublicCatalog_Install: ") + error).c_str());
     Check(color_pipeline_core::IsColorPipelineMetadataCatalogActive(),
         "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_MetadataActive");
@@ -1739,7 +1748,7 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
     Check(color_pipeline_core::IsColorPipelineCompatibilityDiagnosticsActive() &&
             color_pipeline_core::ColorPipelineCompatibilityDiagnosticsAuthorityId() == std::string("materialized_json_diagnostic"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsActive");
-    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 23,
+    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 24,
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Count");
 
     color_pipeline_core::ColorPipelineCompatibilityRouteExplanation smoothExplanation;
@@ -1991,15 +2000,19 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcoded");
     Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("hardcoded"),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_StartsHardcodedAuthority");
-    Check(color_pipeline_core::CountHardcodedColorPipelineRecipes() == 6,
+    Check(color_pipeline_core::CountHardcodedColorPipelineRecipes() == 9,
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeCount");
     Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedFallbackCountIsTruthful");
 
     const std::vector<MaterializedColorPipelineRecipe>& hardcodedRecipes =
         color_pipeline_core::GetHardcodedColorPipelineRecipes();
-    Check(hardcodedRecipes.size() == 6,
+    Check(hardcodedRecipes.size() == 9,
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRecipeVectorCount");
+    Check(color_pipeline_core::FindHardcodedColorPipelineRecipe("root_glow") != nullptr &&
+            color_pipeline_core::FindHardcodedColorPipelineRecipe("curvature_relief") != nullptr &&
+            color_pipeline_core::FindHardcodedColorPipelineRecipe("lens_topography") != nullptr,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedCuratedRecipesExist");
     Check(color_pipeline_core::FindHardcodedColorPipelineRecipe("root_phase_wheel") != nullptr,
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_HardcodedRootPhaseRecipeExists");
     Check(color_pipeline_core::FindHardcodedColorPipelineRecipe("root_proximity_heatmap") != nullptr,
@@ -2108,9 +2121,16 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
                     fallbackLanes[0].rows.size() == 1,
                 "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_BeautyFallbackRemainsLegacyTupleOnly");
         } else {
-            Check(recipeIndex < graphRecipeLanes.size() &&
-                    ColorPipelineLaneVectorsEquivalent(graphRecipeLanes[recipeIndex], fallbackLanes),
-                (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_AllRecipeFallbackParity: ") +
+            const bool curatedRecipe =
+                hardcodedRecipes[recipeIndex].id == "root_glow" ||
+                hardcodedRecipes[recipeIndex].id == "curvature_relief" ||
+                hardcodedRecipes[recipeIndex].id == "lens_topography";
+            const bool equivalent = recipeIndex < graphRecipeLanes.size() &&
+                ColorPipelineLaneVectorsEquivalent(graphRecipeLanes[recipeIndex], fallbackLanes);
+            Check(curatedRecipe ? !equivalent : equivalent,
+                (std::string(curatedRecipe
+                    ? "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_CuratedRecipeFallbackReportsUntunedLegacyTuple: "
+                    : "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_AllExistingRecipeFallbackParity: ") +
                     hardcodedRecipes[recipeIndex].id).c_str());
         }
     }

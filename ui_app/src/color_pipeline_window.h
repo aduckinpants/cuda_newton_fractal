@@ -1760,8 +1760,12 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "orbit_stripe") {
         return path == "signal.stripe_frequency" || path == "signal.phase_offset" || path == "signal.blend_weight";
     }
-    if (functionId == "root_proximity") {
-        return path == "signal.proximity_scale" || path == "signal.proximity_bias" || path == "signal.blend_weight";
+    if (functionId == "root_proximity" || functionId == "root_log_proximity_v1") {
+        return path == "signal.proximity_scale" || path == "signal.proximity_bias" ||
+            path == "signal.root_pattern_ref" || path == "signal.blend_weight";
+    }
+    if (functionId == "signed_unit_map_v1") {
+        return path == "shape.scale" || path == "shape.bias";
     }
     if (functionId == "phase_wheel_palette") {
         return path == "palette.phase_offset" || path == "palette.saturation" ||
@@ -1918,6 +1922,10 @@ inline bool ImportSupportedColorPipelineParamsFromShapeStackEntry(
         if (outError) *outError = "Advanced color Shape-stack import requires a row";
         return false;
     }
+    if (ioRow->function_id == "signed_unit_map_v1") {
+        return SetColorPipelineParamNumber(ioRow, "shape.scale", shapeEntry.params.scale, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.bias", shapeEntry.params.offset, outError);
+    }
     if (ioRow->function_id == "offset_scale") {
         return SetColorPipelineParamNumber(ioRow, "shape.offset", shapeEntry.params.offset, outError) &&
             SetColorPipelineParamNumber(ioRow, "shape.scale", shapeEntry.params.scale, outError);
@@ -2022,7 +2030,8 @@ inline bool ImportSupportedColorPipelineParamsFromSourceStackEntry(
         return SetColorPipelineParamNumber(ioRow, "signal.stripe_frequency", sourceEntry.params.stripe_frequency, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.phase_offset", sourceEntry.params.stripe_phase, outError);
     }
-    if (ioRow->function_id == "root_proximity") {
+    if (ioRow->function_id == "root_proximity" ||
+        ioRow->function_id == "root_log_proximity_v1") {
         return SetColorPipelineParamNumber(ioRow, "signal.proximity_scale", sourceEntry.params.proximity_scale, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", sourceEntry.params.proximity_bias, outError) &&
             SetColorPipelineParamEnum(
@@ -2078,7 +2087,8 @@ inline bool IsSupportedColorPipelineShapeFunctionId(const std::string& functionI
         functionId == "bias_gain_curve" ||
         functionId == "smooth_window" ||
         functionId == "log_compress" ||
-        functionId == "smoothstep_range";
+        functionId == "smoothstep_range" ||
+        functionId == "signed_unit_map_v1";
 }
 
 inline bool IsSupportedColorPipelineSourceStackFunctionId(const std::string& functionId) {
@@ -2088,6 +2098,7 @@ inline bool IsSupportedColorPipelineSourceStackFunctionId(const std::string& fun
         functionId == "escape_magnitude" ||
         functionId == "orbit_stripe" ||
         functionId == "root_proximity" ||
+        functionId == "root_log_proximity_v1" ||
         functionId == "root_phase" ||
         functionId == "sdf_signed_distance" ||
         functionId == "sdf_inside_outside" ||
@@ -2364,7 +2375,8 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
         }
         entry.params.stripe_frequency = static_cast<float>(stripeFrequency);
         entry.params.stripe_phase = static_cast<float>(stripePhase);
-    } else if (row.function_id == "root_proximity") {
+    } else if (row.function_id == "root_proximity" ||
+        row.function_id == "root_log_proximity_v1") {
         double proximityScale = 0.0;
         double proximityBias = 0.0;
         std::string patternRefId;
@@ -2376,7 +2388,7 @@ inline bool TryBuildColorPipelineSourceStackEntryFromRow(
             !ValidateColorPipelineParamRange("signal.proximity_bias", proximityBias, -1.0, 1.0, outError) ||
             !TryParseExplainoRootPatternRefId(patternRefId, &patternRef)) {
             if (outError && outError->empty()) {
-                *outError = "Invalid root_proximity signal.root_pattern_ref";
+                *outError = std::string("Invalid ") + row.function_id + " signal.root_pattern_ref";
             }
             return false;
         }
@@ -3132,7 +3144,18 @@ inline bool TryBuildColorPipelineShapeStackEntryFromRow(
 
     ColorPipelineShapeStackEntry entry;
     entry.shape = shape;
-    if (row.function_id == "offset_scale") {
+    if (row.function_id == "signed_unit_map_v1") {
+        double scale = 0.0;
+        double bias = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "shape.scale", &scale, outError) ||
+            !TryGetColorPipelineParamNumber(row, "shape.bias", &bias, outError) ||
+            !ValidateColorPipelineParamRange("shape.scale", scale, 0.01, 8.0, outError) ||
+            !ValidateColorPipelineParamRange("shape.bias", bias, -2.0, 2.0, outError)) {
+            return false;
+        }
+        entry.params.scale = static_cast<float>(scale);
+        entry.params.offset = static_cast<float>(bias);
+    } else if (row.function_id == "offset_scale") {
         double offset = 0.0;
         double scale = 0.0;
         if (!TryGetColorPipelineParamNumber(row, "shape.offset", &offset, outError) ||
@@ -3796,7 +3819,8 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     } else if (legacySourceEntry.signal == ColorSignal::orbit_stripe) {
         assignShapeFloat(&ioParams->color_orbit_stripe_frequency, legacySourceEntry.params.stripe_frequency);
         assignShapeFloat(&ioParams->color_orbit_stripe_phase, legacySourceEntry.params.stripe_phase);
-    } else if (legacySourceEntry.signal == ColorSignal::root_proximity) {
+    } else if (legacySourceEntry.signal == ColorSignal::root_proximity ||
+               legacySourceEntry.signal == ColorSignal::root_log_proximity_v1) {
         assignShapeFloat(&ioParams->color_root_proximity_scale, legacySourceEntry.params.proximity_scale);
         assignShapeFloat(&ioParams->color_root_proximity_bias, legacySourceEntry.params.proximity_bias);
     }
@@ -3815,6 +3839,10 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     resetShapeBiasGain();
     resetShapeSmoothWindow();
     switch (legacyMirrorEntry.shape) {
+    case ColorPipelineShape::signed_unit_map_v1:
+        assignShapeFloat(&ioParams->color_shape_scale, legacyMirrorEntry.params.scale);
+        assignShapeFloat(&ioParams->color_shape_offset, legacyMirrorEntry.params.offset);
+        break;
     case ColorPipelineShape::offset_scale:
         assignShapeFloat(&ioParams->color_shape_offset, legacyMirrorEntry.params.offset);
         assignShapeFloat(&ioParams->color_shape_scale, legacyMirrorEntry.params.scale);

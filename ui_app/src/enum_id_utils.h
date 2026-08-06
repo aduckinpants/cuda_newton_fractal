@@ -116,6 +116,7 @@ inline constexpr EnumIdPair<ColorSignal> kColorSignalIds[] = {
     {ColorSignal::orbit_stripe, "orbit_stripe"},
     {ColorSignal::root_proximity, "root_proximity"},
     {ColorSignal::root_phase, "root_phase"},
+    {ColorSignal::root_log_proximity_v1, "root_log_proximity_v1"},
     {ColorSignal::sdf_signed_distance, "sdf_signed_distance"},
     {ColorSignal::sdf_inside_outside, "sdf_inside_outside"},
     {ColorSignal::sdf_boundary_band, "sdf_boundary_band"},
@@ -154,6 +155,7 @@ inline constexpr EnumIdPair<ColorPipelineShape> kColorPipelineShapeIds[] = {
     {ColorPipelineShape::smooth_window, "smooth_window"},
     {ColorPipelineShape::log_compress, "log_compress"},
     {ColorPipelineShape::smoothstep_range, "smoothstep_range"},
+    {ColorPipelineShape::signed_unit_map_v1, "signed_unit_map_v1"},
 };
 
 inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {

@@ -5898,6 +5898,74 @@ int main() {
       }
 
       {
+        ViewState authorityView{};
+        authorityView.fractal_type = FractalType::explaino_magnet_root_well;
+        KernelParams authorityParams{};
+        authorityParams.coloring_mode = ColoringMode::smooth_escape;
+        authorityParams.color_pipeline = {ColorSignal::root_log_proximity_v1, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        authorityParams.color_source_stack_count = 1;
+        authorityParams.color_source_stack[0].signal = ColorSignal::root_log_proximity_v1;
+        authorityParams.color_source_stack[0].params.proximity_scale = 1.75f;
+        authorityParams.color_source_stack[0].params.proximity_bias = -0.2f;
+        authorityParams.color_source_stack[0].params.root_pattern_ref = ExplainoRootPatternRef::secondary;
+        authorityParams.color_shape_stack_count = 1;
+        authorityParams.color_shape_stack[0].shape = ColorPipelineShape::signed_unit_map_v1;
+        authorityParams.color_shape_stack[0].params.scale = 0.3f;
+        authorityParams.color_shape_stack[0].params.offset = 0.15f;
+        RenderSettings authorityRender{};
+        authorityRender.resolution = {4, 4};
+        RenderStats authorityStats{};
+        std::vector<std::uint32_t> authorityRgba(16, 0xff102030u);
+        DiagnosticsCaptureResult capture{};
+        std::string error;
+        if (!CaptureDiagnosticsBundleToDir(
+                (tempRoot / "curated_recipe_stack_mirror_roundtrip").string(),
+                authorityView,
+                authorityParams,
+                authorityRender,
+                authorityStats,
+                authorityRgba.data(),
+                authorityRgba.size(),
+                &capture,
+                &error)) {
+          std::cerr << "Expected curated recipe stack authority to serialize: " << error << "\n";
+          return 1;
+        }
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+          std::cerr << "Expected curated recipe stack authority to write state.json\n";
+          return 1;
+        }
+        ViewState loadedView{};
+        KernelParams loadedParams{};
+        RenderSettings loadedRender{};
+        ColorPipelineWindowState loadedDraft{};
+        if (!LoadDiagnosticsStateJson(
+                stateJson,
+                &loadedView,
+                &loadedParams,
+                &loadedRender,
+                &loadedDraft,
+                nullptr,
+                &error)) {
+          std::cerr << "Expected curated recipe stack authority to reload: " << error << "\n";
+          return 1;
+        }
+        if (loadedParams.color_source_stack_count != 1 ||
+            loadedParams.color_source_stack[0].signal != ColorSignal::root_log_proximity_v1 ||
+            loadedParams.color_source_stack[0].params.root_pattern_ref != ExplainoRootPatternRef::secondary ||
+            loadedParams.color_shape_stack_count != 1 ||
+            loadedParams.color_shape_stack[0].shape != ColorPipelineShape::signed_unit_map_v1 ||
+            !NearlyEqual(loadedParams.color_root_proximity_scale, 1.75f, 0.001) ||
+            !NearlyEqual(loadedParams.color_root_proximity_bias, -0.2f, 0.001) ||
+            loadedParams.color_shape != ColorPipelineShape::signed_unit_map_v1 ||
+            !NearlyEqual(loadedParams.color_shape_scale, 0.3f, 0.001) ||
+            !NearlyEqual(loadedParams.color_shape_offset, 0.15f, 0.001)) {
+          std::cerr << "Expected curated recipe state reload to preserve stack authority and coherent compatibility mirrors\n";
+          return 1;
+        }
+      }
+      {
         ViewState lensView{};
         lensView.fractal_type = FractalType::multibrot;
         KernelParams lensParams{};

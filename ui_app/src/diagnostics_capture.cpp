@@ -31,36 +31,13 @@ const char* CaptureFractalTypeId(FractalType fractalType) {
 }
 
 const char* CaptureColoringModeId(ColoringMode coloringMode) {
-    switch (coloringMode) {
-    case ColoringMode::root_basin: return "root_basin";
-    case ColoringMode::iteration_count: return "iteration_count";
-    case ColoringMode::smooth_escape: return "smooth_escape";
-    case ColoringMode::joy_basins: return "joy_basins";
-    case ColoringMode::phase: return "phase";
-    case ColoringMode::iteration_bands: return "iteration_bands";
-    }
-    return "unknown";
+    const char* id = ::ColoringModeId(coloringMode);
+    return (id && id[0] != 0) ? id : "unknown";
 }
 
 const char* CaptureColorSignalId(ColorSignal signal) {
-    switch (signal) {
-    case ColorSignal::root_index: return "root_index";
-    case ColorSignal::iteration_count: return "iteration_count";
-    case ColorSignal::smooth_escape: return "smooth_escape";
-    case ColorSignal::phase_angle: return "phase_angle";
-    case ColorSignal::iteration_bands: return "iteration_bands";
-    case ColorSignal::escape_magnitude: return "escape_magnitude";
-    case ColorSignal::orbit_stripe: return "orbit_stripe";
-    case ColorSignal::root_proximity: return "root_proximity";
-    case ColorSignal::root_phase: return "root_phase";
-    case ColorSignal::sdf_signed_distance: return "sdf_signed_distance";
-    case ColorSignal::sdf_inside_outside: return "sdf_inside_outside";
-    case ColorSignal::sdf_boundary_band: return "sdf_boundary_band";
-    case ColorSignal::sdf_normal_angle: return "sdf_normal_angle";
-    case ColorSignal::sdf_curvature: return "sdf_curvature";
-    case ColorSignal::lens_field_v2_distance: return "lens_field_v2_distance";
-    }
-    return "unknown";
+    const char* id = ::ColorSignalId(signal);
+    return (id && id[0] != 0) ? id : "unknown";
 }
 
 const char* CaptureColorSignalKindId(ColorSignal signal) {
@@ -78,6 +55,7 @@ const char* CaptureColorSignalKindId(ColorSignal signal) {
     case ColorSignal::iteration_bands:
     case ColorSignal::escape_magnitude:
     case ColorSignal::root_proximity:
+    case ColorSignal::root_log_proximity_v1:
     case ColorSignal::sdf_signed_distance:
     case ColorSignal::lens_field_v2_distance:
     case ColorSignal::sdf_boundary_band:
@@ -88,44 +66,18 @@ const char* CaptureColorSignalKindId(ColorSignal signal) {
 }
 
 const char* CaptureColorPaletteId(ColorPalette palette) {
-    switch (palette) {
-    case ColorPalette::root_classic: return "root_classic";
-    case ColorPalette::joy: return "joy";
-    case ColorPalette::cyclic_escape: return "cyclic_escape";
-    case ColorPalette::phase_wheel: return "phase_wheel";
-    case ColorPalette::banded_escape: return "banded_escape";
-    case ColorPalette::explaino_cmap: return "explaino_cmap";
-    }
-    return "unknown";
+    const char* id = ::ColorPaletteId(palette);
+    return (id && id[0] != 0) ? id : "unknown";
 }
 
 const char* CaptureColorGradingPresetId(ColorGradingPreset grading) {
-    switch (grading) {
-    case ColorGradingPreset::basin_default: return "basin_default";
-    case ColorGradingPreset::escape_default: return "escape_default";
-    case ColorGradingPreset::phase_default: return "phase_default";
-    case ColorGradingPreset::bands_default: return "bands_default";
-    case ColorGradingPreset::neutral_default: return "neutral_default";
-    case ColorGradingPreset::tone_map_default: return "tone_map_default";
-    case ColorGradingPreset::glow_default: return "glow_default";
-    case ColorGradingPreset::balance_void_default: return "balance_void_default";
-    }
-    return "unknown";
+    const char* id = ::ColorGradingPresetId(grading);
+    return (id && id[0] != 0) ? id : "unknown";
 }
 
 const char* CaptureColorPipelineShapeId(ColorPipelineShape shape) {
-    switch (shape) {
-    case ColorPipelineShape::identity: return "identity";
-    case ColorPipelineShape::offset_scale: return "offset_scale";
-    case ColorPipelineShape::repeat: return "repeat";
-    case ColorPipelineShape::posterize: return "posterize";
-    case ColorPipelineShape::mirror_repeat: return "mirror_repeat";
-    case ColorPipelineShape::bias_gain_curve: return "bias_gain_curve";
-    case ColorPipelineShape::smooth_window: return "smooth_window";
-    case ColorPipelineShape::log_compress: return "log_compress";
-    case ColorPipelineShape::smoothstep_range: return "smoothstep_range";
-    }
-    return "unknown";
+    const char* id = ::ColorPipelineShapeId(shape);
+    return (id && id[0] != 0) ? id : "unknown";
 }
 
 const char* CaptureSampleTierId(SampleTier tier) {
@@ -1201,7 +1153,9 @@ void WriteFindingRootPatternDerivedJson(std::ostringstream& js, const ViewState&
     const int sourceStackCount = CaptureColorSourceStackCount(params);
     for (int index = 0; index < sourceStackCount; ++index) {
         const ColorPipelineSourceStackEntry& row = params.color_source_stack[index];
-        if (row.signal != ColorSignal::root_phase && row.signal != ColorSignal::root_proximity) {
+        if (row.signal != ColorSignal::root_phase &&
+            row.signal != ColorSignal::root_proximity &&
+            row.signal != ColorSignal::root_log_proximity_v1) {
             continue;
         }
         writeConsumer(

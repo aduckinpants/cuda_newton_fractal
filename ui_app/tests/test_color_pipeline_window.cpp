@@ -1401,6 +1401,56 @@ void TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries() {
         "TestFunctionPickerGroupsUseTaxonomyWithoutChangingCatalogEntries_GroupLabelsAreReadable");
 }
 
+void TestCuratedRootGlowLiveReceiptRoundTrip() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    if (!InstallMaterializedRecipeContractForTest(
+            "TestCuratedRootGlowLiveReceiptRoundTrip_InstallsMaterializedContract")) {
+        return;
+    }
+
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(
+            &state,
+            FractalType::explaino_magnet_root_well,
+            &params),
+        "TestCuratedRootGlowLiveReceiptRoundTrip_SyncsRootConsumer");
+    Check(ApplyColorPipelineRecipeToDraft(&state, "root_glow"),
+        "TestCuratedRootGlowLiveReceiptRoundTrip_MaterializesLockedCandidateRows");
+
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(
+            &state,
+            FractalType::explaino_magnet_root_well,
+            &params,
+            &changed) &&
+            changed,
+        "TestCuratedRootGlowLiveReceiptRoundTrip_ManualRowsApplyThroughLiveBridge");
+    Check(state.live_snapshot.valid &&
+            state.live_snapshot.draft_import_supported &&
+            state.live_snapshot.lanes.size() == 4 &&
+            state.live_snapshot.lanes[0].rows.size() == 1 &&
+            state.live_snapshot.lanes[0].rows[0].function_id == "root_log_proximity_v1" &&
+            state.live_snapshot.lanes[1].rows.size() == 1 &&
+            state.live_snapshot.lanes[1].rows[0].function_id == "signed_unit_map_v1" &&
+            state.live_snapshot.lanes[2].rows.size() == 1 &&
+            state.live_snapshot.lanes[2].rows[0].function_id == "heatmap" &&
+            state.live_snapshot.lanes[3].rows.size() == 1 &&
+            state.live_snapshot.lanes[3].rows[0].function_id == "grade_glow" &&
+            !HasColorPipelineDraftEdits(state),
+        "TestCuratedRootGlowLiveReceiptRoundTrip_LiveSnapshotPreservesCandidateRows");
+    Check(params.color_pipeline.signal == ColorSignal::root_log_proximity_v1 &&
+            params.color_shape == ColorPipelineShape::signed_unit_map_v1 &&
+            params.color_source_stack_count == 1 &&
+            params.color_source_stack[0].signal == ColorSignal::root_log_proximity_v1,
+        "TestCuratedRootGlowLiveReceiptRoundTrip_LiveParamsOwnDedicatedMetricAndShape");
+
+    const ColorPipelineRecipeApplicability applicability =
+        DescribeColorPipelineRecipeApplicability(state, "root_glow");
+    Check(!applicability.available &&
+            applicability.reason_code == "recipe_qualification_failed",
+        "TestCuratedRootGlowLiveReceiptRoundTrip_ProductRecipeRemainsQualificationGated");
+}
 void TestFloatIdentityPreservesAdjacentBinary32Edits() {
     ColorPipelineParamState left{};
     left.path = "grade.balance_void";
@@ -1525,6 +1575,13 @@ void TestRecipeCapabilitySnapshotSharedAuthority() {
             FractalType::explaino_magnet_root_well,
             &params),
         "TestRecipeCapabilitySnapshotSharedAuthority_SyncsRootConsumer");
+    const ColorPipelineRecipeApplicability rootGlowApplicability =
+        DescribeColorPipelineRecipeApplicability(rootState, "root_glow");
+    Check(!rootGlowApplicability.available &&
+            rootGlowApplicability.reason_code == "recipe_qualification_failed" &&
+            rootGlowApplicability.missing_capability_ids.empty(),
+        "TestRecipeCapabilitySnapshotSharedAuthority_RootGlowQualificationFailureIsRecipeSpecific");
+
     ResolvedColorPipelineRecipe resolvedOnRoot;
     Check(ResolveColorPipelineRecipe(
             rootState,
@@ -1616,6 +1673,7 @@ int main() {
     TestRecipePresetApplicationRejectsAtomically();
     TestRecipePresetApplicationCommitsOnlyAfterPreparation();
     TestRecipeCapabilitySnapshotSharedAuthority();
+    TestCuratedRootGlowLiveReceiptRoundTrip();
     TestFloatIdentityPreservesAdjacentBinary32Edits();
     TestFloatAuthoringUsesBinary32RoundTripText();
     TestWindowUtilityContracts();

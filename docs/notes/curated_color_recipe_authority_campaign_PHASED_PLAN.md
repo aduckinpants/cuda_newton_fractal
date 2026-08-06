@@ -11,11 +11,11 @@
 
 ## Current Phase
 
-Slice 5 - SDF Beauty Migration implementation and hostile review are complete from clean, pushed, receipted, rearward-reviewed Slice 4 checkpoint 9654db0ada476591e6db58e1671e0b83d9b0e265. Checkpoint, machine receipts, push, and rearward review remain before Slice 6 may start.
+Slice 6 - Curated Qualification implementation and hostile audit are complete from clean, pushed, receipted, rearward-reviewed Slice 5 checkpoint 3047baf88828452bb7090153eb49caf56dcb722f. Final validation, checkpoint, receipts, push, and rearward review remain before Slice 7 Runtime Closure.
 
 The hard-denial workflow blocks raw branch mutation but this checkout has no approved branch/merge wrapper. This campaign therefore starts as an explicitly stacked slice on codex/model-diagnostics-overlay-preplanning. Eventual upstream integration must preserve both closed planning campaigns.
 
-Slices 0 through 4 are closed. Slice 5 now represents SDF Normal Angle Beauty through explicit recipe_v2 multi-Source metadata, stable parameter overrides, an ordered Source fold, and explicit unit_cycle_as_phase_turns_v1 consent while preserving the frozen Beauty pixels bit-exactly through the public selector/Apply path.
+Slices 0 through 5 are closed. Slice 6 adds only the minimum truthful source/shape authority needed by the three curated recipes, qualifies each recipe against fixed quantitative gates, and preserves the visible dropdown plus Apply workflow.
 
 ## Phase Checklist
 
@@ -41,8 +41,11 @@ Slices 0 through 4 are closed. Slice 5 now represents SDF Normal Angle Beauty th
 - [x] Slice 4: report graph versus fallback authority and exact/modified/none/unknown-after-reload truthfully.
 - [x] Slice 4: prove all six existing recipes remain bit-exact through public Apply, fallback, capture, and replay.
 - [x] Slice 4: hostile audit and focused native/runtime validation.
-- [x] Slice 5: SDF Beauty Migration implementation, frozen-golden proof, and hostile audit; checkpoint closure remains.
-- [ ] Slice 6: New Recipe Qualification.
+- [x] Slice 5: SDF Beauty Migration implementation, frozen-golden proof, hostile audit, checkpoint, receipts, push, and rearward review.
+- [x] Slice 6: lock dedicated Root Glow metric semantics and truthful color-metric arithmetic tier.
+- [x] Slice 6: add the signed-to-unit normalization shape and three graph-authoritative recipe descriptors.
+- [x] Slice 6: independently qualify Lens Topography, Curvature Relief, and Root Glow or leave a failed recipe visible-disabled with an authoritative reason.
+- [ ] Slice 6: hostile audit, focused native/runtime validation, checkpoint, receipts, push, and rearward review.
 - [ ] Slice 7: Runtime Closure and replan.
 
 ## Scope Lock
@@ -174,7 +177,7 @@ Use positive perturbations, or the same negative magnitude at the upper bound, a
 | Curvature Relief | curvature_bias +0.1; normalization scale +10 percent; heatmap cycle +0.2 |
 | Lens Topography | sign_contrast +0.1; field_bias +0.1; heatmap cycle +0.2 |
 
-Timing uses identical hardware/state/backend, five warm-ups, twenty renderer-only samples, median and p95. Reject median regression above max(10 percent, 3 times baseline MAD divided by baseline median). No performance-improvement claim is authorized.
+Timing uses identical hardware/state/backend, five warm-ups, twenty renderer-only samples, median and p95. An existing route may reject regression only against its equivalent frozen before-state using max(10 percent, 3 times baseline MAD divided by baseline median). These new recipe routes have no equivalent pre-change candidate; Slice 0 timings are recorded as non-equivalent context only and cannot grant or reject qualification. No performance-improvement claim is authorized.
 
 ## Slices And Independent Gates
 
@@ -229,7 +232,25 @@ Slice 5 authoring contract:
 
 ### Slice 6 - Curated Qualification (Independent Gates C/D1/D2/D3)
 
-Define Root Glow authority, then independently qualify Root Glow, Curvature Relief, and Lens Topography. A failed recipe remains visible-disabled and does not block the others.
+Qualify the recipes in dependency order: Lens Topography, Curvature Relief, then Root Glow. A recipe-specific producer or qualification failure leaves only that recipe visible-disabled and does not block the other gates. A shared capability, binding, type, transaction, receipt, or public-Apply defect stops Slice 6 for a bounded repair.
+
+Slice 6 function locks:
+
+- `lens_field_v2_distance` remains `scalar.unit`; `signal.sign_contrast` is an internal source parameter and does not restore signed output semantics.
+- `sdf_curvature` remains the signed four-neighbor Laplacian estimate `left + right + up + down - 4 * center`, evaluated in float field arithmetic. Nonfinite field samples fail closed.
+- `root_log_proximity_v1` is a new dedicated Source id and append-only `ColorSignal`. It resolves the nearest point over the selected authoritative root-pattern set, computes the locked Root Glow formula, returns `scalar.signed`, and never aliases root-field-consumer trap strength or base recurrence coloring.
+- `signed_unit_map_v1` is a new Shape with `scalar.signed -> scalar.unit` and exact arithmetic `clamp(0.5 + input * scale + bias, 0, 1)`. It is the explicit normalization operation for Root Glow and Curvature Relief; no implicit signed-to-unit compatibility override or generic adapter insertion is allowed.
+- The runtime capability snapshot reports `color_metric_arithmetic_tier = float32` for the current float-valued Color Pipeline implementation, including root distance/logarithm evaluation. A float64 fractal tier therefore records explicit metric narrowing instead of claiming float64 color-metric authority.
+
+Recipe descriptors and starting values:
+
+- `lens_topography`: `source.lens_response` (`scale=0.85`, `bias=0`, `sign_contrast=0.65`) -> `shape.identity` -> `palette.heatmap` (`cycle_scale=1.4`) -> `grading.contrast_lift`.
+- `curvature_relief`: `source.curvature` (`scale=1`, `bias=0`) -> `shape.signed_unit_map` -> `palette.heatmap` -> `grading.contrast_lift`. Normalization and palette values may be tuned only through the fixed qualification matrix, with final values recorded before closeout.
+- `root_glow`: `source.root_log_proximity` -> `shape.signed_unit_map` -> `palette.heatmap` -> `grading.grade_glow`. Root pattern identity, root hash, evaluator, fractal tier, metric tier, and explicit narrowing must appear in the prepared/committed receipt or companion runtime authority report.
+
+Qualification artifacts use deterministic 256x192 captures, fixed backend/precision/tick, animation off, and fixed perturbations from the Qualification Standard. Each recipe records finite percentage, scalar percentile spread, 32-bin occupancy, terminal-bin occupancy, all fixed sensitivity deltas, stationary/unrelated-control deltas, renderer-only median/p95, final descriptor values, capability snapshot, frame hash, and classification: `enabled`, `visible_disabled_recipe_specific`, or `blocked_shared_authority`.
+
+No new graph editor, arbitrary adapter framework, SDF operation, fractal lane, palette library, state-tool dependency, or physical mouse automation belongs in Slice 6.
 
 ### Slice 7 - Runtime Closure
 
@@ -253,13 +274,14 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 | Slice 2 canonical recipe contract | complete | commit 1ae2f14; 43 materializer tests; 3364 Color Pipeline core assertions; published staged-contract and public Apply runtime proofs; receipts and rearward review are ok. |
 | Slice 3 capability/applicability authority | complete | runtime-owned snapshot and shared query; 467 window assertions; report and finding-sidecar native rails; published public selector/Apply proof; current SDF validity proof; final checkpoint/receipts follow. |
 | Slice 4 existing recipe parity | complete | prepared/committed graph and fallback receipts; exact/modified/none/unknown-after-reload provenance; 3364 core and 477 window assertions; report/capture/state rails; six frozen live FNV and headless SHA-256 recipe goldens; published runtime and JUnit proof green; commit 9654db0; receipts and rearward review are ok. |
-| Slice 5 SDF Beauty migration | closure pending | explicit multi-Source metadata/fold, typed overrides, explicit adapter receipt, graph-only normal expansion, legacy fallback preservation, 48 materializer tests, 3367 core assertions, 479 window assertions, published runtime, frozen live/headless Beauty parity, and repeated public-path stability proof are green. |
+| Slice 5 SDF Beauty migration | complete | commits 2399e14 and 3047baf; explicit multi-Source metadata/fold, typed overrides, explicit adapter receipt, graph-only normal expansion, legacy fallback preservation, 48 materializer tests, 3367 core assertions, 479 window assertions, published runtime, frozen live/headless Beauty parity, repeated public-path stability proof, receipts, push, and rearward review are green. |
+| Slice 6 curated qualification | checkpoint closure prepared | Lens Topography and Curvature Relief are independently enabled. Root Glow remains `visible_disabled_recipe_specific` because its locked candidate reached only 5/32 occupied palette bins and all three fixed sensitivity deltas stayed below 0.01. The dedicated Root Glow source and signed normalization remain available for custom rows; public Apply rejection is atomic. Materializer, core, window, coloring, capture, schema, state IO, sample-tier, published runtime, exact replay, fixed perturbation, scoped consumer receipt, and timing evidence are green. |
 
 ## Hostile Audit
 
 - Status: complete
-- Scope: Slice 5 UI-Salt multi-Source authoring, stable parameter overrides, explicit adapter consent, canonical fold/edge receipts, graph-only normal Beauty expansion, bounded legacy fallback, frozen Beauty parity, and state replay.
-- Result: concrete authoring, projection, validation, workflow, and runtime-test defects were found and repaired. The final re-read found no remaining normal-path Beauty special case, silent adapter insertion, ignored override, legacy tuple drift, or weakened pixel requirement.
+- Scope: Slice 6 dedicated metric/shape authority, independent recipe gates, capability precision, public Apply, committed receipts, capture IDs, deterministic qualification, and publish/test workflow.
+- Result: pass 1 found real metadata, schedule-bridge, capture-wire-ID, timeout, and qualification defects. Pass 2 repaired cross-surface schema, report, state, capture, sample-tier, and code-quality omissions. Pass 3 found no additional defect after focused native and published-runtime closure proof.
 
 ## Audit Passes
 
@@ -284,7 +306,10 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Slice 5 pass 1 - RED review proved Beauty still declared one Source while runtime added a hidden second Source, implicit fold, and unreported adapter/overrides.
 - [x] Slice 5 pass 2 - implementation review repaired legacy projection leakage, extra adapter acceptance, first-Source blend ambiguity, missing runtime override validation, and weakened unaffected-recipe assertions.
 - [x] Slice 5 pass 3 - clean re-read plus focused native and published public-path proof confirmed graph-only normal expansion, explicit adapter receipt, exact frozen pixels, replay parity, and bounded fallback.
-- Later implementation audits remain pending for canonical graph authority, dual authority, capability snapshots, independent recipe gates, and fallback lifecycle.
+- [x] Slice 6 pass 1 - found and repaired generated-metadata drift, missing Root Glow schedule bridge, capture IDs serialized as `unknown`, an unsafe publish timeout, and a Root Glow candidate that failed locked gates.
+- [x] Slice 6 pass 2 - repaired schema visibility, live and finding consumer reports, state compatibility mirrors, sample-tier dispatch, and the code-quality regression exposed by the broader authority inventory.
+- [x] Slice 6 pass 3 - clean re-read plus focused native, generated-metadata, published public-path, replay, fixed-perturbation, and qualification proof found no additional Slice 6 defect.
+- Slice 7 fallback-lifecycle and whole-campaign closure audit remains pending.
 
 ## Audit Findings
 - [x] Current phase-like metadata labels turn values as phase.radians.
@@ -326,7 +351,23 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] The first runtime receipt assertion demanded decimal identity for binary float values; numeric receipt checks now use a 1e-6 tolerance while frame hashes, topology, IDs, enums, and replay remain exact.
 - [x] One isolated runtime launch returned a non-golden live hash after an earlier exact run; the exact requirement was retained, ten additional fresh launches and the combined all-recipe/Beauty public-path proof passed bit-exactly, and no reproducible arithmetic or authority drift remained.
 - [x] The first machine proof receipt could not match the materializer evidence because the contract named a pytest module instead of a concrete JUnit testcase; the assertion now targets the stable checked-in-contract freshness test and the contract was intentionally re-locked.
+- [x] Slice 6 planning initially used raw apply_patch instead of the guarded wrapper; the diff was reversed and replayed through viewer_host_apply_repo_patch before product mutation.
+- [x] The Slice 6 contract initially named a not-yet-created exact test path, deadlocking contract relock; the scope now allows the existing tests directory and future product edits remain wrapper-guarded.
 
+- [x] The generated companion recommendation initially diverged from the checked-in source metadata; generated JSON was refreshed and the materializer freshness rail now guards it.
+- [x] Root Glow's first prepared application reported success but could not reconstruct committed live rows because the legacy schedule bridge omitted the new source. The bridge now recognizes `root_log_proximity_v1`, and the window regression requires the dedicated source/shape to survive a live round trip.
+- [x] Capture replay initially serialized `signed_unit_map_v1`, then `root_log_proximity_v1`, as `unknown`. Diagnostics capture now delegates Color Pipeline wire IDs to canonical enum-id authority, and the focused capture regression forbids either unknown placeholder.
+- [x] Canonical runtime publish takes roughly 965-1135 seconds on this machine, so the inherited 900-second ceiling was disproven. The Slice 6 contract now uses a 2400-second publish ceiling and retains measured elapsed time in the logged receipt.
+- [x] Bounded tuning could not make Root Glow satisfy the locked 8-bin occupancy and all-parameter sensitivity gates. The dedicated source/shape remain functional, but the recipe is `visible_disabled_recipe_specific` with reason `recipe_qualification_failed`; Lens Topography and Curvature Relief remain independently enabled.
+- [x] The qualification harness measures normalized Rec.709 luminance as an image-domain scalar proxy. It does not claim direct source-field scalar export; adding that diagnostic surface remains a separate future proof improvement.
+- [x] Pass-2 review found malformed adjacent control-flow formatting in the new Root Glow schedule bridge. The branch boundary is now explicit and covered by the existing live round-trip regression.
+- [x] A first timing hard gate incorrectly compared new SDF/root recipe routes against non-equivalent existing recipes and failed under a loaded run. New-recipe medians/p95 remain measured, Slice 0 numbers are labeled non-equivalent reference only, and no regression or improvement claim is made without an equivalent pre-change route.
+- [x] The broader schema-binding rail still encoded the pre-Slice-6 Source and Shape catalog counts/order, so it had never covered `root_log_proximity_v1` or `signed_unit_map_v1`; catalog order and descriptor-path regressions now cover both.
+- [x] The dedicated Root Glow source executed correctly but was omitted from scoped Color Root Field visibility and the live root-pattern consumer report. Shared dispatch now includes it, and native plus published no-mouse regressions require the scoped consumer receipt.
+- [x] State reload preserved the authoritative Source/Shape stacks but left legacy compatibility mirrors stale for `root_log_proximity_v1` and `signed_unit_map_v1`; the state round-trip rail now requires coherent stack and mirror values.
+- [x] Capture Finding root-pattern review and automatic sample-tier selection still recognized only older root metrics. The new source now appears as a scoped finding consumer and preserves the established root-metric evaluator-tier policy; dedicated native rails cover both.
+- [x] The first state-mirror repair increased an already tracked catch-all function from 33 to 34 lines. Equivalent case labels were consolidated, restoring the 93/100 code-quality baseline without changing behavior.
+- [x] The clean neighbor-dispatch inventory is retained under `artifacts/curated_color_recipe_authority_campaign/qualification/` so future source/shape additions can compare enum coverage instead of relying on local search memory.
 ## Planned Validation Targets
 
 - contract validation and phased-plan sync
@@ -339,4 +380,4 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 
 ## Stop Point
 
-Slice 5 SDF Beauty Migration implementation and hostile review are complete. Stop after checkpoint, machine receipts, rearward review, and push. Slice 6 Curated Qualification remains checked-in preplanned work; preplanned sliced work is not exhausted.
+Slice 6 Curated Qualification is active. Continue through independent recipe gates and Slice 7 Runtime Closure while authority remains green. Preplanned sliced work is not exhausted; after Slice 7, stop explicitly for replan before more product mutation.

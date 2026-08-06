@@ -75,6 +75,14 @@ static void test_render_auto_promotes_basin_root_proximity() {
     CHECK(result.strategy == IterationStrategy::direct, "render auto root_proximity promotion should stay direct");
 }
 
+static void test_render_auto_promotes_basin_root_log_proximity() {
+    KernelParams params = RootProximityParams();
+    params.color_pipeline.signal = ColorSignal::root_log_proximity_v1;
+    auto result = ResolveSampleEvalModeForRender(FractalType::explaino, params, SampleTier::tier_auto, 10.0);
+    CHECK(result.backend == NumericBackend::float64, "render auto should preserve root-metric evaluator tier for root_log_proximity_v1");
+    CHECK(result.strategy == IterationStrategy::direct, "render auto root_log_proximity_v1 promotion should stay direct");
+}
+
 static void test_render_auto_does_not_promote_basin_root_index() {
     KernelParams params{};
     params.coloring_mode = ColoringMode::smooth_escape;
@@ -180,6 +188,7 @@ int main() {
     test_auto_shallow_stays_float32();
     test_render_auto_promotes_basin_smooth_escape();
     test_render_auto_promotes_basin_root_proximity();
+    test_render_auto_promotes_basin_root_log_proximity();
     test_render_auto_does_not_promote_basin_root_index();
     test_render_context_preserves_explicit_fast();
     test_render_auto_keeps_explaino_ripple_smooth_escape_fast_when_owner_axis_is_active();
