@@ -2735,8 +2735,8 @@
         "shape_node_id": "shape.signed_unit_map",
         "palette": "heatmap",
         "palette_node_id": "palette.heatmap",
-        "grading": "grade_glow",
-        "grading_node_id": "grading.grade_glow",
+        "grading": "contrast_lift",
+        "grading_node_id": "grading.contrast_lift",
         "fail_closed_reason": ""
       },
       {
@@ -3376,7 +3376,7 @@
         "id": "root_glow",
         "recipe_version": 1,
         "canonicalization_id": "viewer.recipe_canonicalization.v1",
-        "metadata_content_hash": "50f9d90c934ef2703ad9a05b90e2b3c98ef1fda71efdc59c205d77c7b96e7868",
+        "metadata_content_hash": "adf44dbb1fec087dc4f8af0167c8dd76c4f338285a007c8c3f2fc8e3d1e0d9d0",
         "label": "Root Glow",
         "source_recipe_id": "root_glow",
         "ui_projection": "linear_color_stack",
@@ -3398,31 +3398,51 @@
                 "descriptor_parameter_id": "shape.bias",
                 "type": "float",
                 "value_kind": "number",
-                "number_value": 0.0
+                "number_value": 0.15
               },
               {
                 "descriptor_parameter_id": "shape.scale",
                 "type": "float",
                 "value_kind": "number",
-                "number_value": 0.18
+                "number_value": 0.1
               }
             ]
           },
           {
             "id": "palette.heatmap",
             "lane": "palette",
-            "function": "heatmap"
-          },
-          {
-            "id": "grading.grade_glow",
-            "lane": "grading",
-            "function": "grade_glow",
+            "function": "heatmap",
             "parameter_overrides": [
               {
-                "descriptor_parameter_id": "grade.glow",
+                "descriptor_parameter_id": "palette.cycle_scale",
                 "type": "float",
                 "value_kind": "number",
-                "number_value": 0.45
+                "number_value": 1.4
+              },
+              {
+                "descriptor_parameter_id": "palette.saturation",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.0
+              }
+            ]
+          },
+          {
+            "id": "grading.contrast_lift",
+            "lane": "grading",
+            "function": "contrast_lift",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "grade.exposure",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.0
+              },
+              {
+                "descriptor_parameter_id": "grade.saturation",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.0
               }
             ]
           }
@@ -3469,7 +3489,7 @@
           {
             "edge_id": "palette_to_grading",
             "from_function": "heatmap",
-            "to_function": "grade_glow",
+            "to_function": "contrast_lift",
             "from_type": "color.linear_rgb",
             "to_type": "color.linear_rgb",
             "output_type": "color.linear_rgb",
@@ -3478,7 +3498,7 @@
             "adapter_hops": 0,
             "adapter_cost": 0,
             "from_node": "palette.heatmap",
-            "to_node": "grading.grade_glow"
+            "to_node": "grading.contrast_lift"
           }
         ],
         "chosen_adapters": [],

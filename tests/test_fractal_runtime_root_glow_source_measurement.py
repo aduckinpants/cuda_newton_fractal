@@ -16,7 +16,9 @@ from tests.runtime_harness import (
 )
 from tests.test_fractal_runtime_color_recipe_qualification import (
     ROOT_GLOW_CANDIDATE_ACTIONS,
+    ROOT_GLOW_PERTURBATIONS,
     _capture_with_actions,
+    _image_metrics,
     _mean_abs_normalized_rgb_change,
 )
 
@@ -33,12 +35,11 @@ SCENES = (
     ("mandelbrot_trap_legacy", "explaino_mandelbrot_root_trap", "legacy_quartic_v1", 4),
 )
 
-PERTURBATIONS = (
-    ("source_bias_plus_0_10", "set_param:source:0:signal.proximity_bias:number:0.1"),
-    ("shape_scale_plus_10_percent", "set_param:shape:0:shape.scale:number:0.198"),
-    ("shape_bias_plus_0_10", "set_param:shape:0:shape.bias:number:0.1"),
-    ("heatmap_cycle_plus_0_20", "set_param:palette:0:palette.cycle_scale:number:1.2"),
-    ("glow_plus_0_10", "set_param:grading:0:grade.glow:number:0.55"),
+MEASUREMENT_PERTURBATIONS = (
+    ("source_scale_plus_25_percent", "set_param:source:0:signal.proximity_scale:number:1.25"),
+    ("source_bias_plus_0_25", "set_param:source:0:signal.proximity_bias:number:0.25"),
+    ("shape_scale_plus_0_05", "set_param:shape:0:shape.scale:number:0.15"),
+    ("shape_bias_plus_0_10", "set_param:shape:0:shape.bias:number:0.25"),
 )
 
 
@@ -165,6 +166,27 @@ def test_root_glow_source_measurement_no_mouse(tmp_path: Path) -> None:
         raw = measurement["source_raw"]
         shaped = measurement["shape_output"]
         assert isinstance(raw, dict) and isinstance(shaped, dict)
+        image_metrics = _image_metrics(candidate["frame_bytes"])
+        qualification_sensitivity: list[dict[str, object]] = []
+        for action, actual_value in ROOT_GLOW_PERTURBATIONS:
+            perturbed = _capture_with_actions(exe_path, state_path, [action])
+            qualification_sensitivity.append(
+                {
+                    "action": action,
+                    "actual_value": actual_value,
+                    "mean_abs_normalized_rgb_change": _mean_abs_normalized_rgb_change(
+                        candidate["frame_bytes"], perturbed["frame_bytes"]
+                    ),
+                }
+            )
+        assert image_metrics["finite_pixel_percentage"] == 100.0, image_metrics
+        assert image_metrics["normalized_scalar_proxy_spread"] >= 0.05, image_metrics
+        assert image_metrics["occupied_palette_proxy_bins"] >= 8, image_metrics
+        assert image_metrics["terminal_palette_proxy_fraction"] < 0.90, image_metrics
+        assert all(
+            item["mean_abs_normalized_rgb_change"] >= 0.01
+            for item in qualification_sensitivity
+        ), qualification_sensitivity
         scene_results.append(
             {
                 "scene_id": label,
@@ -174,6 +196,8 @@ def test_root_glow_source_measurement_no_mouse(tmp_path: Path) -> None:
                 "frame_sha256": candidate["frame_hash"],
                 "state_sha256": _state_sha256(candidate["state"]),
                 "measurement": measurement,
+                "image_metrics": image_metrics,
+                "qualification_sensitivity": qualification_sensitivity,
                 "raw_p05_p95_spread": float(raw["p95"]) - float(raw["p05"]),
                 "shaped_p05_p95_spread": float(shaped["p95"]) - float(shaped["p05"]),
                 "raw_occupied_histogram_bins": _occupied_histogram_bins(raw),
@@ -190,7 +214,7 @@ def test_root_glow_source_measurement_no_mouse(tmp_path: Path) -> None:
     assert baseline_measurement is not None
 
     perturbation_results: list[dict[str, object]] = []
-    for label, action in PERTURBATIONS:
+    for label, action in MEASUREMENT_PERTURBATIONS:
         perturbed = _capture_with_actions(exe_path, baseline_state_path, [action])
         perturbed_path = write_state_bundle(
             tmp_path / f"perturbation.{label}", copy.deepcopy(perturbed["state"])
@@ -224,7 +248,7 @@ def test_root_glow_source_measurement_no_mouse(tmp_path: Path) -> None:
     raw_spreads = [float(row["raw_p05_p95_spread"]) for row in scene_results]
     shaped_spreads = [float(row["shaped_p05_p95_spread"]) for row in scene_results]
     shaped_occupancy = [int(row["shaped_occupied_histogram_bins"]) for row in scene_results]
-    source_bias = next(row for row in perturbation_results if row["id"] == "source_bias_plus_0_10")
+    source_bias = next(row for row in perturbation_results if row["id"] == "source_bias_plus_0_25")
     rgb_sensitivities = [
         float(row["mean_abs_normalized_rgb_change"]) for row in perturbation_results
     ]
@@ -260,6 +284,8 @@ def test_root_glow_source_measurement_no_mouse(tmp_path: Path) -> None:
             "minimum_shaped_occupied_bins": 8,
             "minimum_rgb_sensitivity": 0.01,
             "minimum_sensitive_parameter_count": 2,
+            "qualification_scene_count": 3,
+            "all_visible_controls_must_pass_each_scene": True,
         },
         "classification": classification,
         "scenes": scene_results,

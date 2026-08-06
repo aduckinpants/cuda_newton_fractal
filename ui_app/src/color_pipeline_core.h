@@ -1845,7 +1845,7 @@ inline const std::vector<MaterializedColorPipelineRecipe>& GetHardcodedColorPipe
         {"root_proximity_heatmap", "Root Proximity Heatmap", "root_proximity", "identity", "heatmap", "contrast_lift", ""},
         {"sdf_normal_angle_diagnostic", "SDF Normal Angle Diagnostic", "sdf_normal_angle", "identity", "phase_wheel_palette", "phase_finish", ""},
         {"sdf_normal_angle_beauty", "SDF Normal Angle Beauty", "sdf_normal_angle", "identity", "phase_wheel_palette", "phase_finish", ""},
-        {"root_glow", "Root Glow", "root_log_proximity_v1", "signed_unit_map_v1", "heatmap", "grade_glow", ""},
+        {"root_glow", "Root Glow", "root_log_proximity_v1", "signed_unit_map_v1", "heatmap", "contrast_lift", ""},
         {"curvature_relief", "Curvature Relief", "sdf_curvature", "signed_unit_map_v1", "heatmap", "contrast_lift", ""},
         {"lens_topography", "Lens Topography", "lens_field_v2_distance", "identity", "heatmap", "contrast_lift", ""},
     };

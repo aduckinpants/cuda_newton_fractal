@@ -259,9 +259,7 @@ inline const ColorPipelineCurrentFieldValidity* FindColorPipelineCurrentFieldVal
 }
 
 inline std::string_view ColorPipelineRecipeQualificationFailure(std::string_view recipeId) {
-    if (recipeId == "root_glow") {
-        return "Root Glow did not meet the locked palette-occupancy and owning-parameter sensitivity gates";
-    }
+    (void)recipeId;
     return {};
 }
 

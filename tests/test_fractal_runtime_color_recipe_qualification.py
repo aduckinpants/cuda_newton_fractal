@@ -83,24 +83,27 @@ ROOT_GLOW_CANDIDATE_ACTIONS = (
     "set_param:source:0:signal.root_pattern_ref:enum:dynamics_root_field",
     "set_param:source:0:signal.blend_weight:number:1.0",
     "select_function:shape:0:signed_unit_map_v1",
-    "set_param:shape:0:shape.scale:number:0.18",
-    "set_param:shape:0:shape.bias:number:0.0",
+    "set_param:shape:0:shape.scale:number:0.10",
+    "set_param:shape:0:shape.bias:number:0.15",
     "select_function:palette:0:heatmap",
-    "set_param:palette:0:palette.cycle_scale:number:1.0",
+    "set_param:palette:0:palette.cycle_scale:number:1.40",
     "set_param:palette:0:palette.saturation:number:1.0",
     "set_param:palette:0:palette.blend_weight:number:1.0",
     "set_param:palette:0:palette.blend_mode:enum:normal",
-    "select_function:grading:0:grade_glow",
+    "select_function:grading:0:contrast_lift",
     "set_param:grading:0:grade.exposure:number:1.0",
     "set_param:grading:0:grade.saturation:number:1.0",
-    "set_param:grading:0:grade.contrast:number:1.0",
-    "set_param:grading:0:grade.glow:number:0.45",
 )
 
 ROOT_GLOW_PERTURBATIONS = (
-    ("set_param:source:0:signal.proximity_bias:number:0.1", 0.1),
-    ("set_param:shape:0:shape.scale:number:0.198", 0.198),
-    ("set_param:grading:0:grade.glow:number:0.55", 0.55),
+    ("set_param:source:0:signal.proximity_scale:number:1.25", 1.25),
+    ("set_param:source:0:signal.proximity_bias:number:0.25", 0.25),
+    ("set_param:shape:0:shape.scale:number:0.15", 0.15),
+    ("set_param:shape:0:shape.bias:number:0.25", 0.25),
+    ("set_param:palette:0:palette.cycle_scale:number:1.60", 1.60),
+    ("set_param:palette:0:palette.saturation:number:1.30", 1.30),
+    ("set_param:grading:0:grade.exposure:number:1.20", 1.20),
+    ("set_param:grading:0:grade.saturation:number:1.30", 1.30),
 )
 
 
@@ -462,8 +465,8 @@ def test_curated_color_recipe_qualification_no_mouse(tmp_path: Path) -> None:
     ) as viewer:
         root_ready = viewer.wait_for_report(timeout_seconds=60.0)
         root_applicability = _recipe_capability(root_ready, "root_glow")
-        assert root_applicability.get("available") is False, root_applicability
-        assert root_applicability.get("reason_code") == "recipe_qualification_failed", root_applicability
+        assert root_applicability.get("available") is True, root_applicability
+        assert root_applicability.get("reason_code") == "available", root_applicability
         assert root_applicability.get("missing_capability_ids") == [], root_applicability
         assert root_ready.get("root_patterns"), root_ready
         assert root_ready.get("root_pattern_consumers"), root_ready
@@ -472,19 +475,28 @@ def test_curated_color_recipe_qualification_no_mouse(tmp_path: Path) -> None:
             timeout_seconds=60.0,
         )
         assert root_selected.get("click_consumed") is True, root_selected
-        root_rejected = viewer.click_control(
+        root_applied = viewer.click_control(
             "color_pipeline.recipe.apply_selected",
             timeout_seconds=60.0,
         )
-        assert root_rejected.get("click_consumed") is True, root_rejected
-        assert root_rejected.get("rendered_frame_hash") == root_ready.get(
-            "rendered_frame_hash"
-        ), root_rejected
-        assert root_rejected.get("lane_rows") == root_ready.get("lane_rows"), root_rejected
-        assert any(
-            "recipe_qualification_failed" in message
-            for message in root_rejected.get("validation_messages", [])
-        ), root_rejected
+        assert root_applied.get("click_consumed") is True, root_applied
+        root_settled = viewer.click_control("render_once", timeout_seconds=60.0)
+        assert tuple(root_settled.get("lane_rows", [])) == (
+            "source:root_log_proximity_v1",
+            "shape:signed_unit_map_v1",
+            "palette:heatmap",
+            "grading:contrast_lift",
+        ), root_settled
+        root_application_report = root_settled.get(
+            "color_pipeline_recipe_application_report"
+        )
+        assert isinstance(root_application_report, dict), root_settled
+        assert root_application_report.get("current_recipe_match") == "exact", root_application_report
+        root_application_receipt = root_application_report.get("receipt")
+        assert isinstance(root_application_receipt, dict), root_application_report
+        assert root_application_receipt.get("recipe_id") == "root_glow", root_application_receipt
+        assert root_application_receipt.get("application_authority") == "recipe_v2_graph", root_application_receipt
+        assert root_application_receipt.get("fallback_active") is False, root_application_receipt
 
     root_candidate = _capture_with_actions(
         exe_path,
@@ -534,9 +546,9 @@ def test_curated_color_recipe_qualification_no_mouse(tmp_path: Path) -> None:
     assert root_metrics["finite_pixel_percentage"] == 100.0, root_metrics
     assert root_metrics["normalized_scalar_proxy_spread"] >= 0.05, root_metrics
     assert root_metrics["terminal_palette_proxy_fraction"] < 0.90, root_metrics
-    assert root_metrics["occupied_palette_proxy_bins"] < 8, root_metrics
-    assert any(
-        item["mean_abs_normalized_rgb_change"] < 0.01
+    assert root_metrics["occupied_palette_proxy_bins"] >= 8, root_metrics
+    assert all(
+        item["mean_abs_normalized_rgb_change"] >= 0.01
         for item in root_sensitivity
     ), root_sensitivity
 
@@ -575,9 +587,9 @@ def test_curated_color_recipe_qualification_no_mouse(tmp_path: Path) -> None:
         {
             "recipe_id": "root_glow",
             "fractal_type": "explaino_magnet_root_well",
-            "classification": "visible_disabled_recipe_specific",
-            "qualification_reason_code": "recipe_qualification_failed",
-            "candidate_measurement_authority": "locked_recipe_rows_v1",
+            "classification": "enabled",
+            "qualification_reason_code": "available",
+            "candidate_measurement_authority": "qualified_recipe_rows_v1",
             "frame_sha256": root_candidate["frame_hash"],
             "state_sha256": hashlib.sha256(
                 json.dumps(
@@ -587,7 +599,8 @@ def test_curated_color_recipe_qualification_no_mouse(tmp_path: Path) -> None:
             "metrics": root_metrics,
             "sensitivity": root_sensitivity,
             "stationary_mean_abs_normalized_rgb_change": 0.0,
-            "unavailable_apply_preserved_frame_and_rows": True,
+            "public_apply_authority": "recipe_v2_graph",
+            "application_receipt": root_application_receipt,
             "capability_snapshot": root_snapshot,
             "applicability": root_applicability,
             "timing_ms": {

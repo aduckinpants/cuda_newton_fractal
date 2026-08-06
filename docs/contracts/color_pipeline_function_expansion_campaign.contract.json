@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "contract_id": "color_pipeline_function_expansion_campaign",
+  "feature_id": "color_pipeline_function_expansion_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/color_pipeline_function_expansion_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/color_pipeline_function_expansion_campaign.contract.json",
+    "docs/notes/color_pipeline_function_expansion_campaign_PHASED_PLAN.md",
+    "docs/contracts/root_glow_source_measurement.contract.json",
+    "docs/notes/root_glow_source_measurement_PHASED_PLAN.md",
+    "docs/ui_salt/color_pipeline_function_library.ui.salt",
+    "docs/ui_salt/generated/color_pipeline_function_library.contract.v1.json",
+    "spec_intake/_STATUS.md",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_recipe_capabilities.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/color_pipeline_metadata_contract.cpp",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "tools/viewer_host_materialize_ui_salt.py",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean rearward-reviewed base 55834c6f4353e415265b877ff8aea677f13527f9",
+    "closed Root Glow source measurement classified existing_mapping_viable",
+    "materialized UI-Salt function/type/adapter contract",
+    "public recipe selector and Apply automation path",
+    "capture and replay authority rails"
+  ],
+  "forbidden_operator_prompts": [
+    "silently make every type combination valid",
+    "insert lossy or explicit-only adapters without consent",
+    "close Root Glow on measurement while it remains disabled",
+    "implement composite functions before the post-campaign replan",
+    "add coordinate sources or external gradient assets in this campaign",
+    "replace the linear UI with a graph editor",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "accepted_base_head": "55834c6f4353e415265b877ff8aea677f13527f9",
+    "active_slice": "root_glow_product_enablement",
+    "root_glow_product_outcome_required": true,
+    "existing_mapping_viable": true,
+    "new_transfer_function_authorized": false,
+    "root_metric_semantic_change_authorized": false,
+    "typed_port_completion_preplanned": true,
+    "live_typed_resolver_expansion_preplanned": true,
+    "low_risk_function_batch_preplanned": true,
+    "composite_function_runtime_authorized": false,
+    "ui_layout_frozen_for_root_glow_slice": true,
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "measurement_only_root_glow_closeout": "forbidden",
+    "silent_lossy_adapter_insertion": "forbidden",
+    "unknown_route_fallback": "forbidden",
+    "visible_inert_control": "forbidden",
+    "composite_function_runtime_mutation": "forbidden_until_replan",
+    "coordinate_source_expansion": "forbidden_until_replan",
+    "external_gradient_asset_work": "forbidden_until_replan",
+    "graph_editor": "forbidden_until_replan",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/color_pipeline_function_expansion_campaign.contract.json --out-json artifacts/validation/color_pipeline_function_expansion_campaign_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_expansion_plan_sync --log artifacts/logs/color_pipeline_function_expansion_plan_sync.log --out-json artifacts/validation/color_pipeline_function_expansion_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/color_pipeline_function_expansion_campaign_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/color_pipeline_function_expansion_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_glow_product_core_native --log artifacts/logs/root_glow_product_core_native.log --out-json artifacts/validation/root_glow_product_core_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core test_escape_time_coloring",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_glow_product_window_report_native --log artifacts/logs/root_glow_product_window_report_native.log --out-json artifacts/validation/root_glow_product_window_report_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label root_glow_product_runtime_publish --log artifacts/logs/root_glow_product_runtime_publish.log --out-json artifacts/validation/root_glow_product_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_color_recipe_qualification.py -q --junitxml artifacts/pytest/root_glow_product_qualification.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_runtime_color_pipeline_presets.py tests/test_fractal_runtime_capture_replay_authority.py -q --junitxml artifacts/pytest/root_glow_product_public_replay.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/color_pipeline_function_expansion_campaign_PHASED_PLAN.md --out-json artifacts/validation/color_pipeline_function_expansion_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label color_pipeline_function_expansion_diff_check --log artifacts/logs/color_pipeline_function_expansion_diff_check.log --out-json artifacts/validation/color_pipeline_function_expansion_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "Campaign contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/color_pipeline_function_expansion_campaign_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "root_glow_core_native_ok",
+      "description": "Root Glow recipe, source, shape, palette, and grading native rails pass.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_glow_product_core_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "root_glow_window_report_native_ok",
+      "description": "Public recipe availability, visible controls, and report authority native rails pass.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_glow_product_window_report_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_publish_ok",
+      "description": "Published viewer contains the Root Glow product result.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/root_glow_product_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "root_glow_runtime_qualification_ok",
+      "description": "Published no-mouse qualification enables and proves Root Glow or records a newly proven blocker under a revised contract.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/root_glow_product_qualification.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_color_recipe_qualification.py::test_curated_color_recipe_qualification_no_mouse"
+    },
+    {
+      "assertion_id": "root_glow_public_replay_ok",
+      "description": "Public recipe Apply plus capture/replay remains deterministic.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/root_glow_product_public_replay.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_recipe_application_receipt_and_replay_no_mouse"
+    }
+  ]
+}
+

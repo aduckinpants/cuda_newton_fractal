@@ -1421,9 +1421,14 @@ void TestCuratedRootGlowLiveReceiptRoundTrip() {
             state.live_snapshot.lanes[2].rows.size() == 1 &&
             state.live_snapshot.lanes[2].rows[0].function_id == "heatmap" &&
             state.live_snapshot.lanes[3].rows.size() == 1 &&
-            state.live_snapshot.lanes[3].rows[0].function_id == "grade_glow" &&
+            state.live_snapshot.lanes[3].rows[0].function_id == "contrast_lift" &&
+            RowNumber(state.live_snapshot.lanes[1].rows[0], "shape.scale", 0.10) &&
+            RowNumber(state.live_snapshot.lanes[1].rows[0], "shape.bias", 0.15) &&
+            RowNumber(state.live_snapshot.lanes[2].rows[0], "palette.cycle_scale", 1.40) &&
+            RowNumber(state.live_snapshot.lanes[3].rows[0], "grade.exposure", 1.0) &&
+            RowNumber(state.live_snapshot.lanes[3].rows[0], "grade.saturation", 1.0) &&
             !HasColorPipelineDraftEdits(state),
-        "TestCuratedRootGlowLiveReceiptRoundTrip_LiveSnapshotPreservesCandidateRows");
+        "TestCuratedRootGlowLiveReceiptRoundTrip_LiveSnapshotPreservesQualifiedRowsAndDefaults");
     Check(params.color_pipeline.signal == ColorSignal::root_log_proximity_v1 &&
             params.color_shape == ColorPipelineShape::signed_unit_map_v1 &&
             params.color_source_stack_count == 1 &&
@@ -1432,9 +1437,10 @@ void TestCuratedRootGlowLiveReceiptRoundTrip() {
 
     const ColorPipelineRecipeApplicability applicability =
         DescribeColorPipelineRecipeApplicability(state, "root_glow");
-    Check(!applicability.available &&
-            applicability.reason_code == "recipe_qualification_failed",
-        "TestCuratedRootGlowLiveReceiptRoundTrip_ProductRecipeRemainsQualificationGated");
+    Check(applicability.available &&
+            applicability.reason_code == "available" &&
+            applicability.missing_capability_ids.empty(),
+        "TestCuratedRootGlowLiveReceiptRoundTrip_ProductRecipeIsAvailableAfterQualification");
 }
 void TestFloatIdentityPreservesAdjacentBinary32Edits() {
     ColorPipelineParamState left{};
@@ -1566,10 +1572,10 @@ void TestRecipeCapabilitySnapshotSharedAuthority() {
         "TestRecipeCapabilitySnapshotSharedAuthority_SyncsRootConsumer");
     const ColorPipelineRecipeApplicability rootGlowApplicability =
         DescribeColorPipelineRecipeApplicability(rootState, "root_glow");
-    Check(!rootGlowApplicability.available &&
-            rootGlowApplicability.reason_code == "recipe_qualification_failed" &&
+    Check(rootGlowApplicability.available &&
+            rootGlowApplicability.reason_code == "available" &&
             rootGlowApplicability.missing_capability_ids.empty(),
-        "TestRecipeCapabilitySnapshotSharedAuthority_RootGlowQualificationFailureIsRecipeSpecific");
+        "TestRecipeCapabilitySnapshotSharedAuthority_RootGlowUsesSharedCapabilityAuthority");
 
     ResolvedColorPipelineRecipe resolvedOnRoot;
     Check(ResolveColorPipelineRecipe(

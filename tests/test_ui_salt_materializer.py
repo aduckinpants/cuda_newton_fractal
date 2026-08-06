@@ -1261,7 +1261,39 @@ def test_slice6_curated_recipe_contract_is_explicit_and_typed(tmp_path):
         "source.root_log_proximity",
         "shape.signed_unit_map",
         "palette.heatmap",
-        "grading.grade_glow",
+        "grading.contrast_lift",
+    ]
+    root_glow_nodes = {node["id"]: node for node in recipes["root_glow"]["nodes"]}
+    assert root_glow_nodes["shape.signed_unit_map"]["parameter_overrides"] == [
+        {
+            "descriptor_parameter_id": "shape.bias",
+            "type": "float",
+            "value_kind": "number",
+            "number_value": 0.15,
+        },
+        {
+            "descriptor_parameter_id": "shape.scale",
+            "type": "float",
+            "value_kind": "number",
+            "number_value": 0.1,
+        },
+    ]
+    assert root_glow_nodes["palette.heatmap"]["parameter_overrides"][0][
+        "number_value"
+    ] == 1.4
+    assert root_glow_nodes["grading.contrast_lift"]["parameter_overrides"] == [
+        {
+            "descriptor_parameter_id": "grade.exposure",
+            "type": "float",
+            "value_kind": "number",
+            "number_value": 1.0,
+        },
+        {
+            "descriptor_parameter_id": "grade.saturation",
+            "type": "float",
+            "value_kind": "number",
+            "number_value": 1.0,
+        },
     ]
     assert [node["id"] for node in recipes["curvature_relief"]["nodes"]] == [
         "source.curvature",
