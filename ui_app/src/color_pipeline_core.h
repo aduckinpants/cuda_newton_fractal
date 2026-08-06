@@ -515,6 +515,12 @@ inline const char* AdvancedColorPaletteFunctionId(ColorPalette value) {
         return "banded_heatmap";
     case ColorPalette::explaino_cmap:
         return "explaino_cmap";
+    case ColorPalette::diverging_signed_palette_v1:
+        return "diverging_signed_palette_v1";
+    case ColorPalette::inside_outside_two_tone_v1:
+        return "inside_outside_two_tone_v1";
+    case ColorPalette::gradient_three_stop_v1:
+        return "gradient_three_stop_v1";
     }
     return nullptr;
 }
@@ -544,6 +550,18 @@ inline bool TryParseAdvancedColorPaletteFunctionId(const std::string& functionId
         if (outValue) *outValue = ColorPalette::explaino_cmap;
         return true;
     }
+    if (functionId == "diverging_signed_palette_v1") {
+        if (outValue) *outValue = ColorPalette::diverging_signed_palette_v1;
+        return true;
+    }
+    if (functionId == "inside_outside_two_tone_v1") {
+        if (outValue) *outValue = ColorPalette::inside_outside_two_tone_v1;
+        return true;
+    }
+    if (functionId == "gradient_three_stop_v1") {
+        if (outValue) *outValue = ColorPalette::gradient_three_stop_v1;
+        return true;
+    }
     return false;
 }
 
@@ -565,6 +583,10 @@ inline const char* AdvancedColorGradingFunctionId(ColorGradingPreset value) {
         return "grade_glow";
     case ColorGradingPreset::balance_void_default:
         return "balance_void_grade";
+    case ColorGradingPreset::levels_gamma_v1:
+        return "levels_gamma_v1";
+    case ColorGradingPreset::hue_rotate_v1:
+        return "hue_rotate_v1";
     }
     return nullptr;
 }
@@ -602,6 +624,14 @@ inline bool TryParseAdvancedColorGradingFunctionId(const std::string& functionId
         if (outValue) *outValue = ColorGradingPreset::balance_void_default;
         return true;
     }
+    if (functionId == "levels_gamma_v1") {
+        if (outValue) *outValue = ColorGradingPreset::levels_gamma_v1;
+        return true;
+    }
+    if (functionId == "hue_rotate_v1") {
+        if (outValue) *outValue = ColorGradingPreset::hue_rotate_v1;
+        return true;
+    }
     return false;
 }
 
@@ -627,6 +657,16 @@ inline const char* AdvancedColorShapeFunctionId(ColorPipelineShape value) {
         return "smoothstep_range";
     case ColorPipelineShape::signed_unit_map_v1:
         return "signed_unit_map_v1";
+    case ColorPipelineShape::invert_unit_v1:
+        return "invert_unit_v1";
+    case ColorPipelineShape::fold_centered_v1:
+        return "fold_centered_v1";
+    case ColorPipelineShape::phase_offset_v1:
+        return "phase_offset_v1";
+    case ColorPipelineShape::phase_repeat_v1:
+        return "phase_repeat_v1";
+    case ColorPipelineShape::phase_mirror_v1:
+        return "phase_mirror_v1";
     }
     return nullptr;
 }
@@ -811,7 +851,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
     };
 }
 
-inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
+inline std::vector<FunctionDescriptor> BuildColorPipelineBasePaletteFunctions() {
     return {
         MakeColorPipelineFunction(
             "heatmap",
@@ -871,6 +911,72 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             "palette_basin",
             {}),
     };
+}
+
+inline std::vector<FunctionDescriptor> BuildColorPipelineExpandedPaletteFunctions() {
+    return {
+        MakeColorPipelineFunction(
+            "diverging_signed_palette_v1",
+            "Diverging Signed Palette",
+            "Map signed scalar values through negative, neutral, and positive colors without discarding sign.",
+            "palette_signed",
+            {
+                MakeColorPipelineFloatParam("palette.negative_r", "Negative Red", "Negative color red channel.", 0.0, 1.0, 0.01, 0.08),
+                MakeColorPipelineFloatParam("palette.negative_g", "Negative Green", "Negative color green channel.", 0.0, 1.0, 0.01, 0.22),
+                MakeColorPipelineFloatParam("palette.negative_b", "Negative Blue", "Negative color blue channel.", 0.0, 1.0, 0.01, 0.75),
+                MakeColorPipelineFloatParam("palette.neutral_r", "Neutral Red", "Neutral color red channel.", 0.0, 1.0, 0.01, 0.92),
+                MakeColorPipelineFloatParam("palette.neutral_g", "Neutral Green", "Neutral color green channel.", 0.0, 1.0, 0.01, 0.92),
+                MakeColorPipelineFloatParam("palette.neutral_b", "Neutral Blue", "Neutral color blue channel.", 0.0, 1.0, 0.01, 0.90),
+                MakeColorPipelineFloatParam("palette.positive_r", "Positive Red", "Positive color red channel.", 0.0, 1.0, 0.01, 0.85),
+                MakeColorPipelineFloatParam("palette.positive_g", "Positive Green", "Positive color green channel.", 0.0, 1.0, 0.01, 0.18),
+                MakeColorPipelineFloatParam("palette.positive_b", "Positive Blue", "Positive color blue channel.", 0.0, 1.0, 0.01, 0.10),
+                MakeColorPipelineFloatParam("palette.balance", "Balance", "Shift the signed center before palette mapping.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineFloatParam("palette.contrast", "Contrast", "Scale signed separation before palette mapping.", 0.25, 4.0, 0.01, 1.0),
+                MakeColorPipelinePaletteBlendWeightParam(),
+                MakeColorPipelinePaletteBlendModeParam(),
+            }),
+        MakeColorPipelineFunction(
+            "inside_outside_two_tone_v1",
+            "Inside / Outside Two Tone",
+            "Map the discrete outside and inside categories to two explicit colors.",
+            "palette_category",
+            {
+                MakeColorPipelineFloatParam("palette.outside_r", "Outside Red", "Outside color red channel.", 0.0, 1.0, 0.01, 0.03),
+                MakeColorPipelineFloatParam("palette.outside_g", "Outside Green", "Outside color green channel.", 0.0, 1.0, 0.01, 0.08),
+                MakeColorPipelineFloatParam("palette.outside_b", "Outside Blue", "Outside color blue channel.", 0.0, 1.0, 0.01, 0.18),
+                MakeColorPipelineFloatParam("palette.inside_r", "Inside Red", "Inside color red channel.", 0.0, 1.0, 0.01, 0.95),
+                MakeColorPipelineFloatParam("palette.inside_g", "Inside Green", "Inside color green channel.", 0.0, 1.0, 0.01, 0.75),
+                MakeColorPipelineFloatParam("palette.inside_b", "Inside Blue", "Inside color blue channel.", 0.0, 1.0, 0.01, 0.18),
+                MakeColorPipelinePaletteBlendWeightParam(),
+                MakeColorPipelinePaletteBlendModeParam(),
+            }),
+        MakeColorPipelineFunction(
+            "gradient_three_stop_v1",
+            "Three Stop Gradient",
+            "Map a unit scalar through explicit low, midpoint, and high colors.",
+            "palette_gradient",
+            {
+                MakeColorPipelineFloatParam("palette.low_r", "Low Red", "Low color red channel.", 0.0, 1.0, 0.01, 0.02),
+                MakeColorPipelineFloatParam("palette.low_g", "Low Green", "Low color green channel.", 0.0, 1.0, 0.01, 0.08),
+                MakeColorPipelineFloatParam("palette.low_b", "Low Blue", "Low color blue channel.", 0.0, 1.0, 0.01, 0.22),
+                MakeColorPipelineFloatParam("palette.mid_r", "Mid Red", "Midpoint color red channel.", 0.0, 1.0, 0.01, 0.08),
+                MakeColorPipelineFloatParam("palette.mid_g", "Mid Green", "Midpoint color green channel.", 0.0, 1.0, 0.01, 0.72),
+                MakeColorPipelineFloatParam("palette.mid_b", "Mid Blue", "Midpoint color blue channel.", 0.0, 1.0, 0.01, 0.78),
+                MakeColorPipelineFloatParam("palette.high_r", "High Red", "High color red channel.", 0.0, 1.0, 0.01, 0.95),
+                MakeColorPipelineFloatParam("palette.high_g", "High Green", "High color green channel.", 0.0, 1.0, 0.01, 0.64),
+                MakeColorPipelineFloatParam("palette.high_b", "High Blue", "High color blue channel.", 0.0, 1.0, 0.01, 0.08),
+                MakeColorPipelineFloatParam("palette.midpoint", "Midpoint", "Place the middle color along the unit signal.", 0.05, 0.95, 0.01, 0.5),
+                MakeColorPipelinePaletteBlendWeightParam(),
+                MakeColorPipelinePaletteBlendModeParam(),
+            }),
+    };
+}
+
+inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
+    std::vector<FunctionDescriptor> functions = BuildColorPipelineBasePaletteFunctions();
+    const std::vector<FunctionDescriptor> expanded = BuildColorPipelineExpandedPaletteFunctions();
+    functions.insert(functions.end(), expanded.begin(), expanded.end());
+    return functions;
 }
 
 inline std::vector<FunctionDescriptor> BuildColorPipelineBaseShapeFunctions() {
@@ -975,10 +1081,26 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
     std::vector<FunctionDescriptor> functions = BuildColorPipelineBaseShapeFunctions();
     std::vector<FunctionDescriptor> batch1 = BuildColorPipelineBatch1ShapeFunctions();
     functions.insert(functions.end(), batch1.begin(), batch1.end());
+    functions.push_back(MakeColorPipelineFunction("invert_unit_v1", "Invert Unit", "Invert a unit scalar without changing its domain.", "remap", {}));
+    functions.push_back(MakeColorPipelineFunction("fold_centered_v1", "Fold Centered", "Fold a unit scalar around a controllable center and width.", "fold", {
+        MakeColorPipelineFloatParam("shape.center", "Center", "Center of the fold.", 0.0, 1.0, 0.01, 0.5),
+        MakeColorPipelineFloatParam("shape.width", "Width", "Width used to normalize the fold distance.", 0.01, 1.0, 0.01, 0.5),
+        MakeColorPipelineFloatParam("shape.mix", "Mix", "Blend between the input and folded value.", 0.0, 1.0, 0.01, 1.0),
+    }));
+    functions.push_back(MakeColorPipelineFunction("phase_offset_v1", "Phase Offset", "Offset and wrap phase in turns.", "phase", {
+        MakeColorPipelineFloatParam("shape.offset_turns", "Offset Turns", "Rotate the phase in turns.", -1.0, 1.0, 0.01, 0.0),
+    }));
+    functions.push_back(MakeColorPipelineFunction("phase_repeat_v1", "Phase Repeat", "Repeat a phase signal by a turn multiplier.", "phase", {
+        MakeColorPipelineFloatParam("shape.cycles", "Cycles", "Number of phase repetitions.", 0.25, 16.0, 0.01, 1.0),
+    }));
+    functions.push_back(MakeColorPipelineFunction("phase_mirror_v1", "Phase Mirror", "Mirror a repeated phase signal through a triangle wave.", "phase", {
+        MakeColorPipelineFloatParam("shape.cycles", "Cycles", "Number of mirrored phase repetitions.", 0.25, 16.0, 0.01, 1.0),
+        MakeColorPipelineFloatParam("shape.mix", "Mix", "Blend between wrapped input phase and mirrored phase.", 0.0, 1.0, 0.01, 1.0),
+    }));
     return functions;
 }
 
-inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
+inline std::vector<FunctionDescriptor> BuildColorPipelineBaseGradeFunctions() {
     return {
         MakeColorPipelineFunction(
             "contrast_lift",
@@ -1057,6 +1179,26 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
     };
 }
 
+inline std::vector<FunctionDescriptor> BuildColorPipelineExpandedGradeFunctions() {
+    return {
+        MakeColorPipelineFunction("levels_gamma_v1", "Levels + Gamma", "Apply bounded black point, white point, and gamma correction in linear RGB.", "grade_tone", {
+            MakeColorPipelineFloatParam("grade.black_point", "Black Point", "Set the linear-RGB black point.", 0.0, 0.95, 0.01, 0.0),
+            MakeColorPipelineFloatParam("grade.white_point", "White Point", "Set the linear-RGB white point.", 0.05, 1.0, 0.01, 1.0),
+            MakeColorPipelineFloatParam("grade.gamma", "Gamma", "Apply inverse gamma after levels normalization.", 0.1, 4.0, 0.01, 1.0),
+        }),
+        MakeColorPipelineFunction("hue_rotate_v1", "Hue Rotate", "Rotate linear RGB around the normalized gray axis.", "grade_color", {
+            MakeColorPipelineFloatParam("grade.hue_turns", "Hue Turns", "Rotate hue by turns around the gray axis.", -1.0, 1.0, 0.01, 0.0),
+        }),
+    };
+}
+
+inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
+    std::vector<FunctionDescriptor> functions = BuildColorPipelineBaseGradeFunctions();
+    const std::vector<FunctionDescriptor> expanded = BuildColorPipelineExpandedGradeFunctions();
+    functions.insert(functions.end(), expanded.begin(), expanded.end());
+    return functions;
+}
+
 inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::string& functionId) {
     if (!laneId || laneId[0] == '\0') {
         return false;
@@ -1089,7 +1231,12 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "smooth_window" ||
             functionId == "log_compress" ||
             functionId == "smoothstep_range" ||
-            functionId == "signed_unit_map_v1";
+            functionId == "signed_unit_map_v1" ||
+            functionId == "invert_unit_v1" ||
+            functionId == "fold_centered_v1" ||
+            functionId == "phase_offset_v1" ||
+            functionId == "phase_repeat_v1" ||
+            functionId == "phase_mirror_v1";
     }
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||
@@ -1097,7 +1244,10 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "banded_heatmap" ||
             functionId == "explaino_cmap" ||
             functionId == "root_classic_palette" ||
-            functionId == "joy_root_palette";
+            functionId == "joy_root_palette" ||
+            functionId == "diverging_signed_palette_v1" ||
+            functionId == "inside_outside_two_tone_v1" ||
+            functionId == "gradient_three_stop_v1";
     }
     if (std::string(laneId) == "grading") {
         return functionId == "contrast_lift" ||
@@ -1107,7 +1257,9 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "neutral_finish" ||
             functionId == "tone_map_finish" ||
             functionId == "grade_glow" ||
-            functionId == "balance_void_grade";
+            functionId == "balance_void_grade" ||
+            functionId == "levels_gamma_v1" ||
+            functionId == "hue_rotate_v1";
     }
     return false;
 }
@@ -1760,6 +1912,15 @@ inline bool TrySuggestHardcodedColorPipelineCompanionFunction(
         }
         if (function == "joy_root_palette" || function == "root_classic_palette") {
             return SetColorPipelineCompanionSuggestion("source", "root_index", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "diverging_signed_palette_v1") {
+            return SetColorPipelineCompanionSuggestion("source", "root_log_proximity_v1", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "inside_outside_two_tone_v1") {
+            return SetColorPipelineCompanionSuggestion("source", "sdf_inside_outside", outCompanionLaneId, outCompanionFunctionId);
+        }
+        if (function == "gradient_three_stop_v1") {
+            return SetColorPipelineCompanionSuggestion("source", "smooth_escape_ramp", outCompanionLaneId, outCompanionFunctionId);
         }
     }
     return false;
@@ -2799,6 +2960,26 @@ inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
         *outMode = ColoringMode::smooth_escape;
         return true;
     }
+    if (std::strcmp(sourceFunctionId, "root_log_proximity_v1") == 0 && std::strcmp(paletteFunctionId, "diverging_signed_palette_v1") == 0) {
+        *outPipeline = {ColorSignal::root_log_proximity_v1, ColorPalette::diverging_signed_palette_v1, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "sdf_curvature") == 0 && std::strcmp(paletteFunctionId, "diverging_signed_palette_v1") == 0) {
+        *outPipeline = {ColorSignal::sdf_curvature, ColorPalette::diverging_signed_palette_v1, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "sdf_inside_outside") == 0 && std::strcmp(paletteFunctionId, "inside_outside_two_tone_v1") == 0) {
+        *outPipeline = {ColorSignal::sdf_inside_outside, ColorPalette::inside_outside_two_tone_v1, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "smooth_escape_ramp") == 0 && std::strcmp(paletteFunctionId, "gradient_three_stop_v1") == 0) {
+        *outPipeline = {ColorSignal::smooth_escape, ColorPalette::gradient_three_stop_v1, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
     if (std::strcmp(sourceFunctionId, "root_index") == 0 && std::strcmp(paletteFunctionId, "root_classic_palette") == 0) {
         *outPipeline = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
         *outMode = ColoringMode::root_basin;
@@ -3321,6 +3502,20 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
         return true;
     }
+    if (pipeline.signal == ColorSignal::root_log_proximity_v1 &&
+        pipeline.palette == ColorPalette::diverging_signed_palette_v1 &&
+        isEscapeLikeMode) {
+        if (outSourceFunctionId) *outSourceFunctionId = "root_log_proximity_v1";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "diverging_signed_palette_v1";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::smooth_escape &&
+        pipeline.palette == ColorPalette::gradient_three_stop_v1 &&
+        isEscapeLikeMode) {
+        if (outSourceFunctionId) *outSourceFunctionId = "smooth_escape_ramp";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "gradient_three_stop_v1";
+        return true;
+    }
     if (pipeline.signal == ColorSignal::smooth_escape &&
         pipeline.palette == ColorPalette::explaino_cmap &&
         isEscapeLikeMode) {
@@ -3376,6 +3571,20 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         if (outPaletteFunctionId) {
             *outPaletteFunctionId = pipeline.palette == ColorPalette::explaino_cmap ? "explaino_cmap" : "heatmap";
         }
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::sdf_curvature &&
+        pipeline.palette == ColorPalette::diverging_signed_palette_v1 &&
+        isEscapeLikeMode) {
+        if (outSourceFunctionId) *outSourceFunctionId = "sdf_curvature";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "diverging_signed_palette_v1";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::sdf_inside_outside &&
+        pipeline.palette == ColorPalette::inside_outside_two_tone_v1 &&
+        isEscapeLikeMode) {
+        if (outSourceFunctionId) *outSourceFunctionId = "sdf_inside_outside";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "inside_outside_two_tone_v1";
         return true;
     }
     return false;

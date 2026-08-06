@@ -1779,6 +1779,195 @@
                 "canonical": true
               }
             ]
+          },
+          {
+            "id": "invert_unit_v1",
+            "label": "Invert Unit",
+            "description": "Invert a unit scalar without changing its domain.",
+            "taxonomy_group": "remap",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.unit"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.unit",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "fold_centered_v1",
+            "label": "Fold Centered",
+            "description": "Fold a unit scalar around a controllable center and width.",
+            "taxonomy_group": "fold",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "shape.center",
+                "path": "shape.center",
+                "type": "float",
+                "label": "Center",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.5
+              },
+              {
+                "descriptor_parameter_id": "shape.width",
+                "path": "shape.width",
+                "type": "float",
+                "label": "Width",
+                "min": 0.01,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.5
+              },
+              {
+                "descriptor_parameter_id": "shape.mix",
+                "path": "shape.mix",
+                "type": "float",
+                "label": "Mix",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.unit"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "scalar.unit",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "phase_offset_v1",
+            "label": "Phase Offset",
+            "description": "Offset and wrap phase in turns.",
+            "taxonomy_group": "phase",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "shape.offset_turns",
+                "path": "shape.offset_turns",
+                "type": "float",
+                "label": "Offset Turns",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "phase.turns"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "phase.turns",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "phase_repeat_v1",
+            "label": "Phase Repeat",
+            "description": "Repeat a phase signal by a turn multiplier.",
+            "taxonomy_group": "phase",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "shape.cycles",
+                "path": "shape.cycles",
+                "type": "float",
+                "label": "Cycles",
+                "min": 0.25,
+                "max": 16.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "phase.turns"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "phase.turns",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "phase_mirror_v1",
+            "label": "Phase Mirror",
+            "description": "Mirror a repeated phase signal through a triangle wave.",
+            "taxonomy_group": "phase",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "shape.cycles",
+                "path": "shape.cycles",
+                "type": "float",
+                "label": "Cycles",
+                "min": 0.25,
+                "max": 16.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "descriptor_parameter_id": "shape.mix",
+                "path": "shape.mix",
+                "type": "float",
+                "label": "Mix",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "phase.turns"
+              },
+              {
+                "direction": "output",
+                "id": "signal",
+                "type": "phase.turns",
+                "canonical": true
+              }
+            ]
           }
         ]
       },
@@ -2090,6 +2279,408 @@
                 "direction": "input",
                 "id": "signal",
                 "type": "category.root_index"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "diverging_signed_palette_v1",
+            "label": "Diverging Signed Palette",
+            "description": "Map signed scalar values through negative, neutral, and positive colors without discarding sign.",
+            "taxonomy_group": "palette_signed",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "palette.negative_r",
+                "path": "palette.negative_r",
+                "type": "float",
+                "label": "Negative Red",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.08
+              },
+              {
+                "descriptor_parameter_id": "palette.negative_g",
+                "path": "palette.negative_g",
+                "type": "float",
+                "label": "Negative Green",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.22
+              },
+              {
+                "descriptor_parameter_id": "palette.negative_b",
+                "path": "palette.negative_b",
+                "type": "float",
+                "label": "Negative Blue",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.75
+              },
+              {
+                "descriptor_parameter_id": "palette.neutral_r",
+                "path": "palette.neutral_r",
+                "type": "float",
+                "label": "Neutral Red",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.92
+              },
+              {
+                "descriptor_parameter_id": "palette.neutral_g",
+                "path": "palette.neutral_g",
+                "type": "float",
+                "label": "Neutral Green",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.92
+              },
+              {
+                "descriptor_parameter_id": "palette.neutral_b",
+                "path": "palette.neutral_b",
+                "type": "float",
+                "label": "Neutral Blue",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.9
+              },
+              {
+                "descriptor_parameter_id": "palette.positive_r",
+                "path": "palette.positive_r",
+                "type": "float",
+                "label": "Positive Red",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.85
+              },
+              {
+                "descriptor_parameter_id": "palette.positive_g",
+                "path": "palette.positive_g",
+                "type": "float",
+                "label": "Positive Green",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.18
+              },
+              {
+                "descriptor_parameter_id": "palette.positive_b",
+                "path": "palette.positive_b",
+                "type": "float",
+                "label": "Positive Blue",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.1
+              },
+              {
+                "descriptor_parameter_id": "palette.balance",
+                "path": "palette.balance",
+                "type": "float",
+                "label": "Balance",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "descriptor_parameter_id": "palette.contrast",
+                "path": "palette.contrast",
+                "type": "float",
+                "label": "Contrast",
+                "min": 0.25,
+                "max": 4.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "descriptor_parameter_id": "palette.blend_weight",
+                "path": "palette.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "descriptor_parameter_id": "palette.blend_mode",
+                "path": "palette.blend_mode",
+                "type": "enum",
+                "label": "Blend Mode",
+                "default": "normal",
+                "options": [
+                  "normal"
+                ]
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.signed"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "inside_outside_two_tone_v1",
+            "label": "Inside / Outside Two Tone",
+            "description": "Map the discrete outside and inside categories to two explicit colors.",
+            "taxonomy_group": "palette_category",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "palette.outside_r",
+                "path": "palette.outside_r",
+                "type": "float",
+                "label": "Outside Red",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.03
+              },
+              {
+                "descriptor_parameter_id": "palette.outside_g",
+                "path": "palette.outside_g",
+                "type": "float",
+                "label": "Outside Green",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.08
+              },
+              {
+                "descriptor_parameter_id": "palette.outside_b",
+                "path": "palette.outside_b",
+                "type": "float",
+                "label": "Outside Blue",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.18
+              },
+              {
+                "descriptor_parameter_id": "palette.inside_r",
+                "path": "palette.inside_r",
+                "type": "float",
+                "label": "Inside Red",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.95
+              },
+              {
+                "descriptor_parameter_id": "palette.inside_g",
+                "path": "palette.inside_g",
+                "type": "float",
+                "label": "Inside Green",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.75
+              },
+              {
+                "descriptor_parameter_id": "palette.inside_b",
+                "path": "palette.inside_b",
+                "type": "float",
+                "label": "Inside Blue",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.18
+              },
+              {
+                "descriptor_parameter_id": "palette.blend_weight",
+                "path": "palette.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "descriptor_parameter_id": "palette.blend_mode",
+                "path": "palette.blend_mode",
+                "type": "enum",
+                "label": "Blend Mode",
+                "default": "normal",
+                "options": [
+                  "normal"
+                ]
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "category.inside_outside"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "gradient_three_stop_v1",
+            "label": "Three Stop Gradient",
+            "description": "Map a unit scalar through explicit low, midpoint, and high colors.",
+            "taxonomy_group": "palette_gradient",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "palette.low_r",
+                "path": "palette.low_r",
+                "type": "float",
+                "label": "Low Red",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.02
+              },
+              {
+                "descriptor_parameter_id": "palette.low_g",
+                "path": "palette.low_g",
+                "type": "float",
+                "label": "Low Green",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.08
+              },
+              {
+                "descriptor_parameter_id": "palette.low_b",
+                "path": "palette.low_b",
+                "type": "float",
+                "label": "Low Blue",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.22
+              },
+              {
+                "descriptor_parameter_id": "palette.mid_r",
+                "path": "palette.mid_r",
+                "type": "float",
+                "label": "Mid Red",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.08
+              },
+              {
+                "descriptor_parameter_id": "palette.mid_g",
+                "path": "palette.mid_g",
+                "type": "float",
+                "label": "Mid Green",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.72
+              },
+              {
+                "descriptor_parameter_id": "palette.mid_b",
+                "path": "palette.mid_b",
+                "type": "float",
+                "label": "Mid Blue",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.78
+              },
+              {
+                "descriptor_parameter_id": "palette.high_r",
+                "path": "palette.high_r",
+                "type": "float",
+                "label": "High Red",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.95
+              },
+              {
+                "descriptor_parameter_id": "palette.high_g",
+                "path": "palette.high_g",
+                "type": "float",
+                "label": "High Green",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.64
+              },
+              {
+                "descriptor_parameter_id": "palette.high_b",
+                "path": "palette.high_b",
+                "type": "float",
+                "label": "High Blue",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.08
+              },
+              {
+                "descriptor_parameter_id": "palette.midpoint",
+                "path": "palette.midpoint",
+                "type": "float",
+                "label": "Midpoint",
+                "min": 0.05,
+                "max": 0.95,
+                "step": 0.01,
+                "default": 0.5
+              },
+              {
+                "descriptor_parameter_id": "palette.blend_weight",
+                "path": "palette.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "descriptor_parameter_id": "palette.blend_mode",
+                "path": "palette.blend_mode",
+                "type": "enum",
+                "label": "Blend Mode",
+                "default": "normal",
+                "options": [
+                  "normal"
+                ]
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.unit"
               },
               {
                 "direction": "output",
@@ -2486,6 +3077,94 @@
                 "canonical": true
               }
             ]
+          },
+          {
+            "id": "levels_gamma_v1",
+            "label": "Levels + Gamma",
+            "description": "Apply bounded black point, white point, and gamma correction in linear RGB.",
+            "taxonomy_group": "grade_tone",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "grade.black_point",
+                "path": "grade.black_point",
+                "type": "float",
+                "label": "Black Point",
+                "min": 0.0,
+                "max": 0.95,
+                "step": 0.01,
+                "default": 0.0
+              },
+              {
+                "descriptor_parameter_id": "grade.white_point",
+                "path": "grade.white_point",
+                "type": "float",
+                "label": "White Point",
+                "min": 0.05,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "descriptor_parameter_id": "grade.gamma",
+                "path": "grade.gamma",
+                "type": "float",
+                "label": "Gamma",
+                "min": 0.1,
+                "max": 4.0,
+                "step": 0.01,
+                "default": 1.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "color",
+                "type": "color.linear_rgb"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
+            ]
+          },
+          {
+            "id": "hue_rotate_v1",
+            "label": "Hue Rotate",
+            "description": "Rotate linear RGB around the normalized gray axis.",
+            "taxonomy_group": "grade_color",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "grade.hue_turns",
+                "path": "grade.hue_turns",
+                "type": "float",
+                "label": "Hue Turns",
+                "min": -1.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 0.0
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "color",
+                "type": "color.linear_rgb"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
+            ]
           }
         ]
       }
@@ -2744,6 +3423,42 @@
         "palette": "explaino_cmap",
         "signal": "lens_field_v2_distance",
         "palette_runtime": "explaino_cmap",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "root_log_proximity_v1",
+        "palette": "diverging_signed_palette_v1",
+        "signal": "root_log_proximity_v1",
+        "palette_runtime": "diverging_signed_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_curvature",
+        "palette": "diverging_signed_palette_v1",
+        "signal": "sdf_curvature",
+        "palette_runtime": "diverging_signed_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_inside_outside",
+        "palette": "inside_outside_two_tone_v1",
+        "signal": "sdf_inside_outside",
+        "palette_runtime": "inside_outside_two_tone_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "smooth_escape_ramp",
+        "palette": "gradient_three_stop_v1",
+        "signal": "smooth_escape_ramp",
+        "palette_runtime": "gradient_three_stop_v1",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
         "reason": "supported_runtime_bridge"
@@ -4232,6 +4947,46 @@
         "route_case_id": "lens_field_v2_explaino_cmap",
         "override_id": "",
         "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "root_log_proximity_v1",
+        "palette": "diverging_signed_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "typed_resolved",
+        "route_case_id": "root_log_proximity_diverging",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "sdf_curvature",
+        "palette": "diverging_signed_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "typed_resolved",
+        "route_case_id": "sdf_curvature_diverging",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "sdf_inside_outside",
+        "palette": "inside_outside_two_tone_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "typed_resolved",
+        "route_case_id": "sdf_inside_outside_two_tone",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "smooth_escape_ramp",
+        "palette": "gradient_three_stop_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "typed_resolved",
+        "route_case_id": "smooth_escape_gradient",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       }
     ],
     "sdf_source_capabilities": [
@@ -5536,6 +6291,348 @@
           {
             "edge_id": "palette_to_grading",
             "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_log_proximity_diverging",
+        "source": "root_log_proximity_v1",
+        "shape": "identity",
+        "palette": "diverging_signed_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_log_proximity_v1",
+            "to_function": "identity",
+            "from_type": "scalar.signed",
+            "to_type": "scalar.signed",
+            "output_type": "scalar.signed",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "diverging_signed_palette_v1",
+            "from_type": "scalar.signed",
+            "to_type": "scalar.signed",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "diverging_signed_palette_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_curvature_diverging",
+        "source": "sdf_curvature",
+        "shape": "identity",
+        "palette": "diverging_signed_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_curvature",
+            "to_function": "identity",
+            "from_type": "scalar.signed",
+            "to_type": "scalar.signed",
+            "output_type": "scalar.signed",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "diverging_signed_palette_v1",
+            "from_type": "scalar.signed",
+            "to_type": "scalar.signed",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "diverging_signed_palette_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_inside_outside_two_tone",
+        "source": "sdf_inside_outside",
+        "shape": "identity",
+        "palette": "inside_outside_two_tone_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_inside_outside",
+            "to_function": "identity",
+            "from_type": "category.inside_outside",
+            "to_type": "category.inside_outside",
+            "output_type": "category.inside_outside",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "inside_outside_two_tone_v1",
+            "from_type": "category.inside_outside",
+            "to_type": "category.inside_outside",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "inside_outside_two_tone_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "phase_orbit_repeat",
+        "source": "phase_orbit",
+        "shape": "phase_repeat_v1",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "phase_orbit",
+            "to_function": "phase_repeat_v1",
+            "from_type": "phase.turns",
+            "to_type": "phase.turns",
+            "output_type": "phase.turns",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "phase_repeat_v1",
+            "to_function": "phase_wheel_palette",
+            "from_type": "phase.turns",
+            "to_type": "phase.turns",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "phase_wheel_palette",
+            "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "smooth_escape_invert_gradient_levels",
+        "source": "smooth_escape_ramp",
+        "shape": "invert_unit_v1",
+        "palette": "gradient_three_stop_v1",
+        "grading": "levels_gamma_v1",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "smooth_escape_ramp",
+            "to_function": "invert_unit_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "invert_unit_v1",
+            "to_function": "gradient_three_stop_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "gradient_three_stop_v1",
+            "to_function": "levels_gamma_v1",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "smooth_escape_gradient",
+        "source": "smooth_escape_ramp",
+        "shape": "identity",
+        "palette": "gradient_three_stop_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "smooth_escape_ramp",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "gradient_three_stop_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "gradient_three_stop_v1",
             "to_function": "contrast_lift",
             "from_type": "color.linear_rgb",
             "to_type": "color.linear_rgb",

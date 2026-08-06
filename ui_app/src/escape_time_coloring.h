@@ -259,6 +259,41 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStackRow(
             gradingEntry.params.balance_void,
             gradingEntry.params.chroma_tension,
             gradingEntry.params.accent_bias);
+    } else if (gradingEntry.grading == ColorGradingPreset::levels_gamma_v1) {
+        const float blackPoint = EscapeTimeColorClamp(gradingEntry.params.black_point, 0.0f, 0.95f);
+        const float whitePoint = EscapeTimeColorClamp(gradingEntry.params.white_point, 0.05f, 1.0f);
+        const float gammaValue = EscapeTimeColorClamp(gradingEntry.params.gamma, 0.1f, 4.0f);
+        if (blackPoint == 0.0f && whitePoint == 1.0f && gammaValue == 1.0f) return color;
+        const float span = whitePoint - blackPoint;
+        if (span <= 0.0f) return color;
+        const auto apply = [blackPoint, span, gammaValue](unsigned char channel) {
+            const float unit = EscapeTimeColorClamp((static_cast<float>(channel) / 255.0f - blackPoint) / span, 0.0f, 1.0f);
+            return static_cast<unsigned char>(EscapeTimeColorClamp(roundf(powf(unit, 1.0f / gammaValue) * 255.0f), 0.0f, 255.0f));
+        };
+        return EscapeTimeColorMake<Color>(apply(color.x), apply(color.y), apply(color.z), color.w);
+    } else if (gradingEntry.grading == ColorGradingPreset::hue_rotate_v1) {
+        const float turns = EscapeTimeColorClamp(gradingEntry.params.hue_turns, -1.0f, 1.0f);
+        if (turns == 0.0f) return color;
+        const float angle = turns * 6.28318530717958647692f;
+        const float cosine = cosf(angle);
+        const float sine = sinf(angle);
+        const float invSqrt3 = 0.57735026918962576451f;
+        const float r = static_cast<float>(color.x) / 255.0f;
+        const float g = static_cast<float>(color.y) / 255.0f;
+        const float b = static_cast<float>(color.z) / 255.0f;
+        const float dot = (r + g + b) * invSqrt3;
+        const float crossR = (b - g) * invSqrt3;
+        const float crossG = (r - b) * invSqrt3;
+        const float crossB = (g - r) * invSqrt3;
+        const float common = dot * invSqrt3 * (1.0f - cosine);
+        const auto channel = [](float value) {
+            return static_cast<unsigned char>(EscapeTimeColorClamp(roundf(EscapeTimeColorClamp(value, 0.0f, 1.0f) * 255.0f), 0.0f, 255.0f));
+        };
+        return EscapeTimeColorMake<Color>(
+            channel(r * cosine + crossR * sine + common),
+            channel(g * cosine + crossG * sine + common),
+            channel(b * cosine + crossB * sine + common),
+            color.w);
     }
     if (toneMapFinish) {
         return ApplyFractalColorToneMapFinishPass(color, params, exposure, saturation, contrast);
@@ -797,6 +832,28 @@ ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeRowValue(
                 EscapeTimeColorClamp(params.offset, -2.0f, 2.0f),
             0.0f,
             1.0f);
+    } else if (shape == ColorPipelineShape::invert_unit_v1) {
+        value = 1.0f - EscapeTimeColorClamp(isfinite(value) ? value : 0.0f, 0.0f, 1.0f);
+    } else if (shape == ColorPipelineShape::fold_centered_v1) {
+        const float input = EscapeTimeColorClamp(isfinite(value) ? value : 0.0f, 0.0f, 1.0f);
+        const float center = EscapeTimeColorClamp(isfinite(params.fold_center) ? params.fold_center : 0.5f, 0.0f, 1.0f);
+        const float width = EscapeTimeColorClamp(isfinite(params.fold_width) ? params.fold_width : 0.5f, 0.01f, 1.0f);
+        const float mix = EscapeTimeColorClamp(isfinite(params.fold_mix) ? params.fold_mix : 1.0f, 0.0f, 1.0f);
+        const float folded = EscapeTimeColorClamp(fabsf(input - center) / width, 0.0f, 1.0f);
+        value = EscapeTimeColorLerp(input, folded, mix);
+    } else if (shape == ColorPipelineShape::phase_offset_v1) {
+        value = EscapeTimeColorWrapPositive((isfinite(value) ? value : 0.0f) +
+            EscapeTimeColorClamp(isfinite(params.phase_offset_turns) ? params.phase_offset_turns : 0.0f, -1.0f, 1.0f), 1.0f);
+    } else if (shape == ColorPipelineShape::phase_repeat_v1) {
+        value = EscapeTimeColorWrapPositive((isfinite(value) ? value : 0.0f) *
+            EscapeTimeColorClamp(isfinite(params.phase_cycles) ? params.phase_cycles : 1.0f, 0.25f, 16.0f), 1.0f);
+    } else if (shape == ColorPipelineShape::phase_mirror_v1) {
+        const float input = EscapeTimeColorWrapPositive(isfinite(value) ? value : 0.0f, 1.0f);
+        const float repeated = EscapeTimeColorWrapPositive(input *
+            EscapeTimeColorClamp(isfinite(params.phase_cycles) ? params.phase_cycles : 1.0f, 0.25f, 16.0f), 1.0f);
+        const float mirrored = repeated <= 0.5f ? repeated * 2.0f : (1.0f - repeated) * 2.0f;
+        value = EscapeTimeColorLerp(input, mirrored,
+            EscapeTimeColorClamp(isfinite(params.phase_mirror_mix) ? params.phase_mirror_mix : 1.0f, 0.0f, 1.0f));
     }
     return value;
 }
@@ -1659,6 +1716,37 @@ ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleColorPipelinePaletteRowRgb(
         return EscapeTimeColorApplySaturation(
             {r + m, g + m, b + m},
             EscapeTimeColorClamp(paletteParams.saturation, 0.0f, 2.0f));
+    }
+    if (palette == ColorPalette::diverging_signed_palette_v1) {
+        const float input = isfinite(signalValue) ? signalValue : 0.0f;
+        const float contrast = EscapeTimeColorClamp(isfinite(paletteParams.signed_contrast) ? paletteParams.signed_contrast : 1.0f, 0.25f, 4.0f);
+        const float balance = EscapeTimeColorClamp(isfinite(paletteParams.balance) ? paletteParams.balance : 0.0f, -1.0f, 1.0f);
+        const float y = input * contrast + balance;
+        const float u = 0.5f + 0.5f * y / (1.0f + fabsf(y));
+        const EscapeTimeColorRgb negative{EscapeTimeColorClamp(paletteParams.negative_r, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.negative_g, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.negative_b, 0.0f, 1.0f)};
+        const EscapeTimeColorRgb neutral{EscapeTimeColorClamp(paletteParams.neutral_r, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.neutral_g, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.neutral_b, 0.0f, 1.0f)};
+        const EscapeTimeColorRgb positive{EscapeTimeColorClamp(paletteParams.positive_r, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.positive_g, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.positive_b, 0.0f, 1.0f)};
+        const float t = u < 0.5f ? u * 2.0f : (u - 0.5f) * 2.0f;
+        const EscapeTimeColorRgb from = u < 0.5f ? negative : neutral;
+        const EscapeTimeColorRgb to = u < 0.5f ? neutral : positive;
+        return {EscapeTimeColorLerp(from.r, to.r, t), EscapeTimeColorLerp(from.g, to.g, t), EscapeTimeColorLerp(from.b, to.b, t)};
+    }
+    if (palette == ColorPalette::inside_outside_two_tone_v1) {
+        return signalValue >= 0.5f
+            ? EscapeTimeColorRgb{EscapeTimeColorClamp(paletteParams.inside_r, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.inside_g, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.inside_b, 0.0f, 1.0f)}
+            : EscapeTimeColorRgb{EscapeTimeColorClamp(paletteParams.outside_r, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.outside_g, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.outside_b, 0.0f, 1.0f)};
+    }
+    if (palette == ColorPalette::gradient_three_stop_v1) {
+        const float input = EscapeTimeColorClamp(isfinite(signalValue) ? signalValue : 0.0f, 0.0f, 1.0f);
+        const float midpoint = EscapeTimeColorClamp(isfinite(paletteParams.midpoint) ? paletteParams.midpoint : 0.5f, 0.05f, 0.95f);
+        const EscapeTimeColorRgb low{EscapeTimeColorClamp(paletteParams.low_r, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.low_g, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.low_b, 0.0f, 1.0f)};
+        const EscapeTimeColorRgb mid{EscapeTimeColorClamp(paletteParams.mid_r, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.mid_g, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.mid_b, 0.0f, 1.0f)};
+        const EscapeTimeColorRgb high{EscapeTimeColorClamp(paletteParams.high_r, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.high_g, 0.0f, 1.0f), EscapeTimeColorClamp(paletteParams.high_b, 0.0f, 1.0f)};
+        const bool lower = input <= midpoint;
+        const float t = lower ? input / midpoint : (input - midpoint) / (1.0f - midpoint);
+        const EscapeTimeColorRgb from = lower ? low : mid;
+        const EscapeTimeColorRgb to = lower ? mid : high;
+        return {EscapeTimeColorLerp(from.r, to.r, t), EscapeTimeColorLerp(from.g, to.g, t), EscapeTimeColorLerp(from.b, to.b, t)};
     }
     if (palette == ColorPalette::banded_escape) {
         const int bandCount = params.color_iteration_band_count < 2 ? 2 : params.color_iteration_band_count;

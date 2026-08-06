@@ -1970,6 +1970,79 @@ int main() {
             return 1;
         }
     }
+    {
+        ColorPipelineShapeRuntimeParams shapeParams{};
+        if (!NearlyEqual(ApplyColorPipelineShapeRowValue(0.25f, ColorPipelineShape::invert_unit_v1, shapeParams, 1.0f), 0.75f)) {
+            std::cerr << "invert_unit_v1 should invert a clamped unit signal\n";
+            return 1;
+        }
+        shapeParams.fold_center = 0.5f;
+        shapeParams.fold_width = 0.5f;
+        shapeParams.fold_mix = 0.0f;
+        if (!NearlyEqual(ApplyColorPipelineShapeRowValue(0.25f, ColorPipelineShape::fold_centered_v1, shapeParams, 1.0f), 0.25f)) {
+            std::cerr << "fold_centered_v1 mix zero should be neutral\n";
+            return 1;
+        }
+        shapeParams.fold_mix = 1.0f;
+        if (!NearlyEqual(ApplyColorPipelineShapeRowValue(0.25f, ColorPipelineShape::fold_centered_v1, shapeParams, 1.0f), 0.5f)) {
+            std::cerr << "fold_centered_v1 should expose the centered fold\n";
+            return 1;
+        }
+        shapeParams.phase_offset_turns = 0.25f;
+        shapeParams.phase_cycles = 2.0f;
+        shapeParams.phase_mirror_mix = 1.0f;
+        if (!NearlyEqual(ApplyColorPipelineShapeRowValue(0.875f, ColorPipelineShape::phase_offset_v1, shapeParams, 1.0f), 0.125f) ||
+            !NearlyEqual(ApplyColorPipelineShapeRowValue(0.375f, ColorPipelineShape::phase_repeat_v1, shapeParams, 1.0f), 0.75f) ||
+            !NearlyEqual(ApplyColorPipelineShapeRowValue(0.375f, ColorPipelineShape::phase_mirror_v1, shapeParams, 1.0f), 0.5f)) {
+            std::cerr << "phase-safe Shapes should wrap and mirror in turns\n";
+            return 1;
+        }
+
+        KernelParams colorParams{};
+        ColorPipelinePaletteRuntimeParams paletteParams{};
+        paletteParams.negative_r = 0.0f; paletteParams.negative_g = 0.0f; paletteParams.negative_b = 1.0f;
+        paletteParams.neutral_r = paletteParams.neutral_g = paletteParams.neutral_b = 0.5f;
+        paletteParams.positive_r = 1.0f; paletteParams.positive_g = 0.0f; paletteParams.positive_b = 0.0f;
+        const auto negative = SampleColorPipelinePaletteRowRgb(-4.0f, true, colorParams, ColorPalette::diverging_signed_palette_v1, paletteParams);
+        const auto positive = SampleColorPipelinePaletteRowRgb(4.0f, true, colorParams, ColorPalette::diverging_signed_palette_v1, paletteParams);
+        if (!(negative.b > negative.r && positive.r > positive.b)) {
+            std::cerr << "diverging_signed_palette_v1 should preserve signed direction\n";
+            return 1;
+        }
+        paletteParams.outside_r = 0.0f; paletteParams.outside_g = 0.25f; paletteParams.outside_b = 1.0f;
+        paletteParams.inside_r = 1.0f; paletteParams.inside_g = 0.25f; paletteParams.inside_b = 0.0f;
+        const auto outside = SampleColorPipelinePaletteRowRgb(0.0f, true, colorParams, ColorPalette::inside_outside_two_tone_v1, paletteParams);
+        const auto inside = SampleColorPipelinePaletteRowRgb(1.0f, true, colorParams, ColorPalette::inside_outside_two_tone_v1, paletteParams);
+        if (!(outside.b > outside.r && inside.r > inside.b)) {
+            std::cerr << "inside_outside_two_tone_v1 should preserve the category split\n";
+            return 1;
+        }
+        paletteParams.low_r = 0.0f; paletteParams.low_g = 0.0f; paletteParams.low_b = 0.0f;
+        paletteParams.mid_r = 0.0f; paletteParams.mid_g = 1.0f; paletteParams.mid_b = 0.0f;
+        paletteParams.high_r = paletteParams.high_g = paletteParams.high_b = 1.0f;
+        paletteParams.midpoint = 0.25f;
+        const auto midpoint = SampleColorPipelinePaletteRowRgb(0.25f, true, colorParams, ColorPalette::gradient_three_stop_v1, paletteParams);
+        if (!NearlyEqual(midpoint.r, 0.0f) || !NearlyEqual(midpoint.g, 1.0f) || !NearlyEqual(midpoint.b, 0.0f)) {
+            std::cerr << "gradient_three_stop_v1 should honor its midpoint\n";
+            return 1;
+        }
+
+        ColorPipelineGradingStackEntry gradingEntry{};
+        const TestColor input{32, 128, 224, 255};
+        gradingEntry.grading = ColorGradingPreset::levels_gamma_v1;
+        const TestColor neutralLevels = ApplyFractalColorGradingStackRow(input, colorParams, gradingEntry);
+        gradingEntry.grading = ColorGradingPreset::hue_rotate_v1;
+        const TestColor neutralHue = ApplyFractalColorGradingStackRow(input, colorParams, gradingEntry);
+        gradingEntry.params.hue_turns = 1.0f / 3.0f;
+        const TestColor rotatedHue = ApplyFractalColorGradingStackRow(TestColor{255, 0, 0, 255}, colorParams, gradingEntry);
+        if (neutralLevels.x != input.x || neutralLevels.y != input.y || neutralLevels.z != input.z ||
+            neutralHue.x != input.x || neutralHue.y != input.y || neutralHue.z != input.z ||
+            !(rotatedHue.y > rotatedHue.x && rotatedHue.y > rotatedHue.z)) {
+            std::cerr << "new grading defaults should be exact no-ops and hue rotation should be sensitive\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_escape_time_coloring: all passed\n";
     return 0;
 }

@@ -1306,9 +1306,15 @@ def _validate_function_ports(record: FunctionRecord) -> None:
         if len(ports) != 2 or len(generic_inputs) != 1 or len(generic_outputs) != 1 or generic_inputs[0]["type"] != generic_outputs[0]["type"]:
             raise MaterializerError("identity ports must declare exactly one matching generic input and output")
     if record.lane == "shape" and function_id != "identity":
-        for port in ports:
-            if not port["type"].startswith("scalar."):
-                raise MaterializerError(f"shape function {function_id} only supports scalar ports in Slice B")
+        concrete_types = [port["type"] for port in ports]
+        accepted_family = next(
+            (family for family in ("scalar.", "phase.") if all(value.startswith(family) for value in concrete_types)),
+            None,
+        )
+        if accepted_family is None:
+            raise MaterializerError(
+                f"shape function {function_id} must preserve one declared scalar or phase topology"
+            )
 
 
 def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:

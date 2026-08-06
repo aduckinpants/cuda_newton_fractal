@@ -969,6 +969,7 @@ bool ValidateMaterializedPorts(
     int genericOutputCount = 0;
     std::string genericInputType;
     std::string genericOutputType;
+    std::string shapePortFamily;
     for (const MaterializedColorPipelinePort& port : function.ports) {
         if (port.direction != "input" && port.direction != "output") {
             return SetError(outError, std::string("Materialized function '") + function.id + "' has invalid port direction");
@@ -1011,8 +1012,16 @@ bool ValidateMaterializedPorts(
         if (laneId == "source" && port.direction == "input") {
             return SetError(outError, std::string("Materialized source function '") + function.id + "' cannot declare input ports");
         }
-        if (laneId == "shape" && function.id != "identity" && !StartsWith(port.type, "scalar.")) {
-            return SetError(outError, std::string("Materialized shape function '") + function.id + "' only supports scalar ports in Slice B");
+        if (laneId == "shape" && function.id != "identity") {
+            const std::string family = StartsWith(port.type, "scalar.")
+                ? "scalar."
+                : (StartsWith(port.type, "phase.") ? "phase." : "");
+            if (family.empty() || (!shapePortFamily.empty() && shapePortFamily != family)) {
+                return SetError(outError,
+                    std::string("Materialized shape function '") + function.id +
+                    "' must preserve one declared scalar or phase topology");
+            }
+            shapePortFamily = family;
         }
         if (function.id == "identity" && isGeneric) {
             if (port.direction == "input") {

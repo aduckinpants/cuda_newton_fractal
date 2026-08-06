@@ -1035,10 +1035,14 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
         pipeline.grading == ColorGradingPreset::neutral_default ||
         pipeline.grading == ColorGradingPreset::tone_map_default ||
         pipeline.grading == ColorGradingPreset::glow_default ||
-        pipeline.grading == ColorGradingPreset::balance_void_default;
+        pipeline.grading == ColorGradingPreset::balance_void_default ||
+        pipeline.grading == ColorGradingPreset::levels_gamma_v1 ||
+        pipeline.grading == ColorGradingPreset::hue_rotate_v1;
     const bool isPhaseLikeGrading = pipeline.grading == ColorGradingPreset::phase_default ||
         pipeline.grading == ColorGradingPreset::neutral_default ||
-        pipeline.grading == ColorGradingPreset::balance_void_default;
+        pipeline.grading == ColorGradingPreset::balance_void_default ||
+        pipeline.grading == ColorGradingPreset::levels_gamma_v1 ||
+        pipeline.grading == ColorGradingPreset::hue_rotate_v1;
     const bool isBandLikeGrading = pipeline.grading == ColorGradingPreset::bands_default ||
         pipeline.grading == ColorGradingPreset::neutral_default ||
         pipeline.grading == ColorGradingPreset::balance_void_default;
@@ -1099,10 +1103,14 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline
         pipeline.grading == ColorGradingPreset::neutral_default ||
         pipeline.grading == ColorGradingPreset::tone_map_default ||
         pipeline.grading == ColorGradingPreset::glow_default ||
-        pipeline.grading == ColorGradingPreset::balance_void_default;
+        pipeline.grading == ColorGradingPreset::balance_void_default ||
+        pipeline.grading == ColorGradingPreset::levels_gamma_v1 ||
+        pipeline.grading == ColorGradingPreset::hue_rotate_v1;
     const bool isPhaseLikeGrading = pipeline.grading == ColorGradingPreset::phase_default ||
         pipeline.grading == ColorGradingPreset::neutral_default ||
-        pipeline.grading == ColorGradingPreset::balance_void_default;
+        pipeline.grading == ColorGradingPreset::balance_void_default ||
+        pipeline.grading == ColorGradingPreset::levels_gamma_v1 ||
+        pipeline.grading == ColorGradingPreset::hue_rotate_v1;
     if (pipeline.signal == ColorSignal::escape_magnitude &&
         pipeline.palette == ColorPalette::cyclic_escape &&
         isEscapeLikeGrading) {
@@ -1129,6 +1137,18 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline
     }
     if (pipeline.signal == ColorSignal::root_log_proximity_v1 &&
         pipeline.palette == ColorPalette::cyclic_escape &&
+        isEscapeLikeGrading) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_log_proximity_v1 &&
+        pipeline.palette == ColorPalette::diverging_signed_palette_v1 &&
+        isEscapeLikeGrading) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::smooth_escape &&
+        pipeline.palette == ColorPalette::gradient_three_stop_v1 &&
         isEscapeLikeGrading) {
         if (outMode) *outMode = ColoringMode::smooth_escape;
         return true;
@@ -1165,6 +1185,18 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline
         pipeline.signal == ColorSignal::lens_field_v2_distance;
     if (isSdfHeatmapSignal &&
         (pipeline.palette == ColorPalette::cyclic_escape || pipeline.palette == ColorPalette::explaino_cmap) &&
+        isEscapeLikeGrading) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::sdf_curvature &&
+        pipeline.palette == ColorPalette::diverging_signed_palette_v1 &&
+        isEscapeLikeGrading) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::sdf_inside_outside &&
+        pipeline.palette == ColorPalette::inside_outside_two_tone_v1 &&
         isEscapeLikeGrading) {
         if (outMode) *outMode = ColoringMode::smooth_escape;
         return true;

@@ -696,6 +696,29 @@ port(function="identity", direction="output", id="signal", type="generic.any", g
     assert "generic_group 'any' is forbidden" in proc.stderr
 
 
+def test_materializer_accepts_phase_preserving_shape_ports(tmp_path):
+    text = VALID_UI_SALT + """
+lane(id="shape", label="Shape", default="phase_offset")
+function(lane="shape", id="phase_offset", label="Phase Offset", taxonomy_group="phase", runtime_backed=True)
+port(function="phase_offset", direction="input", id="signal", type="phase.radians")
+port(function="phase_offset", direction="output", id="signal", type="phase.radians", canonical=True)
+"""
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_materializer_rejects_shape_crossing_scalar_phase_topology(tmp_path):
+    text = VALID_UI_SALT + """
+lane(id="shape", label="Shape", default="bad_shape")
+function(lane="shape", id="bad_shape", label="Bad Shape", taxonomy_group="phase", runtime_backed=True)
+port(function="bad_shape", direction="input", id="signal", type="phase.radians")
+port(function="bad_shape", direction="output", id="signal", type="scalar.unit", canonical=True)
+"""
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "must preserve one declared scalar or phase topology" in proc.stderr
+
+
 def test_materializer_rejects_identity_extra_ports(tmp_path):
     text = VALID_UI_SALT + """
 lane(id="shape", label="Shape", default="identity")
@@ -882,9 +905,9 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "grading",
     ]
     assert len(lanes["source"]["functions"]) == 15
-    assert len(lanes["shape"]["functions"]) == 10
-    assert len(lanes["palette"]["functions"]) == 6
-    assert len(lanes["grading"]["functions"]) == 8
+    assert len(lanes["shape"]["functions"]) == 15
+    assert len(lanes["palette"]["functions"]) == 9
+    assert len(lanes["grading"]["functions"]) == 10
     signal_kinds = {fn["id"]: fn.get("signal_kind") for fn in lanes["source"]["functions"]}
     assert signal_kinds["root_phase"] == "phase"
     assert signal_kinds["sdf_normal_angle"] == "phase"
@@ -967,11 +990,11 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert all(item["sample_step_param"] == "signal.sdf_sample_step" for item in sdf_capabilities)
     assert all(item["field_downsample_param"] == "signal.sdf_field_downsample" for item in sdf_capabilities)
     assert all(item["supported_applicators"] == ["none", "sdf_boundary_band", "sdf_inside", "sdf_outside"] for item in sdf_capabilities)
-    assert len(actual["composition_recipe_contract"]["compatibility"]) == 24
+    assert len(actual["composition_recipe_contract"]["compatibility"]) == 28
     compat_overrides = actual["composition_recipe_contract"]["compat_overrides"]
     compatibility_audit = actual["composition_recipe_contract"]["compatibility_audit"]
     assert len(compat_overrides) == 7
-    assert len(compatibility_audit) == 24
+    assert len(compatibility_audit) == 28
     audit_by_key = {
         (row["source"], row["palette"], row["grading"]): row
         for row in compatibility_audit
@@ -1018,6 +1041,12 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "lens_field_v2_heatmap",
         "lens_field_v2_explaino_cmap",
         "sdf_signed_distance_normalized_heatmap",
+        "root_log_proximity_diverging",
+        "sdf_curvature_diverging",
+        "sdf_inside_outside_two_tone",
+        "phase_orbit_repeat",
+        "smooth_escape_invert_gradient_levels",
+        "smooth_escape_gradient",
         "root_repeat_heatmap_bad",
         "phase_root_palette_bad",
         "sdf_signed_distance_phase_palette_bad",
@@ -1399,7 +1428,7 @@ def test_current_function_library_has_complete_canonical_typed_ports(tmp_path):
         for lane in payload["function_library"]["lanes"]
         for function in lane["functions"]
     }
-    assert len(functions) == 39
+    assert len(functions) == 49
     assert not [
         f"{lane_id}.{function_id}"
         for (lane_id, function_id), function in functions.items()
@@ -1416,7 +1445,7 @@ def test_current_function_library_has_complete_canonical_typed_ports(tmp_path):
         )
 
     audit = payload["composition_recipe_contract"]["compatibility_audit"]
-    assert sum(row["classification"] == "typed_resolved" for row in audit) == 17
+    assert sum(row["classification"] == "typed_resolved" for row in audit) == 21
     assert sum(row["classification"] == "runtime_legacy_override" for row in audit) == 7
     assert {
         row["override_id"]
@@ -1452,7 +1481,7 @@ def test_current_compatibility_audit_classifies_all_exact_routes(tmp_path):
         for row in audit
         if row["classification"] == "typed_resolved"
     }
-    assert len(typed_routes) == 17
+    assert len(typed_routes) == 21
     assert {
         ("smooth_escape_ramp", "explaino_cmap", "contrast_lift"),
         ("banded_signal", "banded_heatmap", "band_finish"),
@@ -1481,3 +1510,57 @@ def test_current_compatibility_audit_classifies_all_exact_routes(tmp_path):
         "legacy_sdf_curvature_heatmap_contrast_lift",
         "legacy_sdf_curvature_explaino_cmap_contrast_lift",
     }
+
+def test_low_risk_function_batch_has_locked_typed_inventory(tmp_path):
+    out = tmp_path / "materialized.json"
+    proc = subprocess.run(
+        [sys.executable, str(TOOL), "--ui-salt", str(COLOR_PIPELINE_UI_SALT), "--out", str(out)],
+        cwd=str(REPO_ROOT), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    functions = {
+        (lane["id"], function["id"]): function
+        for lane in payload["function_library"]["lanes"]
+        for function in lane["functions"]
+    }
+    expected = {
+        ("shape", "invert_unit_v1"): ("scalar.unit", "scalar.unit", []),
+        ("shape", "fold_centered_v1"): ("scalar.unit", "scalar.unit", ["shape.center", "shape.width", "shape.mix"]),
+        ("shape", "phase_offset_v1"): ("phase.turns", "phase.turns", ["shape.offset_turns"]),
+        ("shape", "phase_repeat_v1"): ("phase.turns", "phase.turns", ["shape.cycles"]),
+        ("shape", "phase_mirror_v1"): ("phase.turns", "phase.turns", ["shape.cycles", "shape.mix"]),
+        ("palette", "diverging_signed_palette_v1"): ("scalar.signed", "color.linear_rgb", [
+            "palette.negative_r", "palette.negative_g", "palette.negative_b",
+            "palette.neutral_r", "palette.neutral_g", "palette.neutral_b",
+            "palette.positive_r", "palette.positive_g", "palette.positive_b",
+            "palette.balance", "palette.contrast", "palette.blend_weight", "palette.blend_mode"]),
+        ("palette", "inside_outside_two_tone_v1"): ("category.inside_outside", "color.linear_rgb", [
+            "palette.outside_r", "palette.outside_g", "palette.outside_b",
+            "palette.inside_r", "palette.inside_g", "palette.inside_b",
+            "palette.blend_weight", "palette.blend_mode"]),
+        ("palette", "gradient_three_stop_v1"): ("scalar.unit", "color.linear_rgb", [
+            "palette.low_r", "palette.low_g", "palette.low_b",
+            "palette.mid_r", "palette.mid_g", "palette.mid_b",
+            "palette.high_r", "palette.high_g", "palette.high_b",
+            "palette.midpoint", "palette.blend_weight", "palette.blend_mode"]),
+        ("grading", "levels_gamma_v1"): ("color.linear_rgb", "color.linear_rgb", ["grade.black_point", "grade.white_point", "grade.gamma"]),
+        ("grading", "hue_rotate_v1"): ("color.linear_rgb", "color.linear_rgb", ["grade.hue_turns"]),
+    }
+    assert len(functions) == 49
+    for key, (input_type, output_type, parameter_ids) in expected.items():
+        function = functions[key]
+        assert [param["descriptor_parameter_id"] for param in function["params"]] == parameter_ids
+        assert function["ports"] == [
+            {"direction": "input", "id": "color" if key[0] == "grading" else "signal", "type": input_type},
+            {"direction": "output", "id": "signal" if key[0] == "shape" else "color", "type": output_type, "canonical": True},
+        ]
+    routes = {
+        (row["source"], row["shape"], row["palette"], row["grading"], row["status"])
+        for row in payload["color_pipeline_resolution_audit"]["cases"]
+    }
+    assert ("root_log_proximity_v1", "identity", "diverging_signed_palette_v1", "contrast_lift", "resolved") in routes
+    assert ("sdf_curvature", "identity", "diverging_signed_palette_v1", "contrast_lift", "resolved") in routes
+    assert ("sdf_inside_outside", "identity", "inside_outside_two_tone_v1", "contrast_lift", "resolved") in routes
+    assert ("phase_orbit", "phase_repeat_v1", "phase_wheel_palette", "phase_finish", "resolved") in routes
+    assert ("smooth_escape_ramp", "invert_unit_v1", "gradient_three_stop_v1", "levels_gamma_v1", "resolved") in routes

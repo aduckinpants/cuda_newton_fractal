@@ -80,6 +80,9 @@ enum class ColorPalette : int {
     phase_wheel = 3,
     banded_escape = 4,
     explaino_cmap = 5,
+    diverging_signed_palette_v1 = 6,
+    inside_outside_two_tone_v1 = 7,
+    gradient_three_stop_v1 = 8,
 };
 
 enum class ColorGradingPreset : int {
@@ -91,6 +94,8 @@ enum class ColorGradingPreset : int {
     tone_map_default = 5,
     glow_default = 6,
     balance_void_default = 7,
+    levels_gamma_v1 = 8,
+    hue_rotate_v1 = 9,
 };
 
 enum class ColorPipelineShape : int {
@@ -104,6 +109,11 @@ enum class ColorPipelineShape : int {
     log_compress = 7,
     smoothstep_range = 8,
     signed_unit_map_v1 = 9,
+    invert_unit_v1 = 10,
+    fold_centered_v1 = 11,
+    phase_offset_v1 = 12,
+    phase_repeat_v1 = 13,
+    phase_mirror_v1 = 14,
 };
 
 constexpr int kColorPipelineMaxSourceStackCount = 8;
@@ -164,6 +174,12 @@ struct ColorPipelineShapeRuntimeParams {
     float window_center{0.5f};
     float window_width{1.0f};
     float window_softness{0.0f};
+    float fold_center{0.5f};
+    float fold_width{0.5f};
+    float fold_mix{1.0f};
+    float phase_offset_turns{0.0f};
+    float phase_cycles{1.0f};
+    float phase_mirror_mix{1.0f};
 };
 
 struct ColorPipelineShapeStackEntry {
@@ -183,6 +199,33 @@ struct ColorPipelinePaletteRuntimeParams {
     float seed_scale{1.0f};
     float seed_phase{0.0f};
     float colorfulness{1.0f};
+    float negative_r{0.08f};
+    float negative_g{0.22f};
+    float negative_b{0.75f};
+    float neutral_r{0.92f};
+    float neutral_g{0.92f};
+    float neutral_b{0.90f};
+    float positive_r{0.85f};
+    float positive_g{0.18f};
+    float positive_b{0.10f};
+    float balance{0.0f};
+    float signed_contrast{1.0f};
+    float outside_r{0.03f};
+    float outside_g{0.08f};
+    float outside_b{0.18f};
+    float inside_r{0.95f};
+    float inside_g{0.75f};
+    float inside_b{0.18f};
+    float low_r{0.02f};
+    float low_g{0.08f};
+    float low_b{0.22f};
+    float mid_r{0.08f};
+    float mid_g{0.72f};
+    float mid_b{0.78f};
+    float high_r{0.95f};
+    float high_g{0.64f};
+    float high_b{0.08f};
+    float midpoint{0.5f};
     float blend_weight{1.0f};
     ColorPaletteBlendMode blend_mode{ColorPaletteBlendMode::normal};
 };
@@ -200,6 +243,10 @@ struct ColorPipelineGradingRuntimeParams {
     float balance_void{0.0f};
     float chroma_tension{0.0f};
     float accent_bias{0.0f};
+    float black_point{0.0f};
+    float white_point{1.0f};
+    float gamma{1.0f};
+    float hue_turns{0.0f};
 };
 
 struct ColorPipelineGradingStackEntry {

@@ -221,7 +221,7 @@ inline const char* ColorPipelineWindowFixedPresetHelpText() {
 }
 
 inline const char* ColorPipelineUnsupportedShapeRowsMessage() {
-    return "Current runtime application only supports the shipped Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows in bounded ordered Shape stacks; unshipped custom Shape recipes stay unsupported until custom runtime integration lands.";
+    return "Current runtime application only supports shipped typed Shape rows in bounded ordered Shape stacks; unshipped custom Shape recipes stay unsupported until custom runtime integration lands.";
 }
 
 inline const char* ColorPipelineShapeRowBridgeHelpText() {
@@ -1856,6 +1856,24 @@ inline bool ImportSupportedColorPipelineParamsFromShapeStackEntry(
             SetColorPipelineParamNumber(ioRow, "shape.width", shapeEntry.params.window_width, outError) &&
             SetColorPipelineParamNumber(ioRow, "shape.softness", shapeEntry.params.window_softness, outError);
     }
+    if (ioRow->function_id == "invert_unit_v1") {
+        return true;
+    }
+    if (ioRow->function_id == "fold_centered_v1") {
+        return SetColorPipelineParamNumber(ioRow, "shape.center", shapeEntry.params.fold_center, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.width", shapeEntry.params.fold_width, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.mix", shapeEntry.params.fold_mix, outError);
+    }
+    if (ioRow->function_id == "phase_offset_v1") {
+        return SetColorPipelineParamNumber(ioRow, "shape.offset_turns", shapeEntry.params.phase_offset_turns, outError);
+    }
+    if (ioRow->function_id == "phase_repeat_v1") {
+        return SetColorPipelineParamNumber(ioRow, "shape.cycles", shapeEntry.params.phase_cycles, outError);
+    }
+    if (ioRow->function_id == "phase_mirror_v1") {
+        return SetColorPipelineParamNumber(ioRow, "shape.cycles", shapeEntry.params.phase_cycles, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.mix", shapeEntry.params.phase_mirror_mix, outError);
+    }
     return true;
 }
 
@@ -1985,7 +2003,12 @@ inline bool IsSupportedColorPipelineShapeFunctionId(const std::string& functionI
         functionId == "smooth_window" ||
         functionId == "log_compress" ||
         functionId == "smoothstep_range" ||
-        functionId == "signed_unit_map_v1";
+        functionId == "signed_unit_map_v1" ||
+        functionId == "invert_unit_v1" ||
+        functionId == "fold_centered_v1" ||
+        functionId == "phase_offset_v1" ||
+        functionId == "phase_repeat_v1" ||
+        functionId == "phase_mirror_v1";
 }
 
 inline bool IsSupportedColorPipelineSourceStackFunctionId(const std::string& functionId) {
@@ -2058,7 +2081,13 @@ inline bool ColorPipelineShapeRuntimeParamsEqual(
         left.gain == right.gain &&
         left.window_center == right.window_center &&
         left.window_width == right.window_width &&
-        left.window_softness == right.window_softness;
+        left.window_softness == right.window_softness &&
+        left.fold_center == right.fold_center &&
+        left.fold_width == right.fold_width &&
+        left.fold_mix == right.fold_mix &&
+        left.phase_offset_turns == right.phase_offset_turns &&
+        left.phase_cycles == right.phase_cycles &&
+        left.phase_mirror_mix == right.phase_mirror_mix;
 }
 
 inline bool ColorPipelineShapeStackEntriesEqual(
@@ -2076,7 +2105,9 @@ inline bool IsSupportedColorPipelineGradingFunctionId(const std::string& functio
         functionId == "neutral_finish" ||
         functionId == "tone_map_finish" ||
         functionId == "grade_glow" ||
-        functionId == "balance_void_grade";
+        functionId == "balance_void_grade" ||
+        functionId == "levels_gamma_v1" ||
+        functionId == "hue_rotate_v1";
 }
 
 inline bool ColorPipelineGradingRuntimeParamsEqual(
@@ -2088,7 +2119,11 @@ inline bool ColorPipelineGradingRuntimeParamsEqual(
         left.glow == right.glow &&
         left.balance_void == right.balance_void &&
         left.chroma_tension == right.chroma_tension &&
-        left.accent_bias == right.accent_bias;
+        left.accent_bias == right.accent_bias &&
+        left.black_point == right.black_point &&
+        left.white_point == right.white_point &&
+        left.gamma == right.gamma &&
+        left.hue_turns == right.hue_turns;
 }
 
 inline bool ColorPipelineGradingStackEntriesEqual(
@@ -2103,7 +2138,10 @@ inline bool IsSupportedColorPipelinePaletteStackFunctionId(const std::string& fu
     return functionId == "heatmap" ||
         functionId == "phase_wheel_palette" ||
         functionId == "banded_heatmap" ||
-        functionId == "explaino_cmap";
+        functionId == "explaino_cmap" ||
+        functionId == "diverging_signed_palette_v1" ||
+        functionId == "inside_outside_two_tone_v1" ||
+        functionId == "gradient_three_stop_v1";
 }
 
 inline bool ColorPipelinePaletteRuntimeParamsEqual(
@@ -2116,6 +2154,16 @@ inline bool ColorPipelinePaletteRuntimeParamsEqual(
         left.seed_scale == right.seed_scale &&
         left.seed_phase == right.seed_phase &&
         left.colorfulness == right.colorfulness &&
+        left.negative_r == right.negative_r && left.negative_g == right.negative_g && left.negative_b == right.negative_b &&
+        left.neutral_r == right.neutral_r && left.neutral_g == right.neutral_g && left.neutral_b == right.neutral_b &&
+        left.positive_r == right.positive_r && left.positive_g == right.positive_g && left.positive_b == right.positive_b &&
+        left.balance == right.balance && left.signed_contrast == right.signed_contrast &&
+        left.outside_r == right.outside_r && left.outside_g == right.outside_g && left.outside_b == right.outside_b &&
+        left.inside_r == right.inside_r && left.inside_g == right.inside_g && left.inside_b == right.inside_b &&
+        left.low_r == right.low_r && left.low_g == right.low_g && left.low_b == right.low_b &&
+        left.mid_r == right.mid_r && left.mid_g == right.mid_g && left.mid_b == right.mid_b &&
+        left.high_r == right.high_r && left.high_g == right.high_g && left.high_b == right.high_b &&
+        left.midpoint == right.midpoint &&
         left.blend_weight == right.blend_weight &&
         left.blend_mode == right.blend_mode;
 }
@@ -2446,6 +2494,51 @@ inline bool TryBuildColorPipelinePaletteStackEntryFromRow(
         entry.params.seed_scale = static_cast<float>(seedScale);
         entry.params.seed_phase = static_cast<float>(seedPhase);
         entry.params.colorfulness = static_cast<float>(colorfulness);
+    } else if (row.function_id == "diverging_signed_palette_v1") {
+        double nr=0, ng=0, nb=0, zr=0, zg=0, zb=0, pr=0, pg=0, pb=0, balance=0, contrast=0;
+        if (!TryGetColorPipelineParamNumber(row, "palette.negative_r", &nr, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.negative_g", &ng, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.negative_b", &nb, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.neutral_r", &zr, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.neutral_g", &zg, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.neutral_b", &zb, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.positive_r", &pr, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.positive_g", &pg, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.positive_b", &pb, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.balance", &balance, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.contrast", &contrast, outError) ||
+            !ValidateColorPipelineParamRange("palette.balance", balance, -1.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("palette.contrast", contrast, 0.25, 4.0, outError)) return false;
+        const double colors[] = {nr,ng,nb,zr,zg,zb,pr,pg,pb};
+        for (double value : colors) if (!ValidateColorPipelineParamRange("palette.color", value, 0.0, 1.0, outError)) return false;
+        entry.params.negative_r=static_cast<float>(nr); entry.params.negative_g=static_cast<float>(ng); entry.params.negative_b=static_cast<float>(nb);
+        entry.params.neutral_r=static_cast<float>(zr); entry.params.neutral_g=static_cast<float>(zg); entry.params.neutral_b=static_cast<float>(zb);
+        entry.params.positive_r=static_cast<float>(pr); entry.params.positive_g=static_cast<float>(pg); entry.params.positive_b=static_cast<float>(pb);
+        entry.params.balance=static_cast<float>(balance); entry.params.signed_contrast=static_cast<float>(contrast);
+    } else if (row.function_id == "inside_outside_two_tone_v1") {
+        double or_=0, og=0, ob=0, ir=0, ig=0, ib=0;
+        if (!TryGetColorPipelineParamNumber(row, "palette.outside_r", &or_, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.outside_g", &og, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.outside_b", &ob, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.inside_r", &ir, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.inside_g", &ig, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.inside_b", &ib, outError)) return false;
+        const double colors[] = {or_,og,ob,ir,ig,ib};
+        for (double value : colors) if (!ValidateColorPipelineParamRange("palette.color", value, 0.0, 1.0, outError)) return false;
+        entry.params.outside_r=static_cast<float>(or_); entry.params.outside_g=static_cast<float>(og); entry.params.outside_b=static_cast<float>(ob);
+        entry.params.inside_r=static_cast<float>(ir); entry.params.inside_g=static_cast<float>(ig); entry.params.inside_b=static_cast<float>(ib);
+    } else if (row.function_id == "gradient_three_stop_v1") {
+        double lr=0,lg=0,lb=0,mr=0,mg=0,mb=0,hr=0,hg=0,hb=0,midpoint=0;
+        if (!TryGetColorPipelineParamNumber(row, "palette.low_r", &lr, outError) || !TryGetColorPipelineParamNumber(row, "palette.low_g", &lg, outError) || !TryGetColorPipelineParamNumber(row, "palette.low_b", &lb, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.mid_r", &mr, outError) || !TryGetColorPipelineParamNumber(row, "palette.mid_g", &mg, outError) || !TryGetColorPipelineParamNumber(row, "palette.mid_b", &mb, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.high_r", &hr, outError) || !TryGetColorPipelineParamNumber(row, "palette.high_g", &hg, outError) || !TryGetColorPipelineParamNumber(row, "palette.high_b", &hb, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.midpoint", &midpoint, outError) || !ValidateColorPipelineParamRange("palette.midpoint", midpoint, 0.05, 0.95, outError)) return false;
+        const double colors[] = {lr,lg,lb,mr,mg,mb,hr,hg,hb};
+        for (double value : colors) if (!ValidateColorPipelineParamRange("palette.color", value, 0.0, 1.0, outError)) return false;
+        entry.params.low_r=static_cast<float>(lr); entry.params.low_g=static_cast<float>(lg); entry.params.low_b=static_cast<float>(lb);
+        entry.params.mid_r=static_cast<float>(mr); entry.params.mid_g=static_cast<float>(mg); entry.params.mid_b=static_cast<float>(mb);
+        entry.params.high_r=static_cast<float>(hr); entry.params.high_g=static_cast<float>(hg); entry.params.high_b=static_cast<float>(hb);
+        entry.params.midpoint=static_cast<float>(midpoint);
     }
 
     *outEntry = entry;
@@ -2487,6 +2580,22 @@ inline bool ImportSupportedColorPipelineParamsFromPaletteStackEntry(
         return SetColorPipelineParamNumber(ioRow, "palette.seed_scale", paletteEntry.params.seed_scale, outError) &&
             SetColorPipelineParamNumber(ioRow, "palette.seed_phase", paletteEntry.params.seed_phase, outError) &&
             SetColorPipelineParamNumber(ioRow, "palette.colorfulness", paletteEntry.params.colorfulness, outError);
+    }
+    if (ioRow->function_id == "diverging_signed_palette_v1") {
+        return SetColorPipelineParamNumber(ioRow, "palette.negative_r", paletteEntry.params.negative_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.negative_g", paletteEntry.params.negative_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.negative_b", paletteEntry.params.negative_b, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.neutral_r", paletteEntry.params.neutral_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.neutral_g", paletteEntry.params.neutral_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.neutral_b", paletteEntry.params.neutral_b, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.positive_r", paletteEntry.params.positive_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.positive_g", paletteEntry.params.positive_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.positive_b", paletteEntry.params.positive_b, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.balance", paletteEntry.params.balance, outError) && SetColorPipelineParamNumber(ioRow, "palette.contrast", paletteEntry.params.signed_contrast, outError);
+    }
+    if (ioRow->function_id == "inside_outside_two_tone_v1") {
+        return SetColorPipelineParamNumber(ioRow, "palette.outside_r", paletteEntry.params.outside_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.outside_g", paletteEntry.params.outside_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.outside_b", paletteEntry.params.outside_b, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.inside_r", paletteEntry.params.inside_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.inside_g", paletteEntry.params.inside_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.inside_b", paletteEntry.params.inside_b, outError);
+    }
+    if (ioRow->function_id == "gradient_three_stop_v1") {
+        return SetColorPipelineParamNumber(ioRow, "palette.low_r", paletteEntry.params.low_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.low_g", paletteEntry.params.low_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.low_b", paletteEntry.params.low_b, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.mid_r", paletteEntry.params.mid_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.mid_g", paletteEntry.params.mid_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.mid_b", paletteEntry.params.mid_b, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.high_r", paletteEntry.params.high_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.high_g", paletteEntry.params.high_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.high_b", paletteEntry.params.high_b, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.midpoint", paletteEntry.params.midpoint, outError);
     }
     return true;
 }
@@ -3010,6 +3119,21 @@ inline bool TryBuildColorPipelineGradingStackEntryFromRow(
         entry.params.balance_void = static_cast<float>(balanceVoid);
         entry.params.chroma_tension = static_cast<float>(chromaTension);
         entry.params.accent_bias = static_cast<float>(accentBias);
+    } else if (row.function_id == "levels_gamma_v1") {
+        double blackPoint=0, whitePoint=0, gamma=0;
+        if (!TryGetColorPipelineParamNumber(row, "grade.black_point", &blackPoint, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.white_point", &whitePoint, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.gamma", &gamma, outError) ||
+            !ValidateColorPipelineParamRange("grade.black_point", blackPoint, 0.0, 0.95, outError) ||
+            !ValidateColorPipelineParamRange("grade.white_point", whitePoint, 0.05, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.gamma", gamma, 0.1, 4.0, outError)) return false;
+        if (whitePoint <= blackPoint) { if (outError) *outError = "Levels + Gamma requires White Point greater than Black Point"; return false; }
+        entry.params.black_point=static_cast<float>(blackPoint); entry.params.white_point=static_cast<float>(whitePoint); entry.params.gamma=static_cast<float>(gamma);
+    } else if (row.function_id == "hue_rotate_v1") {
+        double hueTurns=0;
+        if (!TryGetColorPipelineParamNumber(row, "grade.hue_turns", &hueTurns, outError) ||
+            !ValidateColorPipelineParamRange("grade.hue_turns", hueTurns, -1.0, 1.0, outError)) return false;
+        entry.params.hue_turns=static_cast<float>(hueTurns);
     }
 
     *outEntry = entry;
@@ -3133,6 +3257,22 @@ inline bool TryBuildColorPipelineShapeStackEntryFromRow(
         entry.params.window_center = static_cast<float>(center);
         entry.params.window_width = static_cast<float>(width);
         entry.params.window_softness = static_cast<float>(softness);
+    } else if (row.function_id == "invert_unit_v1") {
+        // Parameter-free unit inversion.
+    } else if (row.function_id == "fold_centered_v1") {
+        double center=0,width=0,mix=0;
+        if (!TryGetColorPipelineParamNumber(row,"shape.center",&center,outError) || !TryGetColorPipelineParamNumber(row,"shape.width",&width,outError) || !TryGetColorPipelineParamNumber(row,"shape.mix",&mix,outError) ||
+            !ValidateColorPipelineParamRange("shape.center",center,0.0,1.0,outError) || !ValidateColorPipelineParamRange("shape.width",width,0.01,1.0,outError) || !ValidateColorPipelineParamRange("shape.mix",mix,0.0,1.0,outError)) return false;
+        entry.params.fold_center=static_cast<float>(center); entry.params.fold_width=static_cast<float>(width); entry.params.fold_mix=static_cast<float>(mix);
+    } else if (row.function_id == "phase_offset_v1") {
+        double offset=0; if (!TryGetColorPipelineParamNumber(row,"shape.offset_turns",&offset,outError) || !ValidateColorPipelineParamRange("shape.offset_turns",offset,-1.0,1.0,outError)) return false;
+        entry.params.phase_offset_turns=static_cast<float>(offset);
+    } else if (row.function_id == "phase_repeat_v1") {
+        double cycles=0; if (!TryGetColorPipelineParamNumber(row,"shape.cycles",&cycles,outError) || !ValidateColorPipelineParamRange("shape.cycles",cycles,0.25,16.0,outError)) return false;
+        entry.params.phase_cycles=static_cast<float>(cycles);
+    } else if (row.function_id == "phase_mirror_v1") {
+        double cycles=0,mix=0; if (!TryGetColorPipelineParamNumber(row,"shape.cycles",&cycles,outError) || !TryGetColorPipelineParamNumber(row,"shape.mix",&mix,outError) || !ValidateColorPipelineParamRange("shape.cycles",cycles,0.25,16.0,outError) || !ValidateColorPipelineParamRange("shape.mix",mix,0.0,1.0,outError)) return false;
+        entry.params.phase_cycles=static_cast<float>(cycles); entry.params.phase_mirror_mix=static_cast<float>(mix);
     }
 
     *outEntry = entry;
@@ -3175,6 +3315,12 @@ inline bool ImportSupportedColorPipelineParamsFromGradingStackEntry(
         return SetColorPipelineParamNumber(ioRow, "grade.balance_void", color_pipeline_core::PreserveImportedColorPipelineFloat(gradingEntry.params.balance_void), outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.chroma_tension", color_pipeline_core::PreserveImportedColorPipelineFloat(gradingEntry.params.chroma_tension), outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.accent_bias", color_pipeline_core::PreserveImportedColorPipelineFloat(gradingEntry.params.accent_bias), outError);
+    }
+    if (ioRow->function_id == "levels_gamma_v1") {
+        return SetColorPipelineParamNumber(ioRow,"grade.black_point",gradingEntry.params.black_point,outError) && SetColorPipelineParamNumber(ioRow,"grade.white_point",gradingEntry.params.white_point,outError) && SetColorPipelineParamNumber(ioRow,"grade.gamma",gradingEntry.params.gamma,outError);
+    }
+    if (ioRow->function_id == "hue_rotate_v1") {
+        return SetColorPipelineParamNumber(ioRow,"grade.hue_turns",gradingEntry.params.hue_turns,outError);
     }
     return true;
 }

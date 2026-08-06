@@ -1600,6 +1600,60 @@ void TestRecipeCapabilitySnapshotSharedAuthority() {
         "TestRecipeCapabilitySnapshotSharedAuthority_StaleResolveFailsClosed");
 }
 
+void TestLowRiskFunctionBatchApplyAndValidation() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestLowRiskFunctionBatchApplyAndValidation_SyncsBaseline");
+    Check(SelectColorPipelineLaneFunction(&state, 1, "invert_unit_v1") &&
+            SelectColorPipelineLaneFunction(&state, 2, "gradient_three_stop_v1") &&
+            SelectColorPipelineLaneFunction(&state, 3, "levels_gamma_v1") &&
+            SetRowNumber(state.lanes[2].rows[0], "palette.midpoint", 0.35) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.black_point", 0.10) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.white_point", 0.90) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.gamma", 1.40),
+        "TestLowRiskFunctionBatchApplyAndValidation_ConfiguresPublicRows");
+
+    const ColorPipelineDraftApplyState configured =
+        DescribeColorPipelineDraftApplyState(state, FractalType::newton, &params);
+    if (configured.status != ColorPipelineDraftApplyStatus::can_apply &&
+        configured.status != ColorPipelineDraftApplyStatus::matches_live) {
+        std::printf("Low-risk function batch apply-state rejection: %s\n", configured.message.c_str());
+    }
+    Check(configured.status == ColorPipelineDraftApplyStatus::can_apply,
+        "TestLowRiskFunctionBatchApplyAndValidation_PublicRowsCanApply");
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestLowRiskFunctionBatchApplyAndValidation_AppliesPublicRows");
+    Check(params.color_shape_stack_count == 1 &&
+            params.color_shape_stack[0].shape == ColorPipelineShape::invert_unit_v1 &&
+            params.color_palette_stack_count == 1 &&
+            params.color_palette_stack[0].palette == ColorPalette::gradient_three_stop_v1 &&
+            Near(params.color_palette_stack[0].params.midpoint, 0.35) &&
+            params.color_grading_stack_count == 1 &&
+            params.color_grading_stack[0].grading == ColorGradingPreset::levels_gamma_v1 &&
+            Near(params.color_grading_stack[0].params.black_point, 0.10) &&
+            Near(params.color_grading_stack[0].params.white_point, 0.90) &&
+            Near(params.color_grading_stack[0].params.gamma, 1.40),
+        "TestLowRiskFunctionBatchApplyAndValidation_WritesRuntimeOwners");
+    Check(state.live_snapshot.valid,
+        "TestLowRiskFunctionBatchApplyAndValidation_LiveSnapshotValidAfterApply");
+    Check(!HasColorPipelineDraftEdits(state),
+        "TestLowRiskFunctionBatchApplyAndValidation_ResyncsDraft");
+
+    Check(SetRowNumber(state.lanes[3].rows[0], "grade.black_point", 0.90) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.white_point", 0.10),
+        "TestLowRiskFunctionBatchApplyAndValidation_ConfiguresInvalidLevelsOrder");
+    const ColorPipelineDraftApplyState invalid =
+        DescribeColorPipelineDraftApplyState(state, FractalType::newton, &params);
+    Check(invalid.status == ColorPipelineDraftApplyStatus::invalid_params &&
+            invalid.message.find("White Point greater than Black Point") != std::string::npos,
+        "TestLowRiskFunctionBatchApplyAndValidation_InvalidLevelsFailsClosed");
+    changed = false;
+    Check(!ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && !changed,
+        "TestLowRiskFunctionBatchApplyAndValidation_InvalidLevelsDoesNotMutateLive");
+}
+
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -1671,6 +1725,7 @@ int main() {
     TestCuratedRootGlowLiveReceiptRoundTrip();
     TestFloatIdentityPreservesAdjacentBinary32Edits();
     TestFloatAuthoringUsesBinary32RoundTripText();
+    TestLowRiskFunctionBatchApplyAndValidation();
     TestWindowUtilityContracts();
 
     std::printf("test_color_pipeline_window: passed=%d failed=%d\n", g_passed, g_failed);

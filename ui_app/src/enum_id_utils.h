@@ -132,6 +132,9 @@ inline constexpr EnumIdPair<ColorPalette> kColorPaletteIds[] = {
     {ColorPalette::phase_wheel, "phase_wheel"},
     {ColorPalette::banded_escape, "banded_escape"},
     {ColorPalette::explaino_cmap, "explaino_cmap"},
+    {ColorPalette::diverging_signed_palette_v1, "diverging_signed_palette_v1"},
+    {ColorPalette::inside_outside_two_tone_v1, "inside_outside_two_tone_v1"},
+    {ColorPalette::gradient_three_stop_v1, "gradient_three_stop_v1"},
 };
 
 inline constexpr EnumIdPair<ColorGradingPreset> kColorGradingPresetIds[] = {
@@ -143,6 +146,8 @@ inline constexpr EnumIdPair<ColorGradingPreset> kColorGradingPresetIds[] = {
     {ColorGradingPreset::tone_map_default, "tone_map_default"},
     {ColorGradingPreset::glow_default, "glow_default"},
     {ColorGradingPreset::balance_void_default, "balance_void_default"},
+    {ColorGradingPreset::levels_gamma_v1, "levels_gamma_v1"},
+    {ColorGradingPreset::hue_rotate_v1, "hue_rotate_v1"},
 };
 
 inline constexpr EnumIdPair<ColorPipelineShape> kColorPipelineShapeIds[] = {
@@ -156,6 +161,11 @@ inline constexpr EnumIdPair<ColorPipelineShape> kColorPipelineShapeIds[] = {
     {ColorPipelineShape::log_compress, "log_compress"},
     {ColorPipelineShape::smoothstep_range, "smoothstep_range"},
     {ColorPipelineShape::signed_unit_map_v1, "signed_unit_map_v1"},
+    {ColorPipelineShape::invert_unit_v1, "invert_unit_v1"},
+    {ColorPipelineShape::fold_centered_v1, "fold_centered_v1"},
+    {ColorPipelineShape::phase_offset_v1, "phase_offset_v1"},
+    {ColorPipelineShape::phase_repeat_v1, "phase_repeat_v1"},
+    {ColorPipelineShape::phase_mirror_v1, "phase_mirror_v1"},
 };
 
 inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {

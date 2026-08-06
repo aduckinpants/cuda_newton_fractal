@@ -583,6 +583,19 @@ void TestFindingFractalStateSidecarSummarizesActiveValuesOnly() {
     params.color_source_stack[1].params.sdf_gate_width_px = 4.0f;
     params.color_source_stack[1].params.sdf_field_downsample = 4;
     params.color_source_stack[1].params.blend_weight = 0.35f;
+    params.color_shape_stack_count = 1;
+    params.color_shape_stack[0].shape = ColorPipelineShape::fold_centered_v1;
+    params.color_shape_stack[0].params.fold_center = 0.42f;
+    params.color_shape_stack[0].params.fold_width = 0.66f;
+    params.color_shape_stack[0].params.fold_mix = 0.73f;
+    params.color_palette_stack_count = 1;
+    params.color_palette_stack[0].palette = ColorPalette::gradient_three_stop_v1;
+    params.color_palette_stack[0].params.midpoint = 0.37f;
+    params.color_grading_stack_count = 1;
+    params.color_grading_stack[0].grading = ColorGradingPreset::levels_gamma_v1;
+    params.color_grading_stack[0].params.black_point = 0.12f;
+    params.color_grading_stack[0].params.white_point = 0.88f;
+    params.color_grading_stack[0].params.gamma = 1.35f;
 
     LensSettings lens{};
     lens.enabled = false;
@@ -609,6 +622,19 @@ void TestFindingFractalStateSidecarSummarizesActiveValuesOnly() {
     Check(json.find("\"lens\"") != std::string::npos &&
           json.find("\"sdf_field_source_width\": 320") != std::string::npos,
         "finding fractal-state sidecar records Lens/SDF field values when SDF rows affect output");
+    Check(json.find("\"shape\": \"fold_centered_v1\"") != std::string::npos &&
+          json.find("\"fold_center\":") != std::string::npos &&
+          json.find("\"fold_width\":") != std::string::npos &&
+          json.find("\"fold_mix\":") != std::string::npos,
+        "finding fractal-state sidecar records low-risk Shape runtime owners");
+    Check(json.find("\"palette\": \"gradient_three_stop_v1\"") != std::string::npos &&
+          json.find("\"midpoint\":") != std::string::npos,
+        "finding fractal-state sidecar records low-risk Palette runtime owners");
+    Check(json.find("\"grading\": \"levels_gamma_v1\"") != std::string::npos &&
+          json.find("\"black_point\":") != std::string::npos &&
+          json.find("\"white_point\":") != std::string::npos &&
+          json.find("\"gamma\":") != std::string::npos,
+        "finding fractal-state sidecar records low-risk Grading runtime owners");
     Check(json.find("\"magnet_seed_real\"") == std::string::npos &&
           json.find("\"explaino_seed\"") == std::string::npos,
         "finding fractal-state sidecar omits inactive Magnet and Explaino family knobs");

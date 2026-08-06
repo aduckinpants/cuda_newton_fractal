@@ -1013,6 +1013,16 @@ bool LoadColorShapeStackEntryNumbers(const json_min::Value& entryValue,
     }
     ApplyColorShapeStackEntryNumbers(
         outParams, offset, scale, repeatFrequency, repeatPhase, posterizeMix, bias, gain, windowCenter, windowWidth, windowSoftness);
+    double foldCenter=outParams->fold_center, foldWidth=outParams->fold_width, foldMix=outParams->fold_mix;
+    double phaseOffsetTurns=outParams->phase_offset_turns, phaseCycles=outParams->phase_cycles, phaseMirrorMix=outParams->phase_mirror_mix;
+    if (!GetOptionalNumber(entryValue, "fold_center", &foldCenter, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "fold_width", &foldWidth, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "fold_mix", &foldMix, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "phase_offset_turns", &phaseOffsetTurns, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "phase_cycles", &phaseCycles, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "phase_mirror_mix", &phaseMirrorMix, nullptr, outError)) return false;
+    outParams->fold_center=static_cast<float>(foldCenter); outParams->fold_width=static_cast<float>(foldWidth); outParams->fold_mix=static_cast<float>(foldMix);
+    outParams->phase_offset_turns=static_cast<float>(phaseOffsetTurns); outParams->phase_cycles=static_cast<float>(phaseCycles); outParams->phase_mirror_mix=static_cast<float>(phaseMirrorMix);
     return true;
 }
 
@@ -1183,6 +1193,16 @@ bool ParseColorPaletteStackEntry(const json_min::Value& entryValue,
     double seedScale = entry.params.seed_scale;
     double seedPhase = entry.params.seed_phase;
     double colorfulness = entry.params.colorfulness;
+    double negativeR=entry.params.negative_r, negativeG=entry.params.negative_g, negativeB=entry.params.negative_b;
+    double neutralR=entry.params.neutral_r, neutralG=entry.params.neutral_g, neutralB=entry.params.neutral_b;
+    double positiveR=entry.params.positive_r, positiveG=entry.params.positive_g, positiveB=entry.params.positive_b;
+    double balance=entry.params.balance, signedContrast=entry.params.signed_contrast;
+    double outsideR=entry.params.outside_r, outsideG=entry.params.outside_g, outsideB=entry.params.outside_b;
+    double insideR=entry.params.inside_r, insideG=entry.params.inside_g, insideB=entry.params.inside_b;
+    double lowR=entry.params.low_r, lowG=entry.params.low_g, lowB=entry.params.low_b;
+    double midR=entry.params.mid_r, midG=entry.params.mid_g, midB=entry.params.mid_b;
+    double highR=entry.params.high_r, highG=entry.params.high_g, highB=entry.params.high_b;
+    double midpoint=entry.params.midpoint;
     double blendWeight = entry.params.blend_weight;
     if (!GetOptionalNumber(entryValue, "cycle_scale", &cycleScale, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "saturation", &saturation, nullptr, outError) ||
@@ -1191,6 +1211,16 @@ bool ParseColorPaletteStackEntry(const json_min::Value& entryValue,
         !GetOptionalNumber(entryValue, "seed_scale", &seedScale, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "seed_phase", &seedPhase, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "colorfulness", &colorfulness, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "negative_r", &negativeR, nullptr, outError) || !GetOptionalNumber(entryValue, "negative_g", &negativeG, nullptr, outError) || !GetOptionalNumber(entryValue, "negative_b", &negativeB, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "neutral_r", &neutralR, nullptr, outError) || !GetOptionalNumber(entryValue, "neutral_g", &neutralG, nullptr, outError) || !GetOptionalNumber(entryValue, "neutral_b", &neutralB, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "positive_r", &positiveR, nullptr, outError) || !GetOptionalNumber(entryValue, "positive_g", &positiveG, nullptr, outError) || !GetOptionalNumber(entryValue, "positive_b", &positiveB, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "balance", &balance, nullptr, outError) || !GetOptionalNumber(entryValue, "signed_contrast", &signedContrast, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "outside_r", &outsideR, nullptr, outError) || !GetOptionalNumber(entryValue, "outside_g", &outsideG, nullptr, outError) || !GetOptionalNumber(entryValue, "outside_b", &outsideB, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "inside_r", &insideR, nullptr, outError) || !GetOptionalNumber(entryValue, "inside_g", &insideG, nullptr, outError) || !GetOptionalNumber(entryValue, "inside_b", &insideB, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "low_r", &lowR, nullptr, outError) || !GetOptionalNumber(entryValue, "low_g", &lowG, nullptr, outError) || !GetOptionalNumber(entryValue, "low_b", &lowB, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "mid_r", &midR, nullptr, outError) || !GetOptionalNumber(entryValue, "mid_g", &midG, nullptr, outError) || !GetOptionalNumber(entryValue, "mid_b", &midB, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "high_r", &highR, nullptr, outError) || !GetOptionalNumber(entryValue, "high_g", &highG, nullptr, outError) || !GetOptionalNumber(entryValue, "high_b", &highB, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "midpoint", &midpoint, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "blend_weight", &blendWeight, nullptr, outError)) {
         return false;
     }
@@ -1207,6 +1237,16 @@ bool ParseColorPaletteStackEntry(const json_min::Value& entryValue,
     entry.params.seed_scale = static_cast<float>(seedScale);
     entry.params.seed_phase = static_cast<float>(seedPhase);
     entry.params.colorfulness = static_cast<float>(colorfulness);
+    entry.params.negative_r=static_cast<float>(negativeR); entry.params.negative_g=static_cast<float>(negativeG); entry.params.negative_b=static_cast<float>(negativeB);
+    entry.params.neutral_r=static_cast<float>(neutralR); entry.params.neutral_g=static_cast<float>(neutralG); entry.params.neutral_b=static_cast<float>(neutralB);
+    entry.params.positive_r=static_cast<float>(positiveR); entry.params.positive_g=static_cast<float>(positiveG); entry.params.positive_b=static_cast<float>(positiveB);
+    entry.params.balance=static_cast<float>(balance); entry.params.signed_contrast=static_cast<float>(signedContrast);
+    entry.params.outside_r=static_cast<float>(outsideR); entry.params.outside_g=static_cast<float>(outsideG); entry.params.outside_b=static_cast<float>(outsideB);
+    entry.params.inside_r=static_cast<float>(insideR); entry.params.inside_g=static_cast<float>(insideG); entry.params.inside_b=static_cast<float>(insideB);
+    entry.params.low_r=static_cast<float>(lowR); entry.params.low_g=static_cast<float>(lowG); entry.params.low_b=static_cast<float>(lowB);
+    entry.params.mid_r=static_cast<float>(midR); entry.params.mid_g=static_cast<float>(midG); entry.params.mid_b=static_cast<float>(midB);
+    entry.params.high_r=static_cast<float>(highR); entry.params.high_g=static_cast<float>(highG); entry.params.high_b=static_cast<float>(highB);
+    entry.params.midpoint=static_cast<float>(midpoint);
     entry.params.blend_weight = static_cast<float>(blendWeight);
     *outEntry = entry;
     return true;
@@ -1280,13 +1320,18 @@ bool ParseColorGradingStackEntry(const json_min::Value& entryValue,
     double balanceVoid = entry.params.balance_void;
     double chromaTension = entry.params.chroma_tension;
     double accentBias = entry.params.accent_bias;
+    double blackPoint=entry.params.black_point, whitePoint=entry.params.white_point, gamma=entry.params.gamma, hueTurns=entry.params.hue_turns;
     if (!GetOptionalNumber(entryValue, "exposure", &exposure, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "saturation", &saturation, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "contrast", &contrast, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "glow", &glow, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "balance_void", &balanceVoid, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "chroma_tension", &chromaTension, nullptr, outError) ||
-        !GetOptionalNumber(entryValue, "accent_bias", &accentBias, nullptr, outError)) {
+        !GetOptionalNumber(entryValue, "accent_bias", &accentBias, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "black_point", &blackPoint, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "white_point", &whitePoint, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "gamma", &gamma, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "hue_turns", &hueTurns, nullptr, outError)) {
         return false;
     }
     entry.params.exposure = static_cast<float>(exposure);
@@ -1296,6 +1341,7 @@ bool ParseColorGradingStackEntry(const json_min::Value& entryValue,
     entry.params.balance_void = static_cast<float>(balanceVoid);
     entry.params.chroma_tension = static_cast<float>(chromaTension);
     entry.params.accent_bias = static_cast<float>(accentBias);
+    entry.params.black_point=static_cast<float>(blackPoint); entry.params.white_point=static_cast<float>(whitePoint); entry.params.gamma=static_cast<float>(gamma); entry.params.hue_turns=static_cast<float>(hueTurns);
     *outEntry = entry;
     return true;
 }

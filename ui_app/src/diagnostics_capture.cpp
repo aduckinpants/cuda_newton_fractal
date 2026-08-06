@@ -330,77 +330,120 @@ void WriteEffectiveColorSourceJson(std::ostringstream& js, const KernelParams& p
     js << "    },\n";
 }
 
+void WriteColorShapeStackJson(std::ostringstream& js, const KernelParams& params) {
+    const int count = (std::min)(params.color_shape_stack_count, kColorPipelineMaxShapeStackCount);
+    if (count <= 0) {
+        return;
+    }
+    js << "    \"color_shape_stack\": [\n";
+    for (int index = 0; index < count; ++index) {
+        const ColorPipelineShapeStackEntry& entry = params.color_shape_stack[index];
+        js << "      {\n";
+        js << "        \"shape\": \"" << CaptureColorPipelineShapeId(entry.shape) << "\",\n";
+        js << "        \"offset\": " << static_cast<double>(entry.params.offset) << ",\n";
+        js << "        \"scale\": " << static_cast<double>(entry.params.scale) << ",\n";
+        js << "        \"repeat_frequency\": " << static_cast<double>(entry.params.repeat_frequency) << ",\n";
+        js << "        \"repeat_phase\": " << static_cast<double>(entry.params.repeat_phase) << ",\n";
+        js << "        \"posterize_steps\": " << entry.params.posterize_steps << ",\n";
+        js << "        \"posterize_mix\": " << static_cast<double>(entry.params.posterize_mix) << ",\n";
+        js << "        \"bias\": " << static_cast<double>(entry.params.bias) << ",\n";
+        js << "        \"gain\": " << static_cast<double>(entry.params.gain) << ",\n";
+        js << "        \"window_center\": " << static_cast<double>(entry.params.window_center) << ",\n";
+        js << "        \"window_width\": " << static_cast<double>(entry.params.window_width) << ",\n";
+        js << "        \"window_softness\": " << static_cast<double>(entry.params.window_softness) << ",\n";
+        js << "        \"fold_center\": " << static_cast<double>(entry.params.fold_center) << ",\n";
+        js << "        \"fold_width\": " << static_cast<double>(entry.params.fold_width) << ",\n";
+        js << "        \"fold_mix\": " << static_cast<double>(entry.params.fold_mix) << ",\n";
+        js << "        \"phase_offset_turns\": " << static_cast<double>(entry.params.phase_offset_turns) << ",\n";
+        js << "        \"phase_cycles\": " << static_cast<double>(entry.params.phase_cycles) << ",\n";
+        js << "        \"phase_mirror_mix\": " << static_cast<double>(entry.params.phase_mirror_mix) << "\n";
+        js << "      }" << (index + 1 < count ? "," : "") << "\n";
+    }
+    js << "    ],\n";
+}
+
+void WriteColorPaletteStackJson(std::ostringstream& js, const KernelParams& params) {
+    const int count = (std::min)(params.color_palette_stack_count, kColorPipelineMaxPaletteStackCount);
+    if (count <= 0) {
+        return;
+    }
+    js << "    \"color_palette_stack\": [\n";
+    for (int index = 0; index < count; ++index) {
+        const ColorPipelinePaletteStackEntry& entry = params.color_palette_stack[index];
+        js << "      {\n";
+        js << "        \"palette\": \"" << CaptureColorPaletteId(entry.palette) << "\",\n";
+        js << "        \"cycle_scale\": " << static_cast<double>(entry.params.cycle_scale) << ",\n";
+        js << "        \"saturation\": " << static_cast<double>(entry.params.saturation) << ",\n";
+        js << "        \"phase_offset\": " << static_cast<double>(entry.params.phase_offset) << ",\n";
+        js << "        \"band_emphasis\": " << static_cast<double>(entry.params.band_emphasis) << ",\n";
+        js << "        \"seed_scale\": " << static_cast<double>(entry.params.seed_scale) << ",\n";
+        js << "        \"seed_phase\": " << static_cast<double>(entry.params.seed_phase) << ",\n";
+        js << "        \"colorfulness\": " << static_cast<double>(entry.params.colorfulness) << ",\n";
+        js << "        \"negative_r\": " << static_cast<double>(entry.params.negative_r) << ",\n";
+        js << "        \"negative_g\": " << static_cast<double>(entry.params.negative_g) << ",\n";
+        js << "        \"negative_b\": " << static_cast<double>(entry.params.negative_b) << ",\n";
+        js << "        \"neutral_r\": " << static_cast<double>(entry.params.neutral_r) << ",\n";
+        js << "        \"neutral_g\": " << static_cast<double>(entry.params.neutral_g) << ",\n";
+        js << "        \"neutral_b\": " << static_cast<double>(entry.params.neutral_b) << ",\n";
+        js << "        \"positive_r\": " << static_cast<double>(entry.params.positive_r) << ",\n";
+        js << "        \"positive_g\": " << static_cast<double>(entry.params.positive_g) << ",\n";
+        js << "        \"positive_b\": " << static_cast<double>(entry.params.positive_b) << ",\n";
+        js << "        \"balance\": " << static_cast<double>(entry.params.balance) << ",\n";
+        js << "        \"signed_contrast\": " << static_cast<double>(entry.params.signed_contrast) << ",\n";
+        js << "        \"outside_r\": " << static_cast<double>(entry.params.outside_r) << ",\n";
+        js << "        \"outside_g\": " << static_cast<double>(entry.params.outside_g) << ",\n";
+        js << "        \"outside_b\": " << static_cast<double>(entry.params.outside_b) << ",\n";
+        js << "        \"inside_r\": " << static_cast<double>(entry.params.inside_r) << ",\n";
+        js << "        \"inside_g\": " << static_cast<double>(entry.params.inside_g) << ",\n";
+        js << "        \"inside_b\": " << static_cast<double>(entry.params.inside_b) << ",\n";
+        js << "        \"low_r\": " << static_cast<double>(entry.params.low_r) << ",\n";
+        js << "        \"low_g\": " << static_cast<double>(entry.params.low_g) << ",\n";
+        js << "        \"low_b\": " << static_cast<double>(entry.params.low_b) << ",\n";
+        js << "        \"mid_r\": " << static_cast<double>(entry.params.mid_r) << ",\n";
+        js << "        \"mid_g\": " << static_cast<double>(entry.params.mid_g) << ",\n";
+        js << "        \"mid_b\": " << static_cast<double>(entry.params.mid_b) << ",\n";
+        js << "        \"high_r\": " << static_cast<double>(entry.params.high_r) << ",\n";
+        js << "        \"high_g\": " << static_cast<double>(entry.params.high_g) << ",\n";
+        js << "        \"high_b\": " << static_cast<double>(entry.params.high_b) << ",\n";
+        js << "        \"midpoint\": " << static_cast<double>(entry.params.midpoint) << ",\n";
+        js << "        \"blend_weight\": " << static_cast<double>(entry.params.blend_weight) << ",\n";
+        js << "        \"blend_mode\": \"" << ColorPaletteBlendModeId(entry.params.blend_mode) << "\"\n";
+        js << "      }" << (index + 1 < count ? "," : "") << "\n";
+    }
+    js << "    ],\n";
+}
+
+void WriteColorGradingStackJson(std::ostringstream& js, const KernelParams& params) {
+    const int count = (std::min)(params.color_grading_stack_count, kColorPipelineMaxGradingStackCount);
+    if (count <= 0) {
+        return;
+    }
+    js << "    \"color_grading_stack\": [\n";
+    for (int index = 0; index < count; ++index) {
+        const ColorPipelineGradingStackEntry& entry = params.color_grading_stack[index];
+        js << "      {\n";
+        js << "        \"grading\": \"" << CaptureColorGradingPresetId(entry.grading) << "\",\n";
+        js << "        \"exposure\": " << static_cast<double>(entry.params.exposure) << ",\n";
+        js << "        \"saturation\": " << static_cast<double>(entry.params.saturation) << ",\n";
+        js << "        \"contrast\": " << static_cast<double>(entry.params.contrast) << ",\n";
+        js << "        \"glow\": " << static_cast<double>(entry.params.glow) << ",\n";
+        js << "        \"balance_void\": " << static_cast<double>(entry.params.balance_void) << ",\n";
+        js << "        \"chroma_tension\": " << static_cast<double>(entry.params.chroma_tension) << ",\n";
+        js << "        \"accent_bias\": " << static_cast<double>(entry.params.accent_bias) << ",\n";
+        js << "        \"black_point\": " << static_cast<double>(entry.params.black_point) << ",\n";
+        js << "        \"white_point\": " << static_cast<double>(entry.params.white_point) << ",\n";
+        js << "        \"gamma\": " << static_cast<double>(entry.params.gamma) << ",\n";
+        js << "        \"hue_turns\": " << static_cast<double>(entry.params.hue_turns) << "\n";
+        js << "      }" << (index + 1 < count ? "," : "") << "\n";
+    }
+    js << "    ],\n";
+}
+
 void WriteColorPipelineStacksJson(std::ostringstream& js, const KernelParams& params) {
     WriteColorSourceStackJson(js, params);
-    if (params.color_shape_stack_count > 0) {
-        int shapeStackCount = params.color_shape_stack_count;
-        if (shapeStackCount > kColorPipelineMaxShapeStackCount) {
-            shapeStackCount = kColorPipelineMaxShapeStackCount;
-        }
-        js << "    \"color_shape_stack\": [\n";
-        for (int index = 0; index < shapeStackCount; ++index) {
-            const ColorPipelineShapeStackEntry& shapeEntry = params.color_shape_stack[index];
-            js << "      {\n";
-            js << "        \"shape\": \"" << CaptureColorPipelineShapeId(shapeEntry.shape) << "\",\n";
-            js << "        \"offset\": " << static_cast<double>(shapeEntry.params.offset) << ",\n";
-            js << "        \"scale\": " << static_cast<double>(shapeEntry.params.scale) << ",\n";
-            js << "        \"repeat_frequency\": " << static_cast<double>(shapeEntry.params.repeat_frequency) << ",\n";
-            js << "        \"repeat_phase\": " << static_cast<double>(shapeEntry.params.repeat_phase) << ",\n";
-            js << "        \"posterize_steps\": " << shapeEntry.params.posterize_steps << ",\n";
-            js << "        \"posterize_mix\": " << static_cast<double>(shapeEntry.params.posterize_mix) << ",\n";
-            js << "        \"bias\": " << static_cast<double>(shapeEntry.params.bias) << ",\n";
-            js << "        \"gain\": " << static_cast<double>(shapeEntry.params.gain) << ",\n";
-            js << "        \"window_center\": " << static_cast<double>(shapeEntry.params.window_center) << ",\n";
-            js << "        \"window_width\": " << static_cast<double>(shapeEntry.params.window_width) << ",\n";
-            js << "        \"window_softness\": " << static_cast<double>(shapeEntry.params.window_softness) << "\n";
-            js << "      }" << (index + 1 < shapeStackCount ? "," : "") << "\n";
-        }
-        js << "    ],\n";
-    }
-    if (params.color_palette_stack_count > 0) {
-        int paletteStackCount = params.color_palette_stack_count;
-        if (paletteStackCount > kColorPipelineMaxPaletteStackCount) {
-            paletteStackCount = kColorPipelineMaxPaletteStackCount;
-        }
-        js << "    \"color_palette_stack\": [\n";
-        for (int index = 0; index < paletteStackCount; ++index) {
-            const ColorPipelinePaletteStackEntry& paletteEntry = params.color_palette_stack[index];
-            js << "      {\n";
-            js << "        \"palette\": \"" << CaptureColorPaletteId(paletteEntry.palette) << "\",\n";
-            js << "        \"cycle_scale\": " << static_cast<double>(paletteEntry.params.cycle_scale) << ",\n";
-            js << "        \"saturation\": " << static_cast<double>(paletteEntry.params.saturation) << ",\n";
-            js << "        \"phase_offset\": " << static_cast<double>(paletteEntry.params.phase_offset) << ",\n";
-            js << "        \"band_emphasis\": " << static_cast<double>(paletteEntry.params.band_emphasis) << ",\n";
-            js << "        \"seed_scale\": " << static_cast<double>(paletteEntry.params.seed_scale) << ",\n";
-            js << "        \"seed_phase\": " << static_cast<double>(paletteEntry.params.seed_phase) << ",\n";
-            js << "        \"colorfulness\": " << static_cast<double>(paletteEntry.params.colorfulness) << ",\n";
-            js << "        \"blend_weight\": " << static_cast<double>(paletteEntry.params.blend_weight) << ",\n";
-            js << "        \"blend_mode\": \"" << ColorPaletteBlendModeId(paletteEntry.params.blend_mode) << "\"\n";
-            js << "      }" << (index + 1 < paletteStackCount ? "," : "") << "\n";
-        }
-        js << "    ],\n";
-    }
-    if (params.color_grading_stack_count > 0) {
-        int gradingStackCount = params.color_grading_stack_count;
-        if (gradingStackCount > kColorPipelineMaxGradingStackCount) {
-            gradingStackCount = kColorPipelineMaxGradingStackCount;
-        }
-        js << "    \"color_grading_stack\": [\n";
-        for (int index = 0; index < gradingStackCount; ++index) {
-            const ColorPipelineGradingStackEntry& gradingEntry = params.color_grading_stack[index];
-            js << "      {\n";
-            js << "        \"grading\": \"" << CaptureColorGradingPresetId(gradingEntry.grading) << "\",\n";
-            js << "        \"exposure\": " << static_cast<double>(gradingEntry.params.exposure) << ",\n";
-            js << "        \"saturation\": " << static_cast<double>(gradingEntry.params.saturation) << ",\n";
-            js << "        \"contrast\": " << static_cast<double>(gradingEntry.params.contrast) << ",\n";
-            js << "        \"glow\": " << static_cast<double>(gradingEntry.params.glow) << ",\n";
-            js << "        \"balance_void\": " << static_cast<double>(gradingEntry.params.balance_void) << ",\n";
-            js << "        \"chroma_tension\": " << static_cast<double>(gradingEntry.params.chroma_tension) << ",\n";
-            js << "        \"accent_bias\": " << static_cast<double>(gradingEntry.params.accent_bias) << "\n";
-            js << "      }" << (index + 1 < gradingStackCount ? "," : "") << "\n";
-        }
-        js << "    ],\n";
-    }
+    WriteColorShapeStackJson(js, params);
+    WriteColorPaletteStackJson(js, params);
+    WriteColorGradingStackJson(js, params);
 }
 
 void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
@@ -693,7 +736,16 @@ void WriteFindingShapeRowsJson(std::ostringstream& js, const KernelParams& param
         js << "        \"posterize_steps\": " << entry.params.posterize_steps << ",\n";
         js << "        \"posterize_mix\": " << static_cast<double>(entry.params.posterize_mix) << ",\n";
         js << "        \"bias\": " << static_cast<double>(entry.params.bias) << ",\n";
-        js << "        \"gain\": " << static_cast<double>(entry.params.gain) << "\n";
+        js << "        \"gain\": " << static_cast<double>(entry.params.gain) << ",\n";
+        js << "        \"window_center\": " << static_cast<double>(entry.params.window_center) << ",\n";
+        js << "        \"window_width\": " << static_cast<double>(entry.params.window_width) << ",\n";
+        js << "        \"window_softness\": " << static_cast<double>(entry.params.window_softness) << ",\n";
+        js << "        \"fold_center\": " << static_cast<double>(entry.params.fold_center) << ",\n";
+        js << "        \"fold_width\": " << static_cast<double>(entry.params.fold_width) << ",\n";
+        js << "        \"fold_mix\": " << static_cast<double>(entry.params.fold_mix) << ",\n";
+        js << "        \"phase_offset_turns\": " << static_cast<double>(entry.params.phase_offset_turns) << ",\n";
+        js << "        \"phase_cycles\": " << static_cast<double>(entry.params.phase_cycles) << ",\n";
+        js << "        \"phase_mirror_mix\": " << static_cast<double>(entry.params.phase_mirror_mix) << "\n";
         js << "      }" << (index + 1 < count ? "," : "") << "\n";
     }
     js << "    ],\n";
@@ -712,6 +764,18 @@ void WriteFindingPaletteRowsJson(std::ostringstream& js, const KernelParams& par
         js << "        \"cycle_scale\": " << static_cast<double>(entry.params.cycle_scale) << ",\n";
         js << "        \"saturation\": " << static_cast<double>(entry.params.saturation) << ",\n";
         js << "        \"phase_offset\": " << static_cast<double>(entry.params.phase_offset) << ",\n";
+        js << "        \"band_emphasis\": " << static_cast<double>(entry.params.band_emphasis) << ",\n";
+        js << "        \"seed_scale\": " << static_cast<double>(entry.params.seed_scale) << ",\n"; js << "        \"seed_phase\": " << static_cast<double>(entry.params.seed_phase) << ",\n"; js << "        \"colorfulness\": " << static_cast<double>(entry.params.colorfulness) << ",\n";
+        js << "        \"negative_r\": " << static_cast<double>(entry.params.negative_r) << ",\n"; js << "        \"negative_g\": " << static_cast<double>(entry.params.negative_g) << ",\n"; js << "        \"negative_b\": " << static_cast<double>(entry.params.negative_b) << ",\n";
+        js << "        \"neutral_r\": " << static_cast<double>(entry.params.neutral_r) << ",\n"; js << "        \"neutral_g\": " << static_cast<double>(entry.params.neutral_g) << ",\n"; js << "        \"neutral_b\": " << static_cast<double>(entry.params.neutral_b) << ",\n";
+        js << "        \"positive_r\": " << static_cast<double>(entry.params.positive_r) << ",\n"; js << "        \"positive_g\": " << static_cast<double>(entry.params.positive_g) << ",\n"; js << "        \"positive_b\": " << static_cast<double>(entry.params.positive_b) << ",\n";
+        js << "        \"balance\": " << static_cast<double>(entry.params.balance) << ",\n"; js << "        \"signed_contrast\": " << static_cast<double>(entry.params.signed_contrast) << ",\n";
+        js << "        \"outside_r\": " << static_cast<double>(entry.params.outside_r) << ",\n"; js << "        \"outside_g\": " << static_cast<double>(entry.params.outside_g) << ",\n"; js << "        \"outside_b\": " << static_cast<double>(entry.params.outside_b) << ",\n";
+        js << "        \"inside_r\": " << static_cast<double>(entry.params.inside_r) << ",\n"; js << "        \"inside_g\": " << static_cast<double>(entry.params.inside_g) << ",\n"; js << "        \"inside_b\": " << static_cast<double>(entry.params.inside_b) << ",\n";
+        js << "        \"low_r\": " << static_cast<double>(entry.params.low_r) << ",\n"; js << "        \"low_g\": " << static_cast<double>(entry.params.low_g) << ",\n"; js << "        \"low_b\": " << static_cast<double>(entry.params.low_b) << ",\n";
+        js << "        \"mid_r\": " << static_cast<double>(entry.params.mid_r) << ",\n"; js << "        \"mid_g\": " << static_cast<double>(entry.params.mid_g) << ",\n"; js << "        \"mid_b\": " << static_cast<double>(entry.params.mid_b) << ",\n";
+        js << "        \"high_r\": " << static_cast<double>(entry.params.high_r) << ",\n"; js << "        \"high_g\": " << static_cast<double>(entry.params.high_g) << ",\n"; js << "        \"high_b\": " << static_cast<double>(entry.params.high_b) << ",\n";
+        js << "        \"midpoint\": " << static_cast<double>(entry.params.midpoint) << ",\n";
         js << "        \"blend_weight\": " << static_cast<double>(entry.params.blend_weight) << "\n";
         js << "      }" << (index + 1 < count ? "," : "") << "\n";
     }
@@ -734,7 +798,11 @@ void WriteFindingGradingRowsJson(std::ostringstream& js, const KernelParams& par
         js << "        \"glow\": " << static_cast<double>(entry.params.glow) << ",\n";
         js << "        \"balance_void\": " << static_cast<double>(entry.params.balance_void) << ",\n";
         js << "        \"chroma_tension\": " << static_cast<double>(entry.params.chroma_tension) << ",\n";
-        js << "        \"accent_bias\": " << static_cast<double>(entry.params.accent_bias) << "\n";
+        js << "        \"accent_bias\": " << static_cast<double>(entry.params.accent_bias) << ",\n";
+        js << "        \"black_point\": " << static_cast<double>(entry.params.black_point) << ",\n";
+        js << "        \"white_point\": " << static_cast<double>(entry.params.white_point) << ",\n";
+        js << "        \"gamma\": " << static_cast<double>(entry.params.gamma) << ",\n";
+        js << "        \"hue_turns\": " << static_cast<double>(entry.params.hue_turns) << "\n";
         js << "      }" << (index + 1 < count ? "," : "") << "\n";
     }
     js << "    ]\n";

@@ -200,6 +200,15 @@ static bool ConfigureDistinctDraftRowParams(
     return false;
   }
 
+  if (descriptor.id == "levels_gamma_v1") {
+    if (!SetColorPipelineParamNumber(row, "grade.black_point", variantIndex == 0 ? 0.18 : 0.24, outError) ||
+        !SetColorPipelineParamNumber(row, "grade.white_point", variantIndex == 0 ? 0.82 : 0.76, outError) ||
+        !SetColorPipelineParamNumber(row, "grade.gamma", variantIndex == 0 ? 1.25 : 0.80, outError)) {
+      return false;
+    }
+    return true;
+  }
+
   for (const FunctionParamDescriptor& param : descriptor.parameters) {
     if (param.type == "float" || param.type == "int") {
       double currentValue = 0.0;
@@ -5517,7 +5526,13 @@ int main() {
           return 1;
         }
         if (coveredPaletteFunctions.size() != paletteCatalog.functions.size()) {
-          std::cerr << "Expected advanced color diagnostics matrix to cover every runtime-backed Palette function\n";
+          std::cerr << "Expected advanced color diagnostics matrix to cover every runtime-backed Palette function; missing:";
+          for (const FunctionDescriptor& descriptor : paletteCatalog.functions) {
+            if (coveredPaletteFunctions.count(descriptor.id) == 0) {
+              std::cerr << " " << descriptor.id;
+            }
+          }
+          std::cerr << "\n";
           return 1;
         }
         if (coveredGradingFunctions.size() != gradingCatalog.functions.size()) {

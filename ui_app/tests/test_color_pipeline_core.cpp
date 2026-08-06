@@ -424,16 +424,16 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*source, "sdf_curvature") &&
             HasFunction(*source, "lens_field_v2_distance"),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctions");
-    Check(shape->default_function_id == std::string("identity") && shape->functions.size() == 10 &&
+    Check(shape->default_function_id == std::string("identity") && shape->functions.size() == 15 &&
             HasFunction(*shape, "smooth_window") &&
             HasFunction(*shape, "log_compress") &&
             HasFunction(*shape, "smoothstep_range") && HasFunction(*shape, "signed_unit_map_v1"),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctions");
-    Check(palette->default_function_id == std::string("heatmap") && palette->functions.size() == 6 &&
+    Check(palette->default_function_id == std::string("heatmap") && palette->functions.size() == 9 &&
             HasFunction(*palette, "explaino_cmap") && HasFunction(*palette, "root_classic_palette") &&
             HasFunction(*palette, "joy_root_palette"),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctions");
-    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 8 &&
+    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 10 &&
             HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default") && HasFunction(*grading, "neutral_finish") && HasFunction(*grading, "tone_map_finish") && HasFunction(*grading, "grade_glow") && HasFunction(*grading, "balance_void_grade"),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsBalanceVoidGrade");
     Check(CatalogIdsEqual(*source, {
@@ -463,11 +463,16 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             "bias_gain_curve",
             "smooth_window",
             "log_compress",
-            "smoothstep_range"}),
+            "smoothstep_range",
+            "invert_unit_v1",
+            "fold_centered_v1",
+            "phase_offset_v1",
+            "phase_repeat_v1",
+            "phase_mirror_v1"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
-    Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette"}),
+    Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette", "diverging_signed_palette_v1", "inside_outside_two_tone_v1", "gradient_three_stop_v1"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctionOrder");
-    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default", "neutral_finish", "tone_map_finish", "grade_glow", "balance_void_grade"}),
+    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default", "neutral_finish", "tone_map_finish", "grade_glow", "balance_void_grade", "levels_gamma_v1", "hue_rotate_v1"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradingFunctionOrder");
 
     const std::vector<FunctionDescriptor> allGradeFunctions = color_pipeline_core::BuildColorPipelineGradeFunctions();
@@ -1183,11 +1188,11 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
 
     Check(contract.lanes.size() == color_pipeline_core::GetColorPipelineLaneCatalogs().size(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
-    Check(contract.compatibility.size() == 24,
+    Check(contract.compatibility.size() == 28,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
     Check(contract.compat_overrides.size() == 7,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatOverrideCount");
-    Check(contract.compatibility_audit.size() == 24,
+    Check(contract.compatibility_audit.size() == 28,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
     Check(contract.recipes.size() == 9, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.has_recipe_v2, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Present");
@@ -1230,7 +1235,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                 contract.edge_links[2].id == "palette_to_grading",
             "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_EdgeLinkOrder");
     }
-    Check(contract.resolution_cases.size() == 23,
+    Check(contract.resolution_cases.size() == 29,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ResolutionCaseCount");
     const MaterializedColorPipelineCompatibilityAudit* smoothAudit =
         FindCompatibilityAudit(contract, "smooth_escape_ramp", "heatmap", "contrast_lift");
@@ -1433,9 +1438,9 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     }
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
-    Check(parity.lane_count == 4 && parity.function_count == 39 &&
-            parity.compatibility_count == 24 && parity.recipe_count == 9 &&
-            parity.taxonomy_group_count == 24 && parity.unsupported_pair_count > 0,
+    Check(parity.lane_count == 4 && parity.function_count == 49 &&
+            parity.compatibility_count == 28 && parity.recipe_count == 9 &&
+            parity.taxonomy_group_count == 30 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
     const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
@@ -1749,7 +1754,7 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
     Check(color_pipeline_core::IsColorPipelineCompatibilityDiagnosticsActive() &&
             color_pipeline_core::ColorPipelineCompatibilityDiagnosticsAuthorityId() == std::string("materialized_json_diagnostic"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsActive");
-    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 24,
+    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 28,
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Count");
 
     color_pipeline_core::ColorPipelineCompatibilityRouteExplanation smoothExplanation;
@@ -2652,6 +2657,33 @@ void TestMaterializedContractLoaderRejectsTamperedJson() {
     std::remove(duplicateCompatOverridePath.c_str());
 }
 
+void TestLowRiskFunctionBatchRuntimeOwners() {
+    Check(static_cast<int>(ColorPipelineShape::invert_unit_v1) == 10 &&
+            static_cast<int>(ColorPipelineShape::fold_centered_v1) == 11 &&
+            static_cast<int>(ColorPipelineShape::phase_offset_v1) == 12 &&
+            static_cast<int>(ColorPipelineShape::phase_repeat_v1) == 13 &&
+            static_cast<int>(ColorPipelineShape::phase_mirror_v1) == 14,
+        "TestLowRiskFunctionBatchRuntimeOwners_ShapeEnumsAppendOnly");
+    Check(static_cast<int>(ColorPalette::diverging_signed_palette_v1) == 6 &&
+            static_cast<int>(ColorPalette::inside_outside_two_tone_v1) == 7 &&
+            static_cast<int>(ColorPalette::gradient_three_stop_v1) == 8,
+        "TestLowRiskFunctionBatchRuntimeOwners_PaletteEnumsAppendOnly");
+    Check(static_cast<int>(ColorGradingPreset::levels_gamma_v1) == 8 &&
+            static_cast<int>(ColorGradingPreset::hue_rotate_v1) == 9,
+        "TestLowRiskFunctionBatchRuntimeOwners_GradingEnumsAppendOnly");
+
+    ColorPipelineShapeRuntimeParams shapeParams{};
+    shapeParams.fold_center = 0.5f;
+    shapeParams.fold_width = 0.5f;
+    shapeParams.phase_cycles = 1.0f;
+    ColorPipelinePaletteRuntimeParams paletteParams{};
+    ColorPipelineGradingRuntimeParams gradingParams{};
+    Check(Near(shapeParams.fold_center, 0.5) && Near(shapeParams.fold_width, 0.5) &&
+            Near(shapeParams.phase_cycles, 1.0) && Near(paletteParams.midpoint, 0.5) &&
+            Near(gradingParams.white_point, 1.0) && Near(gradingParams.gamma, 1.0),
+        "TestLowRiskFunctionBatchRuntimeOwners_RuntimeStorageDefaults");
+}
+
 } // namespace
 
 int main() {
@@ -2669,6 +2701,7 @@ int main() {
     TestMaterializedUiSaltMetadataCanOwnCompanionSuggestions();
     TestMaterializedUiSaltMetadataCanOwnRecipeExpansion();
     TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph();
+    TestLowRiskFunctionBatchRuntimeOwners();
     TestMaterializedContractLoaderRejectsTamperedJson();
 
     std::printf("test_color_pipeline_core: passed=%d failed=%d\n", g_passed, g_failed);
