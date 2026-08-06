@@ -250,14 +250,14 @@ After the stop/replan, rank these against Composite Function V1:
 
 These items are not authorized by the current campaign contract.
 
-## Three-Week Resume Procedure
+## Three-Week Return Procedure
 
-A resumed session should not rely on chat history. It must:
+A returning session should not rely on chat history. It must:
 
 1. Run session bootstrap, repo status, and rearward review.
 2. Read this plan, its contract, `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`, and the latest handoff entries.
 3. Confirm branch, `HEAD`, clean state, current checked phase, active contract hash, and latest validation receipts.
-4. Resume the first unchecked phase only.
+4. Continue from the first unchecked phase only.
 5. If a slice checkpoint is clean and pushed, re-run its focused preservation rail before opening the next slice.
 6. If this campaign is complete, stop for replan; do not begin Composite Function V1 from this document alone.
 
@@ -278,7 +278,7 @@ A resumed session should not rely on chat history. It must:
 
 ## Action Hostile Review
 
-- Action ID: action-20260806-root-glow-audit-status-repair-3
+- Action ID: action-20260806-rearward-stale-phrase-repair-1
 - Suspected Failure Mode: the next slice could repeat the prior goal failure by producing more measurements while leaving Root Glow disabled, or could enable weak/inert controls without independent qualification.
 - Correct Owner/Action: freeze disabled behavior, add RED product-availability and visible-control sensitivity tests, tune/prune only through the measured viable path, then enable through the public recipe authority.
 - Proof Surface: native recipe/materializer/window tests, published public selector/Apply runtime proof, fixed sensitivity matrix, Capture Finding, state reload, and replay hashes.
