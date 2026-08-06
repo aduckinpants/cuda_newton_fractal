@@ -762,6 +762,96 @@ recipe(id="missing_identity", label="Missing Identity", source="smooth_escape_ra
     assert "requires integer version 1" in proc.stderr
 
 
+def test_recipe_source_rejects_duplicate_semantic_node(tmp_path):
+    text = COLOR_PIPELINE_UI_SALT.read_text(encoding="utf-8")
+    text += 'recipe_source(recipe="sdf_normal_angle_beauty", node_id="source.lens_response", function="lens_field_v2_distance", blend=0.5)\n'
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "duplicate semantic node id" in proc.stderr
+
+
+def test_recipe_source_rejects_unknown_function_and_bad_blend(tmp_path):
+    text = COLOR_PIPELINE_UI_SALT.read_text(encoding="utf-8")
+    proc, _ = run_materializer(
+        tmp_path,
+        text.replace('function="lens_field_v2_distance", blend=0.48', 'function="missing_source", blend=0.48', 1),
+    )
+    assert proc.returncode != 0
+    assert "unknown Source function" in proc.stderr
+
+    proc, _ = run_materializer(
+        tmp_path,
+        text.replace('function="lens_field_v2_distance", blend=0.48', 'function="lens_field_v2_distance", blend=1.5', 1),
+    )
+    assert proc.returncode != 0
+    assert "blend must be within [0,1]" in proc.stderr
+
+
+def test_recipe_param_rejects_unknown_duplicate_and_out_of_range_overrides(tmp_path):
+    text = COLOR_PIPELINE_UI_SALT.read_text(encoding="utf-8")
+    proc, _ = run_materializer(
+        tmp_path,
+        text.replace('descriptor_parameter_id="signal.sign_contrast"', 'descriptor_parameter_id="signal.missing"', 1),
+    )
+    assert proc.returncode != 0
+    assert "unknown descriptor parameter" in proc.stderr
+
+    duplicate = (
+        text
+        + 'recipe_param(recipe="sdf_normal_angle_beauty", node_id="source.lens_response", '
+          'descriptor_parameter_id="signal.sign_contrast", value=0.2)\n'
+    )
+    proc, _ = run_materializer(tmp_path, duplicate)
+    assert proc.returncode != 0
+    assert "duplicate override" in proc.stderr
+
+    proc, _ = run_materializer(
+        tmp_path,
+        text.replace('descriptor_parameter_id="signal.sign_contrast", value=0.35', 'descriptor_parameter_id="signal.sign_contrast", value=1.5', 1),
+    )
+    assert proc.returncode != 0
+    assert "above its maximum" in proc.stderr
+
+
+def test_recipe_edge_adapter_requires_known_explicit_consent(tmp_path):
+    text = COLOR_PIPELINE_UI_SALT.read_text(encoding="utf-8")
+    proc, _ = run_materializer(
+        tmp_path,
+        text.replace('adapter="unit_cycle_as_phase_turns_v1"', 'adapter="missing_adapter"', 1),
+    )
+    assert proc.returncode != 0
+    assert "unknown executable adapter" in proc.stderr
+
+    without_consent = "\n".join(
+        line
+        for line in text.splitlines()
+        if not line.startswith('recipe_edge_adapter(recipe="sdf_normal_angle_beauty"')
+    ) + "\n"
+    proc, _ = run_materializer(tmp_path, without_consent)
+    assert proc.returncode != 0
+    assert "requires exactly one explicit adapter" in proc.stderr
+
+    extra_consent = (
+        text
+        + 'recipe_edge_adapter(recipe="sdf_normal_angle_beauty", from_node="source.normal_angle", '
+          'to_node="shape.identity", adapter="unit_cycle_as_phase_turns_v1")\n'
+    )
+    proc, _ = run_materializer(tmp_path, extra_consent)
+    assert proc.returncode != 0
+    assert "requires exactly one explicit adapter" in proc.stderr
+
+
+def test_recipe_param_rejects_noncanonical_first_source_blend(tmp_path):
+    text = COLOR_PIPELINE_UI_SALT.read_text(encoding="utf-8")
+    text += (
+        'recipe_param(recipe="sdf_normal_angle_beauty", node_id="source.normal_angle", '
+        'descriptor_parameter_id="signal.blend_weight", value=0.5)\n'
+    )
+    proc, _ = run_materializer(tmp_path, text)
+    assert proc.returncode != 0
+    assert "first Source blend must remain exactly 1.0" in proc.stderr
+
+
 def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     out = tmp_path / "materialized.json"
     proc = subprocess.run(
@@ -988,31 +1078,26 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         assert recipe["canonicalization_id"] == "viewer.recipe_canonicalization.v1"
         assert len(recipe["metadata_content_hash"]) == 64
         int(recipe["metadata_content_hash"], 16)
-        assert len(recipe["nodes"]) == 4
-        assert [node["id"].split(".", 1)[0] for node in recipe["nodes"]] == [
-            "source",
-            "shape",
-            "palette",
-            "grading",
-        ]
-        assert len({node["id"] for node in recipe["nodes"]}) == 4
-        assert recipe["source_fold"] == {
-            "operation": "ordered_destination_weighted_lerp",
-            "source_nodes": [recipe["nodes"][0]["id"]],
-            "fold_nodes": [],
-            "fold_edges": [],
-            "output_node": recipe["nodes"][0]["id"],
-            "first_source_blend": 1.0,
-        }
-        assert [node["lane"] for node in recipe["nodes"]] == [
-            "source",
-            "shape",
-            "palette",
-            "grading",
-        ]
+        expected_source_count = 2 if recipe["id"] == "sdf_normal_angle_beauty" else 1
+        assert len(recipe["nodes"]) == expected_source_count + 3
+        assert [node["lane"] for node in recipe["nodes"]] == (
+            ["source"] * expected_source_count + ["shape", "palette", "grading"]
+        )
+        assert len({node["id"] for node in recipe["nodes"]}) == len(recipe["nodes"])
+        if recipe["id"] != "sdf_normal_angle_beauty":
+            assert recipe["source_fold"] == {
+                "operation": "ordered_destination_weighted_lerp",
+                "source_nodes": [recipe["nodes"][0]["id"]],
+                "fold_nodes": [],
+                "fold_edges": [],
+                "output_node": recipe["nodes"][0]["id"],
+                "first_source_blend": 1.0,
+            }
         assert len(recipe["edges"]) == 3
-        assert [edge["from_node"] for edge in recipe["edges"]] == [node["id"] for node in recipe["nodes"][:3]]
-        assert [edge["to_node"] for edge in recipe["edges"]] == [node["id"] for node in recipe["nodes"][1:]]
+        assert recipe["edges"][-2]["from_node"] == recipe["nodes"][-3]["id"]
+        assert recipe["edges"][-2]["to_node"] == recipe["nodes"][-2]["id"]
+        assert recipe["edges"][-1]["from_node"] == recipe["nodes"][-2]["id"]
+        assert recipe["edges"][-1]["to_node"] == recipe["nodes"][-1]["id"]
 
     default_v2 = recipe_by_id["default_smooth_escape"]
     assert [node["function"] for node in default_v2["nodes"]] == [
@@ -1025,6 +1110,64 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert default_v2["adapter_hops"] == 0
     assert default_v2["adapter_cost"] == 0
     assert all(edge["status"] == "direct" and edge["adapters"] == [] for edge in default_v2["edges"])
+
+    beauty_v2 = recipe_by_id["sdf_normal_angle_beauty"]
+    assert [node["id"] for node in beauty_v2["nodes"]] == [
+        "source.normal_angle",
+        "source.lens_response",
+        "shape.identity",
+        "palette.phase_wheel",
+        "grading.phase_finish",
+    ]
+    assert beauty_v2["source_fold"] == {
+        "operation": "ordered_destination_weighted_lerp",
+        "source_nodes": ["source.normal_angle", "source.lens_response"],
+        "fold_nodes": ["fold.lens_response"],
+        "fold_edges": [
+            "source.normal_angle->fold.lens_response",
+            "source.lens_response->fold.lens_response",
+        ],
+        "output_node": "fold.lens_response",
+        "first_source_blend": 1.0,
+    }
+    beauty_nodes = {node["id"]: node for node in beauty_v2["nodes"]}
+    assert beauty_nodes["source.normal_angle"]["parameter_overrides"] == [
+        {
+            "descriptor_parameter_id": "signal.sdf_gate",
+            "type": "enum",
+            "value_kind": "string",
+            "string_value": "boundary_band",
+        },
+        {
+            "descriptor_parameter_id": "signal.sdf_gate_width_px",
+            "type": "float",
+            "value_kind": "number",
+            "number_value": 6.0,
+        },
+    ]
+    assert beauty_nodes["source.lens_response"]["parameter_overrides"] == [
+        {
+            "descriptor_parameter_id": "signal.blend_weight",
+            "type": "float",
+            "value_kind": "number",
+            "number_value": 0.48,
+        },
+        {
+            "descriptor_parameter_id": "signal.sign_contrast",
+            "type": "float",
+            "value_kind": "number",
+            "number_value": 0.35,
+        },
+    ]
+    assert beauty_v2["edges"][0]["edge_id"] == (
+        "fold.lens_response->adapter.unit_cycle_as_phase_turns->shape.identity"
+    )
+    assert beauty_v2["edges"][0]["from_node"] == "fold.lens_response"
+    assert beauty_v2["edges"][0]["to_node"] == "shape.identity"
+    assert beauty_v2["edges"][0]["status"] == "adapted"
+    assert beauty_v2["edges"][0]["adapters"] == ["unit_cycle_as_phase_turns_v1"]
+    assert beauty_v2["chosen_adapters"] == ["unit_cycle_as_phase_turns_v1"]
+    assert beauty_v2["adapter_hops"] == 1
 
     assert _ports(actual, "source", "smooth_escape_ramp") == [
         {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True}

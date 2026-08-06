@@ -1016,6 +1016,17 @@ void TestRecipePresetApplicationCommitsOnlyAfterPreparation() {
             fallbackState.recipe_application_receipt.semantic_node_ids.empty() &&
             DescribeCurrentColorPipelineRecipeMatch(fallbackState) == "exact",
         "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FallbackNeverClaimsGraphAuthority");
+    Check(ApplyColorPipelineRecipeToDraft(&fallbackState, "sdf_normal_angle_beauty"),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FallbackBeautyStillExpands");
+    const ColorPipelineLaneState* fallbackBeautySource = FindLane(fallbackState, "source");
+    Check(fallbackBeautySource && fallbackBeautySource->rows.size() == 2 &&
+            fallbackBeautySource->rows[0].function_id == "sdf_normal_angle" &&
+            fallbackBeautySource->rows[1].function_id == "lens_field_v2_distance" &&
+            RowEnum(fallbackBeautySource->rows[0], "signal.sdf_gate", "boundary_band") &&
+            RowNumber(fallbackBeautySource->rows[0], "signal.sdf_gate_width_px", 6.0) &&
+            RowNumber(fallbackBeautySource->rows[1], "signal.sign_contrast", 0.35) &&
+            RowNumber(fallbackBeautySource->rows[1], "signal.blend_weight", 0.48),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FallbackBeautyOwnsLegacySpecialCase");
     color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(false);
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
 }

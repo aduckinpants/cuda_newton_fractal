@@ -3059,7 +3059,7 @@
         "id": "sdf_normal_angle_beauty",
         "recipe_version": 1,
         "canonicalization_id": "viewer.recipe_canonicalization.v1",
-        "metadata_content_hash": "622d7c632453ca0cd1fdcc544b788e3b2406fcb912510ef461be8d46c5aed65f",
+        "metadata_content_hash": "f428314627b7b7f72d103170eda0a676d768bca652c899364469eb328660481b",
         "label": "SDF Normal Angle Beauty",
         "source_recipe_id": "sdf_normal_angle_beauty",
         "ui_projection": "linear_color_stack",
@@ -3070,7 +3070,40 @@
           {
             "id": "source.normal_angle",
             "lane": "source",
-            "function": "sdf_normal_angle"
+            "function": "sdf_normal_angle",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "signal.sdf_gate",
+                "type": "enum",
+                "value_kind": "string",
+                "string_value": "boundary_band"
+              },
+              {
+                "descriptor_parameter_id": "signal.sdf_gate_width_px",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 6.0
+              }
+            ]
+          },
+          {
+            "id": "source.lens_response",
+            "lane": "source",
+            "function": "lens_field_v2_distance",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "signal.blend_weight",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.48
+              },
+              {
+                "descriptor_parameter_id": "signal.sign_contrast",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.35
+              }
+            ]
           },
           {
             "id": "shape.identity",
@@ -3091,26 +3124,34 @@
         "source_fold": {
           "operation": "ordered_destination_weighted_lerp",
           "source_nodes": [
-            "source.normal_angle"
+            "source.normal_angle",
+            "source.lens_response"
           ],
-          "fold_nodes": [],
-          "fold_edges": [],
-          "output_node": "source.normal_angle",
+          "fold_nodes": [
+            "fold.lens_response"
+          ],
+          "fold_edges": [
+            "source.normal_angle->fold.lens_response",
+            "source.lens_response->fold.lens_response"
+          ],
+          "output_node": "fold.lens_response",
           "first_source_blend": 1.0
         },
         "edges": [
           {
-            "edge_id": "source_to_shape",
-            "from_function": "sdf_normal_angle",
+            "edge_id": "fold.lens_response->adapter.unit_cycle_as_phase_turns->shape.identity",
+            "from_function": "lens_field_v2_distance",
             "to_function": "identity",
-            "from_type": "phase.turns",
+            "from_type": "scalar.unit",
             "to_type": "phase.turns",
             "output_type": "phase.turns",
-            "status": "direct",
-            "adapters": [],
-            "adapter_hops": 0,
+            "status": "adapted",
+            "adapters": [
+              "unit_cycle_as_phase_turns_v1"
+            ],
+            "adapter_hops": 1,
             "adapter_cost": 0,
-            "from_node": "source.normal_angle",
+            "from_node": "fold.lens_response",
             "to_node": "shape.identity"
           },
           {
@@ -3142,8 +3183,10 @@
             "to_node": "grading.phase_finish"
           }
         ],
-        "chosen_adapters": [],
-        "adapter_hops": 0,
+        "chosen_adapters": [
+          "unit_cycle_as_phase_turns_v1"
+        ],
+        "adapter_hops": 1,
         "adapter_cost": 0,
         "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
         "fail_closed_reason": ""

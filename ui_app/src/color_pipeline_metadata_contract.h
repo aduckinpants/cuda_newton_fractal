@@ -213,10 +213,20 @@ struct MaterializedColorPipelineRecipeSourceFold {
     double first_source_blend = 0.0;
 };
 
+struct MaterializedColorPipelineRecipeParameterOverride {
+    std::string descriptor_parameter_id;
+    std::string type;
+    std::string value_kind;
+    double number_value = 0.0;
+    bool bool_value = false;
+    std::string string_value;
+};
+
 struct MaterializedColorPipelineRecipeV2Node {
     std::string id;
     std::string lane;
     std::string function;
+    std::vector<MaterializedColorPipelineRecipeParameterOverride> parameter_overrides;
 };
 
 struct MaterializedColorPipelineRecipeV2Edge {

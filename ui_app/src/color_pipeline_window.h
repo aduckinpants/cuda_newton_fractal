@@ -1496,6 +1496,46 @@ inline bool ApplyColorPipelineRecipeToDraft(
         return false;
     }
 
+    if (color_pipeline_core::IsColorPipelineRecipeV2GraphAuthorityActive()) {
+        std::vector<ColorPipelineLaneState> projectedLanes;
+        std::string projectionError;
+        if (!color_pipeline_core::TryBuildColorPipelineRecipeLanes(
+                recipeId,
+                &projectedLanes,
+                &projectionError)) {
+            PushColorPipelineValidationMessage(ioState, projectionError);
+            return false;
+        }
+        ColorPipelineWindowState probe = *ioState;
+        for (const ColorPipelineLaneState& projectedLane : projectedLanes) {
+            bool foundLane = false;
+            for (ColorPipelineLaneState& lane : probe.lanes) {
+                if (lane.lane_id != projectedLane.lane_id) {
+                    continue;
+                }
+                lane.rows = projectedLane.rows;
+                foundLane = true;
+                break;
+            }
+            if (!foundLane) {
+                PushColorPipelineValidationMessage(
+                    ioState,
+                    std::string("Missing Color Pipeline recipe lane: ") + projectedLane.lane_id);
+                return false;
+            }
+        }
+        for (ColorPipelineLaneState& lane : probe.lanes) {
+            if (!EnsureColorPipelineLaneRowsInitialized(&lane, &probe.next_row_id)) {
+                PushColorPipelineValidationMessage(
+                    ioState,
+                    std::string("Failed to initialize Color Pipeline recipe row ids for lane: ") + lane.lane_id);
+                return false;
+            }
+        }
+        *ioState = std::move(probe);
+        return true;
+    }
+
     const MaterializedColorPipelineRecipe* recipe =
         color_pipeline_core::FindActiveColorPipelineRecipe(recipeId);
     if (!recipe) {

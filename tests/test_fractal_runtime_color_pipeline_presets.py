@@ -347,6 +347,118 @@ def test_color_pipeline_recipe_application_receipt_and_replay_no_mouse(tmp_path:
         assert reloaded_application.get("receipt") is None, reloaded_application
 
 
+def test_sdf_normal_angle_beauty_metadata_migration_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("SDF Beauty metadata migration proof is Windows-only")
+
+    exe_path = active_runtime_exe()
+    baseline_payload = json.loads(
+        Path(
+            "artifacts/curated_color_recipe_authority_campaign/baseline/public_recipe_baseline.json"
+        ).read_text(encoding="utf-8")
+    )
+    baseline_case = next(
+        case
+        for case in baseline_payload["cases"]
+        if case["recipe_id"] == "sdf_normal_angle_beauty"
+    )
+    frozen_state_path = Path(baseline_case["frozen_state_file"])
+    state_path = write_state_bundle(
+        tmp_path / "beauty_metadata_migration",
+        json.loads(frozen_state_path.read_text(encoding="utf-8")),
+    )
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "beauty_metadata_migration_report.json",
+        command_path=tmp_path / "beauty_metadata_migration_command.json",
+        open_color_pipeline=True,
+    ) as viewer:
+        viewer.wait_for_control("color_pipeline.recipe.selector", timeout_seconds=30.0)
+        selected = viewer.click_control(
+            "color_pipeline.recipe.sdf_normal_angle_beauty.select",
+            timeout_seconds=60.0,
+        )
+        assert selected.get("click_consumed") is True, selected
+        applied = viewer.click_control(
+            "color_pipeline.recipe.apply_selected",
+            timeout_seconds=60.0,
+        )
+        assert applied.get("click_consumed") is True, applied
+        settled = viewer.click_control("render_once", timeout_seconds=60.0)
+        assert settled.get("click_consumed") is True, settled
+
+    assert settled.get("rendered_frame_hash") == baseline_case["frame_hash"], settled
+    application_report = settled.get("color_pipeline_recipe_application_report")
+    assert isinstance(application_report, dict), settled
+    receipt = application_report.get("receipt")
+    assert isinstance(receipt, dict), application_report
+    assert receipt.get("recipe_id") == "sdf_normal_angle_beauty", receipt
+    assert receipt.get("application_authority") == "recipe_v2_graph", receipt
+    assert receipt.get("fallback_active") is False, receipt
+    assert receipt.get("semantic_node_ids") == [
+        "source.normal_angle",
+        "source.lens_response",
+        "shape.identity",
+        "palette.phase_wheel",
+        "grading.phase_finish",
+    ], receipt
+    assert receipt.get("source_fold_node_ids") == [
+        "source.normal_angle",
+        "source.lens_response",
+        "fold.lens_response",
+    ], receipt
+    assert receipt.get("source_fold_edge_ids") == [
+        "source.normal_angle->fold.lens_response",
+        "source.lens_response->fold.lens_response",
+    ], receipt
+    assert receipt.get("graph_edge_ids", [None])[0] == (
+        "fold.lens_response->adapter.unit_cycle_as_phase_turns->shape.identity"
+    ), receipt
+    assert receipt.get("approved_adapter_ids") == ["unit_cycle_as_phase_turns_v1"], receipt
+
+    graph_receipt = settled.get("color_pipeline_graph_receipt")
+    assert isinstance(graph_receipt, dict), settled
+    nodes = {
+        node["id"]: node
+        for node in graph_receipt.get("nodes", [])
+        if isinstance(node, dict) and isinstance(node.get("id"), str)
+    }
+    assert nodes["source.0"]["function_id"] == "sdf_normal_angle", graph_receipt
+    assert nodes["source.1"]["function_id"] == "lens_field_v2_distance", graph_receipt
+    source_0_params = {param["path"]: param for param in nodes["source.0"]["params"]}
+    source_1_params = {param["path"]: param for param in nodes["source.1"]["params"]}
+    assert source_0_params["signal.sdf_gate"]["enum_value"] == "boundary_band", source_0_params
+    assert source_0_params["signal.sdf_gate_width_px"]["number_value"] == 6.0, source_0_params
+    assert source_1_params["signal.sign_contrast"]["number_value"] == pytest.approx(
+        0.35, abs=1e-6
+    ), source_1_params
+    assert source_1_params["signal.blend_weight"]["number_value"] == pytest.approx(
+        0.48, abs=1e-6
+    ), source_1_params
+
+    captured = run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--capture-diagnostic",
+    )
+    assert captured["frame_hash"] == baseline_case["headless_frame_sha256"], captured
+    replay_state_path = write_state_bundle(
+        tmp_path / "beauty_metadata_migration_replay",
+        json.loads(json.dumps(captured["state"])),
+    )
+    replay = run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(replay_state_path),
+        "--capture-diagnostic",
+    )
+    assert replay["frame_hash"] == baseline_case["replay_frame_sha256"], replay
+    assert replay["frame_hash"] == captured["frame_hash"], (captured, replay)
+
+
 NON_SDF_SOURCE_ROWS = (
     ("smooth_escape_ramp", "heatmap", "smooth_escape", "cyclic_escape"),
     ("phase_orbit", "phase_wheel_palette", "phase_angle", "phase_wheel"),

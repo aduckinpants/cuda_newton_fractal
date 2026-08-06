@@ -1543,37 +1543,37 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                     recipeV2->canonicalization_id == "viewer.recipe_canonicalization.v1" &&
                     recipeV2->metadata_content_hash.size() == 64,
                 "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2CanonicalIdentity");
-            Check(recipeV2->nodes.size() == 4 && recipeV2->edges.size() == 3 &&
+            const bool isBeauty = recipe.id == "sdf_normal_angle_beauty";
+            const std::size_t expectedSourceCount = isBeauty ? 2 : 1;
+            const std::size_t shapeIndex = expectedSourceCount;
+            Check(recipeV2->nodes.size() == expectedSourceCount + 3 && recipeV2->edges.size() == 3 &&
                     recipeV2->source_fold.operation == "ordered_destination_weighted_lerp" &&
-                    recipeV2->source_fold.source_nodes.size() == 1 &&
+                    recipeV2->source_fold.source_nodes.size() == expectedSourceCount &&
                     recipeV2->source_fold.source_nodes[0] == recipeV2->nodes[0].id &&
-                    recipeV2->source_fold.fold_nodes.empty() &&
-                    recipeV2->source_fold.fold_edges.empty() &&
-                    recipeV2->source_fold.output_node == recipeV2->nodes[0].id &&
                     recipeV2->source_fold.first_source_blend == 1.0,
                 "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2LinearProjectionShape");
-            if (recipeV2->nodes.size() == 4) {
+            if (recipeV2->nodes.size() == expectedSourceCount + 3) {
                 Check(recipeV2->nodes[0].id.rfind("source.", 0) == 0 &&
                         recipeV2->nodes[0].lane == "source" &&
                         recipeV2->nodes[0].function == recipe.source &&
-                        recipeV2->nodes[1].id.rfind("shape.", 0) == 0 &&
-                        recipeV2->nodes[1].lane == "shape" &&
-                        recipeV2->nodes[1].function == recipe.shape &&
-                        recipeV2->nodes[2].id.rfind("palette.", 0) == 0 &&
-                        recipeV2->nodes[2].lane == "palette" &&
-                        recipeV2->nodes[2].function == recipe.palette &&
-                        recipeV2->nodes[3].id.rfind("grading.", 0) == 0 &&
-                        recipeV2->nodes[3].lane == "grading" &&
-                        recipeV2->nodes[3].function == recipe.grading,
+                        recipeV2->nodes[shapeIndex].id.rfind("shape.", 0) == 0 &&
+                        recipeV2->nodes[shapeIndex].lane == "shape" &&
+                        recipeV2->nodes[shapeIndex].function == recipe.shape &&
+                        recipeV2->nodes[shapeIndex + 1].id.rfind("palette.", 0) == 0 &&
+                        recipeV2->nodes[shapeIndex + 1].lane == "palette" &&
+                        recipeV2->nodes[shapeIndex + 1].function == recipe.palette &&
+                        recipeV2->nodes[shapeIndex + 2].id.rfind("grading.", 0) == 0 &&
+                        recipeV2->nodes[shapeIndex + 2].lane == "grading" &&
+                        recipeV2->nodes[shapeIndex + 2].function == recipe.grading,
                     "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2NodesMatchRecipe");
             }
-            if (recipeV2->edges.size() == 3) {
-                Check(recipeV2->edges[0].from_node == recipeV2->nodes[0].id &&
-                        recipeV2->edges[0].to_node == recipeV2->nodes[1].id &&
-                        recipeV2->edges[1].from_node == recipeV2->nodes[1].id &&
-                        recipeV2->edges[1].to_node == recipeV2->nodes[2].id &&
-                        recipeV2->edges[2].from_node == recipeV2->nodes[2].id &&
-                        recipeV2->edges[2].to_node == recipeV2->nodes[3].id,
+            if (recipeV2->edges.size() == 3 && recipeV2->nodes.size() == expectedSourceCount + 3) {
+                Check(recipeV2->edges[0].from_node == recipeV2->source_fold.output_node &&
+                        recipeV2->edges[0].to_node == recipeV2->nodes[shapeIndex].id &&
+                        recipeV2->edges[1].from_node == recipeV2->nodes[shapeIndex].id &&
+                        recipeV2->edges[1].to_node == recipeV2->nodes[shapeIndex + 1].id &&
+                        recipeV2->edges[2].from_node == recipeV2->nodes[shapeIndex + 1].id &&
+                        recipeV2->edges[2].to_node == recipeV2->nodes[shapeIndex + 2].id,
                     "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2EdgesAreLinear");
             }
         }
@@ -1587,6 +1587,25 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
             defaultRecipeV2->edges[0].status == "direct" &&
             defaultRecipeV2->edges[0].adapters.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_DefaultRecipeV2DirectRoute");
+
+    const MaterializedColorPipelineRecipeV2* beautyRecipeV2 =
+        FindRecipeV2(contract, "sdf_normal_angle_beauty");
+    Check(beautyRecipeV2 && beautyRecipeV2->nodes.size() == 5 &&
+            beautyRecipeV2->source_fold.source_nodes.size() == 2 &&
+            beautyRecipeV2->source_fold.fold_nodes == std::vector<std::string>{"fold.lens_response"} &&
+            beautyRecipeV2->source_fold.output_node == "fold.lens_response" &&
+            beautyRecipeV2->edges[0].edge_id ==
+                "fold.lens_response->adapter.unit_cycle_as_phase_turns->shape.identity" &&
+            beautyRecipeV2->edges[0].adapters ==
+                std::vector<std::string>{"unit_cycle_as_phase_turns_v1"} &&
+            beautyRecipeV2->chosen_adapters ==
+                std::vector<std::string>{"unit_cycle_as_phase_turns_v1"},
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_BeautyExplicitFoldAndAdapter");
+    if (beautyRecipeV2 && beautyRecipeV2->nodes.size() == 5) {
+        Check(beautyRecipeV2->nodes[0].parameter_overrides.size() == 2 &&
+                beautyRecipeV2->nodes[1].parameter_overrides.size() == 2,
+            "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_BeautyStableParameterOverrides");
+    }
 
     bool explainoPaletteFound = false;
     bool balanceVoidFound = false;
@@ -2049,8 +2068,11 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
         Check(recipeLanes.size() == 4,
             "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_LaneCount");
         if (recipeLanes.size() == 4) {
-            Check(recipeLanes[0].lane_id == "source" && recipeLanes[0].rows.size() == 1 &&
-                    recipeLanes[0].rows[0].function_id == expectedRecipe.source,
+            const bool isBeauty = expectedRecipe.id == "sdf_normal_angle_beauty";
+            Check(recipeLanes[0].lane_id == "source" &&
+                    recipeLanes[0].rows.size() == (isBeauty ? 2u : 1u) &&
+                    recipeLanes[0].rows[0].function_id == expectedRecipe.source &&
+                    (!isBeauty || recipeLanes[0].rows[1].function_id == "lens_field_v2_distance"),
                 "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_SourceLane");
             Check(recipeLanes[1].lane_id == "shape" && recipeLanes[1].rows.size() == 1 &&
                     recipeLanes[1].rows[0].function_id == expectedRecipe.shape,
@@ -2080,10 +2102,17 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
                 &error),
             (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_FallbackBuildRecipeLanes: ") +
                 hardcodedRecipes[recipeIndex].id + ": " + error).c_str());
-        Check(recipeIndex < graphRecipeLanes.size() &&
-                ColorPipelineLaneVectorsEquivalent(graphRecipeLanes[recipeIndex], fallbackLanes),
-            (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_AllRecipeFallbackParity: ") +
-                hardcodedRecipes[recipeIndex].id).c_str());
+        if (hardcodedRecipes[recipeIndex].id == "sdf_normal_angle_beauty") {
+            Check(recipeIndex < graphRecipeLanes.size() &&
+                    graphRecipeLanes[recipeIndex][0].rows.size() == 2 &&
+                    fallbackLanes[0].rows.size() == 1,
+                "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_BeautyFallbackRemainsLegacyTupleOnly");
+        } else {
+            Check(recipeIndex < graphRecipeLanes.size() &&
+                    ColorPipelineLaneVectorsEquivalent(graphRecipeLanes[recipeIndex], fallbackLanes),
+                (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_AllRecipeFallbackParity: ") +
+                    hardcodedRecipes[recipeIndex].id).c_str());
+        }
     }
     color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(false);
     Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("recipe_v2_graph"),
@@ -2148,6 +2177,19 @@ void TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph() {
     Check(!color_pipeline_core::TryProjectColorPipelineRecipeV2ToLanes(invalidFoldRecipe, &lanes, &error) &&
             lanes.empty() && error.find("source fold") != std::string::npos,
         "TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_FoldOutputMismatchRejected");
+
+    MaterializedColorPipelineRecipeV2 invalidOverrideRecipe = *baseRecipe;
+    MaterializedColorPipelineRecipeParameterOverride invalidOverride;
+    invalidOverride.descriptor_parameter_id = "signal.scale";
+    invalidOverride.type = "float";
+    invalidOverride.value_kind = "number";
+    invalidOverride.number_value = 99.0;
+    invalidOverrideRecipe.nodes[0].parameter_overrides.push_back(invalidOverride);
+    error.clear();
+    Check(!color_pipeline_core::TryProjectColorPipelineRecipeV2ToLanes(
+                invalidOverrideRecipe, &lanes, &error) &&
+            lanes.empty() && error.find("out of range") != std::string::npos,
+        "TestColorPipelineRecipeV2ProjectionFailsClosedForInvalidGraph_OutOfRangeOverrideRejected");
 
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
 }

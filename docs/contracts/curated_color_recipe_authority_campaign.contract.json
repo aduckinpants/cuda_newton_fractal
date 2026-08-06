@@ -52,7 +52,7 @@
   ],
   "required_defaults": {
     "accepted_base_head": "061ec748585282ff388e11eaa247ff3d69c7bb86",
-    "active_slice": "slice_4_existing_recipe_parity",
+    "active_slice": "slice_5_sdf_beauty_migration",
     "product_behavior_change_authorized": true,
     "ui_layout_frozen": true,
     "state_json_replay_authority": true,
@@ -77,13 +77,11 @@
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/curated_color_recipe_authority_campaign.contract.json --out-json artifacts/validation/curated_color_recipe_authority_campaign_contract.json",
     "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_plan_sync --log artifacts/logs/curated_recipe_plan_sync.log --out-json artifacts/validation/curated_recipe_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/curated_color_recipe_authority_campaign_PHASED_PLAN.md",
     "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/curated_color_recipe_authority_campaign_code_quality.json",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_parity_core_native --log artifacts/logs/curated_recipe_parity_core_native.log --out-json artifacts/validation/curated_recipe_parity_core_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_parity_window_native --log artifacts/logs/curated_recipe_parity_window_native.log --out-json artifacts/validation/curated_recipe_parity_window_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_parity_report_native --log artifacts/logs/curated_recipe_parity_report_native.log --out-json artifacts/validation/curated_recipe_parity_report_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_parity_capture_native --log artifacts/logs/curated_recipe_parity_capture_native.log --out-json artifacts/validation/curated_recipe_parity_capture_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_diagnostics_capture",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_parity_state_io_native --log artifacts/logs/curated_recipe_parity_state_io_native.log --out-json artifacts/validation/curated_recipe_parity_state_io_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_diagnostics_state_io",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_parity_runtime_publish --log artifacts/logs/curated_recipe_parity_runtime_publish.log --out-json artifacts/validation/curated_recipe_parity_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
-    "py -3.14 -m pytest tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_recipe_application_receipt_and_replay_no_mouse -q --junitxml artifacts/pytest/curated_color_recipe_parity_runtime.junit.xml",
+    "py -3.14 -m pytest tests/test_ui_salt_materializer.py -q --junitxml artifacts/pytest/curated_recipe_beauty_materializer.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_beauty_core_native --log artifacts/logs/curated_recipe_beauty_core_native.log --out-json artifacts/validation/curated_recipe_beauty_core_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_core",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_beauty_window_native --log artifacts/logs/curated_recipe_beauty_window_native.log --out-json artifacts/validation/curated_recipe_beauty_window_native.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_color_pipeline_window",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_beauty_runtime_publish --log artifacts/logs/curated_recipe_beauty_runtime_publish.log --out-json artifacts/validation/curated_recipe_beauty_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_color_pipeline_presets.py::test_sdf_normal_angle_beauty_metadata_migration_no_mouse -q --junitxml artifacts/pytest/curated_recipe_beauty_runtime.junit.xml",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/curated_color_recipe_authority_campaign_PHASED_PLAN.md --out-json artifacts/validation/curated_color_recipe_authority_campaign_hostile_audit.json",
     "py -3.14 tools/viewer_host_run_logged_command.py --label curated_recipe_diff_check --log artifacts/logs/curated_recipe_diff_check.log --out-json artifacts/validation/curated_recipe_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
   ],
@@ -97,59 +95,42 @@
       "equals": true
     },
     {
-      "assertion_id": "slice_4_core_native_ok",
-      "description": "All six graph and legacy fallback recipe projections remain exactly equivalent.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/curated_recipe_parity_core_native.json",
-      "json_path": "exit_code",
-      "equals": 0
-    },
-    {
-      "assertion_id": "slice_4_window_native_ok",
-      "description": "Resolve, Prepare, and Commit produce truthful graph/fallback receipts and provenance without side effects on rejection.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/curated_recipe_parity_window_native.json",
-      "json_path": "exit_code",
-      "equals": 0
-    },
-    {
-      "assertion_id": "slice_4_report_native_ok",
-      "description": "Automation reports committed receipt authority and exact/modified/none/unknown provenance truthfully.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/curated_recipe_parity_report_native.json",
-      "json_path": "exit_code",
-      "equals": 0
-    },
-    {
-      "assertion_id": "slice_4_capture_native_ok",
-      "description": "Capture Finding reports the receipt derived from committed rows without changing state.json replay authority.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/curated_recipe_parity_capture_native.json",
-      "json_path": "exit_code",
-      "equals": 0
-    },
-    {
-      "assertion_id": "slice_4_runtime_publish_ok",
-      "description": "Published viewer runtime contains the committed recipe receipt path.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/curated_recipe_parity_runtime_publish.json",
-      "json_path": "exit_code",
-      "equals": 0
-    },
-    {
-      "assertion_id": "slice_4_state_io_native_ok",
-      "description": "Loaded state preserves authoritative rows while marking historical recipe provenance unknown.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/curated_recipe_parity_state_io_native.json",
-      "json_path": "exit_code",
-      "equals": 0
-    },
-    {
-      "assertion_id": "slice_4_runtime_parity_ok",
-      "description": "Published public Apply, fallback, capture, and replay preserve existing recipe pixels and truthful receipt authority.",
+      "assertion_id": "slice_5_materializer_ok",
+      "description": "UI-Salt multi-Source, stable override, fold, and explicit adapter metadata validate and fail closed.",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/curated_color_recipe_parity_runtime.junit.xml",
-      "test_nodeid": "tests/test_fractal_runtime_color_pipeline_presets.py::test_color_pipeline_recipe_application_receipt_and_replay_no_mouse"
+      "artifact_path": "artifacts/pytest/curated_recipe_beauty_materializer.junit.xml",
+      "test_nodeid": "tests/test_ui_salt_materializer.py"
+    },
+    {
+      "assertion_id": "slice_5_core_native_ok",
+      "description": "C++ metadata loading and graph projection materialize Beauty's explicit Source fold and adapter without hidden normal-path expansion.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/curated_recipe_beauty_core_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "slice_5_window_native_ok",
+      "description": "Normal Beauty Apply commits the graph projection and fallback alone retains legacy expansion.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/curated_recipe_beauty_window_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "slice_5_runtime_publish_ok",
+      "description": "Published viewer stages the migrated Beauty metadata and graph projection.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/curated_recipe_beauty_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "slice_5_runtime_beauty_ok",
+      "description": "Public Beauty Apply reports explicit fold/adapter authority and matches frozen live/headless pixels and replay.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/curated_recipe_beauty_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_color_pipeline_presets.py::test_sdf_normal_angle_beauty_metadata_migration_no_mouse"
     }
   ]
 }

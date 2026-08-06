@@ -644,6 +644,38 @@ bool ReadRecipe(
     return true;
 }
 
+bool ReadRecipeParameterOverride(
+    const json_min::Value& value,
+    MaterializedColorPipelineRecipeParameterOverride* outOverride,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Recipe v2 parameter override must be an object");
+    }
+    MaterializedColorPipelineRecipeParameterOverride overrideValue;
+    if (!ReadString(value, "descriptor_parameter_id", &overrideValue.descriptor_parameter_id, outError) ||
+        !ReadString(value, "type", &overrideValue.type, outError) ||
+        !ReadString(value, "value_kind", &overrideValue.value_kind, outError)) {
+        return false;
+    }
+    if (overrideValue.value_kind == "number") {
+        if (!ReadNumber(value, "number_value", &overrideValue.number_value, outError)) {
+            return false;
+        }
+    } else if (overrideValue.value_kind == "bool") {
+        if (!ReadBool(value, "bool_value", &overrideValue.bool_value, outError)) {
+            return false;
+        }
+    } else if (overrideValue.value_kind == "string") {
+        if (!ReadString(value, "string_value", &overrideValue.string_value, outError)) {
+            return false;
+        }
+    } else {
+        return SetError(outError, "Recipe v2 parameter override has invalid value_kind");
+    }
+    *outOverride = std::move(overrideValue);
+    return true;
+}
+
 bool ReadRecipeV2Node(
     const json_min::Value& value,
     MaterializedColorPipelineRecipeV2Node* outNode,
@@ -656,6 +688,19 @@ bool ReadRecipeV2Node(
         !ReadString(value, "lane", &node.lane, outError) ||
         !ReadString(value, "function", &node.function, outError)) {
         return false;
+    }
+    const json_min::Value* overrides = value.get("parameter_overrides");
+    if (overrides) {
+        if (!overrides->is_array()) {
+            return SetError(outError, "recipe_v2 node parameter_overrides must be an array");
+        }
+        for (const json_min::Value& overrideJson : overrides->as_array()) {
+            MaterializedColorPipelineRecipeParameterOverride parameterOverride;
+            if (!ReadRecipeParameterOverride(overrideJson, &parameterOverride, outError)) {
+                return false;
+            }
+            node.parameter_overrides.push_back(std::move(parameterOverride));
+        }
     }
     *outNode = std::move(node);
     return true;
@@ -1471,15 +1516,19 @@ bool ValidateMaterializedRecipeV2(
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
                 "' failed closed without a reason");
         }
-        if (recipe.nodes.size() != 4) {
+        if (recipe.nodes.size() < 4 || recipe.nodes.size() > 11) {
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
-                "' must declare four linear projection nodes");
+                "' must declare one to eight Source nodes plus Shape, Palette, and Grading");
         }
+        const std::size_t sourceCount = recipe.nodes.size() - 3;
         std::set<std::string> semanticNodeIds;
         for (std::size_t index = 0; index < recipe.nodes.size(); ++index) {
             const MaterializedColorPipelineRecipeV2Node& node = recipe.nodes[index];
-            const std::string expectedPrefix = std::string(kExpectedLanes[index]) + ".";
-            if (node.lane != kExpectedLanes[index] || !StartsWith(node.id, expectedPrefix.c_str())) {
+            const char* expectedLane = index < sourceCount
+                ? "source"
+                : kExpectedLanes[index - sourceCount + 1];
+            const std::string expectedPrefix = std::string(expectedLane) + ".";
+            if (node.lane != expectedLane || !StartsWith(node.id, expectedPrefix.c_str())) {
                 return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
                     "' has invalid semantic linear projection node order");
             }
@@ -1491,26 +1540,97 @@ bool ValidateMaterializedRecipeV2(
                 return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
                     "' references a missing node function");
             }
+            std::set<std::string> overrideIds;
+            for (const MaterializedColorPipelineRecipeParameterOverride& overrideValue : node.parameter_overrides) {
+                if (overrideValue.descriptor_parameter_id.empty() ||
+                    !overrideIds.insert(overrideValue.descriptor_parameter_id).second) {
+                    return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                        "' has an empty or duplicate parameter override");
+                }
+                const bool kindMatchesType =
+                    (overrideValue.value_kind == "number" &&
+                        (overrideValue.type == "float" || overrideValue.type == "int")) ||
+                    (overrideValue.value_kind == "bool" && overrideValue.type == "bool") ||
+                    (overrideValue.value_kind == "string" && overrideValue.type == "enum");
+                if (!kindMatchesType) {
+                    return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                        "' has a parameter override type/value mismatch");
+                }
+            }
         }
         if (recipe.source_fold.operation != "ordered_destination_weighted_lerp" ||
-            recipe.source_fold.source_nodes.size() != 1 ||
-            recipe.source_fold.source_nodes[0] != recipe.nodes[0].id ||
-            !recipe.source_fold.fold_nodes.empty() ||
-            !recipe.source_fold.fold_edges.empty() ||
-            recipe.source_fold.output_node != recipe.nodes[0].id ||
+            recipe.source_fold.source_nodes.size() != sourceCount ||
             recipe.source_fold.first_source_blend != 1.0) {
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
-                "' has invalid canonical single-source fold");
+                "' has invalid canonical source fold");
+        }
+        for (std::size_t index = 0; index < sourceCount; ++index) {
+            if (recipe.source_fold.source_nodes[index] != recipe.nodes[index].id) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' source fold order does not match Source node order");
+            }
+        }
+        if (sourceCount == 1) {
+            if (!recipe.source_fold.fold_nodes.empty() ||
+                !recipe.source_fold.fold_edges.empty() ||
+                recipe.source_fold.output_node != recipe.nodes[0].id) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' has invalid canonical single-source fold");
+            }
+        } else {
+            if (recipe.source_fold.fold_nodes.size() != sourceCount - 1 ||
+                recipe.source_fold.fold_edges.size() != (sourceCount - 1) * 2 ||
+                recipe.source_fold.output_node != recipe.source_fold.fold_nodes.back()) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' has invalid ordered multi-Source fold topology");
+            }
+            std::string accumulator = recipe.nodes[0].id;
+            for (std::size_t sourceIndex = 1; sourceIndex < sourceCount; ++sourceIndex) {
+                const std::string& sourceNode = recipe.nodes[sourceIndex].id;
+                const std::string expectedFold = std::string("fold.") + sourceNode.substr(sourceNode.find('.') + 1);
+                if (recipe.source_fold.fold_nodes[sourceIndex - 1] != expectedFold ||
+                    recipe.source_fold.fold_edges[(sourceIndex - 1) * 2] != accumulator + "->" + expectedFold ||
+                    recipe.source_fold.fold_edges[(sourceIndex - 1) * 2 + 1] != sourceNode + "->" + expectedFold) {
+                    return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                        "' has noncanonical ordered multi-Source fold ids");
+                }
+                accumulator = expectedFold;
+            }
         }
         if (recipe.edges.size() != 3) {
             return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
-                "' must declare three linear projection edges");
+                "' must declare three projected lane edges");
         }
+        const std::string expectedFromNodes[] = {
+            recipe.source_fold.output_node,
+            recipe.nodes[sourceCount].id,
+            recipe.nodes[sourceCount + 1].id,
+        };
+        const std::string expectedToNodes[] = {
+            recipe.nodes[sourceCount].id,
+            recipe.nodes[sourceCount + 1].id,
+            recipe.nodes[sourceCount + 2].id,
+        };
+        const std::string expectedFromFunctions[] = {
+            recipe.nodes[sourceCount - 1].function,
+            recipe.nodes[sourceCount].function,
+            recipe.nodes[sourceCount + 1].function,
+        };
+        const std::string expectedToFunctions[] = {
+            recipe.nodes[sourceCount].function,
+            recipe.nodes[sourceCount + 1].function,
+            recipe.nodes[sourceCount + 2].function,
+        };
         for (std::size_t index = 0; index < recipe.edges.size(); ++index) {
             const MaterializedColorPipelineRecipeV2Edge& edge = recipe.edges[index];
-            if (edge.from_node != recipe.nodes[index].id || edge.to_node != recipe.nodes[index + 1].id) {
+            if (edge.from_node != expectedFromNodes[index] || edge.to_node != expectedToNodes[index]) {
                 return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
-                    "' has invalid linear projection edge order");
+                    "' has invalid projected edge order");
+            }
+            if (edge.from_function != expectedFromFunctions[index] ||
+                edge.to_function != expectedToFunctions[index]) {
+                return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +
+                    "' edge functions do not match projection nodes");
             }
             if (edge.status != "direct" && edge.status != "adapted") {
                 return SetError(outError, std::string("Materialized recipe_v2 '") + recipe.id +

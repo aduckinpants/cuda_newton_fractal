@@ -2274,62 +2274,214 @@ inline bool TryProjectColorPipelineRecipeV2ToLanes(
     if (recipe.status != "resolved") {
         return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid status");
     }
-
-    static const char* const kExpectedLanes[] = {"source", "shape", "palette", "grading"};
-    if (recipe.nodes.size() != 4) {
-        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' does not have four linear projection nodes");
-    }
-    if (recipe.edges.size() != 3) {
-        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' does not have three linear projection edges");
+    if (recipe.nodes.size() < 4 || recipe.nodes.size() > 11) {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id +
+            "' must declare one to eight Source nodes plus Shape, Palette, and Grading");
     }
 
+    const std::size_t sourceCount = recipe.nodes.size() - 3;
     const MaterializedColorPipelineRecipeSourceFold& sourceFold = recipe.source_fold;
     if (sourceFold.operation != "ordered_destination_weighted_lerp" ||
-        sourceFold.source_nodes.size() != 1 ||
-        sourceFold.source_nodes[0] != recipe.nodes[0].id ||
-        !sourceFold.fold_nodes.empty() ||
-        !sourceFold.fold_edges.empty() ||
-        sourceFold.output_node != recipe.nodes[0].id ||
+        sourceFold.source_nodes.size() != sourceCount ||
         sourceFold.first_source_blend != 1.0) {
         return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid canonical source fold");
     }
-
-    std::vector<ColorPipelineLaneState> lanes;
-    lanes.reserve(4);
-    for (std::size_t index = 0; index < 4; ++index) {
-        const MaterializedColorPipelineRecipeV2Node& node = recipe.nodes[index];
-        const std::string expectedPrefix = std::string(kExpectedLanes[index]) + ".";
-        if (node.lane != kExpectedLanes[index] || node.id.rfind(expectedPrefix, 0) != 0) {
-            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid semantic linear node order");
+    for (std::size_t index = 0; index < sourceCount; ++index) {
+        if (recipe.nodes[index].lane != "source" ||
+            recipe.nodes[index].id.rfind("source.", 0) != 0 ||
+            sourceFold.source_nodes[index] != recipe.nodes[index].id) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id +
+                "' has invalid Source node/fold order");
         }
-        const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(node.lane);
-        if (!catalog) {
-            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' references missing lane: " + node.lane);
+    }
+    if (sourceCount == 1) {
+        if (!sourceFold.fold_nodes.empty() || !sourceFold.fold_edges.empty() ||
+            sourceFold.output_node != recipe.nodes[0].id) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id +
+                "' has invalid canonical single-source fold");
         }
-        ColorPipelineLaneState lane;
-        if (!BuildColorPipelineLaneWithSingleRow(
-                *catalog,
-                node.function.c_str(),
-                static_cast<std::uint64_t>(index + 1),
-                &lane,
-                outError)) {
-            return false;
+    } else {
+        if (sourceFold.fold_nodes.size() != sourceCount - 1 ||
+            sourceFold.fold_edges.size() != (sourceCount - 1) * 2 ||
+            sourceFold.output_node != sourceFold.fold_nodes.back()) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id +
+                "' has invalid ordered multi-Source fold topology");
         }
-        lanes.push_back(std::move(lane));
+        std::string accumulator = recipe.nodes[0].id;
+        for (std::size_t sourceIndex = 1; sourceIndex < sourceCount; ++sourceIndex) {
+            const std::string& sourceNode = recipe.nodes[sourceIndex].id;
+            const std::string expectedFold = std::string("fold.") + sourceNode.substr(sourceNode.find('.') + 1);
+            if (sourceFold.fold_nodes[sourceIndex - 1] != expectedFold ||
+                sourceFold.fold_edges[(sourceIndex - 1) * 2] != accumulator + "->" + expectedFold ||
+                sourceFold.fold_edges[(sourceIndex - 1) * 2 + 1] != sourceNode + "->" + expectedFold) {
+                return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id +
+                    "' has noncanonical ordered multi-Source fold ids");
+            }
+            accumulator = expectedFold;
+        }
     }
 
+    static const char* const kTailLanes[] = {"shape", "palette", "grading"};
+    for (std::size_t tailIndex = 0; tailIndex < 3; ++tailIndex) {
+        const MaterializedColorPipelineRecipeV2Node& node = recipe.nodes[sourceCount + tailIndex];
+        const std::string expectedPrefix = std::string(kTailLanes[tailIndex]) + ".";
+        if (node.lane != kTailLanes[tailIndex] || node.id.rfind(expectedPrefix, 0) != 0) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id +
+                "' has invalid semantic tail node order");
+        }
+    }
+
+    if (recipe.edges.size() != 3) {
+        return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id +
+            "' does not have three projected lane edges");
+    }
+    const std::string expectedFromNodes[] = {
+        sourceFold.output_node,
+        recipe.nodes[sourceCount].id,
+        recipe.nodes[sourceCount + 1].id,
+    };
+    const std::string expectedToNodes[] = {
+        recipe.nodes[sourceCount].id,
+        recipe.nodes[sourceCount + 1].id,
+        recipe.nodes[sourceCount + 2].id,
+    };
+    const std::string expectedFromFunctions[] = {
+        recipe.nodes[sourceCount - 1].function,
+        recipe.nodes[sourceCount].function,
+        recipe.nodes[sourceCount + 1].function,
+    };
+    const std::string expectedToFunctions[] = {
+        recipe.nodes[sourceCount].function,
+        recipe.nodes[sourceCount + 1].function,
+        recipe.nodes[sourceCount + 2].function,
+    };
     for (std::size_t index = 0; index < 3; ++index) {
         const MaterializedColorPipelineRecipeV2Edge& edge = recipe.edges[index];
-        if (edge.from_node != recipe.nodes[index].id || edge.to_node != recipe.nodes[index + 1].id) {
-            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid linear edge order");
+        if (edge.from_node != expectedFromNodes[index] || edge.to_node != expectedToNodes[index]) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid projected edge order");
         }
-        if (edge.from_function != recipe.nodes[index].function ||
-            edge.to_function != recipe.nodes[index + 1].function) {
-            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' edge functions do not match projection nodes");
+        if (edge.from_function != expectedFromFunctions[index] ||
+            edge.to_function != expectedToFunctions[index]) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id +
+                "' edge functions do not match projection nodes");
         }
         if (edge.status != "direct" && edge.status != "adapted") {
             return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id + "' has invalid edge status");
         }
+    }
+
+    auto applyOverrides = [&fail](
+        const MaterializedColorPipelineRecipeV2Node& node,
+        const FunctionDescriptor& descriptor,
+        ColorPipelineRowState* row) {
+        for (const MaterializedColorPipelineRecipeParameterOverride& overrideValue : node.parameter_overrides) {
+            ColorPipelineParamState* target = nullptr;
+            const FunctionParamDescriptor* parameterDescriptor = nullptr;
+            for (std::size_t index = 0; index < row->parameter_values.size(); ++index) {
+                if (row->parameter_values[index].path == overrideValue.descriptor_parameter_id) {
+                    target = &row->parameter_values[index];
+                    if (index < descriptor.parameters.size() &&
+                        descriptor.parameters[index].path == overrideValue.descriptor_parameter_id) {
+                        parameterDescriptor = &descriptor.parameters[index];
+                    }
+                    break;
+                }
+            }
+            if (!target || !parameterDescriptor) {
+                return fail(std::string("Color Pipeline recipe_v2 node '") + node.id +
+                    "' references missing parameter '" + overrideValue.descriptor_parameter_id + "'");
+            }
+            if (target->type != overrideValue.type || parameterDescriptor->type != overrideValue.type) {
+                return fail(std::string("Color Pipeline recipe_v2 node '") + node.id +
+                    "' parameter override type mismatch");
+            }
+            if (overrideValue.value_kind == "number" &&
+                (target->type == "float" || target->type == "int") &&
+                std::isfinite(overrideValue.number_value)) {
+                if ((parameterDescriptor->has_min &&
+                        overrideValue.number_value < parameterDescriptor->min_value) ||
+                    (parameterDescriptor->has_max &&
+                        overrideValue.number_value > parameterDescriptor->max_value)) {
+                    return fail(std::string("Color Pipeline recipe_v2 node '") + node.id +
+                        "' numeric parameter override is out of range");
+                }
+                if (target->type == "int" && std::floor(overrideValue.number_value) != overrideValue.number_value) {
+                    return fail(std::string("Color Pipeline recipe_v2 node '") + node.id +
+                        "' integer parameter override is not integral");
+                }
+                target->number_value = overrideValue.number_value;
+            } else if (overrideValue.value_kind == "bool" && target->type == "bool") {
+                target->bool_value = overrideValue.bool_value;
+            } else if (overrideValue.value_kind == "string" && target->type == "enum") {
+                bool knownOption = false;
+                for (const UISchemaOption& option : parameterDescriptor->options) {
+                    if (option.id == overrideValue.string_value) {
+                        knownOption = true;
+                        break;
+                    }
+                }
+                if (!knownOption) {
+                    return fail(std::string("Color Pipeline recipe_v2 node '") + node.id +
+                        "' enum parameter override is not a descriptor option");
+                }
+                target->enum_value = overrideValue.string_value;
+            } else {
+                return fail(std::string("Color Pipeline recipe_v2 node '") + node.id +
+                    "' parameter override value kind mismatch");
+            }
+        }
+        return true;
+    };
+
+    std::vector<ColorPipelineLaneState> lanes;
+    lanes.reserve(4);
+    const ColorPipelineLaneCatalog* sourceCatalog = FindColorPipelineLaneCatalog("source");
+    if (!sourceCatalog) {
+        return fail("Color Pipeline recipe_v2 projection cannot find Source lane catalog");
+    }
+    ColorPipelineLaneState sourceLane;
+    sourceLane.lane_id = sourceCatalog->lane_id;
+    sourceLane.label = sourceCatalog->label;
+    for (std::size_t sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {
+        const MaterializedColorPipelineRecipeV2Node& node = recipe.nodes[sourceIndex];
+        const FunctionDescriptor* descriptor =
+            FindColorPipelineFunctionDescriptor(*sourceCatalog, node.function.c_str());
+        ColorPipelineRowState row;
+        if (!descriptor ||
+            !BuildColorPipelineRowFromFunctionId(
+                *sourceCatalog,
+                node.function.c_str(),
+                static_cast<std::uint64_t>(sourceIndex + 1),
+                &row,
+                outError) ||
+            !applyOverrides(node, *descriptor, &row)) {
+            return false;
+        }
+        sourceLane.rows.push_back(std::move(row));
+    }
+    lanes.push_back(std::move(sourceLane));
+
+    for (std::size_t tailIndex = 0; tailIndex < 3; ++tailIndex) {
+        const MaterializedColorPipelineRecipeV2Node& node = recipe.nodes[sourceCount + tailIndex];
+        const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(node.lane);
+        if (!catalog) {
+            return fail(std::string("Color Pipeline recipe_v2 '") + recipe.id +
+                "' references missing lane: " + node.lane);
+        }
+        const FunctionDescriptor* descriptor =
+            FindColorPipelineFunctionDescriptor(*catalog, node.function.c_str());
+        ColorPipelineLaneState lane;
+        if (!descriptor ||
+            !BuildColorPipelineLaneWithSingleRow(
+                *catalog,
+                node.function.c_str(),
+                static_cast<std::uint64_t>(sourceCount + tailIndex + 1),
+                &lane,
+                outError) ||
+            !applyOverrides(node, *descriptor, &lane.rows[0])) {
+            return false;
+        }
+        lanes.push_back(std::move(lane));
     }
 
     *outLanes = std::move(lanes);

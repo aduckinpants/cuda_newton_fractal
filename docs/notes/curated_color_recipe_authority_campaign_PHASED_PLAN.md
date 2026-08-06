@@ -11,11 +11,11 @@
 
 ## Current Phase
 
-Slice 4 - Existing Recipe Parity is active from clean, pushed, receipted, rearward-reviewed Slice 3 checkpoint ac07b2a92039987ff7975182329afabd8647b4be.
+Slice 5 - SDF Beauty Migration implementation and hostile review are complete from clean, pushed, receipted, rearward-reviewed Slice 4 checkpoint 9654db0ada476591e6db58e1671e0b83d9b0e265. Checkpoint, machine receipts, push, and rearward review remain before Slice 6 may start.
 
 The hard-denial workflow blocks raw branch mutation but this checkout has no approved branch/merge wrapper. This campaign therefore starts as an explicitly stacked slice on codex/model-diagnostics-overlay-preplanning. Eventual upstream integration must preserve both closed planning campaigns.
 
-Slices 0 through 3 are closed. Slice 4 adds prepared and committed recipe-application receipts, truthful graph-versus-fallback authority, and exact/modified/none/unknown-after-reload recipe provenance while preserving the existing six recipes bit-exactly. SDF Beauty metadata expansion remains Slice 5.
+Slices 0 through 4 are closed. Slice 5 now represents SDF Normal Angle Beauty through explicit recipe_v2 multi-Source metadata, stable parameter overrides, an ordered Source fold, and explicit unit_cycle_as_phase_turns_v1 consent while preserving the frozen Beauty pixels bit-exactly through the public selector/Apply path.
 
 ## Phase Checklist
 
@@ -41,7 +41,7 @@ Slices 0 through 3 are closed. Slice 4 adds prepared and committed recipe-applic
 - [x] Slice 4: report graph versus fallback authority and exact/modified/none/unknown-after-reload truthfully.
 - [x] Slice 4: prove all six existing recipes remain bit-exact through public Apply, fallback, capture, and replay.
 - [x] Slice 4: hostile audit and focused native/runtime validation.
-- [ ] Slice 5: SDF Beauty Migration.
+- [x] Slice 5: SDF Beauty Migration implementation, frozen-golden proof, and hostile audit; checkpoint closure remains.
 - [ ] Slice 6: New Recipe Qualification.
 - [ ] Slice 7: Runtime Closure and replan.
 
@@ -216,6 +216,17 @@ No SDF Beauty metadata migration, new recipe, new visible control, or row arithm
 
 Represent Beauty's two-source fold and adapter explicitly and match frozen goldens bit-exactly.
 
+Slice 5 authoring contract:
+
+- `recipe_source(recipe, node_id, function, blend)` appends a Source node after the recipe's required first Source. Duplicate recipe/node ids, unknown functions, more than eight Source rows, nonfinite blend, or blend outside `[0,1]` fail closed.
+- `recipe_param(recipe, node_id, descriptor_parameter_id, value)` resolves a stable descriptor parameter id on an existing semantic node. Unknown, duplicate, wrongly typed, nonfinite, or out-of-range overrides fail closed. Canonical hashes include normalized overrides and exclude display text.
+- `recipe_edge_adapter(recipe, from_node, to_node, adapter)` grants explicit consent to one closed-inventory adapter on one edge. Automatic insertion and unknown adapters fail closed.
+- Beauty declares Source nodes `source.normal_angle` and `source.lens_response`, fold node `fold.lens_response`, and explicit adapter node/edge receipt `fold.lens_response -> adapter.unit_cycle_as_phase_turns -> shape.identity`.
+- Graph projection materializes Source rows in source-fold order, then one Shape, Palette, and Grading row. The first Source initializes the accumulator at blend `1.0`; later Source blend remains the existing destination-weighted row blend.
+- Normal graph authority consumes recipe_v2 projection directly. The old Beauty special expansion remains reachable only under `color_pipeline.recipe_v2.force_legacy_recipe_tuple`, reports legacy authority, and is not persisted.
+- No visible UI change, row arithmetic change, new function, new recipe, SDF operator, or graph editor belongs in Slice 5.
+
+
 ### Slice 6 - Curated Qualification (Independent Gates C/D1/D2/D3)
 
 Define Root Glow authority, then independently qualify Root Glow, Curvature Relief, and Lens Topography. A failed recipe remains visible-disabled and does not block the others.
@@ -241,13 +252,14 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 | Slice 1 transactional Apply | complete | Resolve/Prepare/Commit; non-failing commit assertions; native reject/success/manual-recovery rails; published public Apply proof; commit 6ddef4a6; receipts and rearward review are ok. |
 | Slice 2 canonical recipe contract | complete | commit 1ae2f14; 43 materializer tests; 3364 Color Pipeline core assertions; published staged-contract and public Apply runtime proofs; receipts and rearward review are ok. |
 | Slice 3 capability/applicability authority | complete | runtime-owned snapshot and shared query; 467 window assertions; report and finding-sidecar native rails; published public selector/Apply proof; current SDF validity proof; final checkpoint/receipts follow. |
-| Slice 4 existing recipe parity | complete pending checkpoint | prepared/committed graph and fallback receipts; exact/modified/none/unknown-after-reload provenance; 3364 core and 477 window assertions; report/capture/state rails; six frozen live FNV and headless SHA-256 recipe goldens; published runtime and JUnit proof green. |
+| Slice 4 existing recipe parity | complete | prepared/committed graph and fallback receipts; exact/modified/none/unknown-after-reload provenance; 3364 core and 477 window assertions; report/capture/state rails; six frozen live FNV and headless SHA-256 recipe goldens; published runtime and JUnit proof green; commit 9654db0; receipts and rearward review are ok. |
+| Slice 5 SDF Beauty migration | closure pending | explicit multi-Source metadata/fold, typed overrides, explicit adapter receipt, graph-only normal expansion, legacy fallback preservation, 48 materializer tests, 3367 core assertions, 479 window assertions, published runtime, frozen live/headless Beauty parity, and repeated public-path stability proof are green. |
 
 ## Hostile Audit
 
 - Status: complete
-- Scope: Slice 4 prepared/committed receipt ownership, graph/fallback truth, rejected-Apply preservation, exact/modified/none/unknown-after-reload provenance, frozen-golden pixel parity, report/capture consistency, and state replay.
-- Assume dual authority, false receipts, non-atomic Apply, stale capability snapshots, type reinterpretation, unstable parameter addresses, fabricated provenance, or weak qualification remains.
+- Scope: Slice 5 UI-Salt multi-Source authoring, stable parameter overrides, explicit adapter consent, canonical fold/edge receipts, graph-only normal Beauty expansion, bounded legacy fallback, frozen Beauty parity, and state replay.
+- Result: concrete authoring, projection, validation, workflow, and runtime-test defects were found and repaired. The final re-read found no remaining normal-path Beauty special case, silent adapter insertion, ignored override, legacy tuple drift, or weakened pixel requirement.
 
 ## Audit Passes
 
@@ -269,6 +281,9 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Slice 4 pass 1 - RED review proved committed application receipt and distinct manual/reload provenance were absent; early report/finding fixtures also falsely expected `exact` from invalid or stale live snapshots.
 - [x] Slice 4 pass 2 - runtime review found the first proof only established current self-consistency, not parity with frozen pre-change pixels; it now requires all six Slice 0 live FNV and headless SHA-256 goldens. Follow-up review added rejection-after-success proof so an unavailable recipe cannot erase the prior receipt or generation.
 - [x] Slice 4 pass 3 - clean re-read plus focused native, exact published-runtime, frozen-golden, Capture Finding, and reload proof found no additional Slice 4 defect.
+- [x] Slice 5 pass 1 - RED review proved Beauty still declared one Source while runtime added a hidden second Source, implicit fold, and unreported adapter/overrides.
+- [x] Slice 5 pass 2 - implementation review repaired legacy projection leakage, extra adapter acceptance, first-Source blend ambiguity, missing runtime override validation, and weakened unaffected-recipe assertions.
+- [x] Slice 5 pass 3 - clean re-read plus focused native and published public-path proof confirmed graph-only normal expansion, explicit adapter receipt, exact frozen pixels, replay parity, and bounded fallback.
 - Later implementation audits remain pending for canonical graph authority, dual authority, capability snapshots, independent recipe gates, and fallback lifecycle.
 
 ## Audit Findings
@@ -302,6 +317,14 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] The first Slice 4 state-IO assertion was placed before the round-trip state existed and failed compilation; it now runs only after emitted state reload.
 - [x] The first Slice 4 runtime proof compared current capture only to its own replay and could miss recipe pixel drift; it now requires all six frozen Slice 0 live and headless hashes.
 - [x] Receipt preservation after a successful Apply followed by an unavailable recipe had no direct proof; the native rail now freezes receipt identity, generation, exact match, dirty state, and interaction state across rejection.
+- [x] Slice 5's first RED test edit accidentally used raw apply_patch despite the hard-denial workflow; the diff was immediately reversed and reapplied through viewer_host_apply_repo_patch before further mutation.
+- [x] Internal recipe authoring maps initially leaked into and narrowed the legacy recipe JSON surface; the materializer now emits the exact historical tuple shape while keeping graph authoring data internal.
+- [x] Extra executable adapter declarations could be ignored when the required Beauty edge was present; multi-Source recipes now require exactly one explicit fold-to-Shape adapter consent and single-Source recipes reject fold adapters.
+- [x] A first-Source blend override could contradict the canonical accumulator initialization; non-1.0 first-Source blend overrides now fail closed.
+- [x] C++ graph projection initially trusted staged JSON override values after loader validation; runtime descriptor type, enum, finite, and hard-range checks now fail closed independently.
+- [x] Generic materializer tests briefly stopped asserting the canonical single-Source fold on unaffected recipes; exact unaffected fold assertions were restored.
+- [x] The first runtime receipt assertion demanded decimal identity for binary float values; numeric receipt checks now use a 1e-6 tolerance while frame hashes, topology, IDs, enums, and replay remain exact.
+- [x] One isolated runtime launch returned a non-golden live hash after an earlier exact run; the exact requirement was retained, ten additional fresh launches and the combined all-recipe/Beauty public-path proof passed bit-exactly, and no reproducible arithmetic or authority drift remained.
 
 ## Planned Validation Targets
 
@@ -315,4 +338,4 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 
 ## Stop Point
 
-Slice 4 implementation and hostile validation are complete pending checkpoint, machine receipts, rearward review, and push. Slice 5 SDF Beauty Migration is the next checked-in preplanned slice; preplanned sliced work is not exhausted.
+Slice 5 SDF Beauty Migration implementation and hostile review are complete. Stop after checkpoint, machine receipts, rearward review, and push. Slice 6 Curated Qualification remains checked-in preplanned work; preplanned sliced work is not exhausted.

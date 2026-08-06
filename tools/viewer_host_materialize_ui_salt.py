@@ -46,6 +46,9 @@ VALID_STATEMENTS = {
     "port",
     "compat",
     "recipe",
+    "recipe_source",
+    "recipe_param",
+    "recipe_edge_adapter",
     "row_applicator",
     "edge_policy",
     "edge_link",
@@ -770,6 +773,189 @@ def _canonical_parameter_default(param: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _normalize_recipe_parameter_override(
+    recipe_id: str,
+    node_id: str,
+    function: dict[str, Any],
+    descriptor_parameter_id: str,
+    value: Any,
+) -> dict[str, Any]:
+    parameter = next(
+        (
+            candidate
+            for candidate in function.get("params", [])
+            if candidate["descriptor_parameter_id"] == descriptor_parameter_id
+        ),
+        None,
+    )
+    if parameter is None:
+        raise MaterializerError(
+            f"recipe {recipe_id} node {node_id} references unknown descriptor parameter "
+            f"'{descriptor_parameter_id}'"
+        )
+
+    parameter_type = parameter["type"]
+    override: dict[str, Any] = {
+        "descriptor_parameter_id": descriptor_parameter_id,
+        "type": parameter_type,
+    }
+    if parameter_type in {"float", "int"}:
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(float(value)):
+            raise MaterializerError(
+                f"recipe {recipe_id} node {node_id} parameter {descriptor_parameter_id} must be finite"
+            )
+        numeric_value = float(value)
+        if parameter_type == "int" and not numeric_value.is_integer():
+            raise MaterializerError(
+                f"recipe {recipe_id} node {node_id} parameter {descriptor_parameter_id} must be an integer"
+            )
+        if "min" in parameter and numeric_value < float(parameter["min"]):
+            raise MaterializerError(
+                f"recipe {recipe_id} node {node_id} parameter {descriptor_parameter_id} is below its minimum"
+            )
+        if "max" in parameter and numeric_value > float(parameter["max"]):
+            raise MaterializerError(
+                f"recipe {recipe_id} node {node_id} parameter {descriptor_parameter_id} is above its maximum"
+            )
+        override["value_kind"] = "number"
+        override["number_value"] = numeric_value
+    elif parameter_type == "enum":
+        if not isinstance(value, str) or value not in parameter.get("options", []):
+            raise MaterializerError(
+                f"recipe {recipe_id} node {node_id} parameter {descriptor_parameter_id} has invalid enum value"
+            )
+        override["value_kind"] = "string"
+        override["string_value"] = value
+    elif parameter_type == "bool":
+        if not isinstance(value, bool):
+            raise MaterializerError(
+                f"recipe {recipe_id} node {node_id} parameter {descriptor_parameter_id} must be bool"
+            )
+        override["value_kind"] = "bool"
+        override["bool_value"] = value
+    else:
+        raise MaterializerError(
+            f"recipe {recipe_id} node {node_id} parameter {descriptor_parameter_id} has unsupported type "
+            f"'{parameter_type}'"
+        )
+    return override
+
+
+def _prepare_recipe_authoring(
+    recipes: list[dict[str, Any]],
+    recipe_sources: list[dict[str, Any]],
+    recipe_params: list[dict[str, Any]],
+    recipe_edge_adapters: list[dict[str, Any]],
+    functions: dict[str, FunctionRecord],
+    recipe_adapters: list[dict[str, Any]],
+) -> None:
+    recipes_by_id = {recipe["id"]: recipe for recipe in recipes}
+    for recipe in recipes:
+        recipe["source_nodes"] = [{
+            "node_id": recipe["source_node_id"],
+            "function": recipe["source"],
+            "blend": recipe["source_blend"],
+        }]
+        recipe["parameter_overrides"] = {}
+        recipe["edge_adapters"] = []
+
+    for source in recipe_sources:
+        recipe = recipes_by_id.get(source["recipe"])
+        if recipe is None:
+            raise MaterializerError(f"recipe_source references unknown recipe '{source['recipe']}'")
+        function = functions.get(source["function"])
+        if function is None or function.lane != "source":
+            raise MaterializerError(
+                f"recipe_source {source['recipe']} references unknown Source function '{source['function']}'"
+            )
+        existing_node_ids = {
+            item["node_id"] for item in recipe["source_nodes"]
+        } | {
+            recipe["shape_node_id"], recipe["palette_node_id"], recipe["grading_node_id"]
+        }
+        if source["node_id"] in existing_node_ids:
+            raise MaterializerError(
+                f"recipe {source['recipe']} has duplicate semantic node id '{source['node_id']}'"
+            )
+        if len(recipe["source_nodes"]) >= 8:
+            raise MaterializerError(f"recipe {source['recipe']} exceeds the eight Source row limit")
+        recipe["source_nodes"].append(dict(source))
+
+    def node_function(recipe: dict[str, Any], node_id: str) -> dict[str, Any] | None:
+        for source in recipe["source_nodes"]:
+            if source["node_id"] == node_id:
+                return functions[source["function"]].function
+        for lane in ("shape", "palette", "grading"):
+            if recipe[f"{lane}_node_id"] == node_id:
+                return functions[recipe[lane]].function
+        return None
+
+    for recipe in recipes:
+        for source in recipe["source_nodes"][1:]:
+            function = functions[source["function"]].function
+            override = _normalize_recipe_parameter_override(
+                recipe["id"],
+                source["node_id"],
+                function,
+                "signal.blend_weight",
+                source["blend"],
+            )
+            recipe["parameter_overrides"][(source["node_id"], "signal.blend_weight")] = override
+
+    for item in recipe_params:
+        recipe = recipes_by_id.get(item["recipe"])
+        if recipe is None:
+            raise MaterializerError(f"recipe_param references unknown recipe '{item['recipe']}'")
+        function = node_function(recipe, item["node_id"])
+        if function is None:
+            raise MaterializerError(
+                f"recipe {item['recipe']} parameter references unknown node '{item['node_id']}'"
+            )
+        key = (item["node_id"], item["descriptor_parameter_id"])
+        if (
+            item["node_id"] == recipe["source_nodes"][0]["node_id"]
+            and item["descriptor_parameter_id"] == "signal.blend_weight"
+            and item["value"] != 1.0
+        ):
+            raise MaterializerError(
+                f"recipe {item['recipe']} first Source blend must remain exactly 1.0"
+            )
+        if key in recipe["parameter_overrides"]:
+            raise MaterializerError(
+                f"recipe {item['recipe']} node {item['node_id']} has duplicate override "
+                f"'{item['descriptor_parameter_id']}'"
+            )
+        recipe["parameter_overrides"][key] = _normalize_recipe_parameter_override(
+            item["recipe"],
+            item["node_id"],
+            function,
+            item["descriptor_parameter_id"],
+            item["value"],
+        )
+
+    adapters_by_id = {adapter["id"]: adapter for adapter in recipe_adapters}
+    for item in recipe_edge_adapters:
+        recipe = recipes_by_id.get(item["recipe"])
+        if recipe is None:
+            raise MaterializerError(f"recipe_edge_adapter references unknown recipe '{item['recipe']}'")
+        adapter = adapters_by_id.get(item["adapter"])
+        if adapter is None:
+            raise MaterializerError(
+                f"recipe {item['recipe']} references unknown executable adapter '{item['adapter']}'"
+            )
+        if not adapter["requires_explicit_consent"]:
+            raise MaterializerError(
+                f"recipe {item['recipe']} executable adapter '{item['adapter']}' is not explicit-consent"
+            )
+        edge_key = (item["from_node"], item["to_node"])
+        if any((edge["from_node"], edge["to_node"]) == edge_key for edge in recipe["edge_adapters"]):
+            raise MaterializerError(
+                f"recipe {item['recipe']} has duplicate adapter consent for "
+                f"{item['from_node']}->{item['to_node']}"
+            )
+        recipe["edge_adapters"].append({**item, "adapter_contract": adapter})
+
+
 def _canonical_recipe_hash(
     recipe: dict[str, Any],
     nodes: list[dict[str, Any]],
@@ -780,10 +966,26 @@ def _canonical_recipe_hash(
     canonical_nodes = []
     for node in nodes:
         function = functions[node["function"]].function
-        parameters = sorted(
-            (_canonical_parameter_default(param) for param in function.get("params", [])),
-            key=lambda item: item["descriptor_parameter_id"],
-        )
+        overrides = {
+            item["descriptor_parameter_id"]: item
+            for item in node.get("parameter_overrides", [])
+        }
+        parameters = []
+        for param in function.get("params", []):
+            canonical = _canonical_parameter_default(param)
+            override = overrides.get(param["descriptor_parameter_id"])
+            if override is not None:
+                if override["value_kind"] == "number":
+                    canonical["default_kind"] = "int" if param["type"] == "int" else "number"
+                    canonical["value"] = format(override["number_value"], ".17g")
+                elif override["value_kind"] == "bool":
+                    canonical["default_kind"] = "bool"
+                    canonical["value"] = "true" if override["bool_value"] else "false"
+                else:
+                    canonical["default_kind"] = "string"
+                    canonical["value"] = override["string_value"]
+            parameters.append(canonical)
+        parameters.sort(key=lambda item: item["descriptor_parameter_id"])
         canonical_nodes.append({
             "id": node["id"],
             "lane": node["lane"],
@@ -813,9 +1015,54 @@ def _build_recipe_v2_shadow(
     functions: dict[str, FunctionRecord],
     edge_links: list[dict[str, Any]],
     adapters: list[dict[str, Any]],
+    recipe_adapters: list[dict[str, Any]],
     policy: dict[str, Any],
 ) -> dict[str, Any]:
     recipe_id = recipe["id"]
+    source_specs = recipe["source_nodes"]
+    node_specs = [
+        (source["node_id"], "source", source["function"])
+        for source in source_specs
+    ] + [
+        (recipe["shape_node_id"], "shape", recipe["shape"]),
+        (recipe["palette_node_id"], "palette", recipe["palette"]),
+        (recipe["grading_node_id"], "grading", recipe["grading"]),
+    ]
+    nodes = []
+    for node_id, lane, function_id in node_specs:
+        node = {"id": node_id, "lane": lane, "function": function_id}
+        overrides = sorted(
+            (
+                override
+                for (override_node_id, _parameter_id), override in recipe["parameter_overrides"].items()
+                if override_node_id == node_id
+            ),
+            key=lambda item: item["descriptor_parameter_id"],
+        )
+        if overrides:
+            node["parameter_overrides"] = overrides
+        nodes.append(node)
+
+    fold_nodes: list[str] = []
+    fold_edges: list[str] = []
+    fold_output = source_specs[0]["node_id"]
+    for source in source_specs[1:]:
+        fold_node = f"fold.{source['node_id'].split('.', 1)[1]}"
+        fold_nodes.append(fold_node)
+        fold_edges.extend([
+            f"{fold_output}->{fold_node}",
+            f"{source['node_id']}->{fold_node}",
+        ])
+        fold_output = fold_node
+    source_fold = {
+        "operation": "ordered_destination_weighted_lerp",
+        "source_nodes": [source["node_id"] for source in source_specs],
+        "fold_nodes": fold_nodes,
+        "fold_edges": fold_edges,
+        "output_node": fold_output,
+        "first_source_blend": 1.0,
+    }
+
     case = {
         "id": f"recipe_v2.{recipe_id}",
         "source": recipe["source"],
@@ -829,38 +1076,107 @@ def _build_recipe_v2_shadow(
         "diagnostic_adapter_consent": False,
         "fail_closed_reason": recipe.get("fail_closed_reason", ""),
     }
-    try:
-        resolved = _resolve_case(case, functions, edge_links, adapters, policy)
-    except MaterializerError as exc:
-        message = str(exc).replace(f"resolution_case recipe_v2.{recipe_id}", f"recipe_v2 {recipe_id}")
-        raise MaterializerError(message) from exc
 
-    node_specs = [
-        (recipe["source_node_id"], "source", recipe["source"]),
-        (recipe["shape_node_id"], "shape", recipe["shape"]),
-        (recipe["palette_node_id"], "palette", recipe["palette"]),
-        (recipe["grading_node_id"], "grading", recipe["grading"]),
-    ]
-    node_ids = [node_id for node_id, _lane, _function in node_specs]
-    edges: list[dict[str, Any]] = []
-    for edge_index, route_edge in enumerate(resolved["route_edges"]):
-        edge = dict(route_edge)
-        edge["from_node"] = node_ids[edge_index]
-        edge["to_node"] = node_ids[edge_index + 1]
-        edges.append(edge)
-
-    nodes = [
-        {"id": node_id, "lane": lane, "function": function_id}
-        for node_id, lane, function_id in node_specs
-    ]
-    source_fold = {
-        "operation": "ordered_destination_weighted_lerp",
-        "source_nodes": [recipe["source_node_id"]],
-        "fold_nodes": [],
-        "fold_edges": [],
-        "output_node": recipe["source_node_id"],
-        "first_source_blend": 1.0,
-    }
+    if len(source_specs) == 1:
+        if recipe["edge_adapters"]:
+            raise MaterializerError(
+                f"recipe_v2 {recipe_id} single-Source graph cannot declare a fold adapter"
+            )
+        try:
+            resolved = _resolve_case(case, functions, edge_links, adapters, policy)
+        except MaterializerError as exc:
+            message = str(exc).replace(f"resolution_case recipe_v2.{recipe_id}", f"recipe_v2 {recipe_id}")
+            raise MaterializerError(message) from exc
+        node_ids = [node_id for node_id, _lane, _function in node_specs]
+        edges = []
+        for edge_index, route_edge in enumerate(resolved["route_edges"]):
+            edge = dict(route_edge)
+            edge["from_node"] = node_ids[edge_index]
+            edge["to_node"] = node_ids[edge_index + 1]
+            edges.append(edge)
+        chosen_adapters = resolved["chosen_adapters"]
+        adapter_hops = resolved["adapter_hops"]
+        adapter_cost = resolved["adapter_cost"]
+        status = resolved["status"]
+        fail_closed_reason = resolved["fail_closed_reason"]
+        tie_break_rule = resolved["tie_break_rule"]
+    else:
+        shape_node = recipe["shape_node_id"]
+        explicit = [
+            item
+            for item in recipe["edge_adapters"]
+            if item["from_node"] == fold_output and item["to_node"] == shape_node
+        ]
+        if len(explicit) != 1 or len(recipe["edge_adapters"]) != 1:
+            raise MaterializerError(
+                f"recipe_v2 {recipe_id} multi-Source fold requires exactly one explicit adapter from "
+                f"{fold_output} to {shape_node}"
+            )
+        consent = explicit[0]
+        adapter = consent["adapter_contract"]
+        last_source_function = functions[source_specs[-1]["function"]].function
+        last_output = _canonical_output_port(last_source_function)
+        shape_function = functions[recipe["shape"]].function
+        shape_input = _first_input_port(shape_function, edge_links[0]["to_port"])
+        shape_output = _canonical_output_port(shape_function)
+        if last_output is None or shape_input is None or shape_output is None:
+            raise MaterializerError(f"recipe_v2 {recipe_id} fold adapter route lacks typed ports")
+        if adapter["source"] != last_output["type"]:
+            raise MaterializerError(
+                f"recipe_v2 {recipe_id} adapter {adapter['id']} does not accept fold output "
+                f"{last_output['type']}"
+            )
+        if not _is_generic_type(shape_input["type"]) and adapter["target"] != shape_input["type"]:
+            raise MaterializerError(
+                f"recipe_v2 {recipe_id} adapter {adapter['id']} does not satisfy Shape input"
+            )
+        shape_output_type = adapter["target"] if _is_generic_type(shape_output["type"]) else shape_output["type"]
+        adapter_semantic_id = adapter["id"][:-3] if adapter["id"].endswith("_v1") else adapter["id"]
+        edges = [{
+            "edge_id": f"{fold_output}->adapter.{adapter_semantic_id}->{shape_node}",
+            "from_function": source_specs[-1]["function"],
+            "to_function": recipe["shape"],
+            "from_type": adapter["source"],
+            "to_type": adapter["target"],
+            "output_type": shape_output_type,
+            "status": "adapted",
+            "adapters": [adapter["id"]],
+            "adapter_hops": 1,
+            "adapter_cost": 0,
+            "from_node": fold_output,
+            "to_node": shape_node,
+        }]
+        current_type = shape_output_type
+        ordered_functions = [
+            shape_function,
+            functions[recipe["palette"]].function,
+            functions[recipe["grading"]].function,
+        ]
+        ordered_nodes = [shape_node, recipe["palette_node_id"], recipe["grading_node_id"]]
+        for index, edge_link in enumerate(edge_links[1:]):
+            route_edge, next_type, reason = _resolve_edge(
+                edge_link,
+                ordered_functions[index],
+                ordered_functions[index + 1],
+                current_type,
+                adapters,
+                policy,
+                case,
+            )
+            if route_edge is None:
+                raise MaterializerError(f"recipe_v2 {recipe_id} failed closed: {reason}")
+            route_edge["from_node"] = ordered_nodes[index]
+            route_edge["to_node"] = ordered_nodes[index + 1]
+            edges.append(route_edge)
+            current_type = next_type
+        chosen_adapters = [adapter["id"]] + [
+            adapter_id for edge in edges[1:] for adapter_id in edge["adapters"]
+        ]
+        adapter_hops = sum(int(edge["adapter_hops"]) for edge in edges)
+        adapter_cost = sum(int(edge["adapter_cost"]) for edge in edges)
+        status = "resolved"
+        fail_closed_reason = ""
+        tie_break_rule = "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order"
 
     return {
         "id": recipe_id,
@@ -872,15 +1188,15 @@ def _build_recipe_v2_shadow(
         "ui_projection": "linear_color_stack",
         "shadow_only": False,
         "live_authority": "recipe_v2_graph",
-        "status": resolved["status"],
+        "status": status,
         "nodes": nodes,
         "source_fold": source_fold,
         "edges": edges,
-        "chosen_adapters": resolved["chosen_adapters"],
-        "adapter_hops": resolved["adapter_hops"],
-        "adapter_cost": resolved["adapter_cost"],
-        "tie_break_rule": resolved["tie_break_rule"],
-        "fail_closed_reason": resolved["fail_closed_reason"],
+        "chosen_adapters": chosen_adapters,
+        "adapter_hops": adapter_hops,
+        "adapter_cost": adapter_cost,
+        "tie_break_rule": tie_break_rule,
+        "fail_closed_reason": fail_closed_reason,
     }
 
 
@@ -889,6 +1205,7 @@ def _build_recipe_v2_shadows(
     functions: dict[str, FunctionRecord],
     edge_links: list[dict[str, Any]],
     adapters: list[dict[str, Any]],
+    recipe_adapters: list[dict[str, Any]],
     policy: dict[str, Any] | None,
 ) -> list[dict[str, Any]]:
     if not recipes:
@@ -896,10 +1213,9 @@ def _build_recipe_v2_shadows(
     if policy is None:
         raise MaterializerError("recipe_v2 shadow metadata requires edge_resolution declarations")
     return [
-        _build_recipe_v2_shadow(recipe, functions, edge_links, adapters, policy)
+        _build_recipe_v2_shadow(recipe, functions, edge_links, adapters, recipe_adapters, policy)
         for recipe in recipes
     ]
-
 
 def _build_compatibility_audit(
     compatibility: list[dict[str, Any]],
@@ -1001,6 +1317,10 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     functions: dict[str, FunctionRecord] = {}
     compatibility: list[dict[str, Any]] = []
     recipes: list[dict[str, Any]] = []
+    recipe_ids: set[str] = set()
+    recipe_sources: list[dict[str, Any]] = []
+    recipe_params: list[dict[str, Any]] = []
+    recipe_edge_adapters: list[dict[str, Any]] = []
     explaino_entries: list[dict[str, Any]] = []
     row_applicators: list[dict[str, Any]] = []
     row_applicator_ids: set[str] = set()
@@ -1271,6 +1591,9 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 },
             )
             recipe_id = _require_string(kwargs, "id", statement=name)
+            if recipe_id in recipe_ids:
+                raise MaterializerError(f"duplicate recipe id '{recipe_id}'")
+            recipe_ids.add(recipe_id)
             version = kwargs.get("version")
             if not isinstance(version, int) or isinstance(version, bool) or version != 1:
                 raise MaterializerError(f"recipe {recipe_id} requires integer version 1")
@@ -1307,6 +1630,43 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 "grading": _require_string(kwargs, "grading", statement=name),
                 "grading_node_id": semantic_nodes["grading_node_id"],
                 "fail_closed_reason": _optional_string(kwargs, "fail_closed_reason", ""),
+            })
+        elif name == "recipe_source":
+            _check_known_args(name, kwargs, {"recipe", "node_id", "function", "blend"})
+            recipe_id = _require_string(kwargs, "recipe", statement=name)
+            node_id = _require_string(kwargs, "node_id", statement=name)
+            if not re.fullmatch(r"source\.[a-z0-9_]+", node_id):
+                raise MaterializerError(
+                    f"recipe_source {recipe_id} node_id must be a semantic id in the source namespace"
+                )
+            blend = kwargs.get("blend")
+            if not isinstance(blend, (int, float)) or isinstance(blend, bool) or not math.isfinite(float(blend)):
+                raise MaterializerError(f"recipe_source {recipe_id} blend must be finite")
+            if float(blend) < 0.0 or float(blend) > 1.0:
+                raise MaterializerError(f"recipe_source {recipe_id} blend must be within [0,1]")
+            recipe_sources.append({
+                "recipe": recipe_id,
+                "node_id": node_id,
+                "function": _require_string(kwargs, "function", statement=name),
+                "blend": float(blend),
+            })
+        elif name == "recipe_param":
+            _check_known_args(name, kwargs, {"recipe", "node_id", "descriptor_parameter_id", "value"})
+            if "value" not in kwargs:
+                raise MaterializerError("recipe_param requires value")
+            recipe_params.append({
+                "recipe": _require_string(kwargs, "recipe", statement=name),
+                "node_id": _require_string(kwargs, "node_id", statement=name),
+                "descriptor_parameter_id": _require_string(kwargs, "descriptor_parameter_id", statement=name),
+                "value": kwargs["value"],
+            })
+        elif name == "recipe_edge_adapter":
+            _check_known_args(name, kwargs, {"recipe", "from_node", "to_node", "adapter"})
+            recipe_edge_adapters.append({
+                "recipe": _require_string(kwargs, "recipe", statement=name),
+                "from_node": _require_string(kwargs, "from_node", statement=name),
+                "to_node": _require_string(kwargs, "to_node", statement=name),
+                "adapter": _require_string(kwargs, "adapter", statement=name),
             })
         elif name == "row_applicator":
             _check_known_args(
@@ -1480,13 +1840,31 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             resolved_cases,
             set(functions.keys()),
         )
+    _prepare_recipe_authoring(
+        recipes,
+        recipe_sources,
+        recipe_params,
+        recipe_edge_adapters,
+        functions,
+        recipe_adapters,
+    )
     recipe_v2 = _build_recipe_v2_shadows(
         recipes,
         functions,
         edge_links,
         adapters,
+        recipe_adapters,
         edge_policy,
     )
+
+    legacy_recipes = [
+        {
+            key: value
+            for key, value in recipe.items()
+            if key not in {"source_nodes", "parameter_overrides", "edge_adapters"}
+        }
+        for recipe in recipes
+    ]
 
     payload = {
         "schema_version": 1,
@@ -1522,7 +1900,7 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
             },
             "compatibility": compatibility,
             "row_applicators": row_applicators,
-            "recipes": recipes,
+            "recipes": legacy_recipes,
             "recipe_v2": recipe_v2,
         },
         "explaino_contract": {"entries": explaino_entries},
