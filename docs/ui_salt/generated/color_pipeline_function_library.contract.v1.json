@@ -3922,66 +3922,6 @@
     ],
     "compat_overrides": [
       {
-        "id": "legacy_smooth_escape_ramp_explaino_cmap_contrast_lift",
-        "source": "smooth_escape_ramp",
-        "palette": "explaino_cmap",
-        "grading": "contrast_lift",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
-        "reason": "explaino palette compatibility is still owned by the legacy runtime bridge",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
-        "id": "legacy_banded_signal_banded_heatmap_band_finish",
-        "source": "banded_signal",
-        "palette": "banded_heatmap",
-        "grading": "band_finish",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
-        "reason": "banded source and palette route is not yet declared in the typed resolver pilot set",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
-        "id": "legacy_escape_magnitude_heatmap_contrast_lift",
-        "source": "escape_magnitude",
-        "palette": "heatmap",
-        "grading": "contrast_lift",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
-        "reason": "escape magnitude source route is not yet declared in the typed resolver pilot set",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
-        "id": "legacy_escape_magnitude_explaino_cmap_contrast_lift",
-        "source": "escape_magnitude",
-        "palette": "explaino_cmap",
-        "grading": "contrast_lift",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
-        "reason": "escape magnitude Explaino palette route remains a legacy runtime bridge",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
-        "id": "legacy_orbit_stripe_phase_wheel_palette_phase_finish",
-        "source": "orbit_stripe",
-        "palette": "phase_wheel_palette",
-        "grading": "phase_finish",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
-        "reason": "orbit stripe phase route is not yet declared in the typed resolver pilot set",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
-        "id": "legacy_root_proximity_explaino_cmap_contrast_lift",
-        "source": "root_proximity",
-        "palette": "explaino_cmap",
-        "grading": "contrast_lift",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
-        "reason": "root proximity Explaino palette route remains a legacy runtime bridge",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
         "id": "recipe_root_log_proximity_signed_unit_map_heatmap",
         "source": "root_log_proximity_v1",
         "palette": "heatmap",
@@ -3990,16 +3930,6 @@
         "owner_seam": "color_pipeline_window::PrepareColorPipelineApplication",
         "reason": "root log proximity is palette-compatible only after the recipe-owned signed_unit_map_v1 shape normalizes the signed source",
         "proof": "curated_recipe_qualification"
-      },
-      {
-        "id": "legacy_root_index_joy_root_palette_basin_default",
-        "source": "root_index",
-        "palette": "joy_root_palette",
-        "grading": "basin_default",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds",
-        "reason": "joy root palette route lacks a dedicated typed palette signature in the pilot resolver set",
-        "proof": "color_pipeline_metadata_parity"
       },
       {
         "id": "legacy_sdf_signed_distance_heatmap_contrast_lift",
@@ -4042,26 +3972,6 @@
         "proof": "color_pipeline_metadata_parity"
       },
       {
-        "id": "legacy_sdf_boundary_band_heatmap_contrast_lift",
-        "source": "sdf_boundary_band",
-        "palette": "heatmap",
-        "grading": "contrast_lift",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
-        "reason": "boundary-band scalar route is not yet declared in the typed resolver pilot set",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
-        "id": "legacy_sdf_boundary_band_explaino_cmap_contrast_lift",
-        "source": "sdf_boundary_band",
-        "palette": "explaino_cmap",
-        "grading": "contrast_lift",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
-        "reason": "boundary-band Explaino palette support remains runtime-owned and not typed-resolver-owned",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
         "id": "legacy_sdf_curvature_heatmap_contrast_lift",
         "source": "sdf_curvature",
         "palette": "heatmap",
@@ -4079,26 +3989,6 @@
         "classification": "runtime_legacy_override",
         "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
         "reason": "curvature Explaino palette support remains runtime-owned and not typed-resolver-owned",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
-        "id": "legacy_lens_field_v2_distance_heatmap_contrast_lift",
-        "source": "lens_field_v2_distance",
-        "palette": "heatmap",
-        "grading": "contrast_lift",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
-        "reason": "Lens Field v2 unit-response route is not yet declared in the typed resolver pilot set",
-        "proof": "color_pipeline_metadata_parity"
-      },
-      {
-        "id": "legacy_lens_field_v2_distance_explaino_cmap_contrast_lift",
-        "source": "lens_field_v2_distance",
-        "palette": "explaino_cmap",
-        "grading": "contrast_lift",
-        "classification": "runtime_legacy_override",
-        "owner_seam": "color_pipeline_sdf_postprocess::BuildSdfPostprocessPlan",
-        "reason": "Lens Field v2 Explaino palette support remains runtime-owned and not typed-resolver-owned",
         "proof": "color_pipeline_metadata_parity"
       }
     ],
@@ -4118,10 +4008,10 @@
         "palette": "explaino_cmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_smooth_escape_ramp_explaino_cmap_contrast_lift",
-        "reason": "explaino palette compatibility is still owned by the legacy runtime bridge"
+        "classification": "typed_resolved",
+        "route_case_id": "smooth_escape_explaino_cmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "phase_orbit",
@@ -4148,40 +4038,40 @@
         "palette": "banded_heatmap",
         "grading": "band_finish",
         "mode": "iteration_bands",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_banded_signal_banded_heatmap_band_finish",
-        "reason": "banded source and palette route is not yet declared in the typed resolver pilot set"
+        "classification": "typed_resolved",
+        "route_case_id": "banded_signal_banded_heatmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "escape_magnitude",
         "palette": "heatmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_escape_magnitude_heatmap_contrast_lift",
-        "reason": "escape magnitude source route is not yet declared in the typed resolver pilot set"
+        "classification": "typed_resolved",
+        "route_case_id": "escape_magnitude_heatmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "escape_magnitude",
         "palette": "explaino_cmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_escape_magnitude_explaino_cmap_contrast_lift",
-        "reason": "escape magnitude Explaino palette route remains a legacy runtime bridge"
+        "classification": "typed_resolved",
+        "route_case_id": "escape_magnitude_explaino_cmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "orbit_stripe",
         "palette": "phase_wheel_palette",
         "grading": "phase_finish",
         "mode": "phase",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_orbit_stripe_phase_wheel_palette_phase_finish",
-        "reason": "orbit stripe phase route is not yet declared in the typed resolver pilot set"
+        "classification": "typed_resolved",
+        "route_case_id": "orbit_stripe_wheel",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "root_proximity",
@@ -4208,10 +4098,10 @@
         "palette": "explaino_cmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_root_proximity_explaino_cmap_contrast_lift",
-        "reason": "root proximity Explaino palette route remains a legacy runtime bridge"
+        "classification": "typed_resolved",
+        "route_case_id": "root_proximity_explaino_cmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "root_index",
@@ -4228,10 +4118,10 @@
         "palette": "joy_root_palette",
         "grading": "basin_default",
         "mode": "joy_basins",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_root_index_joy_root_palette_basin_default",
-        "reason": "joy root palette route lacks a dedicated typed palette signature in the pilot resolver set"
+        "classification": "typed_resolved",
+        "route_case_id": "root_joy",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "sdf_normal_angle",
@@ -4288,20 +4178,20 @@
         "palette": "heatmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_sdf_boundary_band_heatmap_contrast_lift",
-        "reason": "boundary-band scalar route is not yet declared in the typed resolver pilot set"
+        "classification": "typed_resolved",
+        "route_case_id": "sdf_boundary_band_heatmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "sdf_boundary_band",
         "palette": "explaino_cmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_sdf_boundary_band_explaino_cmap_contrast_lift",
-        "reason": "boundary-band Explaino palette support remains runtime-owned and not typed-resolver-owned"
+        "classification": "typed_resolved",
+        "route_case_id": "sdf_boundary_band_explaino_cmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "sdf_curvature",
@@ -4328,20 +4218,20 @@
         "palette": "heatmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_lens_field_v2_distance_heatmap_contrast_lift",
-        "reason": "Lens Field v2 unit-response route is not yet declared in the typed resolver pilot set"
+        "classification": "typed_resolved",
+        "route_case_id": "lens_field_v2_heatmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       },
       {
         "source": "lens_field_v2_distance",
         "palette": "explaino_cmap",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
-        "classification": "runtime_legacy_override",
-        "route_case_id": "",
-        "override_id": "legacy_lens_field_v2_distance_explaino_cmap_contrast_lift",
-        "reason": "Lens Field v2 Explaino palette support remains runtime-owned and not typed-resolver-owned"
+        "classification": "typed_resolved",
+        "route_case_id": "lens_field_v2_explaino_cmap",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
       }
     ],
     "sdf_source_capabilities": [
@@ -4560,6 +4450,291 @@
             "edge_id": "palette_to_grading",
             "from_function": "heatmap",
             "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "smooth_escape_explaino_cmap",
+        "source": "smooth_escape_ramp",
+        "shape": "identity",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "smooth_escape_ramp",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "explaino_cmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "explaino_cmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "banded_signal_banded_heatmap",
+        "source": "banded_signal",
+        "shape": "identity",
+        "palette": "banded_heatmap",
+        "grading": "band_finish",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "banded_signal",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "banded_heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "banded_heatmap",
+            "to_function": "band_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "escape_magnitude_heatmap",
+        "source": "escape_magnitude",
+        "shape": "identity",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "escape_magnitude",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "escape_magnitude_explaino_cmap",
+        "source": "escape_magnitude",
+        "shape": "identity",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "escape_magnitude",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "explaino_cmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "explaino_cmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "orbit_stripe_wheel",
+        "source": "orbit_stripe",
+        "shape": "identity",
+        "palette": "phase_wheel_palette",
+        "grading": "phase_finish",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "orbit_stripe",
+            "to_function": "identity",
+            "from_type": "phase.turns",
+            "to_type": "phase.turns",
+            "output_type": "phase.turns",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "phase_wheel_palette",
+            "from_type": "phase.turns",
+            "to_type": "phase.turns",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "phase_wheel_palette",
+            "to_function": "phase_finish",
             "from_type": "color.linear_rgb",
             "to_type": "color.linear_rgb",
             "output_type": "color.linear_rgb",
@@ -4857,6 +5032,63 @@
         "fail_closed_reason": ""
       },
       {
+        "id": "root_proximity_explaino_cmap",
+        "source": "root_proximity",
+        "shape": "identity",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_proximity",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "explaino_cmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "explaino_cmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
         "id": "root_classic",
         "source": "root_index",
         "shape": "identity",
@@ -4901,6 +5133,63 @@
           {
             "edge_id": "palette_to_grading",
             "from_function": "root_classic_palette",
+            "to_function": "basin_default",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_joy",
+        "source": "root_index",
+        "shape": "identity",
+        "palette": "joy_root_palette",
+        "grading": "basin_default",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_index",
+            "to_function": "identity",
+            "from_type": "category.root_index",
+            "to_type": "category.root_index",
+            "output_type": "category.root_index",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "joy_root_palette",
+            "from_type": "category.root_index",
+            "to_type": "category.root_index",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "joy_root_palette",
             "to_function": "basin_default",
             "from_type": "color.linear_rgb",
             "to_type": "color.linear_rgb",
@@ -4959,6 +5248,234 @@
             "edge_id": "palette_to_grading",
             "from_function": "phase_wheel_palette",
             "to_function": "phase_finish",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_boundary_band_heatmap",
+        "source": "sdf_boundary_band",
+        "shape": "identity",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_boundary_band",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_boundary_band_explaino_cmap",
+        "source": "sdf_boundary_band",
+        "shape": "identity",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_boundary_band",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "explaino_cmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "explaino_cmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "lens_field_v2_heatmap",
+        "source": "lens_field_v2_distance",
+        "shape": "identity",
+        "palette": "heatmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "lens_field_v2_distance",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "heatmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "heatmap",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "lens_field_v2_explaino_cmap",
+        "source": "lens_field_v2_distance",
+        "shape": "identity",
+        "palette": "explaino_cmap",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "lens_field_v2_distance",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "explaino_cmap",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "explaino_cmap",
+            "to_function": "contrast_lift",
             "from_type": "color.linear_rgb",
             "to_type": "color.linear_rgb",
             "output_type": "color.linear_rgb",

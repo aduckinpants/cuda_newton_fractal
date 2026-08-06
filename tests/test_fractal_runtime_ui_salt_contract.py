@@ -62,8 +62,17 @@ def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> N
     assert report["compatibility_count"] == compatibility_count
     assert report["compatibility_authority"] == "materialized_json"
     assert report["active_compatibility_count"] == compatibility_count
+    assert report["typed_compatibility_resolver_enabled"] is True
+    assert report["typed_compatibility_resolver_authority"] == "typed_resolver_live"
+    compatibility_audit = staged["composition_recipe_contract"]["compatibility_audit"]
+    assert report["typed_compatibility_resolver_route_count"] == sum(
+        row["classification"] == "typed_resolved" for row in compatibility_audit
+    )
+    assert report["specialized_compatibility_route_count"] == sum(
+        row["classification"] == "runtime_legacy_override" for row in compatibility_audit
+    )
     assert report["typed_compatibility_pilot_enabled"] is True
-    assert report["typed_compatibility_pilot_authority"] == "typed_resolver_pilot"
+    assert report["typed_compatibility_pilot_authority"] == "typed_resolver_live"
     assert report["companion_suggestion_authority"] == "materialized_json"
     assert report["active_companion_suggestion_count"] > 0
     assert report["recipe_count"] == recipe_count

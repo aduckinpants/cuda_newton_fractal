@@ -228,6 +228,10 @@ std::string SerializeColorPipelineMetadataParityReportJson(
     out << "  \"compatibility_count\": " << report.compatibility_count << ",\n";
     out << "  \"compatibility_authority\": \"" << JsonEscape(report.compatibility_authority) << "\",\n";
     out << "  \"active_compatibility_count\": " << report.active_compatibility_count << ",\n";
+    out << "  \"typed_compatibility_resolver_enabled\": " << (report.typed_compatibility_resolver_enabled ? "true" : "false") << ",\n";
+    out << "  \"typed_compatibility_resolver_authority\": \"" << JsonEscape(report.typed_compatibility_resolver_authority) << "\",\n";
+    out << "  \"typed_compatibility_resolver_route_count\": " << report.typed_compatibility_resolver_route_count << ",\n";
+    out << "  \"specialized_compatibility_route_count\": " << report.specialized_compatibility_route_count << ",\n";
     out << "  \"typed_compatibility_pilot_enabled\": " << (report.typed_compatibility_pilot_enabled ? "true" : "false") << ",\n";
     out << "  \"typed_compatibility_pilot_authority\": \"" << JsonEscape(report.typed_compatibility_pilot_authority) << "\",\n";
     out << "  \"companion_suggestion_authority\": \"" << JsonEscape(report.companion_suggestion_authority) << "\",\n";

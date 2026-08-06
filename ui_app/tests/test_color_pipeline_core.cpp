@@ -1185,7 +1185,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
     Check(contract.compatibility.size() == 24,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
-    Check(contract.compat_overrides.size() == 18,
+    Check(contract.compat_overrides.size() == 7,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatOverrideCount");
     Check(contract.compatibility_audit.size() == 24,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
@@ -1230,7 +1230,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                 contract.edge_links[2].id == "palette_to_grading",
             "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_EdgeLinkOrder");
     }
-    Check(contract.resolution_cases.size() == 12,
+    Check(contract.resolution_cases.size() == 23,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ResolutionCaseCount");
     const MaterializedColorPipelineCompatibilityAudit* smoothAudit =
         FindCompatibilityAudit(contract, "smooth_escape_ramp", "heatmap", "contrast_lift");
@@ -1255,9 +1255,10 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     Check(sdfAudit && sdfAudit->classification == "runtime_legacy_override" &&
             sdfAudit->override_id == "legacy_sdf_signed_distance_heatmap_contrast_lift",
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfCompatAuditOverride");
-    Check(explainoAudit && explainoAudit->classification == "runtime_legacy_override" &&
-            explainoAudit->override_id == "legacy_smooth_escape_ramp_explaino_cmap_contrast_lift",
-        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoCompatAuditOverride");
+    Check(explainoAudit && explainoAudit->classification == "typed_resolved" &&
+            explainoAudit->route_case_id == "smooth_escape_explaino_cmap" &&
+            explainoAudit->override_id.empty(),
+        "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ExplainoCompatAuditTypedResolved");
     const MaterializedColorPipelineCompatOverride* sdfOverride =
         FindCompatOverride(contract, "legacy_sdf_signed_distance_heatmap_contrast_lift");
     Check(sdfOverride && !sdfOverride->owner_seam.empty() &&
@@ -1743,8 +1744,8 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Authority");
     Check(color_pipeline_core::ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds(
             "smooth_escape_ramp",
-            "heatmap") == std::string("typed_resolver_pilot"),
-        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedPilotAuthority");
+            "heatmap") == std::string("typed_resolver_live"),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedResolverAuthority");
     Check(color_pipeline_core::IsColorPipelineCompatibilityDiagnosticsActive() &&
             color_pipeline_core::ColorPipelineCompatibilityDiagnosticsAuthorityId() == std::string("materialized_json_diagnostic"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsActive");
@@ -1763,47 +1764,78 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
             smoothExplanation.route_case_id == "smooth_escape_heatmap" &&
             smoothExplanation.override_id.empty(),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsTypedResolved");
-    ColorPipelineSelection typedPilotSelection;
-    ColoringMode typedPilotMode = ColoringMode::phase;
-    ColorPipelineSelection hardcodedPilotSelection;
-    ColoringMode hardcodedPilotMode = ColoringMode::phase;
-    Check(color_pipeline_core::TryBuildTypedResolverPilotColorPipelineSelectionFromLaneIds(
+    ColorPipelineSelection typedResolverSelection;
+    ColoringMode typedResolverMode = ColoringMode::phase;
+    ColorPipelineSelection hardcodedResolverSelection;
+    ColoringMode hardcodedResolverMode = ColoringMode::phase;
+    Check(color_pipeline_core::TryBuildTypedResolverColorPipelineSelectionFromLaneIds(
             "smooth_escape_ramp",
             "heatmap",
-            &typedPilotSelection,
-            &typedPilotMode) &&
+            &typedResolverSelection,
+            &typedResolverMode) &&
             color_pipeline_core::TryBuildHardcodedColorPipelineSelectionFromLaneIds(
                 "smooth_escape_ramp",
                 "heatmap",
-                &hardcodedPilotSelection,
-                &hardcodedPilotMode) &&
-            typedPilotSelection.signal == hardcodedPilotSelection.signal &&
-            typedPilotSelection.palette == hardcodedPilotSelection.palette &&
-            typedPilotSelection.grading == hardcodedPilotSelection.grading &&
-            typedPilotMode == hardcodedPilotMode,
-        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedPilotPreservesRuntimeTuple");
+                &hardcodedResolverSelection,
+                &hardcodedResolverMode) &&
+            typedResolverSelection.signal == hardcodedResolverSelection.signal &&
+            typedResolverSelection.palette == hardcodedResolverSelection.palette &&
+            typedResolverSelection.grading == hardcodedResolverSelection.grading &&
+            typedResolverMode == hardcodedResolverMode,
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedResolverPreservesRuntimeTuple");
+    for (const MaterializedColorPipelineCompatibilityAudit& routeAudit : contract.compatibility_audit) {
+        ColorPipelineSelection typedSelection;
+        ColoringMode typedMode = ColoringMode::smooth_escape;
+        const bool typedBuilt = color_pipeline_core::TryBuildTypedResolverColorPipelineSelectionFromLaneIds(
+            routeAudit.source.c_str(),
+            routeAudit.palette.c_str(),
+            &typedSelection,
+            &typedMode);
+        const bool expectedTyped = routeAudit.classification == "typed_resolved";
+        Check(typedBuilt == expectedTyped,
+            "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_AllRoutesUseDeclaredAuthority");
+        Check(color_pipeline_core::ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds(
+                routeAudit.source.c_str(),
+                routeAudit.palette.c_str()) ==
+                std::string(expectedTyped ? "typed_resolver_live" : "materialized_json"),
+            "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_AllRoutesReportDeclaredAuthority");
+        if (typedBuilt) {
+            ColorPipelineSelection hardcodedSelection;
+            ColoringMode hardcodedMode = ColoringMode::smooth_escape;
+            Check(color_pipeline_core::TryBuildHardcodedColorPipelineSelectionFromLaneIds(
+                    routeAudit.source.c_str(),
+                    routeAudit.palette.c_str(),
+                    &hardcodedSelection,
+                    &hardcodedMode) &&
+                    typedSelection.signal == hardcodedSelection.signal &&
+                    typedSelection.palette == hardcodedSelection.palette &&
+                    typedSelection.grading == hardcodedSelection.grading &&
+                    typedMode == hardcodedMode,
+                "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_AllTypedRoutesPreserveRuntimeTuple");
+        }
+    }
     color_pipeline_core::SetColorPipelineTypedCompatibilityPilotEnabledForTests(false);
     Check(color_pipeline_core::ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds(
             "smooth_escape_ramp",
             "heatmap") == std::string("materialized_json"),
-        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedPilotKillSwitchFallsBack");
-    ColorPipelineSelection fallbackPilotSelection;
-    ColoringMode fallbackPilotMode = ColoringMode::phase;
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedResolverKillSwitchFallsBack");
+    ColorPipelineSelection fallbackResolverSelection;
+    ColoringMode fallbackResolverMode = ColoringMode::phase;
     Check(color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
             "smooth_escape_ramp",
             "heatmap",
-            &fallbackPilotSelection,
-            &fallbackPilotMode) &&
-            fallbackPilotSelection.signal == hardcodedPilotSelection.signal &&
-            fallbackPilotSelection.palette == hardcodedPilotSelection.palette &&
-            fallbackPilotSelection.grading == hardcodedPilotSelection.grading &&
-            fallbackPilotMode == hardcodedPilotMode,
-        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedPilotKillSwitchPreservesRuntimeTuple");
+            &fallbackResolverSelection,
+            &fallbackResolverMode) &&
+            fallbackResolverSelection.signal == hardcodedResolverSelection.signal &&
+            fallbackResolverSelection.palette == hardcodedResolverSelection.palette &&
+            fallbackResolverSelection.grading == hardcodedResolverSelection.grading &&
+            fallbackResolverMode == hardcodedResolverMode,
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_TypedResolverKillSwitchPreservesRuntimeTuple");
     color_pipeline_core::SetColorPipelineTypedCompatibilityPilotEnabledForTests(true);
     Check(color_pipeline_core::ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds(
             "phase_orbit",
-            "phase_wheel_palette") == std::string("materialized_json"),
-        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_OnlyPilotRouteSwitches");
+            "phase_wheel_palette") == std::string("typed_resolver_live"),
+        "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_AllExactRoutesSwitch");
     color_pipeline_core::ColorPipelineCompatibilityRouteExplanation sdfExplanation;
     Check(color_pipeline_core::TryExplainColorPipelineCompatibilityRoute(
             "sdf_signed_distance",

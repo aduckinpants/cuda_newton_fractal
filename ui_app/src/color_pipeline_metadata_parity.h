@@ -20,6 +20,11 @@ struct ColorPipelineMetadataParityReport {
     int compatibility_count = 0;
     std::string compatibility_authority;
     int active_compatibility_count = 0;
+    bool typed_compatibility_resolver_enabled = false;
+    std::string typed_compatibility_resolver_authority;
+    int typed_compatibility_resolver_route_count = 0;
+    int specialized_compatibility_route_count = 0;
+    // Legacy report aliases retained for external consumers during migration.
     bool typed_compatibility_pilot_enabled = false;
     std::string typed_compatibility_pilot_authority;
     std::string companion_suggestion_authority;

@@ -970,7 +970,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert len(actual["composition_recipe_contract"]["compatibility"]) == 24
     compat_overrides = actual["composition_recipe_contract"]["compat_overrides"]
     compatibility_audit = actual["composition_recipe_contract"]["compatibility_audit"]
-    assert len(compat_overrides) == 18
+    assert len(compat_overrides) == 7
     assert len(compatibility_audit) == 24
     audit_by_key = {
         (row["source"], row["palette"], row["grading"]): row
@@ -987,7 +987,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert audit_by_key[("sdf_normal_angle", "phase_wheel_palette", "phase_finish")]["classification"] == "typed_resolved"
     assert audit_by_key[("sdf_signed_distance", "heatmap", "contrast_lift")]["classification"] == "runtime_legacy_override"
     assert audit_by_key[("sdf_signed_distance", "heatmap", "contrast_lift")]["override_id"] == "legacy_sdf_signed_distance_heatmap_contrast_lift"
-    assert audit_by_key[("smooth_escape_ramp", "explaino_cmap", "contrast_lift")]["classification"] == "runtime_legacy_override"
+    assert audit_by_key[("smooth_escape_ramp", "explaino_cmap", "contrast_lift")]["classification"] == "typed_resolved"
     assert all(row["reason"] for row in compatibility_audit)
     assert all(row["owner_seam"] and row["proof"] for row in compat_overrides)
     assert actual["edge_resolution_contract"]["policy"]["id"] == "current_linear_color_stack"
@@ -999,13 +999,24 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     audit_cases = {case["id"]: case for case in actual["color_pipeline_resolution_audit"]["cases"]}
     assert set(audit_cases) == {
         "smooth_escape_heatmap",
+        "smooth_escape_explaino_cmap",
+        "banded_signal_banded_heatmap",
+        "escape_magnitude_heatmap",
+        "escape_magnitude_explaino_cmap",
+        "orbit_stripe_wheel",
         "smooth_escape_log_compress_heatmap",
         "smooth_escape_smoothstep_range_heatmap",
         "phase_orbit_wheel",
         "root_phase_wheel",
         "root_proximity_heatmap",
+        "root_proximity_explaino_cmap",
         "root_classic",
+        "root_joy",
         "sdf_normal_angle_phase_wheel",
+        "sdf_boundary_band_heatmap",
+        "sdf_boundary_band_explaino_cmap",
+        "lens_field_v2_heatmap",
+        "lens_field_v2_explaino_cmap",
         "sdf_signed_distance_normalized_heatmap",
         "root_repeat_heatmap_bad",
         "phase_root_palette_bad",
@@ -1405,29 +1416,68 @@ def test_current_function_library_has_complete_canonical_typed_ports(tmp_path):
         )
 
     audit = payload["composition_recipe_contract"]["compatibility_audit"]
-    assert sum(row["classification"] == "typed_resolved" for row in audit) == 6
-    assert sum(row["classification"] == "runtime_legacy_override" for row in audit) == 18
+    assert sum(row["classification"] == "typed_resolved" for row in audit) == 17
+    assert sum(row["classification"] == "runtime_legacy_override" for row in audit) == 7
     assert {
         row["override_id"]
         for row in audit
         if row["classification"] == "runtime_legacy_override"
     } == {
-        "legacy_smooth_escape_ramp_explaino_cmap_contrast_lift",
-        "legacy_banded_signal_banded_heatmap_band_finish",
-        "legacy_escape_magnitude_heatmap_contrast_lift",
-        "legacy_escape_magnitude_explaino_cmap_contrast_lift",
-        "legacy_orbit_stripe_phase_wheel_palette_phase_finish",
         "recipe_root_log_proximity_signed_unit_map_heatmap",
-        "legacy_root_proximity_explaino_cmap_contrast_lift",
-        "legacy_root_index_joy_root_palette_basin_default",
         "legacy_sdf_signed_distance_heatmap_contrast_lift",
         "legacy_sdf_signed_distance_explaino_cmap_contrast_lift",
         "legacy_sdf_inside_outside_heatmap_contrast_lift",
         "legacy_sdf_inside_outside_explaino_cmap_contrast_lift",
-        "legacy_sdf_boundary_band_heatmap_contrast_lift",
-        "legacy_sdf_boundary_band_explaino_cmap_contrast_lift",
         "legacy_sdf_curvature_heatmap_contrast_lift",
         "legacy_sdf_curvature_explaino_cmap_contrast_lift",
-        "legacy_lens_field_v2_distance_heatmap_contrast_lift",
-        "legacy_lens_field_v2_distance_explaino_cmap_contrast_lift",
+    }
+
+
+def test_current_compatibility_audit_classifies_all_exact_routes(tmp_path):
+    out = tmp_path / "materialized.json"
+    proc = subprocess.run(
+        [sys.executable, str(TOOL), "--ui-salt", str(COLOR_PIPELINE_UI_SALT), "--out", str(out)],
+        cwd=str(REPO_ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    audit = payload["composition_recipe_contract"]["compatibility_audit"]
+
+    typed_routes = {
+        (row["source"], row["palette"], row["grading"])
+        for row in audit
+        if row["classification"] == "typed_resolved"
+    }
+    assert len(typed_routes) == 17
+    assert {
+        ("smooth_escape_ramp", "explaino_cmap", "contrast_lift"),
+        ("banded_signal", "banded_heatmap", "band_finish"),
+        ("escape_magnitude", "heatmap", "contrast_lift"),
+        ("escape_magnitude", "explaino_cmap", "contrast_lift"),
+        ("orbit_stripe", "phase_wheel_palette", "phase_finish"),
+        ("root_proximity", "explaino_cmap", "contrast_lift"),
+        ("root_index", "joy_root_palette", "basin_default"),
+        ("sdf_boundary_band", "heatmap", "contrast_lift"),
+        ("sdf_boundary_band", "explaino_cmap", "contrast_lift"),
+        ("lens_field_v2_distance", "heatmap", "contrast_lift"),
+        ("lens_field_v2_distance", "explaino_cmap", "contrast_lift"),
+    } <= typed_routes
+
+    specialized = {
+        row["override_id"]
+        for row in audit
+        if row["classification"] == "runtime_legacy_override"
+    }
+    assert specialized == {
+        "recipe_root_log_proximity_signed_unit_map_heatmap",
+        "legacy_sdf_signed_distance_heatmap_contrast_lift",
+        "legacy_sdf_signed_distance_explaino_cmap_contrast_lift",
+        "legacy_sdf_inside_outside_heatmap_contrast_lift",
+        "legacy_sdf_inside_outside_explaino_cmap_contrast_lift",
+        "legacy_sdf_curvature_heatmap_contrast_lift",
+        "legacy_sdf_curvature_explaino_cmap_contrast_lift",
     }

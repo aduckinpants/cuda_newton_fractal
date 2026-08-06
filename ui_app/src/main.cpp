@@ -2890,9 +2890,18 @@ static int RunValidateUiSaltContractMode(const ViewerCliArgs& cli, const std::st
         color_pipeline_core::GetColorPipelineLaneCatalogs());
     report.compatibility_authority = color_pipeline_core::ColorPipelineCompatibilityAuthorityId();
     report.active_compatibility_count = color_pipeline_core::CountActiveColorPipelineCompatibilityRows();
-    report.typed_compatibility_pilot_enabled = color_pipeline_core::IsColorPipelineTypedCompatibilityPilotEnabled();
-    report.typed_compatibility_pilot_authority =
+    report.typed_compatibility_resolver_enabled = color_pipeline_core::IsColorPipelineTypedCompatibilityResolverEnabled();
+    report.typed_compatibility_resolver_authority =
         color_pipeline_core::ColorPipelineCompatibilityRuntimeAuthorityIdForLaneIds("smooth_escape_ramp", "heatmap");
+    for (const MaterializedColorPipelineCompatibilityAudit& audit : contract.compatibility_audit) {
+        if (audit.classification == "typed_resolved") {
+            ++report.typed_compatibility_resolver_route_count;
+        } else if (audit.classification == "runtime_legacy_override") {
+            ++report.specialized_compatibility_route_count;
+        }
+    }
+    report.typed_compatibility_pilot_enabled = report.typed_compatibility_resolver_enabled;
+    report.typed_compatibility_pilot_authority = report.typed_compatibility_resolver_authority;
     report.companion_suggestion_authority = color_pipeline_core::ColorPipelineCompanionSuggestionAuthorityId();
     report.active_companion_suggestion_count = color_pipeline_core::CountActiveColorPipelineCompanionSuggestions();
     report.recipe_expansion_authority = color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId();

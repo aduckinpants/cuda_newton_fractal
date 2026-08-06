@@ -14,14 +14,14 @@
 
 ## Current Phase
 
-Slice 2 existing-function typed-port completion is implementation- and proof-complete in checkpoint closure. All 39 shipped functions now have canonical ports; the materializer, native metadata loader, staged runtime contract, public recipes, and capture/replay rails are green. Slice 3 live typed-resolver expansion is next after a clean pushed checkpoint.
+Slice 3 live typed-resolver expansion is implementation- and proof-complete from clean pushed checkpoint `7810f84`. All 17 exact identity routes now use live typed-resolver authority, seven normalization/category/recipe-owned routes remain explicitly specialized, and the published report exposes the exact 17/7 split. Slice 4 low-risk function expansion is next after checkpoint closure.
 
 ## Phase Checklist
 
 - [x] Phase 0 - validate and lock the campaign plan/contract; establish the three-week restart surface.
 - [x] Slice 1 - Root Glow product enablement, control pruning, qualification, runtime proof, hostile audit, checkpoint, and push.
 - [x] Slice 2 - complete typed ports for all existing functions with generated-contract and compatibility-audit proof.
-- [ ] Slice 3 - expand live typed-resolver authority and retire avoidable legacy compatibility overrides.
+- [x] Slice 3 - expand live typed-resolver authority and retire avoidable legacy compatibility overrides.
 - [ ] Slice 4 - add and qualify the locked low-risk function batch.
 - [ ] Campaign hardening - run cross-slice hostile review, focused native/runtime rails, capture/replay, receipts, rearward review, and clean push.
 - [ ] Stop/replan - choose the next campaign; composite-function V1 is the leading candidate.
@@ -137,6 +137,28 @@ The closed measurement slice and the Phase 1 pre-mutation exploration proved:
 - Preserve runtime-owned special paths until typed parity is proven, then retire the corresponding override.
 - Add explicit consent state/receipt plumbing only for existing routes that genuinely require `explicit_only` adapters.
 - Keep field-primary lanes honest when a required non-SDF signal plane does not exist.
+
+### Locked Route Classification
+
+Promote these 11 exact, zero-adapter routes to typed resolution:
+
+- `smooth_escape_ramp -> identity -> explaino_cmap -> contrast_lift`.
+- `banded_signal -> identity -> banded_heatmap -> band_finish`.
+- `escape_magnitude -> identity -> heatmap|explaino_cmap -> contrast_lift`.
+- `orbit_stripe -> identity -> phase_wheel_palette -> phase_finish`.
+- `root_proximity -> identity -> explaino_cmap -> contrast_lift`.
+- `root_index -> identity -> joy_root_palette -> basin_default`; the unused `category.root_index -> palette.discrete_index` adapter remains reserved and is not inserted into this exact shipped route.
+- `sdf_boundary_band -> identity -> heatmap|explaino_cmap -> contrast_lift`.
+- `lens_field_v2_distance -> identity -> heatmap|explaino_cmap -> contrast_lift`.
+
+Retain these seven explicit specialized owners:
+
+- `root_log_proximity_v1 -> heatmap` remains recipe-owned because `signed_unit_map_v1` is an explicit non-identity shape, not a direct compatibility row.
+- `sdf_signed_distance -> heatmap|explaino_cmap` remains SDF-postprocess-owned because signed-distance normalization is lossy and lacks persisted direct-route consent.
+- `sdf_curvature -> heatmap|explaino_cmap` remains SDF-postprocess-owned because signed curvature normalization is lossy and lacks persisted direct-route consent.
+- `sdf_inside_outside -> heatmap|explaino_cmap` remains SDF-postprocess-owned because category-to-scalar projection is not a declared exact route.
+
+The live resolver may consume only materialized audit rows classified `typed_resolved`, backed by a resolved identity-shape case with zero adapters and no blockers. The temporary resolver kill switch remains available and must report fallback authority honestly.
 
 ### Exit Gates
 
@@ -272,32 +294,31 @@ A returning session should not rely on chat history. It must:
 | Root Glow product | complete | enabled through public `recipe_v2_graph`; 15 bins, 0.410 spread, eight controls sensitive, three-scene published-runtime rail green |
 | Root Glow candidate | complete | three-scene metrics plus full control sensitivity under `artifacts/color_pipeline_function_expansion_campaign/root_glow_exploration/` |
 | Typed ports | complete | 39/39 typed; 50 materializer tests, 3,538 native assertions, fresh runtime publish, and 11 published contract/recipe/replay tests pass; compatibility remains frozen at 6/18 |
-| Live resolver expansion | pending | Slice 3 |
+| Live resolver expansion | complete | 17 direct typed routes live; 7 specialized owners retained; 51 materializer tests, 3,603 native assertions, runtime publish, and 11 public runtime tests green |
 | Low-risk function batch | pending | Slice 4 |
 | Composite Function V1 | deferred | requires post-campaign replan |
 
 ## Action Hostile Review
 
-- Action ID: action-20260806-typed-port-checkpoint-4
-- Suspected Failure Mode: Slice 2 could be checkpointed with stale plan/status truth, incomplete machine evidence, or the newly discovered published-contract test defect omitted from the hostile audit.
-- Correct Owner/Action: synchronize plan/status, validate the hostile audit and contract evidence, checkpoint with the Slice 2 token, write receipts, rearward-review the clean commit, and push before opening Slice 3.
-- Proof Surface: materializer JUnit, native logged-command receipt, runtime publish receipt, published runtime parity JUnit, plan/contract/audit validators, commit, machine receipts, rearward review, and remote tracking state.
-- Blocked Action: Slice 3 product mutation before the Slice 2 clean checkpoint, receipts, rearward review, and push.
+- Action ID: action-20260806-live-typed-resolver-expansion-1
+- Suspected Failure Mode: generalizing the one-route pilot could silently claim authority for adapted or specialized SDF/category routes, alter current runtime tuples, or make the fallback report typed authority.
+- Correct Owner/Action: drive live selection only from validated `typed_resolved` audit rows whose identity-shape resolution cases have zero adapters and no blockers; freeze all seven specialized owners and known-invalid routes with regressions.
+- Proof Surface: exact compatibility classification test, native resolver tuple parity, kill-switch fallback proof, public staged-contract report, recipe/capture replay, hostile audit, receipts, rearward review, and remote tracking state.
+- Blocked Action: Slice 4 function additions before all 24 current compatibility rows have one truthful classification and Slice 3 is checkpointed and pushed.
 
 ## Hostile Audit
 
 - Status: complete
-- Slice boundary: Slice 2 typed-port completion.
-- Required posture: assume at least one of the 14 apparent mappings is semantically wrong, a new port accidentally resolves an old fail-closed route, generated metadata drifts from the authored contract, or the metadata-only change leaks into visible/runtime behavior.
+- Slice boundary: Slice 3 live typed-resolver expansion.
+- Required posture: assume route promotion overclaims runtime authority, changes a tuple, silently inserts an adapter, accepts a known-invalid route, or leaves reports/capture inconsistent with the resolver result.
 
 ## Audit Passes
 
-- [x] Slice 2 Pass 1 - reviewed all 14 runtime semantics and captured an exact RED failure listing only the 14 missing port declarations.
-- [x] Slice 2 Pass 2 - generated JSON diff contains only the 14 port arrays; all 24 compatibility classifications remain frozen at 6 typed-resolved and 18 runtime legacy overrides.
-- [x] Slice 2 Pass 3 - clean re-read of authored/generated metadata, materializer validation, native parity, staged contract bytes, public UI/recipe behavior, and capture/replay rails.
+- [x] Slice 3 Pass 1 - reviewed the exact 17 direct and seven specialized route classifications; the RED failed at the intended 6/18 baseline.
+- [x] Slice 3 Pass 2 - reviewed generated metadata and C++ resolver/report changes; repaired malformed authored lines, stale tests, and misleading pilot-only report terminology.
+- [x] Slice 3 Pass 3 - clean re-read of all 24 route classifications, tuple parity, kill-switch fallback, known-invalid denial, staged report counts, public Apply/replay, and closure truth.
 
 ## Audit Findings
-
 - [x] Phase 0 finding: the first campaign contract used unsupported `pytest_junit_suite` evidence; validation rejected it, and the contract now names the concrete public recipe/replay testcase before product mutation.
 - [x] Phase 1 pre-mutation finding: `grade_glow` remained visibly weak for Root Glow even under a `+0.50` glow perturbation. The measured candidate uses `contrast_lift`, and the weak Glow control is therefore absent rather than waived.
 - [x] Phase 1 RED proof: `test_color_pipeline_window` failed exactly three new assertions for qualified rows/defaults and product availability before implementation.
@@ -308,10 +329,13 @@ A returning session should not rely on chat history. It must:
 - [x] Slice 2 pre-implementation finding: the declared `category.root_index -> palette.discrete_index` adapter is not used by the existing root palettes, which consume `category.root_index` directly. Slice 2 preserves the shipped category route; Slice 3 must classify and resolve this adapter/palette-domain inconsistency before retiring the Joy palette override.
 - [x] Slice 2 generated-diff finding: adding complete ports could have implicitly reclassified compatibility rows, but the materializer preserves all 24 current decisions and the checked-in JSON diff is limited to port metadata. Live route migration remains isolated to Slice 3.
 - [x] Slice 2 published-proof finding: `test_fractal_runtime_ui_salt_contract.py` froze stale counts for 37 functions, 23 compatibility rows, 20 suggestions, and 6 recipes. The runtime correctly reported 39/24/21/9. The repaired test compares staged bytes to the checked-in generated contract and derives every contract-owned count dynamically; the full 11-test published suite is green.
+- [x] Slice 3 RED finding: the authored contract still classified only 6 direct routes and 18 overrides. The new exact-route court failed at that boundary before the 11 approved promotions.
+- [x] Slice 3 authoring finding: the first metadata edit inserted literal PowerShell newline tokens into three `resolution_case` lines. The materializer rejected line 184; the authored file was repaired before generated metadata was accepted.
+- [x] Slice 3 test-authority finding: the contract-freshness test still froze 18 overrides and a broad test edit accidentally inserted a route id into the recipe-id list. The full materializer suite caught both; contract inventory and recipe inventory are now independently asserted.
+- [x] Slice 3 report finding: the expanded resolver still reported through pilot-only names, and the first report patch collapsed two `main.cpp` assignments onto one line that native core tests did not compile. Canonical resolver fields plus exact 17/7 counts were added, legacy aliases remain compatible, the formatting defect was repaired, and the full viewer publish proved the application target.
 
 ## Pause And Exhaustion Rule
 
 The campaign is not exhausted until Slices 1-4 and campaign hardening are complete. If time expires earlier, checkpoint and push the last fully proven slice, update `Current Phase`, the checklist, proof ledger, and handoff log, and state the exact next unchecked phase.
 
 After Slices 1-4 close: `Preplanned sliced work is exhausted; stop for replan before composite-function runtime implementation or more product mutation.`
-
