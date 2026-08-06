@@ -609,6 +609,8 @@ void TestFindingFractalStateSidecarIncludesColorPipelineGraphReceipt() {
     }
     Check(liveSourceLane != nullptr, "finding graph receipt test resolves its Source lane");
     if (liveSourceLane) *liveSourceLane = sourceLane;
+    colorWindow.live_snapshot.valid = true;
+    colorWindow.live_snapshot.lanes = colorWindow.lanes;
     ColorPipelineCapabilityRuntimeObservation observation{};
     observation.frame_observed = true;
     observation.frame_valid = true;
@@ -620,6 +622,26 @@ void TestFindingFractalStateSidecarIncludesColorPipelineGraphReceipt() {
         view.fractal_type,
         ResolvedEvalMode{},
         observation);
+    colorWindow.last_recipe_application_request = "sdf_normal_angle_diagnostic";
+    colorWindow.recipe_application_generation = 3;
+    colorWindow.recipe_application_receipt.valid = true;
+    colorWindow.recipe_application_receipt.recipe_id = "sdf_normal_angle_diagnostic";
+    colorWindow.recipe_application_receipt.recipe_version = 1;
+    colorWindow.recipe_application_receipt.metadata_content_hash = "sha256:finding-test";
+    colorWindow.recipe_application_receipt.capability_snapshot_id =
+        colorWindow.producer_capability_snapshot.snapshot_id;
+    colorWindow.recipe_application_receipt.capability_producer_generation =
+        colorWindow.producer_capability_snapshot.producer_generation;
+    colorWindow.recipe_application_receipt.application_authority = "recipe_v2_graph";
+    colorWindow.recipe_application_receipt.semantic_node_ids = {
+        "source.normal_angle", "shape.identity", "palette.phase_wheel", "grading.phase_finish"};
+    colorWindow.recipe_application_receipt.committed_rows = colorWindow.lanes;
+    colorWindow.recipe_application_receipt.committed_live_rows = colorWindow.live_snapshot.lanes;
+    colorWindow.recipe_application_receipt.committed_row_fingerprint =
+        BuildColorPipelineRecipeRowFingerprint(colorWindow.lanes);
+    colorWindow.recipe_application_receipt.committed_live_row_fingerprint =
+        BuildColorPipelineRecipeRowFingerprint(colorWindow.live_snapshot.lanes);
+    colorWindow.recipe_application_receipt.runtime_generation = 3;
 
     const std::string json = BuildFindingFractalStateJson(view, params, render, stats, &colorWindow, nullptr);
     Check(json.find("\"color_pipeline\":") != std::string::npos &&
@@ -646,6 +668,13 @@ void TestFindingFractalStateSidecarIncludesColorPipelineGraphReceipt() {
           json.find("\"sdf_field_producer_id\": \"lens_sdf\"") != std::string::npos &&
           json.find("\"capability_id\": \"sdf.field.signed_distance\", \"status\": \"valid\"") != std::string::npos,
         "finding sidecar emits the same producer capability snapshot and current field validity");
+    Check(json.find("\"recipe_application_report\":") != std::string::npos &&
+          json.find("viewer.color_pipeline_recipe_application_report.v1") != std::string::npos &&
+          json.find("\"last_recipe_application_request\":\"sdf_normal_angle_diagnostic\"") != std::string::npos &&
+          json.find("\"current_recipe_match\":\"exact\"") != std::string::npos &&
+          json.find("\"metadata_content_hash\":\"sha256:finding-test\"") != std::string::npos &&
+          json.find("\"runtime_generation\":3") != std::string::npos,
+        "finding sidecar emits the committed recipe receipt from live window authority");
 }
 
 void TestFindingFractalStateSidecarIncludesExplainoActiveControls() {

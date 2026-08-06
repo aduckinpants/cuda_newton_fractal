@@ -1738,6 +1738,7 @@ bool ParseOptionalColorPipelineDraft(const json_min::Value& root,
                 return false;
             }
         }
+        rebuiltState.recipe_provenance_unknown_after_reload = true;
         *outColorPipelineWindow = std::move(rebuiltState);
         return true;
     }
@@ -1861,6 +1862,7 @@ bool ParseOptionalColorPipelineDraft(const json_min::Value& root,
         if (outError) *outError = "Saved color_pipeline_draft is not supported for the saved fractal/color tuple";
         return false;
     }
+    parsedState.recipe_provenance_unknown_after_reload = true;
 
     if (outColorPipelineWindow) {
         *outColorPipelineWindow = std::move(parsedState);

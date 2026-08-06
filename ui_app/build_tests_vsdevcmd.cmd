@@ -1040,7 +1040,7 @@ exit /b 0
 
 :focused_test_color_pipeline_window
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\tests\test_color_pipeline_window.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\tests\test_color_pipeline_window.cpp ^
   /Fe:"%TESTROOT%\test_color_pipeline_window.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_color_pipeline_window.exe" || exit /b 1

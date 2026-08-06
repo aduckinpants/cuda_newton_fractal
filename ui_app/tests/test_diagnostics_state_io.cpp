@@ -5225,6 +5225,13 @@ int main() {
                 preciseCenterHpY)) {
             return 1;
         }
+        if (!roundTripDraft.recipe_provenance_unknown_after_reload ||
+            roundTripDraft.recipe_application_receipt.valid ||
+            !roundTripDraft.last_recipe_application_request.empty() ||
+            DescribeCurrentColorPipelineRecipeMatch(roundTripDraft) != "unknown_after_reload") {
+            std::cerr << "Loaded state must preserve rows without fabricating historical recipe provenance\n";
+            return 1;
+        }
         if (roundTripView.center_hp_x != preciseCenterHpX ||
             roundTripView.center_hp_y != preciseCenterHpY ||
             roundTripView.log2_zoom != preciseLog2Zoom ||

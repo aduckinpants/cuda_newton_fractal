@@ -242,6 +242,111 @@ def test_public_recipe_apply_baseline_packet(tmp_path: Path) -> None:
     artifact_path.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
 
 
+def test_color_pipeline_recipe_application_receipt_and_replay_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Color Pipeline recipe receipt proof is Windows-only")
+
+    exe_path = active_runtime_exe()
+    baseline_path = Path(
+        "artifacts/curated_color_recipe_authority_campaign/baseline/public_recipe_baseline.json"
+    )
+    baseline_payload = json.loads(baseline_path.read_text(encoding="utf-8"))
+    baseline_cases = {
+        case["recipe_id"]: case
+        for case in baseline_payload["cases"]
+    }
+    assert set(baseline_cases) == {case[0] for case in PUBLIC_RECIPE_BASELINE_CASES}
+    for recipe_id, fractal_type in PUBLIC_RECIPE_BASELINE_CASES:
+        baseline_case = baseline_cases[recipe_id]
+        assert baseline_case["fractal_type"] == fractal_type, baseline_case
+        frozen_state_path = Path(baseline_case["frozen_state_file"])
+        assert frozen_state_path.is_file(), baseline_case
+        state_path = write_state_bundle(
+            tmp_path / f"{recipe_id}_receipt_seed",
+            json.loads(frozen_state_path.read_text(encoding="utf-8")),
+        )
+        with PersistentRuntimeViewerAutomation(
+            exe_path=exe_path,
+            state_path=state_path,
+            report_path=tmp_path / f"{recipe_id}_receipt_report.json",
+            command_path=tmp_path / f"{recipe_id}_receipt_command.json",
+            open_color_pipeline=True,
+        ) as viewer:
+            viewer.wait_for_control("color_pipeline.recipe.selector", timeout_seconds=30.0)
+            selected = viewer.click_control(
+                f"color_pipeline.recipe.{recipe_id}.select",
+                timeout_seconds=60.0,
+            )
+            assert selected.get("click_consumed") is True, selected
+            applied = viewer.click_control(
+                "color_pipeline.recipe.apply_selected",
+                timeout_seconds=60.0,
+            )
+            assert applied.get("click_consumed") is True, applied
+            settled = viewer.click_control("render_once", timeout_seconds=60.0)
+            assert settled.get("click_consumed") is True, settled
+        assert settled.get("rendered_frame_hash") == baseline_case["frame_hash"], settled
+
+        application_report = settled.get("color_pipeline_recipe_application_report")
+        assert isinstance(application_report, dict), settled
+        assert application_report.get("schema_id") == (
+            "viewer.color_pipeline_recipe_application_report.v1"
+        ), application_report
+        assert application_report.get("last_recipe_application_request") == recipe_id, application_report
+        assert application_report.get("current_recipe_match") == "exact", application_report
+        receipt = application_report.get("receipt")
+        assert isinstance(receipt, dict), application_report
+        assert receipt.get("schema_id") == (
+            "viewer.color_pipeline_recipe_application_receipt.v1"
+        ), receipt
+        assert receipt.get("recipe_id") == recipe_id, receipt
+        assert isinstance(receipt.get("recipe_version"), int) and receipt["recipe_version"] > 0, receipt
+        assert isinstance(receipt.get("metadata_content_hash"), str) and receipt["metadata_content_hash"], receipt
+        assert receipt.get("application_authority") == "recipe_v2_graph", receipt
+        assert receipt.get("fallback_active") is False, receipt
+        assert isinstance(receipt.get("semantic_node_ids"), list) and receipt["semantic_node_ids"], receipt
+        assert isinstance(receipt.get("runtime_generation"), int) and receipt["runtime_generation"] > 0, receipt
+        assert receipt.get("committed_live_row_fingerprint") == (
+            application_report.get("authoritative_pipeline_rows_fingerprint")
+        ), application_report
+
+        graph_receipt = settled.get("color_pipeline_graph_receipt")
+        assert isinstance(graph_receipt, dict), settled
+        captured = run_headless_capture(
+            str(exe_path),
+            "--load-state-json",
+            str(state_path),
+            "--capture-diagnostic",
+        )
+        assert captured["frame_hash"] == baseline_case["headless_frame_sha256"], captured
+        replay_state_path = write_state_bundle(
+            tmp_path / f"{recipe_id}_receipt_replay",
+            json.loads(json.dumps(captured["state"])),
+        )
+        replay = run_headless_capture(
+            str(exe_path),
+            "--load-state-json",
+            str(replay_state_path),
+            "--capture-diagnostic",
+        )
+        assert replay["frame_hash"] == baseline_case["replay_frame_sha256"], replay
+        assert replay["frame_hash"] == captured["frame_hash"], (captured, replay)
+
+        with PersistentRuntimeViewerAutomation(
+            exe_path=exe_path,
+            state_path=replay_state_path,
+            report_path=tmp_path / f"{recipe_id}_reload_report.json",
+            command_path=tmp_path / f"{recipe_id}_reload_command.json",
+            open_color_pipeline=True,
+        ) as replay_viewer:
+            replay_report = replay_viewer.wait_for_report(timeout_seconds=60.0)
+        reloaded_application = replay_report.get("color_pipeline_recipe_application_report")
+        assert isinstance(reloaded_application, dict), replay_report
+        assert reloaded_application.get("last_recipe_application_request") is None, reloaded_application
+        assert reloaded_application.get("current_recipe_match") == "unknown_after_reload", reloaded_application
+        assert reloaded_application.get("receipt") is None, reloaded_application
+
+
 NON_SDF_SOURCE_ROWS = (
     ("smooth_escape_ramp", "heatmap", "smooth_escape", "cyclic_escape"),
     ("phase_orbit", "phase_wheel_palette", "phase_angle", "phase_wheel"),

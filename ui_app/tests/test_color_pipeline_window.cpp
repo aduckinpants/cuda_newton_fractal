@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <filesystem>
 #include <initializer_list>
 #include <string>
 #include <vector>
@@ -26,6 +27,28 @@ void Check(bool condition, const char* message) {
 
 bool Near(double actual, double expected, double eps = 1.0e-6) {
     return std::fabs(actual - expected) <= eps;
+}
+
+bool InstallMaterializedRecipeContractForTest(const char* checkName) {
+    const char* candidates[] = {
+        "..\\docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+        "docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+    };
+    std::string contractPath;
+    for (const char* candidate : candidates) {
+        if (std::filesystem::exists(candidate)) {
+            contractPath = candidate;
+            break;
+        }
+    }
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    const bool loaded = !contractPath.empty() &&
+        LoadColorPipelineMaterializedContractJson(contractPath, &contract, &error);
+    const bool installed = loaded &&
+        color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error);
+    Check(installed, (std::string(checkName) + ": " + error).c_str());
+    return installed;
 }
 
 ColorPipelineLaneState* FindLane(ColorPipelineWindowState* state, const char* laneId) {
@@ -862,11 +885,18 @@ void TestRecipePresetApplicationRejectsAtomically() {
 
 void TestRecipePresetApplicationCommitsOnlyAfterPreparation() {
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    if (!InstallMaterializedRecipeContractForTest(
+            "TestRecipePresetApplicationCommitsOnlyAfterPreparation_InstallsMaterializedContract")) {
+        return;
+    }
     ColorPipelineWindowState state{};
     KernelParams params = SmoothEscapeParams();
     params.color_phase_signal_offset = 0.37f;
     Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::multibrot, &params),
         "TestRecipePresetApplicationCommitsOnlyAfterPreparation_SyncsBaseline");
+    Check(!state.recipe_application_receipt.valid &&
+            DescribeCurrentColorPipelineRecipeMatch(state) == "none",
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FreshStateHasNoFabricatedRecipeProvenance");
 
     const std::vector<ColorPipelineLaneState> lanesBefore = state.lanes;
     const ColorPipelineSelection pipelineBefore = params.color_pipeline;
@@ -892,6 +922,19 @@ void TestRecipePresetApplicationCommitsOnlyAfterPreparation() {
             &prepared,
             &error) && prepared.valid && prepared.live_changed && error.empty(),
         "TestRecipePresetApplicationCommitsOnlyAfterPreparation_PreparesWithoutStaleError");
+    Check(prepared.application_receipt.valid &&
+            prepared.application_receipt.schema_id == "viewer.color_pipeline_recipe_application_receipt.v1" &&
+            prepared.application_receipt.recipe_id == "phase_orbit_wheel" &&
+            prepared.application_receipt.recipe_version == 1 &&
+            !prepared.application_receipt.metadata_content_hash.empty() &&
+            prepared.application_receipt.application_authority == "recipe_v2_graph" &&
+            !prepared.application_receipt.fallback_active &&
+            !prepared.application_receipt.semantic_node_ids.empty() &&
+            !prepared.application_receipt.committed_row_fingerprint.empty() &&
+            prepared.application_receipt.committed_rows.size() == 4,
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_PrepareOwnsCompleteGraphReceipt");
+    Check(!state.recipe_application_receipt.valid,
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_PrepareDoesNotPublishReceipt");
     Check(ColorPipelineLaneStatesEqual(state.lanes[0], lanesBefore[0]) &&
             ColorPipelineLaneStatesEqual(state.lanes[1], lanesBefore[1]) &&
             ColorPipelineLaneStatesEqual(state.lanes[2], lanesBefore[2]) &&
@@ -914,6 +957,37 @@ void TestRecipePresetApplicationCommitsOnlyAfterPreparation() {
             params.color_pipeline.palette == ColorPalette::phase_wheel &&
             Near(params.color_phase_signal_offset, 0.0),
         "TestRecipePresetApplicationCommitsOnlyAfterPreparation_CommitOwnsAllAuthorityChanges");
+    Check(state.recipe_application_receipt.valid &&
+            state.recipe_application_receipt.recipe_id == "phase_orbit_wheel" &&
+            state.recipe_application_receipt.runtime_generation == 1 &&
+            state.last_recipe_application_request == "phase_orbit_wheel" &&
+            DescribeCurrentColorPipelineRecipeMatch(state) == "exact",
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_CommitPublishesPreparedReceiptAndExactMatch");
+    const std::uint64_t successfulGeneration = state.recipe_application_generation;
+    const std::string successfulFingerprint =
+        state.recipe_application_receipt.committed_live_row_fingerprint;
+    dirty = false;
+    interaction.interacted = false;
+    Check(!ApplyColorPipelineRecipePresetToLive(
+            &state,
+            "root_phase_wheel",
+            FractalType::multibrot,
+            &params,
+            &dirty,
+            &interaction),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_UnavailableFollowupRejects");
+    Check(state.last_recipe_application_request == "phase_orbit_wheel" &&
+            state.recipe_application_generation == successfulGeneration &&
+            state.recipe_application_receipt.valid &&
+            state.recipe_application_receipt.recipe_id == "phase_orbit_wheel" &&
+            state.recipe_application_receipt.committed_live_row_fingerprint ==
+                successfulFingerprint &&
+            DescribeCurrentColorPipelineRecipeMatch(state) == "exact" &&
+            !dirty && !interaction.interacted,
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_RejectionPreservesSuccessfulReceiptAuthority");
+    Check(SetRowNumber(state.lanes[0].rows[0], "signal.phase_offset", 0.2) &&
+            DescribeCurrentColorPipelineRecipeMatch(state) == "modified",
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_DraftEditMarksCurrentRecipeModified");
     Check(!CommitPreparedColorPipelineApplication(
             &prepared,
             &state,
@@ -921,6 +995,29 @@ void TestRecipePresetApplicationCommitsOnlyAfterPreparation() {
             &dirty,
             &interaction),
         "TestRecipePresetApplicationCommitsOnlyAfterPreparation_ConsumedPreparationCannotRecommit");
+
+    color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(true);
+    ColorPipelineWindowState fallbackState{};
+    KernelParams fallbackParams = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(
+            &fallbackState, FractalType::multibrot, &fallbackParams),
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FallbackSyncsBaseline");
+    bool fallbackDirty = false;
+    Check(ApplyColorPipelineRecipePresetToLive(
+            &fallbackState,
+            "default_smooth_escape",
+            FractalType::multibrot,
+            &fallbackParams,
+            &fallbackDirty) &&
+            fallbackState.recipe_application_receipt.valid &&
+            fallbackState.recipe_application_receipt.application_authority ==
+                "legacy_recipe_tuple" &&
+            fallbackState.recipe_application_receipt.fallback_active &&
+            fallbackState.recipe_application_receipt.semantic_node_ids.empty() &&
+            DescribeCurrentColorPipelineRecipeMatch(fallbackState) == "exact",
+        "TestRecipePresetApplicationCommitsOnlyAfterPreparation_FallbackNeverClaimsGraphAuthority");
+    color_pipeline_core::SetColorPipelineRecipeGraphFallbackEnabledForTests(false);
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
 }
 void TestCandidateDraftOnlyTruthAndCopySurfaces() {
     ColorPipelineWindowState inheritedUnsupportedState{};

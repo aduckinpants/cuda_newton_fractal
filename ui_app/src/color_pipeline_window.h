@@ -9,6 +9,9 @@
 #include <cctype>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -37,6 +40,29 @@ inline bool EnsureImGuiStackEditorRowId(std::uint64_t* ioRowId, std::uint64_t* i
 }
 #endif
 
+struct ColorPipelineRecipeApplicationReceipt {
+    bool valid = false;
+    std::string schema_id = "viewer.color_pipeline_recipe_application_receipt.v1";
+    std::string recipe_id;
+    int recipe_version = 0;
+    std::string metadata_content_hash;
+    std::string capability_snapshot_id;
+    std::uint64_t capability_producer_generation = 0;
+    std::string application_authority;
+    bool fallback_active = false;
+    std::string fallback_switch_id;
+    std::vector<std::string> semantic_node_ids;
+    std::vector<std::string> source_fold_node_ids;
+    std::vector<std::string> source_fold_edge_ids;
+    std::vector<std::string> graph_edge_ids;
+    std::vector<std::string> approved_adapter_ids;
+    std::string committed_row_fingerprint;
+    std::string committed_live_row_fingerprint;
+    std::vector<ColorPipelineLaneState> committed_rows;
+    std::vector<ColorPipelineLaneState> committed_live_rows;
+    std::uint64_t runtime_generation = 0;
+};
+
 struct ColorPipelineWindowState {
     bool open = false;
     bool initialized = false;
@@ -52,6 +78,10 @@ struct ColorPipelineWindowState {
     std::uint64_t next_row_id = 1;
     std::string selected_recipe_id;
     std::string last_recipe_application_error;
+    std::string last_recipe_application_request;
+    std::uint64_t recipe_application_generation = 0;
+    bool recipe_provenance_unknown_after_reload = false;
+    ColorPipelineRecipeApplicationReceipt recipe_application_receipt;
     ColorPipelineProducerCapabilitySnapshot producer_capability_snapshot;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
@@ -91,12 +121,23 @@ struct ResolvedColorPipelineRecipe {
     std::string capability_snapshot_id;
     std::uint64_t capability_producer_generation = 0;
     std::vector<std::string> required_capability_ids;
+    int recipe_version = 0;
+    std::string metadata_content_hash;
+    std::string application_authority;
+    bool fallback_active = false;
+    std::vector<std::string> semantic_node_ids;
+    std::vector<std::string> source_fold_node_ids;
+    std::vector<std::string> source_fold_edge_ids;
+    std::vector<std::string> graph_edge_ids;
+    std::vector<std::string> approved_adapter_ids;
+    std::uint64_t prior_runtime_generation = 0;
     ColorPipelineWindowState draft_state;
 };
 
 struct PreparedColorPipelineApplication {
     bool valid = false;
     std::string recipe_id;
+    ColorPipelineRecipeApplicationReceipt application_receipt;
     ColorPipelineWindowState next_window_state;
     KernelParams next_live_params{};
     bool live_changed = false;
@@ -671,6 +712,205 @@ inline bool ColorPipelineLaneStatesEqual(
         }
     }
     return true;
+}
+
+inline bool ColorPipelineLaneVectorsEqualForRecipeReceipt(
+    const std::vector<ColorPipelineLaneState>& left,
+    const std::vector<ColorPipelineLaneState>& right) {
+    if (left.size() != right.size()) {
+        return false;
+    }
+    for (std::size_t index = 0; index < left.size(); ++index) {
+        if (!ColorPipelineLaneStatesEqual(left[index], right[index])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline void AppendColorPipelineRecipeFingerprintU64(
+    std::uint64_t* ioHash,
+    std::uint64_t value) {
+    if (!ioHash) {
+        return;
+    }
+    for (int shift = 0; shift < 64; shift += 8) {
+        *ioHash ^= static_cast<std::uint8_t>((value >> shift) & 0xffu);
+        *ioHash *= 1099511628211ull;
+    }
+}
+
+inline void AppendColorPipelineRecipeFingerprintString(
+    std::uint64_t* ioHash,
+    const std::string& value) {
+    AppendColorPipelineRecipeFingerprintU64(ioHash, value.size());
+    for (unsigned char byte : value) {
+        *ioHash ^= byte;
+        *ioHash *= 1099511628211ull;
+    }
+}
+
+inline std::string BuildColorPipelineRecipeRowFingerprint(
+    const std::vector<ColorPipelineLaneState>& lanes) {
+    std::uint64_t hash = 1469598103934665603ull;
+    AppendColorPipelineRecipeFingerprintU64(&hash, lanes.size());
+    for (const ColorPipelineLaneState& lane : lanes) {
+        AppendColorPipelineRecipeFingerprintString(&hash, lane.lane_id);
+        AppendColorPipelineRecipeFingerprintU64(&hash, lane.rows.size());
+        for (const ColorPipelineRowState& row : lane.rows) {
+            AppendColorPipelineRecipeFingerprintU64(&hash, row.enabled ? 1u : 0u);
+            AppendColorPipelineRecipeFingerprintString(&hash, row.function_id);
+            AppendColorPipelineRecipeFingerprintU64(&hash, row.parameter_values.size());
+            for (const ColorPipelineParamState& param : row.parameter_values) {
+                AppendColorPipelineRecipeFingerprintString(&hash, param.path);
+                AppendColorPipelineRecipeFingerprintString(&hash, param.type);
+                std::uint64_t numberBits = 0;
+                static_assert(sizeof(numberBits) == sizeof(param.number_value),
+                    "Recipe fingerprint requires a binary64 parameter value");
+                std::memcpy(&numberBits, &param.number_value, sizeof(numberBits));
+                AppendColorPipelineRecipeFingerprintU64(&hash, numberBits);
+                AppendColorPipelineRecipeFingerprintU64(&hash, param.bool_value ? 1u : 0u);
+                AppendColorPipelineRecipeFingerprintString(&hash, param.enum_value);
+            }
+        }
+    }
+    std::ostringstream out;
+    out << "fnv1a64:" << std::hex << std::setfill('0') << std::setw(16) << hash;
+    return out.str();
+}
+
+inline std::string DescribeCurrentColorPipelineRecipeMatch(
+    const ColorPipelineWindowState& state) {
+    if (!state.recipe_application_receipt.valid) {
+        return state.recipe_provenance_unknown_after_reload
+            ? "unknown_after_reload"
+            : "none";
+    }
+    const bool draftMatches = ColorPipelineLaneVectorsEqualForRecipeReceipt(
+        state.lanes,
+        state.recipe_application_receipt.committed_rows);
+    const bool liveMatches = state.live_snapshot.valid &&
+        ColorPipelineLaneVectorsEqualForRecipeReceipt(
+            state.live_snapshot.lanes,
+            state.recipe_application_receipt.committed_live_rows);
+    return draftMatches && liveMatches ? "exact" : "modified";
+}
+
+inline void WriteColorPipelineRecipeReceiptJsonString(
+    std::ostringstream& out,
+    const std::string& value) {
+    out << '"' << ColorPipelineCapabilityJsonEscape(value) << '"';
+}
+
+inline void WriteColorPipelineRecipeReceiptStringArrayJson(
+    std::ostringstream& out,
+    const std::vector<std::string>& values) {
+    out << '[';
+    for (std::size_t index = 0; index < values.size(); ++index) {
+        if (index > 0) out << ',';
+        WriteColorPipelineRecipeReceiptJsonString(out, values[index]);
+    }
+    out << ']';
+}
+
+inline void WriteColorPipelineRecipeReceiptRowsJson(
+    std::ostringstream& out,
+    const std::vector<ColorPipelineLaneState>& lanes) {
+    out << '[';
+    for (std::size_t laneIndex = 0; laneIndex < lanes.size(); ++laneIndex) {
+        if (laneIndex > 0) out << ',';
+        const ColorPipelineLaneState& lane = lanes[laneIndex];
+        out << "{\"lane_id\":";
+        WriteColorPipelineRecipeReceiptJsonString(out, lane.lane_id);
+        out << ",\"rows\":[";
+        for (std::size_t rowIndex = 0; rowIndex < lane.rows.size(); ++rowIndex) {
+            if (rowIndex > 0) out << ',';
+            const ColorPipelineRowState& row = lane.rows[rowIndex];
+            out << "{\"enabled\":" << (row.enabled ? "true" : "false")
+                << ",\"function_id\":";
+            WriteColorPipelineRecipeReceiptJsonString(out, row.function_id);
+            out << ",\"params\":[";
+            for (std::size_t paramIndex = 0; paramIndex < row.parameter_values.size(); ++paramIndex) {
+                if (paramIndex > 0) out << ',';
+                const ColorPipelineParamState& param = row.parameter_values[paramIndex];
+                out << "{\"path\":";
+                WriteColorPipelineRecipeReceiptJsonString(out, param.path);
+                out << ",\"type\":";
+                WriteColorPipelineRecipeReceiptJsonString(out, param.type);
+                out << ",\"number_value\":" << std::setprecision(17) << param.number_value
+                    << ",\"bool_value\":" << (param.bool_value ? "true" : "false")
+                    << ",\"enum_value\":";
+                WriteColorPipelineRecipeReceiptJsonString(out, param.enum_value);
+                out << '}';
+            }
+            out << "]}";
+        }
+        out << "]}";
+    }
+    out << ']';
+}
+
+inline std::string BuildColorPipelineRecipeApplicationReportJson(
+    const ColorPipelineWindowState& state) {
+    std::ostringstream out;
+    out << "{\"schema_id\":\"viewer.color_pipeline_recipe_application_report.v1\""
+        << ",\"last_recipe_application_request\":";
+    if (state.last_recipe_application_request.empty()) {
+        out << "null";
+    } else {
+        WriteColorPipelineRecipeReceiptJsonString(out, state.last_recipe_application_request);
+    }
+    out << ",\"current_recipe_match\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, DescribeCurrentColorPipelineRecipeMatch(state));
+    out << ",\"authoritative_pipeline_rows_fingerprint\":";
+    WriteColorPipelineRecipeReceiptJsonString(
+        out,
+        state.live_snapshot.valid
+            ? BuildColorPipelineRecipeRowFingerprint(state.live_snapshot.lanes)
+            : std::string{});
+    out << ",\"receipt\":";
+    const ColorPipelineRecipeApplicationReceipt& receipt = state.recipe_application_receipt;
+    if (!receipt.valid) {
+        out << "null}";
+        return out.str();
+    }
+    out << "{\"schema_id\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.schema_id);
+    out << ",\"recipe_id\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.recipe_id);
+    out << ",\"recipe_version\":" << receipt.recipe_version
+        << ",\"metadata_content_hash\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.metadata_content_hash);
+    out << ",\"capability_snapshot_id\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.capability_snapshot_id);
+    out << ",\"capability_producer_generation\":"
+        << receipt.capability_producer_generation
+        << ",\"application_authority\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.application_authority);
+    out << ",\"fallback_active\":" << (receipt.fallback_active ? "true" : "false")
+        << ",\"fallback_switch_id\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.fallback_switch_id);
+    out << ",\"semantic_node_ids\":";
+    WriteColorPipelineRecipeReceiptStringArrayJson(out, receipt.semantic_node_ids);
+    out << ",\"source_fold_node_ids\":";
+    WriteColorPipelineRecipeReceiptStringArrayJson(out, receipt.source_fold_node_ids);
+    out << ",\"source_fold_edge_ids\":";
+    WriteColorPipelineRecipeReceiptStringArrayJson(out, receipt.source_fold_edge_ids);
+    out << ",\"graph_edge_ids\":";
+    WriteColorPipelineRecipeReceiptStringArrayJson(out, receipt.graph_edge_ids);
+    out << ",\"approved_adapter_ids\":";
+    WriteColorPipelineRecipeReceiptStringArrayJson(out, receipt.approved_adapter_ids);
+    out << ",\"committed_row_fingerprint\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.committed_row_fingerprint);
+    out << ",\"committed_live_row_fingerprint\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.committed_live_row_fingerprint);
+    out << ",\"runtime_generation\":" << receipt.runtime_generation
+        << ",\"committed_rows\":";
+    WriteColorPipelineRecipeReceiptRowsJson(out, receipt.committed_rows);
+    out << ",\"committed_live_rows\":";
+    WriteColorPipelineRecipeReceiptRowsJson(out, receipt.committed_live_rows);
+    out << "}}";
+    return out.str();
 }
 
 inline bool ColorPipelineSelectionsEqual(
@@ -4248,6 +4488,33 @@ inline bool ResolveColorPipelineRecipe(
     outResolved->capability_producer_generation =
         currentState.producer_capability_snapshot.producer_generation;
     outResolved->required_capability_ids = std::move(requiredCapabilities);
+    outResolved->application_authority =
+        color_pipeline_core::IsColorPipelineRecipeV2GraphAuthorityActive()
+            ? "recipe_v2_graph"
+            : "legacy_recipe_tuple";
+    outResolved->fallback_active =
+        color_pipeline_core::IsColorPipelineRecipeGraphFallbackEnabledForTests();
+    outResolved->prior_runtime_generation = currentState.recipe_application_generation;
+    if (const MaterializedColorPipelineRecipeV2* recipeV2 =
+            color_pipeline_core::FindActiveColorPipelineRecipeV2(recipeId)) {
+        outResolved->recipe_version = recipeV2->recipe_version;
+        outResolved->metadata_content_hash = recipeV2->metadata_content_hash;
+        if (outResolved->application_authority == "recipe_v2_graph") {
+            for (const MaterializedColorPipelineRecipeV2Node& node : recipeV2->nodes) {
+                outResolved->semantic_node_ids.push_back(node.id);
+            }
+            outResolved->source_fold_node_ids = recipeV2->source_fold.source_nodes;
+            outResolved->source_fold_node_ids.insert(
+                outResolved->source_fold_node_ids.end(),
+                recipeV2->source_fold.fold_nodes.begin(),
+                recipeV2->source_fold.fold_nodes.end());
+            outResolved->source_fold_edge_ids = recipeV2->source_fold.fold_edges;
+            for (const MaterializedColorPipelineRecipeV2Edge& edge : recipeV2->edges) {
+                outResolved->graph_edge_ids.push_back(edge.edge_id);
+            }
+            outResolved->approved_adapter_ids = recipeV2->chosen_adapters;
+        }
+    }
     outResolved->draft_state = std::move(candidate);
     return true;
 }
@@ -4292,6 +4559,17 @@ inline bool PrepareColorPipelineApplication(
         return false;
     }
 
+    const std::string currentAuthority =
+        color_pipeline_core::IsColorPipelineRecipeV2GraphAuthorityActive()
+            ? "recipe_v2_graph"
+            : "legacy_recipe_tuple";
+    if (currentAuthority != resolved.application_authority ||
+        color_pipeline_core::IsColorPipelineRecipeGraphFallbackEnabledForTests() !=
+            resolved.fallback_active) {
+        if (outError) *outError = "recipe_application_authority_changed: recipe authority changed after Resolve";
+        return false;
+    }
+
     const ColorPipelineRecipeApplicability applicability =
         DescribeResolvedColorPipelineRecipeApplicability(
             resolved,
@@ -4330,8 +4608,39 @@ inline bool PrepareColorPipelineApplication(
         return false;
     }
 
+    ColorPipelineRecipeApplicationReceipt receipt;
+    receipt.valid = true;
+    receipt.recipe_id = resolved.recipe_id;
+    receipt.recipe_version = resolved.recipe_version;
+    receipt.metadata_content_hash = resolved.metadata_content_hash;
+    receipt.capability_snapshot_id = currentCapabilities->snapshot_id;
+    receipt.capability_producer_generation = currentCapabilities->producer_generation;
+    receipt.application_authority = resolved.application_authority;
+    receipt.fallback_active = resolved.fallback_active;
+    receipt.fallback_switch_id = resolved.fallback_active
+        ? color_pipeline_core::ColorPipelineRecipeGraphFallbackSwitchId()
+        : std::string{};
+    receipt.semantic_node_ids = resolved.semantic_node_ids;
+    receipt.source_fold_node_ids = resolved.source_fold_node_ids;
+    receipt.source_fold_edge_ids = resolved.source_fold_edge_ids;
+    receipt.graph_edge_ids = resolved.graph_edge_ids;
+    receipt.approved_adapter_ids = resolved.approved_adapter_ids;
+    receipt.committed_rows = candidateState.lanes;
+    receipt.committed_live_rows = candidateState.live_snapshot.lanes;
+    receipt.committed_row_fingerprint =
+        BuildColorPipelineRecipeRowFingerprint(receipt.committed_rows);
+    receipt.committed_live_row_fingerprint =
+        BuildColorPipelineRecipeRowFingerprint(receipt.committed_live_rows);
+    receipt.runtime_generation = resolved.prior_runtime_generation + 1;
+
+    candidateState.last_recipe_application_request = resolved.recipe_id;
+    candidateState.recipe_application_generation = receipt.runtime_generation;
+    candidateState.recipe_provenance_unknown_after_reload = false;
+    candidateState.recipe_application_receipt = receipt;
+
     outPrepared->valid = true;
     outPrepared->recipe_id = resolved.recipe_id;
+    outPrepared->application_receipt = receipt;
     outPrepared->next_window_state = std::move(candidateState);
     outPrepared->next_live_params = candidateParams;
     outPrepared->live_changed = changed;

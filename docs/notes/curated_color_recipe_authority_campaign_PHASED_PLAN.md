@@ -11,11 +11,11 @@
 
 ## Current Phase
 
-Slice 3 - Capability And Applicability Authority implementation and hostile validation are complete from clean, receipted, rearward-reviewed Slice 2 checkpoint 1ae2f14771e7bd14d8dd37cded90a98f89f67855. Checkpoint closure is prepared; machine receipts and rearward review follow the committed state.
+Slice 4 - Existing Recipe Parity is active from clean, pushed, receipted, rearward-reviewed Slice 3 checkpoint ac07b2a92039987ff7975182329afabd8647b4be.
 
 The hard-denial workflow blocks raw branch mutation but this checkout has no approved branch/merge wrapper. This campaign therefore starts as an explicitly stacked slice on codex/model-diagnostics-overlay-preplanning. Eventual upstream integration must preserve both closed planning campaigns.
 
-Slices 0 through 2 are closed. Slice 3 adds one runtime-owned capability snapshot shared by selector status, Prepare-time revalidation, reports, automation, and Capture Finding. Static producer support, current field validity, and quality observations remain distinct. Runtime row execution, recipe pixels, state authority, and the linear Color Pipeline layout remain unchanged.
+Slices 0 through 3 are closed. Slice 4 adds prepared and committed recipe-application receipts, truthful graph-versus-fallback authority, and exact/modified/none/unknown-after-reload recipe provenance while preserving the existing six recipes bit-exactly. SDF Beauty metadata expansion remains Slice 5.
 
 ## Phase Checklist
 
@@ -36,7 +36,11 @@ Slices 0 through 2 are closed. Slice 3 adds one runtime-owned capability snapsho
 - [x] Slice 3: share one applicability query across selector status, Prepare, automation, and Capture Finding.
 - [x] Slice 3: separate static support, current field validity, and quality observations.
 - [x] Slice 3: hostile audit and focused native/runtime validation are complete; checkpoint closure is prepared and receipts/rearward review follow the committed state.
-- [ ] Slice 4: Existing Recipe Parity.
+- [x] Slice 4: add RED proof for missing committed receipt and ambiguous manual/reload provenance.
+- [x] Slice 4: build the receipt completely during Prepare and commit it through non-failing state replacement.
+- [x] Slice 4: report graph versus fallback authority and exact/modified/none/unknown-after-reload truthfully.
+- [x] Slice 4: prove all six existing recipes remain bit-exact through public Apply, fallback, capture, and replay.
+- [x] Slice 4: hostile audit and focused native/runtime validation.
 - [ ] Slice 5: SDF Beauty Migration.
 - [ ] Slice 6: New Recipe Qualification.
 - [ ] Slice 7: Runtime Closure and replan.
@@ -198,7 +202,15 @@ No new recipe, graph execution, row behavior, pixel behavior, or replay authorit
 
 ### Slice 4 - Existing Recipe Parity (Gate A)
 
-Move every existing recipe to prepared graph authority with bit-exact parity, fallback truth, and replay.
+Move every existing recipe to prepared graph authority with bit-exact parity, fallback truth, and replay. The prepared object owns a complete application receipt before Commit. Commit only moves the already-owned window state and parameters.
+
+Runtime/report truth distinguishes `last_recipe_application_request`, `current_recipe_match`, and authoritative rows. A successful graph Apply reports `exact`; a subsequent row edit reports `modified`; an unrelated row set reports `none`; a loaded state without persisted recipe provenance reports `unknown_after_reload`. The runtime never infers historical authorship from row similarity.
+
+The receipt records recipe id/version, canonical metadata hash, capability snapshot identity/generation, graph/fallback authority, semantic node/fold/edge/adapter ids, committed row fingerprint, final authoritative rows, runtime generation, and fallback status. The receipt is generated from the prepared state that actually commits.
+
+The internal fallback defaults off, is not persisted, and reports legacy authority whenever active. All six existing recipes require exact graph/fallback lane parity and exact same-backend capture/replay hashes.
+
+No SDF Beauty metadata migration, new recipe, new visible control, or row arithmetic change belongs in Slice 4.
 
 ### Slice 5 - Beauty Migration (Gate B)
 
@@ -229,11 +241,12 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 | Slice 1 transactional Apply | complete | Resolve/Prepare/Commit; non-failing commit assertions; native reject/success/manual-recovery rails; published public Apply proof; commit 6ddef4a6; receipts and rearward review are ok. |
 | Slice 2 canonical recipe contract | complete | commit 1ae2f14; 43 materializer tests; 3364 Color Pipeline core assertions; published staged-contract and public Apply runtime proofs; receipts and rearward review are ok. |
 | Slice 3 capability/applicability authority | complete | runtime-owned snapshot and shared query; 467 window assertions; report and finding-sidecar native rails; published public selector/Apply proof; current SDF validity proof; final checkpoint/receipts follow. |
+| Slice 4 existing recipe parity | complete pending checkpoint | prepared/committed graph and fallback receipts; exact/modified/none/unknown-after-reload provenance; 3364 core and 477 window assertions; report/capture/state rails; six frozen live FNV and headless SHA-256 recipe goldens; published runtime and JUnit proof green. |
 
 ## Hostile Audit
 
 - Status: complete
-- Scope: Slice 3 snapshot ownership/freshness, selector/Prepare query identity, stable reason codes, current-validity separation, report/capture consistency, and behavior preservation.
+- Scope: Slice 4 prepared/committed receipt ownership, graph/fallback truth, rejected-Apply preservation, exact/modified/none/unknown-after-reload provenance, frozen-golden pixel parity, report/capture consistency, and state replay.
 - Assume dual authority, false receipts, non-atomic Apply, stale capability snapshots, type reinterpretation, unstable parameter addresses, fabricated provenance, or weak qualification remains.
 
 ## Audit Passes
@@ -253,6 +266,9 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Slice 3 pass 1 - RED review proved the selector/report surfaces had no runtime-owned capability snapshot and Prepare had no stale-snapshot or stable missing-capability rejection.
 - [x] Slice 3 pass 2 - implementation review found the report helper omitted its recipe parser link input, the report fixture was only a partial Source lane, and the old runtime assertion expected vague `not allowed` text; each now has a focused repair and regression.
 - [x] Slice 3 pass 3 - clean re-read and published public-path proof confirmed selector status, Prepare, automation, and Capture Finding use one snapshot/query; field validity and empty quality observations do not grant static support.
+- [x] Slice 4 pass 1 - RED review proved committed application receipt and distinct manual/reload provenance were absent; early report/finding fixtures also falsely expected `exact` from invalid or stale live snapshots.
+- [x] Slice 4 pass 2 - runtime review found the first proof only established current self-consistency, not parity with frozen pre-change pixels; it now requires all six Slice 0 live FNV and headless SHA-256 goldens. Follow-up review added rejection-after-success proof so an unavailable recipe cannot erase the prior receipt or generation.
+- [x] Slice 4 pass 3 - clean re-read plus focused native, exact published-runtime, frozen-golden, Capture Finding, and reload proof found no additional Slice 4 defect.
 - Later implementation audits remain pending for canonical graph authority, dual authority, capability snapshots, independent recipe gates, and fallback lifecycle.
 
 ## Audit Findings
@@ -282,6 +298,10 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Lens Field V2 remained typed scalar.sdf_signed_distance despite its bounded unit response; its descriptor and canonical output port now use scalar.unit while sign_contrast remains an internal source parameter.
 - [x] The first focused native invocation incorrectly used an environment variable even though build_tests_vsdevcmd.cmd dispatches focused tests through positional arguments; that command started the broad suite and hit the outer timeout. All claimed native evidence comes from the corrected positional focused command.
 - [x] The first Slice 2 runtime publish used a 240-second outer timeout while CUDA compilation remained active. No failure is claimed; the clean retry used the checked-in command with a 900-second ceiling and completed successfully in 724.6 seconds.
+- [x] Slice 4 report and finding fixtures populated receipt rows without a valid matching live snapshot, so truthful provenance reported `modified`; fixtures now construct a genuinely committed state before asserting `exact`.
+- [x] The first Slice 4 state-IO assertion was placed before the round-trip state existed and failed compilation; it now runs only after emitted state reload.
+- [x] The first Slice 4 runtime proof compared current capture only to its own replay and could miss recipe pixel drift; it now requires all six frozen Slice 0 live and headless hashes.
+- [x] Receipt preservation after a successful Apply followed by an unavailable recipe had no direct proof; the native rail now freezes receipt identity, generation, exact match, dirty state, and interaction state across rejection.
 
 ## Planned Validation Targets
 
@@ -295,4 +315,4 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 
 ## Stop Point
 
-Slice 3 implementation and hostile validation are complete. Stop after capability/applicability authority is checkpointed, receipted, and rearward-reviewed. Slices 4 through 7 remain checked-in preplanned work; preplanned sliced work is not exhausted.
+Slice 4 implementation and hostile validation are complete pending checkpoint, machine receipts, rearward review, and push. Slice 5 SDF Beauty Migration is the next checked-in preplanned slice; preplanned sliced work is not exhausted.

@@ -814,6 +814,9 @@ void WriteColorPipelineUiAutomationReport(
         colorPipelineWindow.validation_messages,
         lensSdfProbe.source_stack_kind);
     out << ",\n";
+    out << "  \"color_pipeline_recipe_application_report\": "
+        << BuildColorPipelineRecipeApplicationReportJson(colorPipelineWindow)
+        << ",\n";
     out << "  \"color_pipeline_recipe_capability_report\": "
         << BuildColorPipelineRecipeCapabilityReportJson(
             colorPipelineWindow.producer_capability_snapshot,

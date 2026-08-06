@@ -449,6 +449,29 @@ void TestAutomationReportIncludesColorPipelineGraphReceipt() {
         FractalType::mandelbrot,
         ResolvedEvalMode{},
         observation);
+    colorPipelineWindow.live_snapshot.valid = true;
+    colorPipelineWindow.live_snapshot.lanes = colorPipelineWindow.lanes;
+    colorPipelineWindow.last_recipe_application_request = "sdf_normal_angle_diagnostic";
+    colorPipelineWindow.recipe_application_generation = 7;
+    colorPipelineWindow.recipe_application_receipt.valid = true;
+    colorPipelineWindow.recipe_application_receipt.recipe_id = "sdf_normal_angle_diagnostic";
+    colorPipelineWindow.recipe_application_receipt.recipe_version = 1;
+    colorPipelineWindow.recipe_application_receipt.metadata_content_hash = "sha256:test";
+    colorPipelineWindow.recipe_application_receipt.capability_snapshot_id =
+        colorPipelineWindow.producer_capability_snapshot.snapshot_id;
+    colorPipelineWindow.recipe_application_receipt.capability_producer_generation =
+        colorPipelineWindow.producer_capability_snapshot.producer_generation;
+    colorPipelineWindow.recipe_application_receipt.application_authority = "recipe_v2_graph";
+    colorPipelineWindow.recipe_application_receipt.semantic_node_ids = {
+        "source.normal_angle", "shape.identity", "palette.phase_wheel", "grading.phase_finish"};
+    colorPipelineWindow.recipe_application_receipt.committed_rows = colorPipelineWindow.lanes;
+    colorPipelineWindow.recipe_application_receipt.committed_live_rows =
+        colorPipelineWindow.live_snapshot.lanes;
+    colorPipelineWindow.recipe_application_receipt.committed_row_fingerprint =
+        BuildColorPipelineRecipeRowFingerprint(colorPipelineWindow.lanes);
+    colorPipelineWindow.recipe_application_receipt.committed_live_row_fingerprint =
+        BuildColorPipelineRecipeRowFingerprint(colorPipelineWindow.live_snapshot.lanes);
+    colorPipelineWindow.recipe_application_receipt.runtime_generation = 7;
 
     ViewerUiAutomationLensSdfProbe probe{};
     probe.source_stack_kind = "sdf_only";
@@ -507,6 +530,13 @@ void TestAutomationReportIncludesColorPipelineGraphReceipt() {
             json.find("\"producer_id\": \"mandelbrot\"") != std::string::npos &&
             json.find("\"snapshot_id\": \"cap:") != std::string::npos,
         "automation report emits the runtime-owned recipe capability snapshot");
+    Check(json.find("\"color_pipeline_recipe_application_report\":") != std::string::npos &&
+            json.find("viewer.color_pipeline_recipe_application_report.v1") != std::string::npos &&
+            json.find("\"last_recipe_application_request\":\"sdf_normal_angle_diagnostic\"") != std::string::npos &&
+            json.find("\"current_recipe_match\":\"exact\"") != std::string::npos &&
+            json.find("\"application_authority\":\"recipe_v2_graph\"") != std::string::npos &&
+            json.find("\"runtime_generation\":7") != std::string::npos,
+        "automation report emits committed recipe receipt and exact provenance");
     Check(json.find("\"recipe_id\": \"phase_orbit_wheel\", \"available\": true") != std::string::npos &&
             json.find("\"recipe_id\": \"root_phase_wheel\", \"available\": false") != std::string::npos &&
             json.find("color_pipeline.source.root_phase") != std::string::npos,
