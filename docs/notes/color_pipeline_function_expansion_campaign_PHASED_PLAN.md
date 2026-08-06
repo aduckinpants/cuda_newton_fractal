@@ -4,8 +4,8 @@
 
 - [x] Preserve the complete near-term sequence in the repo before the operator leaves for approximately three weeks.
 - [x] Make the implementation goal describe product completion rather than a measurement-only stop.
-- [ ] Enable and qualify Root Glow using the measured viable source/mapping path; do not stop at another observability report.
-- [ ] Complete typed port authority for every currently shipped Color Pipeline function.
+- [x] Enable and qualify Root Glow using the measured viable source/mapping path; do not stop at another observability report.
+- [x] Complete typed port authority for every currently shipped Color Pipeline function.
 - [ ] Expand live typed-resolver ownership across every coherent existing route that can be migrated without semantic invention.
 - [ ] Add and qualify the locked low-risk Shape/Palette/Grading function batch.
 - [ ] Harden, checkpoint, push, and stop for replan before composite-function runtime work or larger strategic additions.
@@ -14,13 +14,13 @@
 
 ## Current Phase
 
-Slice 1 Root Glow product enablement is implementation-complete and in checkpoint closure. The public recipe now uses the qualified existing-function graph, all three shipping scenes and eight visible controls pass, and Slice 2 typed-port completion is next after the clean pushed checkpoint.
+Slice 2 existing-function typed-port completion is implementation- and proof-complete in checkpoint closure. All 39 shipped functions now have canonical ports; the materializer, native metadata loader, staged runtime contract, public recipes, and capture/replay rails are green. Slice 3 live typed-resolver expansion is next after a clean pushed checkpoint.
 
 ## Phase Checklist
 
 - [x] Phase 0 - validate and lock the campaign plan/contract; establish the three-week restart surface.
 - [x] Slice 1 - Root Glow product enablement, control pruning, qualification, runtime proof, hostile audit, checkpoint, and push.
-- [ ] Slice 2 - complete typed ports for all existing functions with generated-contract and compatibility-audit proof.
+- [x] Slice 2 - complete typed ports for all existing functions with generated-contract and compatibility-audit proof.
 - [ ] Slice 3 - expand live typed-resolver authority and retire avoidable legacy compatibility overrides.
 - [ ] Slice 4 - add and qualify the locked low-risk function batch.
 - [ ] Campaign hardening - run cross-slice hostile review, focused native/runtime rails, capture/replay, receipts, rearward review, and clean push.
@@ -271,30 +271,30 @@ A returning session should not rely on chat history. It must:
 | Campaign plan/contract | complete | validated, phased-plan synchronized, and hash-locked before product mutation |
 | Root Glow product | complete | enabled through public `recipe_v2_graph`; 15 bins, 0.410 spread, eight controls sensitive, three-scene published-runtime rail green |
 | Root Glow candidate | complete | three-scene metrics plus full control sensitivity under `artifacts/color_pipeline_function_expansion_campaign/root_glow_exploration/` |
-| Typed ports | pending | Slice 2 |
+| Typed ports | complete | 39/39 typed; 50 materializer tests, 3,538 native assertions, fresh runtime publish, and 11 published contract/recipe/replay tests pass; compatibility remains frozen at 6/18 |
 | Live resolver expansion | pending | Slice 3 |
 | Low-risk function batch | pending | Slice 4 |
 | Composite Function V1 | deferred | requires post-campaign replan |
 
 ## Action Hostile Review
 
-- Action ID: action-20260806-rearward-stale-phrase-repair-1
-- Suspected Failure Mode: the next slice could repeat the prior goal failure by producing more measurements while leaving Root Glow disabled, or could enable weak/inert controls without independent qualification.
-- Correct Owner/Action: freeze disabled behavior, add RED product-availability and visible-control sensitivity tests, tune/prune only through the measured viable path, then enable through the public recipe authority.
-- Proof Surface: native recipe/materializer/window tests, published public selector/Apply runtime proof, fixed sensitivity matrix, Capture Finding, state reload, and replay hashes.
-- Blocked Action: typed-port migration or new function implementation before the Root Glow product slice is checkpointed or explicitly classified blocked by a concrete regression.
+- Action ID: action-20260806-typed-port-checkpoint-4
+- Suspected Failure Mode: Slice 2 could be checkpointed with stale plan/status truth, incomplete machine evidence, or the newly discovered published-contract test defect omitted from the hostile audit.
+- Correct Owner/Action: synchronize plan/status, validate the hostile audit and contract evidence, checkpoint with the Slice 2 token, write receipts, rearward-review the clean commit, and push before opening Slice 3.
+- Proof Surface: materializer JUnit, native logged-command receipt, runtime publish receipt, published runtime parity JUnit, plan/contract/audit validators, commit, machine receipts, rearward review, and remote tracking state.
+- Blocked Action: Slice 3 product mutation before the Slice 2 clean checkpoint, receipts, rearward review, and push.
 
 ## Hostile Audit
 
 - Status: complete
-- Slice boundary: reopen with a fresh action review before Slice 2 mutation.
-- Required posture: assume Root Glow was enabled through stale tuple authority, weak controls remain visible, tuning overfits one scene, precision/report authority lies, capture/replay drops graph parameters, or the implementation broadens into a new transfer function without evidence.
+- Slice boundary: Slice 2 typed-port completion.
+- Required posture: assume at least one of the 14 apparent mappings is semantically wrong, a new port accidentally resolves an old fail-closed route, generated metadata drifts from the authored contract, or the metadata-only change leaks into visible/runtime behavior.
 
 ## Audit Passes
 
-- [x] Pass 1 - reviewed frozen measurements and confirmed three focused native RED failures before product mutation.
-- [x] Pass 2 - found and repaired the inherited three-scene measurement rail mutating removed `grade.glow`.
-- [x] Pass 3 - clean re-read of metadata, fallback tuple, capability, native/runtime tests, generated contract, stale references, and replay rails; no additional real defect found.
+- [x] Slice 2 Pass 1 - reviewed all 14 runtime semantics and captured an exact RED failure listing only the 14 missing port declarations.
+- [x] Slice 2 Pass 2 - generated JSON diff contains only the 14 port arrays; all 24 compatibility classifications remain frozen at 6 typed-resolved and 18 runtime legacy overrides.
+- [x] Slice 2 Pass 3 - clean re-read of authored/generated metadata, materializer validation, native parity, staged contract bytes, public UI/recipe behavior, and capture/replay rails.
 
 ## Audit Findings
 
@@ -305,6 +305,9 @@ A returning session should not rely on chat history. It must:
 - [x] Phase 1 test finding: the first GREEN expectation incorrectly required an empty success reason code. Shared applicability authority uses stable `reason_code="available"`; both focused assertions now enforce that real contract.
 - [x] Phase 1 parity finding: the UI-Salt materializer test still froze the old `grading.grade_glow` graph. It now proves the qualified semantic node ids and normalized parameter overrides instead of stale metadata.
 - [x] Phase 1 hostile pass 2 finding: the inherited three-scene source-measurement test imported the new candidate rows but still mutated removed `grade.glow`, causing a real failure. It now runs the locked eight-control RGB sensitivity matrix on all three scenes and keeps source/shape measurement perturbations separate.
+- [x] Slice 2 pre-implementation finding: the declared `category.root_index -> palette.discrete_index` adapter is not used by the existing root palettes, which consume `category.root_index` directly. Slice 2 preserves the shipped category route; Slice 3 must classify and resolve this adapter/palette-domain inconsistency before retiring the Joy palette override.
+- [x] Slice 2 generated-diff finding: adding complete ports could have implicitly reclassified compatibility rows, but the materializer preserves all 24 current decisions and the checked-in JSON diff is limited to port metadata. Live route migration remains isolated to Slice 3.
+- [x] Slice 2 published-proof finding: `test_fractal_runtime_ui_salt_contract.py` froze stale counts for 37 functions, 23 compatibility rows, 20 suggestions, and 6 recipes. The runtime correctly reported 39/24/21/9. The repaired test compares staged bytes to the checked-in generated contract and derives every contract-owned count dynamically; the full 11-test published suite is green.
 
 ## Pause And Exhaustion Rule
 

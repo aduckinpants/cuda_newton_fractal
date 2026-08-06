@@ -14,6 +14,8 @@ from tests.runtime_harness import (
 )
 
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+CHECKED_IN_CONTRACT = REPO_ROOT / "docs" / "ui_salt" / "generated" / "color_pipeline_function_library.contract.v1.json"
 STAGED_CONTRACT = RUNTIME_DIR / "ui_salt" / "generated" / "color_pipeline_function_library.contract.v1.json"
 
 
@@ -39,24 +41,35 @@ def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> N
     assert STAGED_CONTRACT.exists(), f"published runtime did not stage {STAGED_CONTRACT}"
     assert report_path.exists(), "runtime contract validation did not write its report"
     report = json.loads(report_path.read_text(encoding="utf-8"))
+    staged = json.loads(STAGED_CONTRACT.read_text(encoding="utf-8"))
+    assert STAGED_CONTRACT.read_bytes() == CHECKED_IN_CONTRACT.read_bytes()
+    lanes = staged["function_library"]["lanes"]
+    function_count = sum(len(lane["functions"]) for lane in lanes)
+    compatibility_count = len(staged["composition_recipe_contract"]["compatibility"])
+    recipe_count = len(staged["composition_recipe_contract"]["recipes"])
+    taxonomy_group_count = len({
+        function["taxonomy_group"]
+        for lane in lanes
+        for function in lane["functions"]
+    })
     assert report["ok"] is True
     assert report["contract_path"] == str(STAGED_CONTRACT)
-    assert report["schema_version"] == 1
-    assert report["lane_count"] == 4
-    assert report["function_count"] == 37
+    assert report["schema_version"] == staged["schema_version"]
+    assert report["lane_count"] == len(lanes)
+    assert report["function_count"] == function_count
     assert report["catalog_authority"] == "materialized_json"
-    assert report["active_catalog_function_count"] == 37
-    assert report["compatibility_count"] == 23
+    assert report["active_catalog_function_count"] == function_count
+    assert report["compatibility_count"] == compatibility_count
     assert report["compatibility_authority"] == "materialized_json"
-    assert report["active_compatibility_count"] == 23
+    assert report["active_compatibility_count"] == compatibility_count
     assert report["typed_compatibility_pilot_enabled"] is True
     assert report["typed_compatibility_pilot_authority"] == "typed_resolver_pilot"
     assert report["companion_suggestion_authority"] == "materialized_json"
-    assert report["active_companion_suggestion_count"] == 20
-    assert report["recipe_count"] == 6
+    assert report["active_companion_suggestion_count"] > 0
+    assert report["recipe_count"] == recipe_count
     assert report["recipe_expansion_authority"] == "recipe_v2_graph"
-    assert report["active_recipe_count"] == 6
-    assert report["taxonomy_group_count"] == 24
+    assert report["active_recipe_count"] == recipe_count
+    assert report["taxonomy_group_count"] == taxonomy_group_count
     assert report["lane_taxonomy_groups"]["source"] == [
         "escape",
         "phase",

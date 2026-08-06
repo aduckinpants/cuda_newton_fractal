@@ -1307,3 +1307,127 @@ def test_slice6_curated_recipe_contract_is_explicit_and_typed(tmp_path):
         "palette.heatmap",
         "grading.contrast_lift",
     ]
+
+def test_current_function_library_has_complete_canonical_typed_ports(tmp_path):
+    out = tmp_path / "materialized.json"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL),
+            "--ui-salt",
+            str(COLOR_PIPELINE_UI_SALT),
+            "--out",
+            str(out),
+        ],
+        cwd=str(REPO_ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+
+    expected = {
+        ("source", "banded_signal"): [
+            {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+        ],
+        ("source", "escape_magnitude"): [
+            {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+        ],
+        ("source", "orbit_stripe"): [
+            {"direction": "output", "id": "signal", "type": "phase.turns", "canonical": True},
+        ],
+        ("source", "sdf_boundary_band"): [
+            {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+        ],
+        ("shape", "offset_scale"): [
+            {"direction": "input", "id": "signal", "type": "scalar.unit"},
+            {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+        ],
+        ("shape", "posterize"): [
+            {"direction": "input", "id": "signal", "type": "scalar.unit"},
+            {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+        ],
+        ("shape", "mirror_repeat"): [
+            {"direction": "input", "id": "signal", "type": "scalar.unit"},
+            {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+        ],
+        ("shape", "smooth_window"): [
+            {"direction": "input", "id": "signal", "type": "scalar.unit"},
+            {"direction": "output", "id": "signal", "type": "scalar.unit", "canonical": True},
+        ],
+        ("palette", "banded_heatmap"): [
+            {"direction": "input", "id": "signal", "type": "scalar.unit"},
+            {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+        ],
+        ("palette", "explaino_cmap"): [
+            {"direction": "input", "id": "signal", "type": "scalar.unit"},
+            {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+        ],
+        ("palette", "joy_root_palette"): [
+            {"direction": "input", "id": "signal", "type": "category.root_index"},
+            {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+        ],
+        ("grading", "band_finish"): [
+            {"direction": "input", "id": "color", "type": "color.linear_rgb"},
+            {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+        ],
+        ("grading", "tone_map_finish"): [
+            {"direction": "input", "id": "color", "type": "color.linear_rgb"},
+            {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+        ],
+        ("grading", "balance_void_grade"): [
+            {"direction": "input", "id": "color", "type": "color.linear_rgb"},
+            {"direction": "output", "id": "color", "type": "color.linear_rgb", "canonical": True},
+        ],
+    }
+
+    functions = {
+        (lane["id"], function["id"]): function
+        for lane in payload["function_library"]["lanes"]
+        for function in lane["functions"]
+    }
+    assert len(functions) == 39
+    assert not [
+        f"{lane_id}.{function_id}"
+        for (lane_id, function_id), function in functions.items()
+        if not function.get("ports")
+    ]
+    for key, ports in expected.items():
+        assert functions[key]["ports"] == ports
+
+    for function in payload["function_library"]["lanes"][0]["functions"]:
+        assert function["typed_signal"] == next(
+            port["type"]
+            for port in function["ports"]
+            if port.get("canonical") and port["direction"] == "output"
+        )
+
+    audit = payload["composition_recipe_contract"]["compatibility_audit"]
+    assert sum(row["classification"] == "typed_resolved" for row in audit) == 6
+    assert sum(row["classification"] == "runtime_legacy_override" for row in audit) == 18
+    assert {
+        row["override_id"]
+        for row in audit
+        if row["classification"] == "runtime_legacy_override"
+    } == {
+        "legacy_smooth_escape_ramp_explaino_cmap_contrast_lift",
+        "legacy_banded_signal_banded_heatmap_band_finish",
+        "legacy_escape_magnitude_heatmap_contrast_lift",
+        "legacy_escape_magnitude_explaino_cmap_contrast_lift",
+        "legacy_orbit_stripe_phase_wheel_palette_phase_finish",
+        "recipe_root_log_proximity_signed_unit_map_heatmap",
+        "legacy_root_proximity_explaino_cmap_contrast_lift",
+        "legacy_root_index_joy_root_palette_basin_default",
+        "legacy_sdf_signed_distance_heatmap_contrast_lift",
+        "legacy_sdf_signed_distance_explaino_cmap_contrast_lift",
+        "legacy_sdf_inside_outside_heatmap_contrast_lift",
+        "legacy_sdf_inside_outside_explaino_cmap_contrast_lift",
+        "legacy_sdf_boundary_band_heatmap_contrast_lift",
+        "legacy_sdf_boundary_band_explaino_cmap_contrast_lift",
+        "legacy_sdf_curvature_heatmap_contrast_lift",
+        "legacy_sdf_curvature_explaino_cmap_contrast_lift",
+        "legacy_lens_field_v2_distance_heatmap_contrast_lift",
+        "legacy_lens_field_v2_distance_explaino_cmap_contrast_lift",
+    }
