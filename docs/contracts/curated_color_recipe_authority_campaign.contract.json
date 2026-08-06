@@ -99,7 +99,7 @@
       "description": "UI-Salt multi-Source, stable override, fold, and explicit adapter metadata validate and fail closed.",
       "evidence_kind": "pytest_junit_case",
       "artifact_path": "artifacts/pytest/curated_recipe_beauty_materializer.junit.xml",
-      "test_nodeid": "tests/test_ui_salt_materializer.py"
+      "test_nodeid": "tests/test_ui_salt_materializer.py::test_checked_in_color_pipeline_contract_is_fresh"
     },
     {
       "assertion_id": "slice_5_core_native_ok",

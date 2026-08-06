@@ -325,6 +325,7 @@ Exercise the real selector/Apply command without physical mouse automation, veri
 - [x] Generic materializer tests briefly stopped asserting the canonical single-Source fold on unaffected recipes; exact unaffected fold assertions were restored.
 - [x] The first runtime receipt assertion demanded decimal identity for binary float values; numeric receipt checks now use a 1e-6 tolerance while frame hashes, topology, IDs, enums, and replay remain exact.
 - [x] One isolated runtime launch returned a non-golden live hash after an earlier exact run; the exact requirement was retained, ten additional fresh launches and the combined all-recipe/Beauty public-path proof passed bit-exactly, and no reproducible arithmetic or authority drift remained.
+- [x] The first machine proof receipt could not match the materializer evidence because the contract named a pytest module instead of a concrete JUnit testcase; the assertion now targets the stable checked-in-contract freshness test and the contract was intentionally re-locked.
 
 ## Planned Validation Targets
 
