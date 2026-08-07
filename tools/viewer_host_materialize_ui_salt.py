@@ -22,6 +22,7 @@ VALID_CONTRACT_KINDS = {
     "resolution_audit",
     "compat_override_audit",
     "sdf_applicator_capability",
+    "composite_function_library",
 }
 VALID_SIGNAL_KINDS = {"scalar", "phase", "categorical"}
 VALID_SIGNAL_TYPE_KINDS = {"scalar", "phase", "category", "palette", "mask", "color", "field"}
@@ -56,6 +57,11 @@ VALID_STATEMENTS = {
     "compat_override",
     "sdf_source_capability",
     "explaino_contract",
+    "function_output_guarantee",
+    "composite_function",
+    "composite_node",
+    "composite_map",
+    "composite_fixed",
 }
 
 
@@ -1317,6 +1323,381 @@ def _validate_function_ports(record: FunctionRecord) -> None:
             )
 
 
+
+def _canonical_value_for_type(type_id: str, value: Any, *, context: str) -> dict[str, Any]:
+    if type_id in {"float", "double"}:
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise MaterializerError(f"{context} requires numeric value")
+        _check_finite(value, context)
+        return {"value_kind": "number", "number_value": float(value)}
+    if type_id == "int":
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise MaterializerError(f"{context} requires integer value")
+        return {"value_kind": "number", "number_value": float(value)}
+    if type_id == "bool":
+        if not isinstance(value, bool):
+            raise MaterializerError(f"{context} requires bool value")
+        return {"value_kind": "bool", "bool_value": value}
+    if type_id == "enum":
+        if not isinstance(value, str):
+            raise MaterializerError(f"{context} requires enum string value")
+        return {"value_kind": "string", "string_value": value}
+    raise MaterializerError(f"{context} has unsupported parameter type '{type_id}'")
+
+
+def _canonical_param_contract(param: dict[str, Any]) -> dict[str, Any]:
+    item = {
+        "descriptor_parameter_id": param["descriptor_parameter_id"],
+        "type": param["type"],
+    }
+    for key in ("min", "max", "step"):
+        if key in param:
+            value = param[key]
+            item[key] = format(float(value), ".17g") if isinstance(value, (int, float)) and not isinstance(value, bool) else value
+    if "default" in param:
+        default = _canonical_value_for_type(
+            param["type"],
+            param["default"],
+            context=f"param {param['descriptor_parameter_id']} default",
+        )
+        if default["value_kind"] == "number":
+            default["number_value"] = format(default["number_value"], ".17g")
+        item["default"] = default
+    if "options" in param:
+        item["options"] = list(param["options"])
+    return item
+
+
+def _primitive_descriptor_fingerprint(
+    function: dict[str, Any],
+    lane: str,
+    guarantee: dict[str, Any],
+) -> str:
+    document = {
+        "id": function["id"],
+        "lane": lane,
+        "runtime_backed": bool(function.get("runtime_backed", False)),
+        "ports": [
+            {
+                key: port[key]
+                for key in ("direction", "id", "type", "canonical", "generic_group")
+                if key in port
+            }
+            for port in function.get("ports", [])
+        ],
+        "params": sorted(
+            (_canonical_param_contract(param) for param in function.get("params", [])),
+            key=lambda item: item["descriptor_parameter_id"],
+        ),
+        "output_guarantee": {
+            "output_type": guarantee["output_type"],
+            "finite": guarantee["finite"],
+            "range_min": format(guarantee["range_min"], ".17g"),
+            "range_max": format(guarantee["range_max"], ".17g"),
+        },
+    }
+    encoded = json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return hashlib.sha256(encoded.encode("ascii")).hexdigest()
+
+
+def _build_composite_function_contract(
+    *,
+    contracts: list[dict[str, Any]],
+    composites: dict[str, dict[str, Any]],
+    composite_nodes: list[dict[str, Any]],
+    composite_maps: list[dict[str, Any]],
+    composite_fixed: list[dict[str, Any]],
+    function_guarantees: list[dict[str, Any]],
+    functions: dict[str, FunctionRecord],
+    lane_ids: set[str],
+    signal_type_ids: set[str],
+    type_aliases_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    declarations = [
+        contract
+        for contract in contracts
+        if contract["kind"] == "composite_function_library"
+    ]
+    if not composites and not declarations and not function_guarantees:
+        return None
+    if len(declarations) != 1:
+        raise MaterializerError("composite function metadata requires exactly one composite_function_library contract")
+
+    guarantees_by_function: dict[str, dict[str, Any]] = {}
+    for guarantee in function_guarantees:
+        function_id = guarantee["function"]
+        if function_id in guarantees_by_function:
+            raise MaterializerError(f"duplicate output guarantee for function '{function_id}'")
+        record = functions.get(function_id)
+        if record is None:
+            raise MaterializerError(f"output guarantee references unknown function '{function_id}'")
+        output_type = _normalize_signal_type_id(
+            guarantee["output_type"],
+            signal_type_ids,
+            type_aliases_by_id,
+            context=f"function_output_guarantee {function_id}",
+        )
+        output_port = _canonical_output_port(record.function)
+        if output_port is None or _is_generic_type(output_port["type"]):
+            raise MaterializerError(f"function {function_id} output guarantee requires a concrete canonical output")
+        if output_port["type"] != output_type:
+            raise MaterializerError(
+                f"function {function_id} output guarantee type {output_type} does not match canonical output {output_port['type']}"
+            )
+        if not guarantee["finite"]:
+            raise MaterializerError(f"function {function_id} composite output guarantee must be finite")
+        range_min = guarantee["range_min"]
+        range_max = guarantee["range_max"]
+        _check_finite(range_min, f"function {function_id} output range_min")
+        _check_finite(range_max, f"function {function_id} output range_max")
+        if not isinstance(range_min, (int, float)) or isinstance(range_min, bool):
+            raise MaterializerError(f"function {function_id} output range_min must be numeric")
+        if not isinstance(range_max, (int, float)) or isinstance(range_max, bool):
+            raise MaterializerError(f"function {function_id} output range_max must be numeric")
+        if float(range_min) > float(range_max):
+            raise MaterializerError(f"function {function_id} output guarantee range is invalid")
+        normalized = {
+            "output_type": output_type,
+            "finite": True,
+            "range_min": float(range_min),
+            "range_max": float(range_max),
+        }
+        guarantees_by_function[function_id] = normalized
+        record.function["output_guarantee"] = dict(normalized)
+
+    composite_ids = set(composites)
+    primitive_ids = set(functions)
+    collisions = composite_ids & primitive_ids
+    if collisions:
+        raise MaterializerError(f"composite id collides with primitive function '{sorted(collisions)[0]}'")
+
+    built: list[dict[str, Any]] = []
+    for composite_id, raw in composites.items():
+        lane = raw["lane"]
+        if lane not in lane_ids:
+            raise MaterializerError(f"composite {composite_id} references unknown lane '{lane}'")
+        if lane != "shape":
+            raise MaterializerError(f"composite {composite_id} V1 supports Shape lane only")
+        if raw["topology"] != "lane_local_function":
+            raise MaterializerError(f"composite {composite_id} has unsupported topology '{raw['topology']}'")
+        input_type = _normalize_signal_type_id(
+            raw["input_type"], signal_type_ids, type_aliases_by_id, context=f"composite {composite_id} input_type"
+        )
+        output_type = _normalize_signal_type_id(
+            raw["output_type"], signal_type_ids, type_aliases_by_id, context=f"composite {composite_id} output_type"
+        )
+
+        nodes = [dict(item) for item in composite_nodes if item["composite"] == composite_id]
+        nodes.sort(key=lambda item: item["order"])
+        if not nodes:
+            raise MaterializerError(f"composite {composite_id} requires at least one node")
+        if len(nodes) > 8:
+            raise MaterializerError(f"composite {composite_id} exceeds eight fully expanded primitive rows")
+        if [node["order"] for node in nodes] != list(range(len(nodes))):
+            raise MaterializerError(f"composite {composite_id} node order must be contiguous from zero")
+        node_ids = [node["id"] for node in nodes]
+        if len(node_ids) != len(set(node_ids)):
+            raise MaterializerError(f"composite {composite_id} has duplicate semantic node id")
+        node_by_id = {node["id"]: node for node in nodes}
+
+        current_type = input_type
+        built_nodes = []
+        target_params: dict[tuple[str, str], dict[str, Any]] = {}
+        for node in nodes:
+            function_id = node["function"]
+            if function_id in composite_ids:
+                raise MaterializerError(f"composite {composite_id} cannot nest composite '{function_id}'")
+            record = functions.get(function_id)
+            if record is None:
+                raise MaterializerError(f"composite {composite_id} references unknown primitive function '{function_id}'")
+            if record.lane != lane:
+                raise MaterializerError(
+                    f"composite {composite_id} node {node['id']} lane mismatch: expected {lane}, got {record.lane}"
+                )
+            ports = record.function.get("ports", [])
+            inputs = [port for port in ports if port["direction"] == "input"]
+            output = _canonical_output_port(record.function)
+            if len(inputs) != 1 or output is None or _is_generic_type(inputs[0]["type"]) or _is_generic_type(output["type"]):
+                raise MaterializerError(f"composite {composite_id} node {node['id']} requires concrete one-input/one-output ports")
+            if inputs[0]["type"] != current_type:
+                raise MaterializerError(
+                    f"composite {composite_id} node {node['id']} expects {inputs[0]['type']} after {current_type}"
+                )
+            guarantee = guarantees_by_function.get(function_id)
+            if guarantee is None:
+                raise MaterializerError(f"composite {composite_id} node {node['id']} lacks output guarantee")
+            if guarantee["output_type"] != output["type"]:
+                raise MaterializerError(f"composite {composite_id} node {node['id']} output guarantee drift")
+            fingerprint = _primitive_descriptor_fingerprint(record.function, lane, guarantee)
+            built_nodes.append({
+                "id": node["id"],
+                "function": function_id,
+                "order": node["order"],
+                "input_type": inputs[0]["type"],
+                "output_type": output["type"],
+                "primitive_descriptor_fingerprint": fingerprint,
+            })
+            for param in record.function.get("params", []):
+                target_params[(node["id"], param["descriptor_parameter_id"])] = param
+            current_type = output["type"]
+        if current_type != output_type:
+            raise MaterializerError(
+                f"composite {composite_id} final output {current_type} does not match {output_type}"
+            )
+
+        exposed_params = {param["descriptor_parameter_id"]: param for param in raw["params"]}
+        if len(exposed_params) != len(raw["params"]):
+            raise MaterializerError(f"composite {composite_id} has duplicate exposed parameter id")
+
+        maps = [dict(item) for item in composite_maps if item["composite"] == composite_id]
+        fixed = [dict(item) for item in composite_fixed if item["composite"] == composite_id]
+        mapped_exposed: set[str] = set()
+        claimed_targets: set[tuple[str, str]] = set()
+        built_maps = []
+        for mapping in maps:
+            exposed_id = mapping["exposed"]
+            exposed = exposed_params.get(exposed_id)
+            if exposed is None:
+                raise MaterializerError(f"composite {composite_id} mapping references unknown exposed parameter '{exposed_id}'")
+            if exposed_id in mapped_exposed:
+                raise MaterializerError(f"composite {composite_id} has duplicate parameter mapping for '{exposed_id}'")
+            mapped_exposed.add(exposed_id)
+            target_key = (mapping["node"], mapping["target"])
+            target = target_params.get(target_key)
+            if target is None:
+                if mapping["node"] not in node_by_id:
+                    raise MaterializerError(f"composite {composite_id} mapping references unknown node '{mapping['node']}'")
+                raise MaterializerError(f"composite {composite_id} mapping references unknown target '{mapping['target']}'")
+            if target_key in claimed_targets:
+                raise MaterializerError(f"composite {composite_id} target {target_key[0]}/{target_key[1]} is assigned twice")
+            claimed_targets.add(target_key)
+            if exposed["type"] != target["type"]:
+                raise MaterializerError(
+                    f"composite {composite_id} mapping type mismatch for {exposed_id} -> {target_key[1]}"
+                )
+            built_mapping = {
+                "exposed_parameter_id": exposed_id,
+                "node_id": target_key[0],
+                "descriptor_parameter_id": target_key[1],
+                "scale": float(mapping["scale"]),
+                "offset": float(mapping["offset"]),
+            }
+            for source_key in ("clamp_min", "clamp_max"):
+                if mapping[source_key] is not None:
+                    _check_finite(mapping[source_key], f"composite {composite_id} mapping {exposed_id} {source_key}")
+                    built_mapping[source_key] = float(mapping[source_key])
+            if (
+                "clamp_min" in built_mapping
+                and "clamp_max" in built_mapping
+                and built_mapping["clamp_min"] > built_mapping["clamp_max"]
+            ):
+                raise MaterializerError(f"composite {composite_id} mapping {exposed_id} has invalid clamp range")
+            built_maps.append(built_mapping)
+
+        built_fixed = []
+        for item in fixed:
+            target_key = (item["node"], item["target"])
+            target = target_params.get(target_key)
+            if target is None:
+                if item["node"] not in node_by_id:
+                    raise MaterializerError(f"composite {composite_id} fixed parameter references unknown node '{item['node']}'")
+                raise MaterializerError(f"composite {composite_id} fixed parameter references unknown target '{item['target']}'")
+            if target_key in claimed_targets:
+                raise MaterializerError(f"composite {composite_id} target {target_key[0]}/{target_key[1]} is assigned twice")
+            claimed_targets.add(target_key)
+            normalized_value = _canonical_value_for_type(
+                target["type"], item["value"], context=f"composite {composite_id} fixed {target_key[0]}/{target_key[1]}"
+            )
+            built_fixed.append({
+                "node_id": target_key[0],
+                "descriptor_parameter_id": target_key[1],
+                **normalized_value,
+            })
+
+        missing_exposed = sorted(set(exposed_params) - mapped_exposed)
+        if missing_exposed:
+            raise MaterializerError(f"composite {composite_id} has unmapped exposed parameter '{missing_exposed[0]}'")
+        missing_targets = sorted(set(target_params) - claimed_targets)
+        if missing_targets:
+            node_id, parameter_id = missing_targets[0]
+            raise MaterializerError(
+                f"composite {composite_id} leaves primitive parameter {node_id}/{parameter_id} unmapped"
+            )
+
+        canonical_document = {
+            "id": composite_id,
+            "version": raw["version"],
+            "lane": lane,
+            "topology": raw["topology"],
+            "input_type": input_type,
+            "output_type": output_type,
+            "nodes": [
+                {
+                    "id": node["id"],
+                    "function": node["function"],
+                    "order": node["order"],
+                    "primitive_descriptor_fingerprint": node["primitive_descriptor_fingerprint"],
+                }
+                for node in built_nodes
+            ],
+            "params": sorted(
+                (_canonical_param_contract(param) for param in raw["params"]),
+                key=lambda item: item["descriptor_parameter_id"],
+            ),
+            "parameter_mappings": sorted(
+                built_maps,
+                key=lambda item: (item["exposed_parameter_id"], item["node_id"], item["descriptor_parameter_id"]),
+            ),
+            "fixed_parameters": sorted(
+                built_fixed,
+                key=lambda item: (item["node_id"], item["descriptor_parameter_id"]),
+            ),
+        }
+        encoded = json.dumps(canonical_document, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        built.append({
+            "id": composite_id,
+            "version": raw["version"],
+            "label": raw["label"],
+            "lane": lane,
+            "topology": raw["topology"],
+            "input_type": input_type,
+            "output_type": output_type,
+            "params": raw["params"],
+            "nodes": built_nodes,
+            "parameter_mappings": built_maps,
+            "fixed_parameters": built_fixed,
+            "expanded_row_count": len(built_nodes),
+            "metadata_content_hash": hashlib.sha256(encoded.encode("ascii")).hexdigest(),
+        })
+
+    unknown = (
+        sorted({item["composite"] for item in composite_nodes} - set(composites))
+        + sorted({item["composite"] for item in composite_maps} - set(composites))
+        + sorted({item["composite"] for item in composite_fixed} - set(composites))
+    )
+    if unknown:
+        raise MaterializerError(f"composite metadata references unknown composite '{unknown[0]}'")
+
+    return {
+        "schema_id": "viewer.composite_function_contract.v1",
+        "version": 1,
+        "topology": "lane_local_function",
+        "max_fully_expanded_lane_rows": 8,
+        "canonicalization": {
+            "id": "viewer.composite_function_canonicalization.v1",
+            "legacy_alias_normalization": True,
+            "node_order": "author_order",
+            "parameter_order": "descriptor_parameter_id",
+            "typed_value_normalization": "canonical_kind_and_text_v1",
+            "default_policy": "expand_all_descriptor_defaults",
+            "exclude_display_text": True,
+            "binary64_text": ".17g",
+            "hash_algorithm": "sha256",
+            "primitive_descriptor_fingerprints": True,
+        },
+        "composites": built,
+    }
+
 def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     contracts: list[dict[str, Any]] = []
     lanes: list[dict[str, Any]] = []
@@ -1351,6 +1732,11 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
     edge_link_ids: set[str] = set()
     resolution_cases: list[dict[str, Any]] = []
     resolution_case_ids: set[str] = set()
+    function_guarantees: list[dict[str, Any]] = []
+    composites: dict[str, dict[str, Any]] = {}
+    composite_nodes: list[dict[str, Any]] = []
+    composite_maps: list[dict[str, Any]] = []
+    composite_fixed: list[dict[str, Any]] = []
 
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
         parsed = _parse_statement(raw_line, line_number)
@@ -1377,6 +1763,79 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
                 compat_override_audit_declared = True
             if kind == "sdf_applicator_capability":
                 sdf_applicator_capability_declared = True
+        elif name == "function_output_guarantee":
+            _check_known_args(name, kwargs, {"function", "output_type", "finite", "range_min", "range_max"})
+            function_guarantees.append({
+                "function": _require_string(kwargs, "function", statement=name),
+                "output_type": _require_string(kwargs, "output_type", statement=name),
+                "finite": _require_bool(kwargs, "finite", statement=name),
+                "range_min": kwargs.get("range_min"),
+                "range_max": kwargs.get("range_max"),
+            })
+        elif name == "composite_function":
+            _check_known_args(
+                name, kwargs, {"lane", "id", "version", "label", "topology", "input_type", "output_type", "params"}
+            )
+            composite_id = _require_string(kwargs, "id", statement=name)
+            if composite_id in composites:
+                raise MaterializerError(f"duplicate composite id '{composite_id}'")
+            version = kwargs.get("version")
+            if not isinstance(version, int) or isinstance(version, bool) or version != 1:
+                raise MaterializerError(f"composite {composite_id} version must be integer 1")
+            params = [
+                _build_param_from_sequence(composite_id, raw_param)
+                for raw_param in (kwargs.get("params", []) or [])
+            ]
+            composites[composite_id] = {
+                "id": composite_id,
+                "version": version,
+                "label": _require_string(kwargs, "label", statement=name),
+                "lane": _require_string(kwargs, "lane", statement=name),
+                "topology": _require_string(kwargs, "topology", statement=name),
+                "input_type": _require_string(kwargs, "input_type", statement=name),
+                "output_type": _require_string(kwargs, "output_type", statement=name),
+                "params": params,
+            }
+        elif name == "composite_node":
+            _check_known_args(name, kwargs, {"composite", "id", "function", "order"})
+            composite_nodes.append({
+                "composite": _require_string(kwargs, "composite", statement=name),
+                "id": _require_string(kwargs, "id", statement=name),
+                "function": _require_string(kwargs, "function", statement=name),
+                "order": _require_non_negative_int(kwargs, "order", statement=name),
+            })
+        elif name == "composite_map":
+            _check_known_args(
+                name, kwargs, {"composite", "exposed", "node", "target", "scale", "offset", "clamp_min", "clamp_max"}
+            )
+            scale = kwargs.get("scale", 1.0)
+            offset = kwargs.get("offset", 0.0)
+            _check_finite(scale, "composite_map scale")
+            _check_finite(offset, "composite_map offset")
+            if not isinstance(scale, (int, float)) or isinstance(scale, bool):
+                raise MaterializerError("composite_map scale must be numeric")
+            if not isinstance(offset, (int, float)) or isinstance(offset, bool):
+                raise MaterializerError("composite_map offset must be numeric")
+            composite_maps.append({
+                "composite": _require_string(kwargs, "composite", statement=name),
+                "exposed": _require_string(kwargs, "exposed", statement=name),
+                "node": _require_string(kwargs, "node", statement=name),
+                "target": _require_string(kwargs, "target", statement=name),
+                "scale": float(scale),
+                "offset": float(offset),
+                "clamp_min": kwargs.get("clamp_min"),
+                "clamp_max": kwargs.get("clamp_max"),
+            })
+        elif name == "composite_fixed":
+            _check_known_args(name, kwargs, {"composite", "node", "target", "value"})
+            if "value" not in kwargs:
+                raise MaterializerError("composite_fixed requires value")
+            composite_fixed.append({
+                "composite": _require_string(kwargs, "composite", statement=name),
+                "node": _require_string(kwargs, "node", statement=name),
+                "target": _require_string(kwargs, "target", statement=name),
+                "value": kwargs["value"],
+            })
         elif name == "signal_type":
             _check_known_args(
                 name,
@@ -1854,6 +2313,18 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         functions,
         recipe_adapters,
     )
+    composite_function_contract = _build_composite_function_contract(
+        contracts=contracts,
+        composites=composites,
+        composite_nodes=composite_nodes,
+        composite_maps=composite_maps,
+        composite_fixed=composite_fixed,
+        function_guarantees=function_guarantees,
+        functions=functions,
+        lane_ids=lane_ids,
+        signal_type_ids=signal_type_ids,
+        type_aliases_by_id=type_aliases_by_id,
+    )
     recipe_v2 = _build_recipe_v2_shadows(
         recipes,
         functions,
@@ -1911,6 +2382,8 @@ def materialize_text(text: str, *, source_path: str = "") -> dict[str, Any]:
         },
         "explaino_contract": {"entries": explaino_entries},
     }
+    if composite_function_contract is not None:
+        payload["composite_function_contract"] = composite_function_contract
     if compat_override_audit_declared:
         payload["composition_recipe_contract"]["compat_overrides"] = compat_overrides
         payload["composition_recipe_contract"]["compatibility_audit"] = compatibility_audit
@@ -1938,6 +2411,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Materialize viewer-local ui.salt metadata into strict JSON contracts")
     parser.add_argument("--ui-salt", required=True, help="Input viewer ui.salt file")
     parser.add_argument("--out", required=True, help="Output materialized JSON path")
+    parser.add_argument("--composite-out", help="Optional separate composite-function contract JSON path")
     args = parser.parse_args(argv)
 
     source = Path(args.ui_salt)
@@ -1947,6 +2421,16 @@ def main(argv: list[str] | None = None) -> int:
         payload = materialize_text(text, source_path=stable_source_path(source))
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+        if args.composite_out:
+            composite_payload = payload.get("composite_function_contract")
+            if composite_payload is None:
+                raise MaterializerError("requested --composite-out but no composite_function_library contract was declared")
+            composite_out = Path(args.composite_out)
+            composite_out.parent.mkdir(parents=True, exist_ok=True)
+            composite_out.write_text(
+                json.dumps(composite_payload, indent=2, sort_keys=False) + "\n",
+                encoding="utf-8",
+            )
     except (OSError, MaterializerError) as exc:
         sys.stderr.write(str(exc) + "\n")
         return 2

@@ -1564,3 +1564,195 @@ def test_low_risk_function_batch_has_locked_typed_inventory(tmp_path):
     assert ("sdf_inside_outside", "identity", "inside_outside_two_tone_v1", "contrast_lift", "resolved") in routes
     assert ("phase_orbit", "phase_repeat_v1", "phase_wheel_palette", "phase_finish", "resolved") in routes
     assert ("smooth_escape_ramp", "invert_unit_v1", "gradient_three_stop_v1", "levels_gamma_v1", "resolved") in routes
+
+def _materialize_current_with_composites(tmp_path: Path):
+    out = tmp_path / "materialized.json"
+    composite_out = tmp_path / "composites.json"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL),
+            "--ui-salt",
+            str(COLOR_PIPELINE_UI_SALT),
+            "--out",
+            str(out),
+            "--composite-out",
+            str(composite_out),
+        ],
+        cwd=str(REPO_ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    return proc, out, composite_out
+
+
+def test_composite_function_contract_v1_materializes_unit_contours(tmp_path):
+    proc, out, composite_out = _materialize_current_with_composites(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    composite_payload = json.loads(composite_out.read_text(encoding="utf-8"))
+    assert composite_payload == payload["composite_function_contract"]
+    assert composite_payload["schema_id"] == "viewer.composite_function_contract.v1"
+    assert composite_payload["canonicalization"]["hash_algorithm"] == "sha256"
+    assert composite_payload["max_fully_expanded_lane_rows"] == 8
+
+    composites = composite_payload["composites"]
+    assert len(composites) == 1
+    composite = composites[0]
+    assert composite["id"] == "unit_contours_v1"
+    assert composite["lane"] == "shape"
+    assert composite["topology"] == "lane_local_function"
+    assert composite["input_type"] == "scalar.unit"
+    assert composite["output_type"] == "scalar.unit"
+    assert [node["id"] for node in composite["nodes"]] == [
+        "repeat_stage",
+        "window_stage",
+    ]
+    assert [node["function"] for node in composite["nodes"]] == [
+        "repeat",
+        "smooth_window",
+    ]
+    assert all(node["primitive_descriptor_fingerprint"] for node in composite["nodes"])
+    assert [param["descriptor_parameter_id"] for param in composite["params"]] == [
+        "composite.frequency",
+        "composite.offset",
+        "composite.window_width",
+        "composite.softness",
+    ]
+    assert composite["fixed_parameters"] == [
+        {
+            "node_id": "window_stage",
+            "descriptor_parameter_id": "shape.center",
+            "value_kind": "number",
+            "number_value": 0.5,
+        }
+    ]
+    assert len(composite["parameter_mappings"]) == 4
+    assert composite["expanded_row_count"] == 2
+    assert len(composite["metadata_content_hash"]) == 64
+
+
+def test_composite_function_hash_excludes_display_text_and_tracks_primitive_contract(tmp_path):
+    proc, _out, composite_out = _materialize_current_with_composites(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    baseline = json.loads(composite_out.read_text(encoding="utf-8"))["composites"][0]
+
+    source_text = COLOR_PIPELINE_UI_SALT.read_text(encoding="utf-8")
+    display_changed = source_text.replace(
+        'label="Unit Contours"',
+        'label="Unit Contours Renamed"',
+    )
+    display_source = tmp_path / "display_changed.ui.salt"
+    display_source.write_text(display_changed, encoding="utf-8")
+    display_out = tmp_path / "display_changed.json"
+    display_composites = tmp_path / "display_changed.composites.json"
+    display_proc = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL),
+            "--ui-salt",
+            str(display_source),
+            "--out",
+            str(display_out),
+            "--composite-out",
+            str(display_composites),
+        ],
+        cwd=str(REPO_ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    assert display_proc.returncode == 0, display_proc.stderr
+    display = json.loads(display_composites.read_text(encoding="utf-8"))["composites"][0]
+    assert display["metadata_content_hash"] == baseline["metadata_content_hash"]
+
+    primitive_changed = source_text.replace(
+        'function_output_guarantee(function="repeat", output_type="scalar.unit", finite=True, range_min=0.0, range_max=1.0)',
+        'function_output_guarantee(function="repeat", output_type="scalar.unit", finite=True, range_min=0.0, range_max=0.999)',
+    )
+    primitive_source = tmp_path / "primitive_changed.ui.salt"
+    primitive_source.write_text(primitive_changed, encoding="utf-8")
+    primitive_out = tmp_path / "primitive_changed.json"
+    primitive_composites = tmp_path / "primitive_changed.composites.json"
+    primitive_proc = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL),
+            "--ui-salt",
+            str(primitive_source),
+            "--out",
+            str(primitive_out),
+            "--composite-out",
+            str(primitive_composites),
+        ],
+        cwd=str(REPO_ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    assert primitive_proc.returncode == 0, primitive_proc.stderr
+    primitive = json.loads(primitive_composites.read_text(encoding="utf-8"))["composites"][0]
+    assert primitive["metadata_content_hash"] != baseline["metadata_content_hash"]
+
+
+def test_composite_function_contract_rejects_invalid_v1_shapes(tmp_path):
+    source_text = COLOR_PIPELINE_UI_SALT.read_text(encoding="utf-8")
+    cases = {
+        "duplicate semantic node": source_text.replace(
+            'id="window_stage", function="smooth_window", order=1',
+            'id="repeat_stage", function="smooth_window", order=1',
+        ),
+        "unknown primitive function": source_text.replace(
+            'function="smooth_window", order=1',
+            'function="missing_shape", order=1',
+        ),
+        "composite nesting": source_text.replace(
+            'function="smooth_window", order=1',
+            'function="unit_contours_v1", order=1',
+        ),
+        "unmapped primitive parameter": source_text.replace(
+            'composite_fixed(composite="unit_contours_v1", node="window_stage", target="shape.center", value=0.5)\n',
+            '',
+        ),
+        "duplicate parameter mapping": source_text.replace(
+            'composite_map(composite="unit_contours_v1", exposed="composite.offset"',
+            'composite_map(composite="unit_contours_v1", exposed="composite.frequency"',
+        ),
+        "output guarantee": source_text.replace(
+            'function_output_guarantee(function="smooth_window", output_type="scalar.unit", finite=True, range_min=0.0, range_max=1.0)\n',
+            '',
+        ),
+        "lane mismatch": source_text.replace(
+            'composite_node(composite="unit_contours_v1", id="window_stage", function="smooth_window"',
+            'composite_node(composite="unit_contours_v1", id="window_stage", function="heatmap"',
+        ),
+    }
+    for slug, invalid_text in cases.items():
+        assert invalid_text != source_text, f"{slug} fixture replacement did not change the source"
+        source = tmp_path / f"{slug.replace(' ', '_')}.ui.salt"
+        out = tmp_path / f"{slug.replace(' ', '_')}.json"
+        composites = tmp_path / f"{slug.replace(' ', '_')}.composites.json"
+        source.write_text(invalid_text, encoding="utf-8")
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(TOOL),
+                "--ui-salt",
+                str(source),
+                "--out",
+                str(out),
+                "--composite-out",
+                str(composites),
+            ],
+            cwd=str(REPO_ROOT),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        assert proc.returncode == 2, (slug, proc.stdout, proc.stderr)
+        assert "Traceback" not in proc.stderr, (slug, proc.stderr)

@@ -2648,14 +2648,17 @@ int main() {
         const ColorPipelineLaneCatalog* corePaletteCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
         if (!corePaletteCatalog ||
             corePaletteCatalog->default_function_id != std::string("heatmap") ||
-            corePaletteCatalog->functions.size() != 6 ||
+            corePaletteCatalog->functions.size() != 9 ||
             corePaletteCatalog->functions[0].id != "heatmap" ||
             corePaletteCatalog->functions[1].id != "phase_wheel_palette" ||
             corePaletteCatalog->functions[2].id != "banded_heatmap" ||
             corePaletteCatalog->functions[3].id != "explaino_cmap" ||
             corePaletteCatalog->functions[4].id != "root_classic_palette" ||
-            corePaletteCatalog->functions[5].id != "joy_root_palette") {
-            std::cerr << "Expected the extracted advanced color core to widen the shipped Palette catalog with explaino_cmap, root_classic_palette, and joy_root_palette as runtime-real rows\n";
+            corePaletteCatalog->functions[5].id != "joy_root_palette" ||
+            corePaletteCatalog->functions[6].id != "diverging_signed_palette_v1" ||
+            corePaletteCatalog->functions[7].id != "inside_outside_two_tone_v1" ||
+            corePaletteCatalog->functions[8].id != "gradient_three_stop_v1") {
+            std::cerr << "Expected the extracted advanced color core to expose the complete shipped Palette catalog in materialized order\n";
             return 1;
         }
         const FunctionDescriptor* coreExplainoCmapDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "explaino_cmap");
@@ -2682,7 +2685,7 @@ int main() {
         const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
         if (!coreShapeCatalog ||
             coreShapeCatalog->default_function_id != std::string("identity") ||
-            coreShapeCatalog->functions.size() != 10 ||
+            coreShapeCatalog->functions.size() != 15 ||
             coreShapeCatalog->functions[0].id != "identity" ||
             coreShapeCatalog->functions[1].id != "signed_unit_map_v1" ||
             coreShapeCatalog->functions[2].id != "offset_scale" ||
@@ -2692,8 +2695,13 @@ int main() {
             coreShapeCatalog->functions[6].id != "bias_gain_curve" ||
             coreShapeCatalog->functions[7].id != "smooth_window" ||
             coreShapeCatalog->functions[8].id != "log_compress" ||
-            coreShapeCatalog->functions[9].id != "smoothstep_range") {
-            std::cerr << "Expected the extracted advanced color core to widen the shipped Shape catalog with Batch 1 runtime-real rows\n";
+            coreShapeCatalog->functions[9].id != "smoothstep_range" ||
+            coreShapeCatalog->functions[10].id != "invert_unit_v1" ||
+            coreShapeCatalog->functions[11].id != "fold_centered_v1" ||
+            coreShapeCatalog->functions[12].id != "phase_offset_v1" ||
+            coreShapeCatalog->functions[13].id != "phase_repeat_v1" ||
+            coreShapeCatalog->functions[14].id != "phase_mirror_v1") {
+            std::cerr << "Expected the extracted advanced color core to expose the complete shipped Shape catalog in materialized order\n";
             return 1;
         }
         const FunctionDescriptor* coreSignedUnitMapDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "signed_unit_map_v1");
@@ -2763,7 +2771,7 @@ int main() {
         const ColorPipelineLaneCatalog* coreGradingCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
         if (!coreGradingCatalog ||
             coreGradingCatalog->default_function_id != std::string("contrast_lift") ||
-            coreGradingCatalog->functions.size() != 8 ||
+            coreGradingCatalog->functions.size() != 10 ||
             coreGradingCatalog->functions[0].id != "contrast_lift" ||
             coreGradingCatalog->functions[1].id != "phase_finish" ||
             coreGradingCatalog->functions[2].id != "band_finish" ||
@@ -2771,8 +2779,10 @@ int main() {
             coreGradingCatalog->functions[4].id != "neutral_finish" ||
             coreGradingCatalog->functions[5].id != "tone_map_finish" ||
             coreGradingCatalog->functions[6].id != "grade_glow" ||
-            coreGradingCatalog->functions[7].id != "balance_void_grade") {
-            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, grade_glow, and balance_void_grade as runtime-real Grading rows\n";
+            coreGradingCatalog->functions[7].id != "balance_void_grade" ||
+            coreGradingCatalog->functions[8].id != "levels_gamma_v1" ||
+            coreGradingCatalog->functions[9].id != "hue_rotate_v1") {
+            std::cerr << "Expected the extracted advanced color core to expose the complete shipped Grading catalog in materialized order\n";
             return 1;
         }
         const FunctionDescriptor* coreContrastLiftDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "contrast_lift");
@@ -3057,7 +3067,7 @@ int main() {
         }
         const ColorPipelineLaneCatalog* shapeCatalog = FindColorPipelineLaneCatalog("shape");
         if (!shapeCatalog ||
-            shapeCatalog->functions.size() != 10 ||
+            shapeCatalog->functions.size() != 15 ||
             shapeCatalog->functions[0].id != "identity" ||
             shapeCatalog->functions[1].id != "signed_unit_map_v1" ||
             shapeCatalog->functions[2].id != "offset_scale" ||
@@ -3067,8 +3077,13 @@ int main() {
             shapeCatalog->functions[6].id != "bias_gain_curve" ||
             shapeCatalog->functions[7].id != "smooth_window" ||
             shapeCatalog->functions[8].id != "log_compress" ||
-            shapeCatalog->functions[9].id != "smoothstep_range") {
-            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the real runtime-backed Shape rows including Batch 1\n";
+            shapeCatalog->functions[9].id != "smoothstep_range" ||
+            shapeCatalog->functions[10].id != "invert_unit_v1" ||
+            shapeCatalog->functions[11].id != "fold_centered_v1" ||
+            shapeCatalog->functions[12].id != "phase_offset_v1" ||
+            shapeCatalog->functions[13].id != "phase_repeat_v1" ||
+            shapeCatalog->functions[14].id != "phase_mirror_v1") {
+            std::cerr << "Expected the shipped Shape catalog to expose the complete materialized runtime-backed function set\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
@@ -3123,14 +3138,17 @@ int main() {
         }
         const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
         if (!paletteCatalog ||
-            paletteCatalog->functions.size() != 6 ||
+            paletteCatalog->functions.size() != 9 ||
             paletteCatalog->functions[0].id != "heatmap" ||
             paletteCatalog->functions[1].id != "phase_wheel_palette" ||
             paletteCatalog->functions[2].id != "banded_heatmap" ||
             paletteCatalog->functions[3].id != "explaino_cmap" ||
             paletteCatalog->functions[4].id != "root_classic_palette" ||
-            paletteCatalog->functions[5].id != "joy_root_palette") {
-            std::cerr << "Expected the shipped Palette catalog to expose heatmap, phase_wheel_palette, banded_heatmap, explaino_cmap, root_classic_palette, and joy_root_palette\n";
+            paletteCatalog->functions[5].id != "joy_root_palette" ||
+            paletteCatalog->functions[6].id != "diverging_signed_palette_v1" ||
+            paletteCatalog->functions[7].id != "inside_outside_two_tone_v1" ||
+            paletteCatalog->functions[8].id != "gradient_three_stop_v1") {
+            std::cerr << "Expected the shipped Palette catalog to expose the complete materialized runtime-backed function set\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||
@@ -4496,6 +4514,7 @@ int main() {
             std::cerr << "Expected the offset_scale row to expose the live-backed shape.scale control\n";
             return 1;
         }
+        const ColorPipelineParamState* const originalShapeScaleParam = shapeScaleParam;
 
         bool directControlDirty = false;
         ColorPipelineRenderInteractionState activeDirectControlInteraction{};
@@ -4524,6 +4543,7 @@ int main() {
             params.color_pipeline.palette != ColorPalette::explaino_cmap ||
             params.color_pipeline.grading != ColorGradingPreset::escape_default ||
             !NearlyEqual(shapeScaleParam->number_value, 2.0) ||
+            findParamState(explainoRenderWindowState.lanes[1].rows[0], "shape.scale") != originalShapeScaleParam ||
             HasColorPipelineDraftEdits(explainoRenderWindowState)) {
             std::cerr << "Expected active advanced color numeric edits to mutate the live runtime immediately without leaving draft residue\n";
             return 1;
@@ -4556,8 +4576,20 @@ int main() {
             !directControlInteraction.interacted ||
             directControlInteraction.has_active_item ||
             !NearlyEqual(shapeScaleParam->number_value, 2.25) ||
+            findParamState(explainoRenderWindowState.lanes[1].rows[0], "shape.scale") != originalShapeScaleParam ||
             HasColorPipelineDraftEdits(explainoRenderWindowState)) {
-            std::cerr << "Expected released numeric edits to keep the live runtime and draft aligned after the last drag step\n";
+            std::cerr << "Expected released numeric edits to keep the live runtime and draft aligned after the last drag step"
+                      << " smooth_scale=" << params.color_smooth_escape_scale
+                      << " shape_scale=" << params.color_shape_scale
+                      << " signal=" << static_cast<int>(params.color_pipeline.signal)
+                      << " palette=" << static_cast<int>(params.color_pipeline.palette)
+                      << " grading=" << static_cast<int>(params.color_pipeline.grading)
+                      << " dirty=" << directControlDirty
+                      << " interacted=" << directControlInteraction.interacted
+                      << " active=" << directControlInteraction.has_active_item
+                      << " row_value=" << shapeScaleParam->number_value
+                      << " draft_edits=" << HasColorPipelineDraftEdits(explainoRenderWindowState)
+                      << "\n";
             return 1;
         }
 

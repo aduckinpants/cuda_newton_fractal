@@ -6,6 +6,7 @@
 #include "fractal_family_rules.h"
 #include "schema_binding.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
@@ -63,6 +64,25 @@ struct ColorPipelineRecipeApplicationReceipt {
     std::uint64_t runtime_generation = 0;
 };
 
+struct ColorPipelineCompositeProjectionState {
+    std::string lane_id;
+    std::uint64_t wrapper_row_id = 0;
+    std::string composite_id;
+    int composite_version = 0;
+    std::string metadata_content_hash;
+    std::vector<std::uint64_t> expanded_row_ids;
+};
+
+struct ColorPipelineCompositeApplicationReceipt {
+    bool valid = false;
+    std::string schema_id = "viewer.color_pipeline_composite_receipt.v1";
+    std::string application_status;
+    std::string fail_closed_reason;
+    std::string expanded_row_fingerprint;
+    std::vector<ColorPipelineCompositeProjectionState> projections;
+    std::vector<ColorPipelineLaneState> expanded_rows;
+};
+
 struct ColorPipelineWindowState {
     bool open = false;
     bool initialized = false;
@@ -82,8 +102,10 @@ struct ColorPipelineWindowState {
     std::uint64_t recipe_application_generation = 0;
     bool recipe_provenance_unknown_after_reload = false;
     ColorPipelineRecipeApplicationReceipt recipe_application_receipt;
+    ColorPipelineCompositeApplicationReceipt composite_application_receipt;
     ColorPipelineProducerCapabilitySnapshot producer_capability_snapshot;
     std::vector<ColorPipelineLaneState> lanes;
+    std::vector<ColorPipelineCompositeProjectionState> composite_projections;
     ColorPipelineLiveSnapshot live_snapshot;
     std::vector<std::string> validation_messages;
     std::vector<struct ColorPipelineUiAutomationRect> ui_automation_rects;
@@ -137,11 +159,22 @@ struct ResolvedColorPipelineRecipe {
 struct PreparedColorPipelineApplication {
     bool valid = false;
     std::string recipe_id;
+    std::string application_kind;
     ColorPipelineRecipeApplicationReceipt application_receipt;
     ColorPipelineWindowState next_window_state;
     KernelParams next_live_params{};
     bool live_changed = false;
+    bool preserve_draft_storage = false;
 };
+
+inline bool& MutableColorPipelinePrepareFaultAfterResolveForTestsStorage() {
+    static bool enabled = false;
+    return enabled;
+}
+
+inline void SetColorPipelinePrepareFaultAfterResolveForTests(bool enabled) {
+    MutableColorPipelinePrepareFaultAfterResolveForTestsStorage() = enabled;
+}
 
 inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
     const ColorPipelineWindowState& state,
@@ -178,6 +211,13 @@ inline std::string BuildColorPipelineFunctionPickerControlId(
     const std::string& laneId,
     std::uint64_t rowId) {
     return std::string("color_pipeline.") + laneId + "." + std::to_string(rowId) + ".function";
+}
+
+inline std::string BuildColorPipelineFunctionSelectControlId(
+    const std::string& laneId,
+    std::uint64_t rowId,
+    const std::string& functionId) {
+    return BuildColorPipelineFunctionPickerControlId(laneId, rowId) + "." + functionId + ".select";
 }
 
 inline std::string BuildColorPipelineSdfFieldDownsampleControlId() {
@@ -698,6 +738,45 @@ inline bool ColorPipelineRowStatesEqual(
     return true;
 }
 
+inline bool ColorPipelineParamStatesRuntimeEqual(
+    const ColorPipelineParamState& left,
+    const ColorPipelineParamState& right) {
+    if (left.path != right.path || left.type != right.type ||
+        left.bool_value != right.bool_value || left.enum_value != right.enum_value) {
+        return false;
+    }
+    if (left.type == "float") {
+        return static_cast<float>(left.number_value) == static_cast<float>(right.number_value);
+    }
+    return left.number_value == right.number_value;
+}
+
+inline bool ColorPipelineLaneStatesRuntimeEqual(
+    const ColorPipelineLaneState& left,
+    const ColorPipelineLaneState& right) {
+    if (left.lane_id != right.lane_id || left.label != right.label ||
+        left.rows.size() != right.rows.size()) {
+        return false;
+    }
+    for (std::size_t rowIndex = 0; rowIndex < left.rows.size(); ++rowIndex) {
+        const ColorPipelineRowState& leftRow = left.rows[rowIndex];
+        const ColorPipelineRowState& rightRow = right.rows[rowIndex];
+        if (leftRow.enabled != rightRow.enabled ||
+            leftRow.function_id != rightRow.function_id ||
+            leftRow.parameter_values.size() != rightRow.parameter_values.size()) {
+            return false;
+        }
+        for (std::size_t paramIndex = 0; paramIndex < leftRow.parameter_values.size(); ++paramIndex) {
+            if (!ColorPipelineParamStatesRuntimeEqual(
+                    leftRow.parameter_values[paramIndex],
+                    rightRow.parameter_values[paramIndex])) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 inline bool ColorPipelineLaneStatesEqual(
     const ColorPipelineLaneState& left,
     const ColorPipelineLaneState& right) {
@@ -777,6 +856,226 @@ inline std::string BuildColorPipelineRecipeRowFingerprint(
     std::ostringstream out;
     out << "fnv1a64:" << std::hex << std::setfill('0') << std::setw(16) << hash;
     return out.str();
+}
+
+inline const ColorPipelineCompositeProjectionState* FindColorPipelineCompositeProjection(
+    const ColorPipelineWindowState& state,
+    const std::string& laneId,
+    std::uint64_t wrapperRowId) {
+    for (const ColorPipelineCompositeProjectionState& projection : state.composite_projections) {
+        if (projection.lane_id == laneId && projection.wrapper_row_id == wrapperRowId) {
+            return &projection;
+        }
+    }
+    return nullptr;
+}
+
+inline void RemoveColorPipelineCompositeProjection(
+    ColorPipelineWindowState* ioState,
+    const std::string& laneId,
+    std::uint64_t wrapperRowId) {
+    if (!ioState) {
+        return;
+    }
+    ioState->composite_projections.erase(
+        std::remove_if(
+            ioState->composite_projections.begin(),
+            ioState->composite_projections.end(),
+            [&](const ColorPipelineCompositeProjectionState& projection) {
+                return projection.lane_id == laneId && projection.wrapper_row_id == wrapperRowId;
+            }),
+        ioState->composite_projections.end());
+}
+
+inline const ColorPipelineParamState* FindColorPipelineRowParam(
+    const ColorPipelineRowState& row,
+    const std::string& path) {
+    for (const ColorPipelineParamState& param : row.parameter_values) {
+        if (param.path == path) {
+            return &param;
+        }
+    }
+    return nullptr;
+}
+
+inline ColorPipelineParamState* FindMutableColorPipelineRowParam(
+    ColorPipelineRowState* row,
+    const std::string& path) {
+    if (!row) {
+        return nullptr;
+    }
+    for (ColorPipelineParamState& param : row->parameter_values) {
+        if (param.path == path) {
+            return &param;
+        }
+    }
+    return nullptr;
+}
+
+inline bool TryExpandColorPipelineCompositeLanes(
+    const ColorPipelineWindowState& state,
+    std::vector<ColorPipelineLaneState>* outLanes,
+    ColorPipelineCompositeApplicationReceipt* outReceipt = nullptr,
+    std::string* outError = nullptr) {
+    if (outLanes) {
+        outLanes->clear();
+    }
+    if (outReceipt) {
+        *outReceipt = {};
+    }
+    if (!outLanes) {
+        if (outError) *outError = "Composite expansion requires output lanes";
+        return false;
+    }
+
+    std::vector<ColorPipelineLaneState> expandedLanes;
+    expandedLanes.reserve(state.lanes.size());
+    std::vector<ColorPipelineCompositeProjectionState> usedProjections;
+    for (const ColorPipelineLaneState& lane : state.lanes) {
+        const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(lane.lane_id);
+        if (!catalog) {
+            if (outError) *outError = "Composite expansion found an unknown lane: " + lane.lane_id;
+            return false;
+        }
+        ColorPipelineLaneState expandedLane;
+        expandedLane.lane_id = lane.lane_id;
+        expandedLane.label = lane.label;
+        bool laneHasComposite = false;
+        for (const ColorPipelineRowState& row : lane.rows) {
+            const MaterializedColorPipelineCompositeFunction* composite =
+                color_pipeline_core::FindActiveColorPipelineCompositeFunction(lane.lane_id, row.function_id);
+            if (!composite) {
+                expandedLane.rows.push_back(row);
+                continue;
+            }
+            laneHasComposite = true;
+            const ColorPipelineCompositeProjectionState* projection =
+                FindColorPipelineCompositeProjection(state, lane.lane_id, row.ui_row_id);
+            if (!projection || projection->composite_id != composite->id ||
+                projection->composite_version != composite->version ||
+                projection->metadata_content_hash != composite->metadata_content_hash ||
+                projection->expanded_row_ids.size() != composite->nodes.size()) {
+                if (outError) *outError = "Composite projection is missing or stale for '" + composite->id + "'";
+                return false;
+            }
+
+            std::vector<ColorPipelineRowState> nodeRows;
+            nodeRows.reserve(composite->nodes.size());
+            for (std::size_t nodeIndex = 0; nodeIndex < composite->nodes.size(); ++nodeIndex) {
+                const MaterializedColorPipelineCompositeNode& node = composite->nodes[nodeIndex];
+                ColorPipelineRowState expandedRow;
+                std::string rowError;
+                if (!BuildColorPipelineRowFromFunctionId(
+                        *catalog,
+                        node.function.c_str(),
+                        projection->expanded_row_ids[nodeIndex],
+                        &expandedRow,
+                        &rowError)) {
+                    if (outError) *outError = rowError;
+                    return false;
+                }
+                expandedRow.enabled = row.enabled;
+                nodeRows.push_back(std::move(expandedRow));
+            }
+
+            for (const MaterializedColorPipelineCompositeParameterMap& mapping : composite->parameter_mappings) {
+                const MaterializedColorPipelineParam* exposedDescriptor = nullptr;
+                for (const MaterializedColorPipelineParam& candidate : composite->params) {
+                    if (candidate.descriptor_parameter_id == mapping.exposed_parameter_id) {
+                        exposedDescriptor = &candidate;
+                        break;
+                    }
+                }
+                if (!exposedDescriptor) {
+                    if (outError) *outError = "Composite mapping references an unknown exposed parameter";
+                    return false;
+                }
+                const ColorPipelineParamState* exposedValue =
+                    FindColorPipelineRowParam(row, exposedDescriptor->path);
+                if (!exposedValue || (exposedValue->type != "float" && exposedValue->type != "double" && exposedValue->type != "int")) {
+                    if (outError) *outError = "Composite exposed parameter is missing or non-numeric: " + exposedDescriptor->path;
+                    return false;
+                }
+                std::size_t nodeIndex = composite->nodes.size();
+                for (std::size_t index = 0; index < composite->nodes.size(); ++index) {
+                    if (composite->nodes[index].id == mapping.node_id) {
+                        nodeIndex = index;
+                        break;
+                    }
+                }
+                if (nodeIndex >= nodeRows.size()) {
+                    if (outError) *outError = "Composite mapping references an unknown node: " + mapping.node_id;
+                    return false;
+                }
+                ColorPipelineParamState* target =
+                    FindMutableColorPipelineRowParam(&nodeRows[nodeIndex], mapping.descriptor_parameter_id);
+                if (!target) {
+                    if (outError) *outError = "Composite mapping references an unknown primitive parameter: " + mapping.descriptor_parameter_id;
+                    return false;
+                }
+                double value = exposedValue->number_value * mapping.scale + mapping.offset;
+                if (mapping.has_min) value = (std::max)(value, mapping.min_value);
+                if (mapping.has_max) value = (std::min)(value, mapping.max_value);
+                target->number_value = value;
+            }
+            for (const MaterializedColorPipelineCompositeFixedParameter& fixed : composite->fixed_parameters) {
+                std::size_t nodeIndex = composite->nodes.size();
+                for (std::size_t index = 0; index < composite->nodes.size(); ++index) {
+                    if (composite->nodes[index].id == fixed.node_id) {
+                        nodeIndex = index;
+                        break;
+                    }
+                }
+                if (nodeIndex >= nodeRows.size()) {
+                    if (outError) *outError = "Composite fixed parameter references an unknown node: " + fixed.node_id;
+                    return false;
+                }
+                ColorPipelineParamState* target =
+                    FindMutableColorPipelineRowParam(&nodeRows[nodeIndex], fixed.descriptor_parameter_id);
+                if (!target) {
+                    if (outError) *outError = "Composite fixed parameter references an unknown primitive parameter: " + fixed.descriptor_parameter_id;
+                    return false;
+                }
+                if (fixed.value_kind == "number") target->number_value = fixed.number_value;
+                else if (fixed.value_kind == "bool") target->bool_value = fixed.bool_value;
+                else if (fixed.value_kind == "string") target->enum_value = fixed.string_value;
+                else {
+                    if (outError) *outError = "Composite fixed parameter has an unsupported value kind";
+                    return false;
+                }
+            }
+            expandedLane.rows.insert(
+                expandedLane.rows.end(),
+                nodeRows.begin(),
+                nodeRows.end());
+            usedProjections.push_back(*projection);
+        }
+        const int maxRows = color_pipeline_core::ColorPipelineCompositeMaxFullyExpandedLaneRows();
+        if (laneHasComposite &&
+            (maxRows <= 0 || expandedLane.rows.size() > static_cast<std::size_t>(maxRows))) {
+            if (outError) {
+                *outError = "Composite expansion exceeds the fully expanded lane row limit for lane '" +
+                    lane.lane_id + "'";
+            }
+            return false;
+        }
+        expandedLanes.push_back(std::move(expandedLane));
+    }
+
+    if (usedProjections.size() != state.composite_projections.size()) {
+        if (outError) *outError = "Composite projection state contains an orphaned wrapper reference";
+        return false;
+    }
+    *outLanes = std::move(expandedLanes);
+    if (outReceipt) {
+        outReceipt->valid = !usedProjections.empty();
+        outReceipt->application_status = usedProjections.empty() ? "not_applicable" : "prepared";
+        outReceipt->projections = std::move(usedProjections);
+        outReceipt->expanded_rows = *outLanes;
+        outReceipt->expanded_row_fingerprint = BuildColorPipelineRecipeRowFingerprint(*outLanes);
+    }
+    if (outError) outError->clear();
+    return true;
 }
 
 inline std::string DescribeCurrentColorPipelineRecipeMatch(
@@ -913,6 +1212,95 @@ inline std::string BuildColorPipelineRecipeApplicationReportJson(
     return out.str();
 }
 
+inline std::string BuildColorPipelineCompositeApplicationReportJson(
+    const ColorPipelineWindowState& state) {
+    std::ostringstream out;
+    out << "{\"schema_id\":\"viewer.color_pipeline_composite_application_report.v1\"";
+    out << ",\"active_execution\":{";
+    out << "\"authority\":\"expanded_primitive_rows\",\"row_fingerprint\":";
+    WriteColorPipelineRecipeReceiptJsonString(
+        out,
+        state.live_snapshot.valid
+            ? BuildColorPipelineRecipeRowFingerprint(state.live_snapshot.lanes)
+            : std::string{});
+    out << ",\"rows\":";
+    WriteColorPipelineRecipeReceiptRowsJson(
+        out,
+        state.live_snapshot.valid
+            ? state.live_snapshot.lanes
+            : std::vector<ColorPipelineLaneState>{});
+    out << '}';
+
+    std::vector<ColorPipelineLaneState> expandedDraft;
+    ColorPipelineCompositeApplicationReceipt draftReceipt;
+    std::string draftError;
+    const bool draftResolved = TryExpandColorPipelineCompositeLanes(
+        state,
+        &expandedDraft,
+        &draftReceipt,
+        &draftError);
+    out << ",\"draft_projection\":{";
+    out << "\"authority\":";
+    WriteColorPipelineRecipeReceiptJsonString(
+        out,
+        state.composite_projections.empty() ? "primitive_rows" : "composite_wrapper");
+    out << ",\"status\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, draftResolved ? "ready" : "rejected");
+    out << ",\"fail_closed_reason\":";
+    if (draftError.empty()) out << "null";
+    else WriteColorPipelineRecipeReceiptJsonString(out, draftError);
+    out << ",\"expanded_row_fingerprint\":";
+    WriteColorPipelineRecipeReceiptJsonString(
+        out,
+        draftResolved ? BuildColorPipelineRecipeRowFingerprint(expandedDraft) : std::string{});
+    out << ",\"wrapper_rows\":";
+    WriteColorPipelineRecipeReceiptRowsJson(out, state.lanes);
+    out << ",\"expanded_rows\":";
+    WriteColorPipelineRecipeReceiptRowsJson(
+        out,
+        draftResolved ? expandedDraft : std::vector<ColorPipelineLaneState>{});
+    out << '}';
+
+    out << ",\"composite_receipt\":";
+    const ColorPipelineCompositeApplicationReceipt& receipt = state.composite_application_receipt;
+    if (!receipt.valid) {
+        out << "null}";
+        return out.str();
+    }
+    out << "{\"schema_id\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.schema_id);
+    out << ",\"application_status\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.application_status);
+    out << ",\"fail_closed_reason\":";
+    if (receipt.fail_closed_reason.empty()) out << "null";
+    else WriteColorPipelineRecipeReceiptJsonString(out, receipt.fail_closed_reason);
+    out << ",\"expanded_row_fingerprint\":";
+    WriteColorPipelineRecipeReceiptJsonString(out, receipt.expanded_row_fingerprint);
+    out << ",\"projections\":[";
+    for (std::size_t index = 0; index < receipt.projections.size(); ++index) {
+        if (index > 0) out << ',';
+        const ColorPipelineCompositeProjectionState& projection = receipt.projections[index];
+        out << "{\"lane_id\":";
+        WriteColorPipelineRecipeReceiptJsonString(out, projection.lane_id);
+        out << ",\"wrapper_row_id\":" << projection.wrapper_row_id
+            << ",\"composite_id\":";
+        WriteColorPipelineRecipeReceiptJsonString(out, projection.composite_id);
+        out << ",\"composite_version\":" << projection.composite_version
+            << ",\"metadata_content_hash\":";
+        WriteColorPipelineRecipeReceiptJsonString(out, projection.metadata_content_hash);
+        out << ",\"expanded_row_ids\":[";
+        for (std::size_t rowIndex = 0; rowIndex < projection.expanded_row_ids.size(); ++rowIndex) {
+            if (rowIndex > 0) out << ',';
+            out << projection.expanded_row_ids[rowIndex];
+        }
+        out << "]}";
+    }
+    out << "],\"expanded_rows\":";
+    WriteColorPipelineRecipeReceiptRowsJson(out, receipt.expanded_rows);
+    out << "}}";
+    return out.str();
+}
+
 inline bool ColorPipelineSelectionsEqual(
     const ColorPipelineSelection& left,
     const ColorPipelineSelection& right) {
@@ -944,11 +1332,20 @@ inline bool HasColorPipelineDraftEdits(const ColorPipelineWindowState& state) {
     if (!state.live_snapshot.valid) {
         return false;
     }
-    if (state.lanes.size() != state.live_snapshot.lanes.size()) {
+    const std::vector<ColorPipelineLaneState>* draftLanes = &state.lanes;
+    std::vector<ColorPipelineLaneState> expandedLanes;
+    std::string expansionError;
+    if (!state.composite_projections.empty()) {
+        if (!TryExpandColorPipelineCompositeLanes(state, &expandedLanes, nullptr, &expansionError)) {
+            return true;
+        }
+        draftLanes = &expandedLanes;
+    }
+    if (draftLanes->size() != state.live_snapshot.lanes.size()) {
         return true;
     }
-    for (std::size_t index = 0; index < state.lanes.size(); ++index) {
-        if (!ColorPipelineLaneStatesEqual(state.lanes[index], state.live_snapshot.lanes[index])) {
+    for (std::size_t index = 0; index < draftLanes->size(); ++index) {
+        if (!ColorPipelineLaneStatesRuntimeEqual((*draftLanes)[index], state.live_snapshot.lanes[index])) {
             return true;
         }
     }
@@ -966,6 +1363,8 @@ inline bool ResetColorPipelineDraftFromLiveState(ColorPipelineWindowState* ioSta
     }
     const std::vector<ColorPipelineLaneState> previousLanes = ioState->lanes;
     ioState->lanes = ioState->live_snapshot.lanes;
+    ioState->composite_projections.clear();
+    ioState->composite_application_receipt = {};
 
     const std::size_t sharedLaneCount = (std::min)(ioState->lanes.size(), previousLanes.size());
     for (std::size_t laneIndex = 0; laneIndex < sharedLaneCount; ++laneIndex) {
@@ -1332,15 +1731,69 @@ inline bool SelectColorPipelineRowFunction(
         return false;
     }
 
+    FunctionDescriptor compositeDescriptor;
     const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(*catalog, functionId);
+    const MaterializedColorPipelineCompositeFunction* composite = nullptr;
     if (!descriptor) {
-        PushColorPipelineValidationMessage(ioState,
-            std::string("Unknown advanced color function '") + functionId + "' for lane " + lane.label);
-        return false;
+        composite = color_pipeline_core::FindActiveColorPipelineCompositeFunction(lane.lane_id, functionId);
+        std::string descriptorError;
+        if (!composite || !color_pipeline_core::TryBuildColorPipelineCompositeUiDescriptor(
+                *composite,
+                &compositeDescriptor,
+                &descriptorError)) {
+            PushColorPipelineValidationMessage(ioState,
+                std::string("Unknown advanced color function '") + functionId + "' for lane " + lane.label);
+            return false;
+        }
+        descriptor = &compositeDescriptor;
     }
+
+    const std::uint64_t wrapperRowId = lane.rows[rowIndex].ui_row_id;
+    if (composite) {
+        for (const ColorPipelineCompositeProjectionState& projection : ioState->composite_projections) {
+            if (projection.lane_id == lane.lane_id && projection.wrapper_row_id != wrapperRowId) {
+                PushColorPipelineValidationMessage(ioState,
+                    "Composite Function V1 supports at most one composite wrapper per lane.");
+                return false;
+            }
+        }
+    }
+    const ColorPipelineCompositeProjectionState* existingProjection =
+        FindColorPipelineCompositeProjection(*ioState, lane.lane_id, wrapperRowId);
+    ColorPipelineCompositeProjectionState retainedProjection;
+    const bool canRetainProjection = composite && existingProjection &&
+        existingProjection->composite_id == composite->id &&
+        existingProjection->composite_version == composite->version &&
+        existingProjection->metadata_content_hash == composite->metadata_content_hash &&
+        existingProjection->expanded_row_ids.size() == composite->nodes.size();
+    if (canRetainProjection) {
+        retainedProjection = *existingProjection;
+    }
+    RemoveColorPipelineCompositeProjection(ioState, lane.lane_id, wrapperRowId);
 
     if (!SetColorPipelineRowFunction(&lane.rows[rowIndex], *descriptor)) {
         return false;
+    }
+    if (composite) {
+        ColorPipelineCompositeProjectionState projection;
+        if (canRetainProjection) {
+            projection = std::move(retainedProjection);
+        } else {
+            projection.lane_id = lane.lane_id;
+            projection.wrapper_row_id = wrapperRowId;
+            projection.composite_id = composite->id;
+            projection.composite_version = composite->version;
+            projection.metadata_content_hash = composite->metadata_content_hash;
+            projection.expanded_row_ids.reserve(composite->nodes.size());
+            for (std::size_t index = 0; index < composite->nodes.size(); ++index) {
+                std::uint64_t expandedRowId = 0;
+                if (!EnsureImGuiStackEditorRowId(&expandedRowId, &ioState->next_row_id)) {
+                    return false;
+                }
+                projection.expanded_row_ids.push_back(expandedRowId);
+            }
+        }
+        ioState->composite_projections.push_back(std::move(projection));
     }
 
     if (rowIndex == 0 && lane.rows.size() == 1 &&
@@ -1506,6 +1959,8 @@ inline bool ApplyColorPipelineRecipeToDraft(
         return false;
     }
     ColorPipelineWindowState probe = *ioState;
+    probe.composite_projections.clear();
+    probe.composite_application_receipt = {};
     for (const ColorPipelineLaneState& projectedLane : projectedLanes) {
         bool foundLane = false;
         for (ColorPipelineLaneState& lane : probe.lanes) {
@@ -1604,7 +2059,9 @@ inline bool RemoveColorPipelineLaneRow(
     if (lane.rows.size() <= 1 || rowIndex >= lane.rows.size()) {
         return false;
     }
+    const std::uint64_t removedRowId = lane.rows[rowIndex].ui_row_id;
     lane.rows.erase(lane.rows.begin() + static_cast<std::ptrdiff_t>(rowIndex));
+    RemoveColorPipelineCompositeProjection(ioState, lane.lane_id, removedRowId);
     return true;
 }
 
@@ -1710,11 +2167,17 @@ inline bool IsRenderableColorPipelineParam(
     const char* laneId,
     const char* functionId,
     const char* path) {
-    (void)laneId;
-    return functionId && path && IsLiveColorPipelineParamPath(functionId, path);
+    if (!functionId || !path) {
+        return false;
+    }
+    if (color_pipeline_core::FindActiveColorPipelineCompositeFunction(laneId ? laneId : "", functionId)) {
+        return true;
+    }
+    return IsLiveColorPipelineParamPath(functionId, path);
 }
 
 inline bool CollectRenderableColorPipelineParamIndexes(
+    const char* laneId,
     const ColorPipelineRowState& row,
     std::vector<std::size_t>* outIndexes,
     bool* outHasHiddenParams = nullptr) {
@@ -1724,9 +2187,10 @@ inline bool CollectRenderableColorPipelineParamIndexes(
     outIndexes->clear();
     bool hasHiddenParams = false;
     for (std::size_t index = 0; index < row.parameter_values.size(); ++index) {
-        const bool liveParam = IsLiveColorPipelineParamPath(
-            row.function_id,
-            row.parameter_values[index].path);
+        const bool liveParam = IsRenderableColorPipelineParam(
+            laneId,
+            row.function_id.c_str(),
+            row.parameter_values[index].path.c_str());
         if (liveParam) {
             outIndexes->push_back(index);
         } else {
@@ -1737,6 +2201,13 @@ inline bool CollectRenderableColorPipelineParamIndexes(
         *outHasHiddenParams = hasHiddenParams;
     }
     return true;
+}
+
+inline bool CollectRenderableColorPipelineParamIndexes(
+    const ColorPipelineRowState& row,
+    std::vector<std::size_t>* outIndexes,
+    bool* outHasHiddenParams = nullptr) {
+    return CollectRenderableColorPipelineParamIndexes(nullptr, row, outIndexes, outHasHiddenParams);
 }
 
 inline bool TryGetColorPipelineParamNumber(
@@ -4224,6 +4695,20 @@ inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
     const ColorPipelineWindowState& state,
     FractalType liveFractalType,
     const KernelParams* liveParams = nullptr) {
+    if (!state.composite_projections.empty()) {
+        ColorPipelineWindowState expandedState = state;
+        std::vector<ColorPipelineLaneState> expandedLanes;
+        std::string expansionError;
+        if (!TryExpandColorPipelineCompositeLanes(state, &expandedLanes, nullptr, &expansionError)) {
+            return {
+                ColorPipelineDraftApplyStatus::invalid_params,
+                expansionError,
+            };
+        }
+        expandedState.lanes = std::move(expandedLanes);
+        expandedState.composite_projections.clear();
+        return DescribeColorPipelineDraftApplyState(expandedState, liveFractalType, liveParams);
+    }
     if (!liveParams && !state.live_snapshot.valid) {
         return {
             ColorPipelineDraftApplyStatus::live_unavailable,
@@ -4362,7 +4847,7 @@ inline bool ShouldColorPipelineCandidateUseDraftOnlyLabel(
     return ShouldColorPipelineCandidateUseDraftOnlyLabel(state, laneIndex, 0, functionId, liveFractalType, liveParams);
 }
 
-inline bool ApplyColorPipelineDraftToLiveState(
+inline bool ApplyColorPipelineDraftToCandidateState(
     ColorPipelineWindowState* ioState,
     FractalType liveFractalType,
     KernelParams* ioParams,
@@ -4455,6 +4940,21 @@ inline bool ApplyColorPipelineDraftToLiveState(
     }
     return true;
 }
+
+inline bool ApplyColorPipelineDraftToLiveState(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* ioParams,
+    bool* outChanged = nullptr,
+    bool preserveDraftStorage = false);
+
+inline bool PrepareColorPipelineDraftApplication(
+    const ColorPipelineWindowState& requestedState,
+    FractalType liveFractalType,
+    const KernelParams* liveParams,
+    PreparedColorPipelineApplication* outPrepared,
+    bool preserveDraftStorage,
+    std::string* outError);
 
 
 inline void RefreshColorPipelineProducerCapabilitySnapshot(
@@ -4693,22 +5193,19 @@ inline bool PrepareColorPipelineApplication(
         return false;
     }
 
-    ColorPipelineWindowState candidateState = resolved.draft_state;
-    KernelParams candidateParams = *liveParams;
-    const std::size_t priorMessageCount = candidateState.validation_messages.size();
-    bool changed = false;
-    if (!ApplyColorPipelineDraftToLiveState(
-            &candidateState,
+    PreparedColorPipelineApplication draftPrepared;
+    if (!PrepareColorPipelineDraftApplication(
+            resolved.draft_state,
             liveFractalType,
-            &candidateParams,
-            &changed)) {
-        if (outError) {
-            *outError = candidateState.validation_messages.size() > priorMessageCount
-                ? candidateState.validation_messages.back()
-                : std::string("Color Pipeline recipe preparation failed: ") + resolved.recipe_id;
-        }
+            liveParams,
+            &draftPrepared,
+            false,
+            outError)) {
         return false;
     }
+    ColorPipelineWindowState candidateState = std::move(draftPrepared.next_window_state);
+    KernelParams candidateParams = draftPrepared.next_live_params;
+    const bool changed = draftPrepared.live_changed;
 
     ColorPipelineRecipeApplicationReceipt receipt;
     receipt.valid = true;
@@ -4740,6 +5237,7 @@ inline bool PrepareColorPipelineApplication(
 
     outPrepared->valid = true;
     outPrepared->recipe_id = resolved.recipe_id;
+    outPrepared->application_kind = "recipe";
     outPrepared->application_receipt = receipt;
     outPrepared->next_window_state = std::move(candidateState);
     outPrepared->next_live_params = candidateParams;
@@ -4762,6 +5260,69 @@ inline bool PrepareColorPipelineApplication(
         outError);
 }
 
+inline bool CanPreserveColorPipelineDraftStorage(
+    const std::vector<ColorPipelineLaneState>& currentLanes,
+    const std::vector<ColorPipelineLaneState>& preparedLanes) {
+    if (currentLanes.size() != preparedLanes.size()) {
+        return false;
+    }
+    for (std::size_t laneIndex = 0; laneIndex < currentLanes.size(); ++laneIndex) {
+        const ColorPipelineLaneState& currentLane = currentLanes[laneIndex];
+        const ColorPipelineLaneState& preparedLane = preparedLanes[laneIndex];
+        if (currentLane.lane_id != preparedLane.lane_id ||
+            currentLane.rows.size() != preparedLane.rows.size()) {
+            return false;
+        }
+        for (std::size_t rowIndex = 0; rowIndex < currentLane.rows.size(); ++rowIndex) {
+            const ColorPipelineRowState& currentRow = currentLane.rows[rowIndex];
+            const ColorPipelineRowState& preparedRow = preparedLane.rows[rowIndex];
+            if (currentRow.ui_row_id != preparedRow.ui_row_id ||
+                currentRow.enabled != preparedRow.enabled ||
+                currentRow.function_id != preparedRow.function_id ||
+                currentRow.parameter_values.size() != preparedRow.parameter_values.size()) {
+                return false;
+            }
+            for (std::size_t paramIndex = 0;
+                 paramIndex < currentRow.parameter_values.size();
+                 ++paramIndex) {
+                const ColorPipelineParamState& currentParam =
+                    currentRow.parameter_values[paramIndex];
+                const ColorPipelineParamState& preparedParam =
+                    preparedRow.parameter_values[paramIndex];
+                if (currentParam.path != preparedParam.path ||
+                    currentParam.type != preparedParam.type ||
+                    currentParam.enum_value != preparedParam.enum_value) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+inline void CopyPreparedColorPipelineDraftValuesWithoutReallocation(
+    const std::vector<ColorPipelineLaneState>& preparedLanes,
+    std::vector<ColorPipelineLaneState>* ioCurrentLanes) noexcept {
+    for (std::size_t laneIndex = 0; laneIndex < ioCurrentLanes->size(); ++laneIndex) {
+        ColorPipelineLaneState& currentLane = (*ioCurrentLanes)[laneIndex];
+        const ColorPipelineLaneState& preparedLane = preparedLanes[laneIndex];
+        for (std::size_t rowIndex = 0; rowIndex < currentLane.rows.size(); ++rowIndex) {
+            ColorPipelineRowState& currentRow = currentLane.rows[rowIndex];
+            const ColorPipelineRowState& preparedRow = preparedLane.rows[rowIndex];
+            for (std::size_t paramIndex = 0;
+                 paramIndex < currentRow.parameter_values.size();
+                 ++paramIndex) {
+                ColorPipelineParamState& currentParam =
+                    currentRow.parameter_values[paramIndex];
+                const ColorPipelineParamState& preparedParam =
+                    preparedRow.parameter_values[paramIndex];
+                currentParam.number_value = preparedParam.number_value;
+                currentParam.bool_value = preparedParam.bool_value;
+            }
+        }
+    }
+}
+
 inline bool CommitPreparedColorPipelineApplication(
     PreparedColorPipelineApplication* prepared,
     ColorPipelineWindowState* ioState,
@@ -4777,6 +5338,12 @@ inline bool CommitPreparedColorPipelineApplication(
     }
 
     const bool changed = prepared->live_changed;
+    if (prepared->preserve_draft_storage) {
+        CopyPreparedColorPipelineDraftValuesWithoutReallocation(
+            prepared->next_window_state.lanes,
+            &ioState->lanes);
+        ioState->lanes.swap(prepared->next_window_state.lanes);
+    }
     *ioState = std::move(prepared->next_window_state);
     *ioParams = prepared->next_live_params;
     if (changed && ioDirty) {
@@ -4786,6 +5353,128 @@ inline bool CommitPreparedColorPipelineApplication(
         ioInteraction->interacted = true;
     }
     prepared->valid = false;
+    return true;
+}
+
+inline bool PrepareColorPipelineDraftApplication(
+    const ColorPipelineWindowState& requestedState,
+    FractalType liveFractalType,
+    const KernelParams* liveParams,
+    PreparedColorPipelineApplication* outPrepared,
+    bool preserveDraftStorage,
+    std::string* outError) {
+    if (outPrepared) {
+        *outPrepared = {};
+    }
+    if (outError) {
+        outError->clear();
+    }
+    if (!outPrepared || !liveParams) {
+        if (outError) *outError = "Color Pipeline draft preparation requires live parameters and output storage";
+        return false;
+    }
+
+    ColorPipelineWindowState candidateState = requestedState;
+    ColorPipelineCompositeApplicationReceipt compositeReceipt;
+    std::vector<ColorPipelineLaneState> expandedLanes;
+    if (!TryExpandColorPipelineCompositeLanes(
+            requestedState,
+            &expandedLanes,
+            &compositeReceipt,
+            outError)) {
+        return false;
+    }
+    candidateState.lanes = std::move(expandedLanes);
+    candidateState.composite_projections.clear();
+    KernelParams candidateParams = *liveParams;
+    const std::size_t priorMessageCount = candidateState.validation_messages.size();
+    bool changed = false;
+    if (!ApplyColorPipelineDraftToCandidateState(
+            &candidateState,
+            liveFractalType,
+            &candidateParams,
+            &changed,
+            preserveDraftStorage)) {
+        if (outError) {
+            *outError = candidateState.validation_messages.size() > priorMessageCount
+                ? candidateState.validation_messages.back()
+                : "Color Pipeline draft preparation failed";
+        }
+        return false;
+    }
+    if (MutableColorPipelinePrepareFaultAfterResolveForTestsStorage()) {
+        if (outError) *outError = "test_fault_after_resolve";
+        return false;
+    }
+
+    if (compositeReceipt.valid) {
+        compositeReceipt.application_status = "committed";
+        compositeReceipt.expanded_rows = candidateState.live_snapshot.lanes;
+        compositeReceipt.expanded_row_fingerprint =
+            BuildColorPipelineRecipeRowFingerprint(compositeReceipt.expanded_rows);
+        candidateState.composite_application_receipt = compositeReceipt;
+        candidateState.lanes = requestedState.lanes;
+        candidateState.composite_projections = requestedState.composite_projections;
+        candidateState.next_row_id = requestedState.next_row_id;
+    } else {
+        candidateState.composite_application_receipt = {};
+    }
+
+    if (preserveDraftStorage &&
+        !CanPreserveColorPipelineDraftStorage(requestedState.lanes, candidateState.lanes)) {
+        if (outError) {
+            *outError = "Prepared Color Pipeline draft cannot preserve active control storage";
+        }
+        return false;
+    }
+
+    outPrepared->valid = true;
+    outPrepared->application_kind = "draft";
+    outPrepared->next_window_state = std::move(candidateState);
+    outPrepared->next_live_params = candidateParams;
+    outPrepared->live_changed = changed;
+    outPrepared->preserve_draft_storage = preserveDraftStorage;
+    return true;
+}
+
+inline bool ApplyColorPipelineDraftToLiveState(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* ioParams,
+    bool* outChanged,
+    bool preserveDraftStorage) {
+    if (outChanged) {
+        *outChanged = false;
+    }
+    if (!ioState || !ioParams) {
+        return false;
+    }
+
+    PreparedColorPipelineApplication prepared;
+    std::string error;
+    if (!PrepareColorPipelineDraftApplication(
+            *ioState,
+            liveFractalType,
+            ioParams,
+            &prepared,
+            preserveDraftStorage,
+            &error)) {
+        PushColorPipelineValidationMessage(ioState, error);
+        return false;
+    }
+    const bool changed = prepared.live_changed;
+    if (!CommitPreparedColorPipelineApplication(
+            &prepared,
+            ioState,
+            ioParams,
+            nullptr,
+            nullptr)) {
+        PushColorPipelineValidationMessage(ioState, "Color Pipeline prepared draft commit failed");
+        return false;
+    }
+    if (outChanged) {
+        *outChanged = changed;
+    }
     return true;
 }
 
@@ -5600,7 +6289,47 @@ inline bool RenderColorPipelineFunctionPickerCombo(
     FractalType liveFractalType,
     KernelParams* liveParams,
     ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    bool automationChanged = false;
+    if (ioState && ioState->ui_automation_click_pending &&
+        !ioState->ui_automation_click_consumed) {
+        const auto consumeSelection = [&](const std::string& functionId) {
+            const std::string controlId = BuildColorPipelineFunctionSelectControlId(
+                lane.lane_id, row.ui_row_id, functionId);
+            if (ioState->ui_automation_click_control_id != controlId) {
+                return false;
+            }
+            ioState->ui_automation_click_consumed = true;
+            return SelectColorPipelineRowFunction(
+                ioState, laneIndex, rowIndex, functionId.c_str());
+        };
+        for (const FunctionDescriptor& candidate : catalog.functions) {
+            if (consumeSelection(candidate.id)) {
+                automationChanged = true;
+                break;
+            }
+        }
+        if (!ioState->ui_automation_click_consumed) {
+            for (const MaterializedColorPipelineCompositeFunction& composite :
+                 color_pipeline_core::GetActiveColorPipelineCompositeFunctions()) {
+                if (composite.lane == lane.lane_id && consumeSelection(composite.id)) {
+                    automationChanged = true;
+                    break;
+                }
+            }
+        }
+        if (automationChanged && ioInteraction) {
+            ioInteraction->interacted = true;
+        }
+    }
+
+    FunctionDescriptor currentCompositeDescriptor;
     const FunctionDescriptor* currentDescriptor = FindColorPipelineFunctionDescriptor(catalog, row.function_id);
+    if (!currentDescriptor && color_pipeline_core::TryBuildColorPipelineCompositeUiDescriptor(
+            lane.lane_id,
+            row.function_id,
+            &currentCompositeDescriptor)) {
+        currentDescriptor = &currentCompositeDescriptor;
+    }
     const char* comboPreview = (currentDescriptor && !currentDescriptor->name.empty())
         ? currentDescriptor->name.c_str()
         : "(select)";
@@ -5608,10 +6337,10 @@ inline bool RenderColorPipelineFunctionPickerCombo(
     const bool comboOpen = ImGui::BeginCombo("Function", comboPreview);
     NoteColorPipelineUiAutomationRect(ioState, controlId.c_str());
     if (!comboOpen) {
-        return false;
+        return automationChanged;
     }
 
-    bool changed = false;
+    bool changed = automationChanged;
     const std::vector<ColorPipelineFunctionPickerGroup> groups = BuildColorPipelineFunctionPickerGroups(catalog);
     for (std::size_t groupIndex = 0; groupIndex < groups.size(); ++groupIndex) {
         const ColorPipelineFunctionPickerGroup& group = groups[groupIndex];
@@ -5646,6 +6375,40 @@ inline bool RenderColorPipelineFunctionPickerCombo(
                 ImGui::SetItemDefaultFocus();
             }
         }
+    }
+    const std::vector<MaterializedColorPipelineCompositeFunction>& composites =
+        color_pipeline_core::GetActiveColorPipelineCompositeFunctions();
+    bool wroteCompositeHeader = false;
+    for (const MaterializedColorPipelineCompositeFunction& composite : composites) {
+        if (composite.lane != lane.lane_id) {
+            continue;
+        }
+        if (!wroteCompositeHeader) {
+            ImGui::Separator();
+            ImGui::TextDisabled("Composites");
+            wroteCompositeHeader = true;
+        }
+        const bool isSelected = composite.id == row.function_id;
+        const bool candidateDraftOnly = ShouldColorPipelineCandidateUseDraftOnlyLabel(
+            *ioState,
+            laneIndex,
+            rowIndex,
+            composite.id.c_str(),
+            liveFractalType,
+            liveParams);
+        std::string optionLabel = composite.label;
+        if (!isSelected && candidateDraftOnly) {
+            optionLabel += " (unsupported for current selection)";
+        }
+        if (ImGui::Selectable(optionLabel.c_str(), isSelected)) {
+            if (ioInteraction) ioInteraction->interacted = true;
+            changed = SelectColorPipelineRowFunction(
+                ioState,
+                laneIndex,
+                rowIndex,
+                composite.id.c_str()) || changed;
+        }
+        if (isSelected) ImGui::SetItemDefaultFocus();
     }
     ImGui::EndCombo();
     return changed;
@@ -5690,7 +6453,14 @@ inline void RenderColorPipelineWindowLane(
 
     for (std::size_t rowIndex = 0; rowIndex < lane.rows.size(); ++rowIndex) {
         ColorPipelineRowState& row = lane.rows[rowIndex];
+        FunctionDescriptor compositeDescriptor;
         const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
+        if (!descriptor && color_pipeline_core::TryBuildColorPipelineCompositeUiDescriptor(
+                lane.lane_id,
+                row.function_id,
+                &compositeDescriptor)) {
+            descriptor = &compositeDescriptor;
+        }
         const char* rowLabel = descriptor ? descriptor->name.c_str() : row.function_id.c_str();
 
         const bool rowEnabledBefore = row.enabled;
@@ -5731,7 +6501,14 @@ inline void RenderColorPipelineWindowLane(
                 liveParams,
                 ioInteraction);
 
+            FunctionDescriptor currentCompositeDescriptor;
             const FunctionDescriptor* currentDescriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
+            if (!currentDescriptor && color_pipeline_core::TryBuildColorPipelineCompositeUiDescriptor(
+                    lane.lane_id,
+                    row.function_id,
+                    &currentCompositeDescriptor)) {
+                currentDescriptor = &currentCompositeDescriptor;
+            }
             if (!currentDescriptor) {
                 PushColorPipelineValidationMessage(ioState,
                     std::string("Unknown advanced color function '") + row.function_id + "' for lane " + lane.label);
@@ -5742,7 +6519,7 @@ inline void RenderColorPipelineWindowLane(
             }
             std::vector<std::size_t> renderableParamIndexes;
             bool hasHiddenParams = false;
-            CollectRenderableColorPipelineParamIndexes(row, &renderableParamIndexes, &hasHiddenParams);
+            CollectRenderableColorPipelineParamIndexes(lane.lane_id.c_str(), row, &renderableParamIndexes, &hasHiddenParams);
             for (std::size_t renderIndex = 0; renderIndex < renderableParamIndexes.size(); ++renderIndex) {
                 const std::size_t paramIndex = renderableParamIndexes[renderIndex];
                 if (paramIndex >= currentDescriptor->parameters.size() || paramIndex >= row.parameter_values.size()) {

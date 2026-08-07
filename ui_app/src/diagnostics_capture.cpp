@@ -614,12 +614,23 @@ void WriteColorPipelineLaneStateJson(std::ostringstream& js, const ColorPipeline
 }
 
 void WriteColorPipelineDraftJson(std::ostringstream& js, const ColorPipelineWindowState& state) {
+    const std::vector<ColorPipelineLaneState>* serializedLanes = &state.lanes;
+    std::vector<ColorPipelineLaneState> expandedLanes;
+    std::string expansionError;
+    if (!state.composite_projections.empty() &&
+        TryExpandColorPipelineCompositeLanes(state, &expandedLanes, nullptr, &expansionError)) {
+        serializedLanes = &expandedLanes;
+    } else if (!state.composite_projections.empty() &&
+        state.live_snapshot.valid &&
+        !state.live_snapshot.lanes.empty()) {
+        serializedLanes = &state.live_snapshot.lanes;
+    }
     js << "  \"color_pipeline_draft\": {\n";
     js << "    \"next_row_id\": " << state.next_row_id << ",\n";
     js << "    \"lanes\": [\n";
-    for (std::size_t index = 0; index < state.lanes.size(); ++index) {
-        WriteColorPipelineLaneStateJson(js, state.lanes[index]);
-        if (index + 1 < state.lanes.size()) {
+    for (std::size_t index = 0; index < serializedLanes->size(); ++index) {
+        WriteColorPipelineLaneStateJson(js, (*serializedLanes)[index]);
+        if (index + 1 < serializedLanes->size()) {
             js << ",";
         }
         js << "\n";
@@ -627,6 +638,61 @@ void WriteColorPipelineDraftJson(std::ostringstream& js, const ColorPipelineWind
     js << "    ]\n";
     js << "  }";
 }
+
+void WriteColorPipelineCompositeProjectionJson(
+    std::ostringstream& js,
+    const ColorPipelineWindowState& state) {
+    js << "  \"color_pipeline_composite_projection\": {\n";
+    js << "    \"schema_id\": \"viewer.color_pipeline_composite_projection.v1\",\n";
+    js << "    \"items\": [\n";
+    for (std::size_t projectionIndex = 0;
+         projectionIndex < state.composite_projections.size();
+         ++projectionIndex) {
+        const ColorPipelineCompositeProjectionState& projection =
+            state.composite_projections[projectionIndex];
+        const ColorPipelineLaneState* owningLane = nullptr;
+        std::size_t wrapperIndex = 0;
+        const ColorPipelineRowState* wrapperRow = nullptr;
+        for (const ColorPipelineLaneState& lane : state.lanes) {
+            if (lane.lane_id != projection.lane_id) continue;
+            owningLane = &lane;
+            for (std::size_t index = 0; index < lane.rows.size(); ++index) {
+                if (lane.rows[index].ui_row_id == projection.wrapper_row_id) {
+                    wrapperIndex = index;
+                    wrapperRow = &lane.rows[index];
+                    break;
+                }
+            }
+            break;
+        }
+        js << "      {\n";
+        js << "        \"lane_id\": ";
+        WriteJsonEscapedString(js, projection.lane_id);
+        js << ",\n        \"wrapper_index\": " << wrapperIndex << ",\n";
+        js << "        \"composite_id\": ";
+        WriteJsonEscapedString(js, projection.composite_id);
+        js << ",\n        \"composite_version\": " << projection.composite_version << ",\n";
+        js << "        \"metadata_content_hash\": ";
+        WriteJsonEscapedString(js, projection.metadata_content_hash);
+        js << ",\n        \"expanded_row_ids\": [";
+        for (std::size_t index = 0; index < projection.expanded_row_ids.size(); ++index) {
+            if (index > 0) js << ", ";
+            js << projection.expanded_row_ids[index];
+        }
+        js << "],\n        \"wrapper_row\": ";
+        if (owningLane && wrapperRow) {
+            WriteColorPipelineRowStateJson(js, *wrapperRow);
+        } else {
+            js << "null";
+        }
+        js << "\n      }";
+        if (projectionIndex + 1 < state.composite_projections.size()) js << ',';
+        js << '\n';
+    }
+    js << "    ]\n";
+    js << "  }";
+}
+
 
 void WriteColorPipelineGraphReceiptObjectJson(
     std::ostringstream& js,
@@ -1455,6 +1521,10 @@ std::string BuildStateJson(
     if (HasSerializableColorPipelineDraft(colorPipelineWindow)) {
         js << ",\n";
         WriteColorPipelineDraftJson(js, *colorPipelineWindow);
+        if (!colorPipelineWindow->composite_projections.empty()) {
+            js << ",\n";
+            WriteColorPipelineCompositeProjectionJson(js, *colorPipelineWindow);
+        }
     }
     if (lens) {
         js << ",\n";
@@ -1534,6 +1604,25 @@ std::string BuildFindingFractalStateJson(
         WriteColorPipelineGraphReceiptObjectJson(
             js, *colorPipelineWindow, FindingSourceStackKind(params));
         js << ",\n";
+        js << "    \"active_graph_receipt\": ";
+        color_pipeline_graph_receipt::WriteColorPipelineGraphReceiptJson(
+            js,
+            colorPipelineWindow->live_snapshot.valid
+                ? colorPipelineWindow->live_snapshot.lanes
+                : std::vector<ColorPipelineLaneState>{},
+            std::vector<std::string>{},
+            FindingSourceStackKind(params));
+        js << ",\n";
+        js << "    \"draft_graph_receipt\": ";
+        color_pipeline_graph_receipt::WriteColorPipelineGraphReceiptJson(
+            js,
+            colorPipelineWindow->lanes,
+            colorPipelineWindow->validation_messages,
+            FindingSourceStackKind(params));
+        js << ",\n";
+        js << "    \"composite_application_report\": "
+            << BuildColorPipelineCompositeApplicationReportJson(*colorPipelineWindow)
+            << ",\n";
         js << "    \"recipe_application_report\": "
             << BuildColorPipelineRecipeApplicationReportJson(*colorPipelineWindow)
             << ",\n";
@@ -1547,6 +1636,10 @@ std::string BuildFindingFractalStateJson(
     if (HasSerializableColorPipelineDraft(colorPipelineWindow)) {
         js << ",\n";
         WriteColorPipelineDraftJson(js, *colorPipelineWindow);
+        if (!colorPipelineWindow->composite_projections.empty()) {
+            js << ",\n";
+            WriteColorPipelineCompositeProjectionJson(js, *colorPipelineWindow);
+        }
     }
     if (includeLens) {
         js << ",\n";

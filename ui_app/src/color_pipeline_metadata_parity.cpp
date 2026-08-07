@@ -209,6 +209,12 @@ ColorPipelineMetadataParityReport ValidateColorPipelineMetadataParity(
     ValidateLaneCatalogs(contract, &report);
     ValidateCompatibility(contract, &report);
     ValidateRecipes(contract, &report);
+    if (contract.has_composite_function_contract) {
+        report.composite_function_count = static_cast<int>(
+            contract.composite_function_contract.composites.size());
+        report.composite_max_fully_expanded_lane_rows =
+            contract.composite_function_contract.max_fully_expanded_lane_rows;
+    }
     report.ok = report.errors.empty();
     return report;
 }
@@ -239,6 +245,10 @@ std::string SerializeColorPipelineMetadataParityReportJson(
     out << "  \"recipe_count\": " << report.recipe_count << ",\n";
     out << "  \"recipe_expansion_authority\": \"" << JsonEscape(report.recipe_expansion_authority) << "\",\n";
     out << "  \"active_recipe_count\": " << report.active_recipe_count << ",\n";
+    out << "  \"composite_function_count\": " << report.composite_function_count << ",\n";
+    out << "  \"composite_function_authority\": \"" << JsonEscape(report.composite_function_authority) << "\",\n";
+    out << "  \"active_composite_function_count\": " << report.active_composite_function_count << ",\n";
+    out << "  \"composite_max_fully_expanded_lane_rows\": " << report.composite_max_fully_expanded_lane_rows << ",\n";
     out << "  \"taxonomy_group_count\": " << report.taxonomy_group_count << ",\n";
     out << "  \"lane_taxonomy_groups\": {";
     for (std::size_t laneIndex = 0; laneIndex < report.lane_taxonomy_groups.size(); ++laneIndex) {

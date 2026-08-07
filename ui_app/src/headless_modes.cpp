@@ -154,34 +154,45 @@ ColorPipelineParamState* FindColorPipelineParamState(
     return nullptr;
 }
 
-const FunctionParamDescriptor* FindColorPipelineParamDescriptor(
+bool TryFindColorPipelineParamDescriptor(
     const std::string& laneId,
     const ColorPipelineRowState& row,
     const std::string& path,
+    FunctionParamDescriptor* outDescriptor,
     std::string* outError) {
+    if (!outDescriptor) {
+        if (outError) *outError = "Advanced color parameter lookup requires output storage.";
+        return false;
+    }
     const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(laneId);
     if (!catalog) {
         if (outError) {
             *outError = std::string("Unknown advanced color pipeline lane id: ") + laneId;
         }
-        return nullptr;
+        return false;
     }
+    FunctionDescriptor compositeDescriptor;
     const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
+    if (!descriptor && color_pipeline_core::TryBuildColorPipelineCompositeUiDescriptor(
+            laneId, row.function_id, &compositeDescriptor, outError)) {
+        descriptor = &compositeDescriptor;
+    }
     if (!descriptor) {
-        if (outError) {
+        if (outError && outError->empty()) {
             *outError = std::string("Unknown advanced color function '") + row.function_id + "' for lane " + catalog->label;
         }
-        return nullptr;
+        return false;
     }
     for (const FunctionParamDescriptor& param : descriptor->parameters) {
         if (param.path == path) {
-            return &param;
+            *outDescriptor = param;
+            return true;
         }
     }
     if (outError) {
         *outError = std::string("Missing advanced color parameter path '") + path + "' for function '" + row.function_id + "'";
     }
-    return nullptr;
+    return false;
 }
 
 bool PrepareColorPipelineHeadlessDraft(
@@ -384,12 +395,13 @@ struct ColorPipelineHeadlessActionExecutor {
         }
         (void)laneIndex;
         std::string descriptorError;
-        const FunctionParamDescriptor* descriptor = FindColorPipelineParamDescriptor(
-            action.lane_id,
-            *row,
-            action.param_path,
-            &descriptorError);
-        if (!descriptor) {
+        FunctionParamDescriptor descriptor;
+        if (!TryFindColorPipelineParamDescriptor(
+                action.lane_id,
+                *row,
+                action.param_path,
+                &descriptor,
+                &descriptorError)) {
             if (outError) {
                 *outError = descriptorError;
             }
@@ -403,7 +415,7 @@ struct ColorPipelineHeadlessActionExecutor {
             return false;
         }
         return std::visit(
-            ColorPipelineHeadlessSetParamValueVisitor{*descriptor, param, action.param_path, row->function_id, outError},
+            ColorPipelineHeadlessSetParamValueVisitor{descriptor, param, action.param_path, row->function_id, outError},
             action.value);
     }
 };

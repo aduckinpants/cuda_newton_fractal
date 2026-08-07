@@ -12,6 +12,24 @@
 #include <sstream>
 #include <vector>
 
+static bool InstallMaterializedColorPipelineContractForStateTest(std::string* outError) {
+    const char* candidates[] = {
+        "..\\docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+        "docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+    };
+    std::string path;
+    for (const char* candidate : candidates) {
+        if (std::filesystem::exists(candidate)) {
+            path = candidate;
+            break;
+        }
+    }
+    MaterializedColorPipelineContract contract;
+    return !path.empty() &&
+        LoadColorPipelineMaterializedContractJson(path, &contract, outError) &&
+        color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, outError);
+}
+
 static bool NearlyEqual(double a, double b, double eps = 1.0e-9) {
     return std::fabs(a - b) <= eps;
 }
@@ -6290,6 +6308,129 @@ int main() {
           }
         }
       }
+
+    {
+      std::string error;
+      color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+      if (!InstallMaterializedColorPipelineContractForStateTest(&error)) {
+        std::cerr << "Expected composite state test to install materialized contract: " << error << "\n";
+        return 1;
+      }
+      ViewState view{};
+      view.fractal_type = FractalType::mandelbrot;
+      KernelParams params{};
+      params.coloring_mode = ColoringMode::smooth_escape;
+      params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+      RenderSettings render{};
+      render.resolution = {1, 1};
+      render.block_size = 1;
+      ColorPipelineWindowState draft{};
+      if (!SyncColorPipelineWindowFromLiveState(&draft, view.fractal_type, &params) ||
+          !SelectColorPipelineLaneFunction(&draft, 1, "unit_contours_v1") ||
+          !SetDraftRowNumberParam(&draft.lanes[1].rows[0], "composite.frequency", 7.0) ||
+          !SetDraftRowNumberParam(&draft.lanes[1].rows[0], "composite.offset", 0.2) ||
+          !SetDraftRowNumberParam(&draft.lanes[1].rows[0], "composite.window_width", 0.4) ||
+          !SetDraftRowNumberParam(&draft.lanes[1].rows[0], "composite.softness", 0.09)) {
+        std::cerr << "Expected composite state test to configure wrapper draft\n";
+        return 1;
+      }
+      bool changed = false;
+      if (!ApplyColorPipelineDraftToLiveState(&draft, view.fractal_type, &params, &changed) || !changed) {
+        std::cerr << "Expected composite state test to apply wrapper draft\n";
+        return 1;
+      }
+      RenderStats stats{};
+      std::uint32_t rgba = 0xff123456u;
+      DiagnosticsCaptureResult capture{};
+      const fs::path outputDir = tempRoot / "composite_projection_state_runtime";
+      fs::remove_all(outputDir);
+      fs::create_directories(outputDir);
+      if (!CaptureDiagnosticsLastBundle(
+              outputDir.string(),
+              view,
+              params,
+              render,
+              stats,
+              &rgba,
+              1,
+              &draft,
+              &capture,
+              &error)) {
+        std::cerr << "Expected composite state test to capture: " << error << "\n";
+        return 1;
+      }
+      std::string stateJson;
+      if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+        std::cerr << "Expected composite state test to read state.json\n";
+        return 1;
+      }
+      const std::size_t draftPos = stateJson.find("\"color_pipeline_draft\"");
+      const std::size_t projectionPos = stateJson.find("\"color_pipeline_composite_projection\"");
+      if (draftPos == std::string::npos || projectionPos == std::string::npos || projectionPos <= draftPos) {
+        std::cerr << "Expected state.json to contain primitive replay authority followed by optional composite projection\n";
+        return 1;
+      }
+      const std::string draftSlice = stateJson.substr(draftPos, projectionPos - draftPos);
+      if (draftSlice.find("\"function_id\": \"repeat\"") == std::string::npos ||
+          draftSlice.find("\"function_id\": \"smooth_window\"") == std::string::npos ||
+          draftSlice.find("unit_contours_v1") != std::string::npos) {
+        std::cerr << "Expected color_pipeline_draft to store expanded primitives only\n";
+        return 1;
+      }
+
+      ViewState loadedView{};
+      KernelParams loadedParams{};
+      RenderSettings loadedRender{};
+      ColorPipelineWindowState loadedDraft{};
+      if (!LoadDiagnosticsStateJson(
+              stateJson,
+              &loadedView,
+              &loadedParams,
+              &loadedRender,
+              &loadedDraft,
+              &error) ||
+          loadedDraft.composite_projections.size() != 1 ||
+          loadedDraft.lanes[1].rows.size() != 1 ||
+          loadedDraft.lanes[1].rows[0].function_id != "unit_contours_v1" ||
+          !DraftRowHasNumberParam(loadedDraft.lanes[1].rows[0], "composite.frequency", 7.0) ||
+          !loadedDraft.composite_application_receipt.valid) {
+        std::cerr << "Expected matching metadata to reconstruct composite projection: " << error << "\n";
+        return 1;
+      }
+      KernelParams reappliedParams = loadedParams;
+      changed = false;
+      if (!ApplyColorPipelineDraftToLiveState(
+              &loadedDraft,
+              loadedView.fractal_type,
+              &reappliedParams,
+              &changed) ||
+          reappliedParams.color_shape_stack_count != 2 ||
+          reappliedParams.color_shape_stack[0].shape != ColorPipelineShape::repeat ||
+          reappliedParams.color_shape_stack[1].shape != ColorPipelineShape::smooth_window) {
+        std::cerr << "Expected reconstructed wrapper to replay through primitive owners\n";
+        return 1;
+      }
+
+      color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+      ColorPipelineWindowState flattenedDraft{};
+      if (!LoadDiagnosticsStateJson(
+              stateJson,
+              &loadedView,
+              &loadedParams,
+              &loadedRender,
+              &flattenedDraft,
+              &error) ||
+          !flattenedDraft.composite_projections.empty() ||
+          flattenedDraft.lanes[1].rows.size() != 2 ||
+          flattenedDraft.lanes[1].rows[0].function_id != "repeat" ||
+          flattenedDraft.lanes[1].rows[1].function_id != "smooth_window" ||
+          flattenedDraft.validation_messages.empty() ||
+          flattenedDraft.validation_messages.back().find("flattened") == std::string::npos) {
+        std::cerr << "Expected missing metadata to retain primitive replay authority with a flattening diagnostic: "
+                  << error << "\n";
+        return 1;
+      }
+    }
 
     std::cout << "test_diagnostics_state_io: all passed\n";
     return 0;

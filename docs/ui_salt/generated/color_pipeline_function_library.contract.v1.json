@@ -46,6 +46,11 @@
       "kind": "sdf_applicator_capability",
       "contract_id": "viewer.sdf_applicator_capability_contract.v1",
       "version": 1
+    },
+    {
+      "kind": "composite_function_library",
+      "contract_id": "viewer.composite_function_contract.v1",
+      "version": 1
     }
   ],
   "signal_type_registry": {
@@ -1504,7 +1509,13 @@
                 "type": "scalar.unit",
                 "canonical": true
               }
-            ]
+            ],
+            "output_guarantee": {
+              "output_type": "scalar.unit",
+              "finite": true,
+              "range_min": 0.0,
+              "range_max": 1.0
+            }
           },
           {
             "id": "posterize",
@@ -1690,7 +1701,13 @@
                 "type": "scalar.unit",
                 "canonical": true
               }
-            ]
+            ],
+            "output_guarantee": {
+              "output_type": "scalar.unit",
+              "finite": true,
+              "range_min": 0.0,
+              "range_max": 1.0
+            }
           },
           {
             "id": "log_compress",
@@ -5117,6 +5134,135 @@
         "fallback": "fail_closed",
         "product_facing": false,
         "diagnostic": true
+      }
+    ]
+  },
+  "composite_function_contract": {
+    "schema_id": "viewer.composite_function_contract.v1",
+    "version": 1,
+    "topology": "lane_local_function",
+    "max_fully_expanded_lane_rows": 8,
+    "canonicalization": {
+      "id": "viewer.composite_function_canonicalization.v1",
+      "legacy_alias_normalization": true,
+      "node_order": "author_order",
+      "parameter_order": "descriptor_parameter_id",
+      "typed_value_normalization": "canonical_kind_and_text_v1",
+      "default_policy": "expand_all_descriptor_defaults",
+      "exclude_display_text": true,
+      "binary64_text": ".17g",
+      "hash_algorithm": "sha256",
+      "primitive_descriptor_fingerprints": true
+    },
+    "composites": [
+      {
+        "id": "unit_contours_v1",
+        "version": 1,
+        "label": "Unit Contours",
+        "lane": "shape",
+        "topology": "lane_local_function",
+        "input_type": "scalar.unit",
+        "output_type": "scalar.unit",
+        "params": [
+          {
+            "descriptor_parameter_id": "composite.frequency",
+            "path": "composite.frequency",
+            "type": "float",
+            "label": "Frequency",
+            "min": 0.25,
+            "max": 24.0,
+            "step": 0.01,
+            "default": 6.0
+          },
+          {
+            "descriptor_parameter_id": "composite.offset",
+            "path": "composite.offset",
+            "type": "float",
+            "label": "Offset",
+            "min": -1.0,
+            "max": 1.0,
+            "step": 0.01,
+            "default": 0.1
+          },
+          {
+            "descriptor_parameter_id": "composite.window_width",
+            "path": "composite.window_width",
+            "type": "float",
+            "label": "Window Width",
+            "min": 0.01,
+            "max": 0.95,
+            "step": 0.01,
+            "default": 0.35
+          },
+          {
+            "descriptor_parameter_id": "composite.softness",
+            "path": "composite.softness",
+            "type": "float",
+            "label": "Softness",
+            "min": 0.0,
+            "max": 0.5,
+            "step": 0.01,
+            "default": 0.08
+          }
+        ],
+        "nodes": [
+          {
+            "id": "repeat_stage",
+            "function": "repeat",
+            "order": 0,
+            "input_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "primitive_descriptor_fingerprint": "717fd4169dadca00dc1e3b5a7b75dd22bd2cc576b1606f6eb82de3fea96b206d"
+          },
+          {
+            "id": "window_stage",
+            "function": "smooth_window",
+            "order": 1,
+            "input_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "primitive_descriptor_fingerprint": "ecb2dd2c2abe0177d5280c5c3f6e6d291fa5ab242db4d78407ed793696dfca15"
+          }
+        ],
+        "parameter_mappings": [
+          {
+            "exposed_parameter_id": "composite.frequency",
+            "node_id": "repeat_stage",
+            "descriptor_parameter_id": "shape.frequency",
+            "scale": 1.0,
+            "offset": 0.0
+          },
+          {
+            "exposed_parameter_id": "composite.offset",
+            "node_id": "repeat_stage",
+            "descriptor_parameter_id": "shape.phase",
+            "scale": 1.0,
+            "offset": 0.0
+          },
+          {
+            "exposed_parameter_id": "composite.window_width",
+            "node_id": "window_stage",
+            "descriptor_parameter_id": "shape.width",
+            "scale": 1.0,
+            "offset": 0.0
+          },
+          {
+            "exposed_parameter_id": "composite.softness",
+            "node_id": "window_stage",
+            "descriptor_parameter_id": "shape.softness",
+            "scale": 1.0,
+            "offset": 0.0
+          }
+        ],
+        "fixed_parameters": [
+          {
+            "node_id": "window_stage",
+            "descriptor_parameter_id": "shape.center",
+            "value_kind": "number",
+            "number_value": 0.5
+          }
+        ],
+        "expanded_row_count": 2,
+        "metadata_content_hash": "0ea8c4978e1854e30150d86980841779382b9c1c0216e8c9c2d4c9b60cea0efd"
       }
     ]
   },

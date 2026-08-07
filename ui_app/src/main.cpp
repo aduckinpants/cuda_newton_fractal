@@ -2906,6 +2906,10 @@ static int RunValidateUiSaltContractMode(const ViewerCliArgs& cli, const std::st
     report.active_companion_suggestion_count = color_pipeline_core::CountActiveColorPipelineCompanionSuggestions();
     report.recipe_expansion_authority = color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId();
     report.active_recipe_count = color_pipeline_core::CountActiveColorPipelineRecipes();
+    report.composite_function_authority = color_pipeline_core::ColorPipelineCompositeFunctionAuthorityId();
+    report.active_composite_function_count = color_pipeline_core::CountActiveColorPipelineCompositeFunctions();
+    report.composite_max_fully_expanded_lane_rows =
+        color_pipeline_core::ColorPipelineCompositeMaxFullyExpandedLaneRows();
 
     const std::string reportJson = SerializeColorPipelineMetadataParityReportJson(report, contractPath);
     if (cli.have_ui_salt_contract_report_json) {
@@ -4850,10 +4854,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     const std::string exePath = GetExePath();
 
     std::string exeDir = GetExeDir();
+    TryInitializeColorPipelineMetadataCatalog(exeDir);
     { int headlessRc = TryDispatchCommandLineModes(cli, exePath, exeDir); if (headlessRc >= 0) return headlessRc; }
 
     if (!ValidateViewerCliModeConflicts(cli)) return 1;
-    TryInitializeColorPipelineMetadataCatalog(exeDir);
 
     ViewState view{};
     KernelParams params{};

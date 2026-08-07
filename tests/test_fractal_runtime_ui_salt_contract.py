@@ -17,6 +17,8 @@ from tests.runtime_harness import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CHECKED_IN_CONTRACT = REPO_ROOT / "docs" / "ui_salt" / "generated" / "color_pipeline_function_library.contract.v1.json"
 STAGED_CONTRACT = RUNTIME_DIR / "ui_salt" / "generated" / "color_pipeline_function_library.contract.v1.json"
+CHECKED_IN_COMPOSITE_CONTRACT = REPO_ROOT / "docs" / "ui_salt" / "generated" / "color_pipeline_composite_function.contract.v1.json"
+STAGED_COMPOSITE_CONTRACT = RUNTIME_DIR / "ui_salt" / "generated" / "color_pipeline_composite_function.contract.v1.json"
 
 
 def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> None:
@@ -39,10 +41,14 @@ def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> N
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert STAGED_CONTRACT.exists(), f"published runtime did not stage {STAGED_CONTRACT}"
+    assert STAGED_COMPOSITE_CONTRACT.exists(), f"published runtime did not stage {STAGED_COMPOSITE_CONTRACT}"
     assert report_path.exists(), "runtime contract validation did not write its report"
     report = json.loads(report_path.read_text(encoding="utf-8"))
     staged = json.loads(STAGED_CONTRACT.read_text(encoding="utf-8"))
+    staged_composite = json.loads(STAGED_COMPOSITE_CONTRACT.read_text(encoding="utf-8"))
     assert STAGED_CONTRACT.read_bytes() == CHECKED_IN_CONTRACT.read_bytes()
+    assert STAGED_COMPOSITE_CONTRACT.read_bytes() == CHECKED_IN_COMPOSITE_CONTRACT.read_bytes()
+    assert staged_composite == staged["composite_function_contract"]
     lanes = staged["function_library"]["lanes"]
     function_count = sum(len(lane["functions"]) for lane in lanes)
     compatibility_count = len(staged["composition_recipe_contract"]["compatibility"])
@@ -78,6 +84,10 @@ def test_published_runtime_consumes_staged_ui_salt_contract(tmp_path: Path) -> N
     assert report["recipe_count"] == recipe_count
     assert report["recipe_expansion_authority"] == "recipe_v2_graph"
     assert report["active_recipe_count"] == recipe_count
+    assert report["composite_function_count"] == len(staged_composite["composites"])
+    assert report["composite_function_authority"] == "materialized_json"
+    assert report["active_composite_function_count"] == len(staged_composite["composites"])
+    assert report["composite_max_fully_expanded_lane_rows"] == staged_composite["max_fully_expanded_lane_rows"]
     assert report["taxonomy_group_count"] == taxonomy_group_count
     assert report["lane_taxonomy_groups"]["source"] == [
         "escape",

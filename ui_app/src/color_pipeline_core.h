@@ -1299,6 +1299,8 @@ struct ColorPipelineMetadataCatalogStorage {
     std::vector<MaterializedColorPipelineResolutionCase> resolution_cases;
     std::vector<MaterializedColorPipelineRecipe> recipes;
     std::vector<MaterializedColorPipelineRecipeV2> recipe_v2;
+    std::vector<MaterializedColorPipelineCompositeFunction> composite_functions;
+    int composite_max_fully_expanded_lane_rows = 0;
 };
 
 struct ColorPipelineCompatibilityRouteExplanation {
@@ -1667,6 +1669,12 @@ inline bool TryInstallColorPipelineMetadataCatalog(
     candidate.recipe_v2 = contract.has_recipe_v2
         ? contract.recipe_v2
         : std::vector<MaterializedColorPipelineRecipeV2>{};
+    candidate.composite_functions = contract.has_composite_function_contract
+        ? contract.composite_function_contract.composites
+        : std::vector<MaterializedColorPipelineCompositeFunction>{};
+    candidate.composite_max_fully_expanded_lane_rows = contract.has_composite_function_contract
+        ? contract.composite_function_contract.max_fully_expanded_lane_rows
+        : 0;
 
     ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
     storage = std::move(candidate);
@@ -2241,6 +2249,106 @@ inline const MaterializedColorPipelineRecipeV2* FindActiveColorPipelineRecipeV2(
         }
     }
     return nullptr;
+}
+
+inline bool IsColorPipelineCompositeFunctionContractActive() {
+    const ColorPipelineMetadataCatalogStorage& storage = MutableColorPipelineMetadataCatalogStorage();
+    return storage.active && !storage.composite_functions.empty();
+}
+
+inline const std::vector<MaterializedColorPipelineCompositeFunction>&
+GetActiveColorPipelineCompositeFunctions() {
+    return MutableColorPipelineMetadataCatalogStorage().composite_functions;
+}
+
+inline const MaterializedColorPipelineCompositeFunction* FindActiveColorPipelineCompositeFunction(
+    const std::string& laneId,
+    const std::string& functionId) {
+    if (!IsColorPipelineCompositeFunctionContractActive()) {
+        return nullptr;
+    }
+    for (const MaterializedColorPipelineCompositeFunction& composite :
+         GetActiveColorPipelineCompositeFunctions()) {
+        if (composite.lane == laneId && composite.id == functionId) {
+            return &composite;
+        }
+    }
+    return nullptr;
+}
+
+inline std::string ColorPipelineCompositeFunctionAuthorityId() {
+    return IsColorPipelineCompositeFunctionContractActive() ? "materialized_json" : "unavailable";
+}
+
+inline int CountActiveColorPipelineCompositeFunctions() {
+    return IsColorPipelineCompositeFunctionContractActive()
+        ? static_cast<int>(GetActiveColorPipelineCompositeFunctions().size())
+        : 0;
+}
+
+inline int ColorPipelineCompositeMaxFullyExpandedLaneRows() {
+    return MutableColorPipelineMetadataCatalogStorage().composite_max_fully_expanded_lane_rows;
+}
+
+inline bool TryBuildColorPipelineCompositeUiDescriptor(
+    const MaterializedColorPipelineCompositeFunction& composite,
+    FunctionDescriptor* outDescriptor,
+    std::string* outError = nullptr) {
+    if (!outDescriptor) {
+        return SetColorPipelineMetadataCatalogError(outError, "Composite UI descriptor requires output storage");
+    }
+    FunctionDescriptor descriptor;
+    descriptor.id = composite.id;
+    descriptor.name = composite.label;
+    descriptor.description = "Expand this composite into its validated primitive Color Pipeline rows.";
+    descriptor.taxonomy_group = "composite";
+    descriptor.parameters.reserve(composite.params.size());
+    for (const MaterializedColorPipelineParam& source : composite.params) {
+        FunctionParamDescriptor param;
+        param.path = source.path;
+        param.type = source.type;
+        param.label = source.label;
+        param.help = "Control the mapped primitive parameters inside this composite function.";
+        param.has_min = source.has_min;
+        param.min_value = source.min_value;
+        param.has_max = source.has_max;
+        param.max_value = source.max_value;
+        param.has_step = source.has_step;
+        param.step_value = source.step_value;
+        param.has_default = source.has_default;
+        if (source.has_default) {
+            if (source.default_kind == "number") {
+                param.default_value = MakeColorPipelineNumberValue(source.number_default);
+            } else if (source.default_kind == "bool") {
+                param.default_value = MakeColorPipelineBoolValue(source.bool_default);
+            } else if (source.default_kind == "string") {
+                param.default_value = MakeColorPipelineStringValue(source.string_default.c_str());
+            } else {
+                return SetColorPipelineMetadataCatalogError(outError,
+                    std::string("Composite parameter '") + source.path + "' has an unknown default kind");
+            }
+        }
+        for (const std::string& optionId : source.enum_options) {
+            UISchemaOption option;
+            option.id = optionId;
+            option.label = optionId;
+            param.options.push_back(std::move(option));
+        }
+        descriptor.parameters.push_back(std::move(param));
+    }
+    *outDescriptor = std::move(descriptor);
+    if (outError) outError->clear();
+    return true;
+}
+
+inline bool TryBuildColorPipelineCompositeUiDescriptor(
+    const std::string& laneId,
+    const std::string& functionId,
+    FunctionDescriptor* outDescriptor,
+    std::string* outError = nullptr) {
+    const MaterializedColorPipelineCompositeFunction* composite =
+        FindActiveColorPipelineCompositeFunction(laneId, functionId);
+    return composite && TryBuildColorPipelineCompositeUiDescriptor(*composite, outDescriptor, outError);
 }
 
 inline const std::vector<ColorPipelineLaneCatalog>& GetColorPipelineLaneCatalogs() {

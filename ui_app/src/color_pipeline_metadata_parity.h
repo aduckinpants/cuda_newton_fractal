@@ -32,6 +32,10 @@ struct ColorPipelineMetadataParityReport {
     int recipe_count = 0;
     std::string recipe_expansion_authority;
     int active_recipe_count = 0;
+    int composite_function_count = 0;
+    std::string composite_function_authority;
+    int active_composite_function_count = 0;
+    int composite_max_fully_expanded_lane_rows = 0;
     int unsupported_pair_count = 0;
     int taxonomy_group_count = 0;
     std::vector<ColorPipelineLaneTaxonomyGroups> lane_taxonomy_groups;

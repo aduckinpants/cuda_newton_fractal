@@ -256,6 +256,44 @@ bool TestApplyHeadlessColorPipelineProofActionsMutatesRuntimeAndDraft() {
     return true;
 }
 
+bool TestApplyHeadlessColorPipelineCompositeActionsUseMaterializedAuthority() {
+    MaterializedColorPipelineContract contract;
+    std::string error;
+    ASSERT(LoadColorPipelineMaterializedContractJson(
+            "..\\docs\\ui_salt\\generated\\color_pipeline_function_library.contract.v1.json",
+            &contract,
+            &error),
+        "headless composite proof should load the materialized UI-Salt contract");
+    ASSERT(color_pipeline_core::TryInstallColorPipelineMetadataCatalog(contract, &error),
+        "headless composite proof should install materialized metadata authority");
+
+    ViewState view{};
+    KernelParams params{};
+    view.fractal_type = FractalType::mandelbrot;
+    ColorPipelineHeadlessProofConfig config;
+    config.actions.push_back(ColorPipelineHeadlessSelectFunctionAction{"shape", 0, "unit_contours_v1"});
+    config.actions.push_back(ColorPipelineHeadlessSetParamAction{"shape", 0, "composite.frequency", 7.0});
+    config.actions.push_back(ColorPipelineHeadlessSetParamAction{"shape", 0, "composite.offset", 0.2});
+
+    ColorPipelineWindowState state;
+    bool changed = false;
+    ASSERT(ApplyHeadlessColorPipelineProofActions(config, view, params, &state, &changed, &error),
+        "headless public actions should select and parameterize a composite function");
+    ASSERT(error.empty() && changed,
+        "headless composite action should commit without fallback or validation error");
+    ASSERT(state.lanes[1].rows.size() == 1 &&
+            state.lanes[1].rows[0].function_id == "unit_contours_v1" &&
+            state.composite_projections.size() == 1,
+        "headless draft should preserve wrapper projection authority");
+    ASSERT(params.color_shape_stack_count == 2 &&
+            params.color_shape_stack[0].shape == ColorPipelineShape::repeat &&
+            params.color_shape_stack[1].shape == ColorPipelineShape::smooth_window &&
+            NearlyEqual(params.color_shape_stack[0].params.repeat_frequency, 7.0) &&
+            NearlyEqual(params.color_shape_stack[0].params.repeat_phase, 0.2),
+        "headless composite action should commit exact expanded primitive runtime rows");
+    return true;
+}
+
 bool TestApplyHeadlessColorPipelineProofActionsRejectsMissingParamPath() {
     ViewState view{};
     KernelParams params{};
@@ -2070,6 +2108,7 @@ int main() {
     RUN(TestReplayLoadedSidecarMutationHistoryAppliesOrderedTargets);
     RUN(TestReplayLoadedSidecarMutationHistoryRejectsOutOfRangeCount);
     RUN(TestApplyHeadlessColorPipelineProofActionsMutatesRuntimeAndDraft);
+    RUN(TestApplyHeadlessColorPipelineCompositeActionsUseMaterializedAuthority);
     RUN(TestApplyHeadlessColorPipelineProofActionsRejectsMissingParamPath);
     RUN(TestSampleModeNoSource);
     RUN(TestSampleModeNoSink);

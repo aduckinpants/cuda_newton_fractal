@@ -1007,6 +1007,25 @@ void WriteColorPipelineUiAutomationReport(
         colorPipelineWindow.validation_messages,
         lensSdfProbe.source_stack_kind);
     out << ",\n";
+    out << "  \"color_pipeline_active_graph_receipt\": ";
+    color_pipeline_graph_receipt::WriteColorPipelineGraphReceiptJson(
+        out,
+        colorPipelineWindow.live_snapshot.valid
+            ? colorPipelineWindow.live_snapshot.lanes
+            : std::vector<ColorPipelineLaneState>{},
+        std::vector<std::string>{},
+        lensSdfProbe.source_stack_kind);
+    out << ",\n";
+    out << "  \"color_pipeline_draft_graph_receipt\": ";
+    color_pipeline_graph_receipt::WriteColorPipelineGraphReceiptJson(
+        out,
+        colorPipelineWindow.lanes,
+        colorPipelineWindow.validation_messages,
+        lensSdfProbe.source_stack_kind);
+    out << ",\n";
+    out << "  \"color_pipeline_composite_application_report\": "
+        << BuildColorPipelineCompositeApplicationReportJson(colorPipelineWindow)
+        << ",\n";
     out << "  \"color_pipeline_recipe_application_report\": "
         << BuildColorPipelineRecipeApplicationReportJson(colorPipelineWindow)
         << ",\n";

@@ -716,6 +716,11 @@ void TestFindingFractalStateSidecarIncludesColorPipelineGraphReceipt() {
           json.find("\"graph_receipt\":") != std::string::npos &&
           json.find("\"schema_id\": \"viewer.color_pipeline_graph_receipt.v1\"") != std::string::npos,
         "finding fractal-state sidecar emits color pipeline graph receipt");
+    Check(json.find("\"active_graph_receipt\":") != std::string::npos &&
+          json.find("\"draft_graph_receipt\":") != std::string::npos &&
+          json.find("\"composite_application_report\":") != std::string::npos &&
+          json.find("viewer.color_pipeline_composite_application_report.v1") != std::string::npos,
+        "finding sidecar separates active, draft, and composite application truth");
     Check(json.find("\"source_stack_kind\": \"mixed\"") != std::string::npos &&
           json.find("\"id\": \"source.0\"") != std::string::npos &&
           json.find("\"function_id\": \"sdf_signed_distance\"") != std::string::npos,

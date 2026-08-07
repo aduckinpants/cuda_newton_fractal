@@ -10,6 +10,7 @@ contract(kind="edge_resolution", contract_id="viewer.edge_resolution_contract.v1
 contract(kind="resolution_audit", contract_id="viewer.color_pipeline_resolution_audit.v1", version=1)
 contract(kind="compat_override_audit", contract_id="viewer.compat_override_audit_contract.v1", version=1)
 contract(kind="sdf_applicator_capability", contract_id="viewer.sdf_applicator_capability_contract.v1", version=1)
+contract(kind="composite_function_library", contract_id="viewer.composite_function_contract.v1", version=1)
 
 signal_type(id="scalar.unit", kind="scalar", domain="unit", topology="linear", arity=1, default_adapter_policy="safe")
 signal_type(id="scalar.signed", kind="scalar", domain="signed", topology="linear", arity=1, default_adapter_policy="explicit_only")
@@ -85,6 +86,18 @@ function(lane="shape", id="fold_centered_v1", label="Fold Centered", description
 function(lane="shape", id="phase_offset_v1", label="Phase Offset", description="Offset and wrap phase in turns.", taxonomy_group="phase", runtime_backed=True, params=[["shape.offset_turns", "float", "Offset Turns", -1.0, 1.0, 0.01, 0.0]])
 function(lane="shape", id="phase_repeat_v1", label="Phase Repeat", description="Repeat a phase signal by a turn multiplier.", taxonomy_group="phase", runtime_backed=True, params=[["shape.cycles", "float", "Cycles", 0.25, 16.0, 0.01, 1.0]])
 function(lane="shape", id="phase_mirror_v1", label="Phase Mirror", description="Mirror a repeated phase signal through a triangle wave.", taxonomy_group="phase", runtime_backed=True, params=[["shape.cycles", "float", "Cycles", 0.25, 16.0, 0.01, 1.0], ["shape.mix", "float", "Mix", 0.0, 1.0, 0.01, 1.0]])
+
+function_output_guarantee(function="repeat", output_type="scalar.unit", finite=True, range_min=0.0, range_max=1.0)
+function_output_guarantee(function="smooth_window", output_type="scalar.unit", finite=True, range_min=0.0, range_max=1.0)
+
+composite_function(lane="shape", id="unit_contours_v1", version=1, label="Unit Contours", topology="lane_local_function", input_type="scalar.unit", output_type="scalar.unit", params=[["composite.frequency", "float", "Frequency", 0.25, 24.0, 0.01, 6.0], ["composite.offset", "float", "Offset", -1.0, 1.0, 0.01, 0.10], ["composite.window_width", "float", "Window Width", 0.01, 0.95, 0.01, 0.35], ["composite.softness", "float", "Softness", 0.0, 0.5, 0.01, 0.08]])
+composite_node(composite="unit_contours_v1", id="repeat_stage", function="repeat", order=0)
+composite_node(composite="unit_contours_v1", id="window_stage", function="smooth_window", order=1)
+composite_map(composite="unit_contours_v1", exposed="composite.frequency", node="repeat_stage", target="shape.frequency", scale=1.0, offset=0.0)
+composite_map(composite="unit_contours_v1", exposed="composite.offset", node="repeat_stage", target="shape.phase", scale=1.0, offset=0.0)
+composite_map(composite="unit_contours_v1", exposed="composite.window_width", node="window_stage", target="shape.width", scale=1.0, offset=0.0)
+composite_map(composite="unit_contours_v1", exposed="composite.softness", node="window_stage", target="shape.softness", scale=1.0, offset=0.0)
+composite_fixed(composite="unit_contours_v1", node="window_stage", target="shape.center", value=0.5)
 
 function(lane="palette", id="heatmap", label="Heatmap", description="Wrap escape signals through the cyclic escape palette.", taxonomy_group="palette_escape", runtime_backed=True, params=[["palette.cycle_scale", "float", "Cycle Scale", 0.25, 4.0, 0.01, 1.0], ["palette.saturation", "float", "Saturation", 0.0, 2.0, 0.01, 1.0], ["palette.blend_weight", "float", "Blend Weight", 0.0, 1.0, 0.01, 1.0], ["palette.blend_mode", "enum", "Blend Mode", None, None, None, "normal", ["normal"]]])
 function(lane="palette", id="phase_wheel_palette", label="Phase Wheel", description="Wrap signal values around a phase wheel palette.", taxonomy_group="palette_phase", runtime_backed=True, params=[["palette.phase_offset", "float", "Phase Offset", -3.141592653589793, 3.141592653589793, 0.01, 0.0], ["palette.saturation", "float", "Saturation", 0.0, 2.0, 0.01, 1.15], ["palette.blend_weight", "float", "Blend Weight", 0.0, 1.0, 0.01, 1.0], ["palette.blend_mode", "enum", "Blend Mode", None, None, None, "normal", ["normal"]]])

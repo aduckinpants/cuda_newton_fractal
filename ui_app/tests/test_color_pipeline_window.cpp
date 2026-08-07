@@ -1015,6 +1015,244 @@ void TestRecipePresetApplicationCommitsOnlyAfterPreparation() {
 
     color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
 }
+
+void TestGenericDraftApplicationCommitsOnlyAfterPreparation() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestGenericDraftApplicationCommitsOnlyAfterPreparation_SyncsBaseline");
+    Check(SelectColorPipelineLaneFunction(&state, 1, "repeat") &&
+            SetRowNumber(state.lanes[1].rows[0], "shape.frequency", 7.0) &&
+            SetRowNumber(state.lanes[1].rows[0], "shape.phase", 0.2),
+        "TestGenericDraftApplicationCommitsOnlyAfterPreparation_ConfiguresDraft");
+
+    std::vector<ColorPipelineLaneState> primitiveOnlyExpansion;
+    std::string primitiveOnlyExpansionError;
+    Check(TryExpandColorPipelineCompositeLanes(
+            state,
+            &primitiveOnlyExpansion,
+            nullptr,
+            &primitiveOnlyExpansionError) &&
+            primitiveOnlyExpansion.size() == state.lanes.size() &&
+            primitiveOnlyExpansionError.empty(),
+        "TestGenericDraftApplicationCommitsOnlyAfterPreparation_PrimitiveOnlyDraftBypassesCompositeRowCap");
+
+    const std::vector<ColorPipelineLaneState> lanesBefore = state.lanes;
+    const KernelParams paramsBefore = params;
+    const std::uint64_t generationBefore = state.recipe_application_generation;
+    const ColorPipelineRecipeApplicationReceipt receiptBefore = state.recipe_application_receipt;
+    bool changed = true;
+    SetColorPipelinePrepareFaultAfterResolveForTests(true);
+    Check(!ApplyColorPipelineDraftToLiveState(
+            &state,
+            FractalType::newton,
+            &params,
+            &changed) &&
+            !changed,
+        "TestGenericDraftApplicationCommitsOnlyAfterPreparation_FaultRejectsPublicApply");
+    SetColorPipelinePrepareFaultAfterResolveForTests(false);
+    Check(ColorPipelineLaneStatesEqual(state.lanes[0], lanesBefore[0]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[1], lanesBefore[1]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[2], lanesBefore[2]) &&
+            ColorPipelineLaneStatesEqual(state.lanes[3], lanesBefore[3]) &&
+            std::memcmp(&params, &paramsBefore, sizeof(KernelParams)) == 0 &&
+            state.recipe_application_generation == generationBefore &&
+            state.recipe_application_receipt.valid == receiptBefore.valid &&
+            !state.validation_messages.empty() &&
+            state.validation_messages.back() == "test_fault_after_resolve",
+        "TestGenericDraftApplicationCommitsOnlyAfterPreparation_FaultPreservesAuthority");
+
+    PreparedColorPipelineApplication prepared;
+    std::string error = "stale";
+    Check(PrepareColorPipelineDraftApplication(
+            state,
+            FractalType::newton,
+            &params,
+            &prepared,
+            false,
+            &error) &&
+            prepared.valid &&
+            prepared.application_kind == "draft" &&
+            prepared.live_changed &&
+            error.empty(),
+        "TestGenericDraftApplicationCommitsOnlyAfterPreparation_PreparesDraft");
+    Check(ColorPipelineLaneStatesEqual(state.lanes[1], lanesBefore[1]) &&
+            std::memcmp(&params, &paramsBefore, sizeof(KernelParams)) == 0,
+        "TestGenericDraftApplicationCommitsOnlyAfterPreparation_PrepareDoesNotMutateAuthority");
+
+    bool dirty = false;
+    ColorPipelineRenderInteractionState interaction{};
+    Check(CommitPreparedColorPipelineApplication(
+            &prepared,
+            &state,
+            &params,
+            &dirty,
+            &interaction) &&
+            !prepared.valid &&
+            dirty &&
+            interaction.interacted &&
+            params.color_shape_stack_count == 1 &&
+            params.color_shape_stack[0].shape == ColorPipelineShape::repeat &&
+            Near(params.color_shape_stack[0].params.repeat_frequency, 7.0) &&
+            Near(params.color_shape_stack[0].params.repeat_phase, 0.2),
+        "TestGenericDraftApplicationCommitsOnlyAfterPreparation_CommitsPreparedDraft");
+}
+void TestCompositeFunctionProjectionAndAtomicApplication() {
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+    if (!InstallMaterializedRecipeContractForTest(
+            "TestCompositeFunctionProjectionAndAtomicApplication_InstallsMaterializedContract")) {
+        return;
+    }
+
+    ColorPipelineWindowState compositeState{};
+    KernelParams compositeParams = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(
+            &compositeState,
+            FractalType::mandelbrot,
+            &compositeParams),
+        "TestCompositeFunctionProjectionAndAtomicApplication_SyncsCompositeBaseline");
+    Check(BuildColorPipelineFunctionSelectControlId("shape", 42, "unit_contours_v1") ==
+            "color_pipeline.shape.42.function.unit_contours_v1.select",
+        "TestCompositeFunctionProjectionAndAtomicApplication_HasStableNoMouseSelectionControlId");
+    Check(SelectColorPipelineLaneFunction(&compositeState, 1, "unit_contours_v1") &&
+            compositeState.composite_projections.size() == 1 &&
+            compositeState.lanes[1].rows[0].function_id == "unit_contours_v1" &&
+            RowNumber(compositeState.lanes[1].rows[0], "composite.frequency", 6.0) &&
+            RowNumber(compositeState.lanes[1].rows[0], "composite.offset", 0.1) &&
+            RowNumber(compositeState.lanes[1].rows[0], "composite.window_width", 0.35) &&
+            RowNumber(compositeState.lanes[1].rows[0], "composite.softness", 0.08),
+        "TestCompositeFunctionProjectionAndAtomicApplication_SelectsWrapperWithStableDefaults");
+
+    std::vector<std::size_t> renderableCompositeParams;
+    bool hasHiddenCompositeParams = true;
+    Check(CollectRenderableColorPipelineParamIndexes(
+            "shape", compositeState.lanes[1].rows[0], &renderableCompositeParams, &hasHiddenCompositeParams) &&
+            renderableCompositeParams.size() == 4 &&
+            !hasHiddenCompositeParams,
+        "TestCompositeFunctionProjectionAndAtomicApplication_ExposesEveryWrapperParamThroughUiAuthority");
+
+    std::vector<ColorPipelineLaneState> expanded;
+    ColorPipelineCompositeApplicationReceipt expansionReceipt;
+    std::string error;
+    Check(TryExpandColorPipelineCompositeLanes(
+            compositeState,
+            &expanded,
+            &expansionReceipt,
+            &error) &&
+            error.empty() &&
+            expansionReceipt.valid &&
+            expanded.size() == compositeState.lanes.size() &&
+            expanded[1].rows.size() == 2 &&
+            expanded[1].rows[0].function_id == "repeat" &&
+            expanded[1].rows[1].function_id == "smooth_window" &&
+            RowNumber(expanded[1].rows[0], "shape.frequency", 6.0) &&
+            RowNumber(expanded[1].rows[0], "shape.phase", 0.1) &&
+            RowNumber(expanded[1].rows[1], "shape.center", 0.5) &&
+            RowNumber(expanded[1].rows[1], "shape.width", 0.35) &&
+            RowNumber(expanded[1].rows[1], "shape.softness", 0.08),
+        "TestCompositeFunctionProjectionAndAtomicApplication_ExpandsExactPilotPrimitiveRows");
+
+    ColorPipelineWindowState manualState{};
+    KernelParams manualParams = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&manualState, FractalType::mandelbrot, &manualParams) &&
+            SelectColorPipelineLaneFunction(&manualState, 1, "repeat") &&
+            SetRowNumber(manualState.lanes[1].rows[0], "shape.frequency", 6.0) &&
+            SetRowNumber(manualState.lanes[1].rows[0], "shape.phase", 0.1) &&
+            AddColorPipelineLaneRow(&manualState, 1, "smooth_window") &&
+            SetRowNumber(manualState.lanes[1].rows[1], "shape.center", 0.5) &&
+            SetRowNumber(manualState.lanes[1].rows[1], "shape.width", 0.35) &&
+            SetRowNumber(manualState.lanes[1].rows[1], "shape.softness", 0.08) &&
+            ColorPipelineLaneStatesEqual(expanded[1], manualState.lanes[1]),
+        "TestCompositeFunctionProjectionAndAtomicApplication_MatchesManualPrimitiveStackExactly");
+
+    bool changed = false;
+    const bool appliedComposite = ApplyColorPipelineDraftToLiveState(
+        &compositeState,
+        FractalType::mandelbrot,
+        &compositeParams,
+        &changed);
+    Check(appliedComposite && changed,
+        "TestCompositeFunctionProjectionAndAtomicApplication_AppliesCompositeDraft");
+    Check(compositeState.lanes[1].rows.size() == 1 &&
+            compositeState.lanes[1].rows[0].function_id == "unit_contours_v1" &&
+            compositeState.live_snapshot.lanes[1].rows.size() == 2,
+        "TestCompositeFunctionProjectionAndAtomicApplication_PreservesWrapperAndPublishesExpandedSnapshot");
+    Check(compositeParams.color_shape_stack_count == 2 &&
+            compositeParams.color_shape_stack[0].shape == ColorPipelineShape::repeat &&
+            compositeParams.color_shape_stack[1].shape == ColorPipelineShape::smooth_window &&
+            Near(compositeParams.color_shape_stack[0].params.repeat_frequency, 6.0) &&
+            Near(compositeParams.color_shape_stack[0].params.repeat_phase, 0.1) &&
+            Near(compositeParams.color_shape_stack[1].params.window_center, 0.5) &&
+            Near(compositeParams.color_shape_stack[1].params.window_width, 0.35) &&
+            Near(compositeParams.color_shape_stack[1].params.window_softness, 0.08),
+        "TestCompositeFunctionProjectionAndAtomicApplication_CommitsExactExpandedRuntimeRows");
+    Check(compositeState.composite_application_receipt.valid &&
+            compositeState.composite_application_receipt.application_status == "committed" &&
+            !HasColorPipelineDraftEdits(compositeState),
+        "TestCompositeFunctionProjectionAndAtomicApplication_CommitsReceiptAndMatchesLive");
+
+    ColorPipelineWindowState duplicateWrapperState = compositeState;
+    Check(AddColorPipelineLaneRow(&duplicateWrapperState, 1, "identity"),
+        "TestCompositeFunctionProjectionAndAtomicApplication_AddsPrimitiveNeighborForDuplicateWrapperProbe");
+    const ColorPipelineLaneState duplicateWrapperLaneBefore = duplicateWrapperState.lanes[1];
+    const std::size_t projectionCountBefore = duplicateWrapperState.composite_projections.size();
+    Check(!SelectColorPipelineRowFunction(&duplicateWrapperState, 1, 1, "unit_contours_v1") &&
+            duplicateWrapperState.composite_projections.size() == projectionCountBefore &&
+            ColorPipelineLaneStatesEqual(duplicateWrapperState.lanes[1], duplicateWrapperLaneBefore) &&
+            !duplicateWrapperState.validation_messages.empty() &&
+            duplicateWrapperState.validation_messages.back().find("at most one composite wrapper per lane") != std::string::npos,
+        "TestCompositeFunctionProjectionAndAtomicApplication_RejectsSecondWrapperBeforeMutation");
+
+    ColorPipelineWindowState neighborState{};
+    KernelParams neighborParams = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&neighborState, FractalType::mandelbrot, &neighborParams) &&
+            SelectColorPipelineLaneFunction(&neighborState, 1, "unit_contours_v1"),
+        "TestCompositeFunctionProjectionAndAtomicApplication_ConfiguresNeighborBaseline");
+    for (int index = 0; index < 6; ++index) {
+        Check(AddColorPipelineLaneRow(&neighborState, 1, "identity"),
+            "TestCompositeFunctionProjectionAndAtomicApplication_AddsBoundedNeighbor");
+    }
+    std::vector<ColorPipelineLaneState> boundedExpansion;
+    Check(TryExpandColorPipelineCompositeLanes(neighborState, &boundedExpansion, nullptr, &error) &&
+            boundedExpansion[1].rows.size() == 8 &&
+            boundedExpansion[1].rows[0].function_id == "repeat" &&
+            boundedExpansion[1].rows[1].function_id == "smooth_window" &&
+            boundedExpansion[1].rows[2].function_id == "identity",
+        "TestCompositeFunctionProjectionAndAtomicApplication_AllowsEightRowsAndPreservesAuthorOrder");
+    Check(AddColorPipelineLaneRow(&neighborState, 1, "identity"),
+        "TestCompositeFunctionProjectionAndAtomicApplication_AddsNinthExpandedRowCandidate");
+    const ColorPipelineWindowState rejectedState = neighborState;
+    const KernelParams rejectedParams = neighborParams;
+    changed = true;
+    Check(!ApplyColorPipelineDraftToLiveState(
+            &neighborState,
+            FractalType::mandelbrot,
+            &neighborParams,
+            &changed) &&
+            !changed &&
+            ColorPipelineLaneStatesEqual(neighborState.lanes[1], rejectedState.lanes[1]) &&
+            neighborState.composite_projections.size() == rejectedState.composite_projections.size() &&
+            std::memcmp(&neighborParams, &rejectedParams, sizeof(KernelParams)) == 0 &&
+            !neighborState.validation_messages.empty() &&
+            neighborState.validation_messages.back().find("fully expanded lane row limit") != std::string::npos,
+        "TestCompositeFunctionProjectionAndAtomicApplication_RejectsNineRowsWithoutAuthorityMutation");
+
+    ColorPipelineWindowState disabledState{};
+    KernelParams disabledParams = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&disabledState, FractalType::mandelbrot, &disabledParams) &&
+            SelectColorPipelineLaneFunction(&disabledState, 1, "unit_contours_v1"),
+        "TestCompositeFunctionProjectionAndAtomicApplication_ConfiguresDisabledWrapper");
+    disabledState.lanes[1].rows[0].enabled = false;
+    std::vector<ColorPipelineLaneState> disabledExpansion;
+    Check(TryExpandColorPipelineCompositeLanes(disabledState, &disabledExpansion, nullptr, &error) &&
+            disabledExpansion[1].rows.size() == 2 &&
+            !disabledExpansion[1].rows[0].enabled &&
+            !disabledExpansion[1].rows[1].enabled,
+        "TestCompositeFunctionProjectionAndAtomicApplication_DisabledWrapperExpandsInactive");
+
+    color_pipeline_core::ClearColorPipelineMetadataCatalogForTests();
+}
+
 void TestCandidateDraftOnlyTruthAndCopySurfaces() {
     ColorPipelineWindowState inheritedUnsupportedState{};
     KernelParams params = SmoothEscapeParams();
@@ -1721,6 +1959,8 @@ int main() {
     TestRecipeExpansionUsesExistingWindowDraftRows();
     TestRecipePresetApplicationRejectsAtomically();
     TestRecipePresetApplicationCommitsOnlyAfterPreparation();
+    TestGenericDraftApplicationCommitsOnlyAfterPreparation();
+    TestCompositeFunctionProjectionAndAtomicApplication();
     TestRecipeCapabilitySnapshotSharedAuthority();
     TestCuratedRootGlowLiveReceiptRoundTrip();
     TestFloatIdentityPreservesAdjacentBinary32Edits();

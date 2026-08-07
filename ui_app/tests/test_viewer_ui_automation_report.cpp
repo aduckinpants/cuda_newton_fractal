@@ -571,6 +571,13 @@ void TestAutomationReportIncludesColorPipelineGraphReceipt() {
             json.find("\"function_id\": \"sdf_normal_angle\"") != std::string::npos &&
             json.find("unsupported_source_for_producer") != std::string::npos,
         "automation report emits color_pipeline_graph_receipt with row and unsupported-route truth");
+    Check(json.find("\"color_pipeline_active_graph_receipt\":") != std::string::npos &&
+            json.find("\"color_pipeline_draft_graph_receipt\":") != std::string::npos &&
+            json.find("\"color_pipeline_composite_application_report\":") != std::string::npos &&
+            json.find("viewer.color_pipeline_composite_application_report.v1") != std::string::npos &&
+            json.find("\"active_execution\":") != std::string::npos &&
+            json.find("\"draft_projection\":") != std::string::npos,
+        "automation report separates active, draft, and composite application truth");
     Check(json.find("\"color_pipeline_recipe_capability_report\":") != std::string::npos &&
             json.find("viewer.color_pipeline_recipe_capability_report.v1") != std::string::npos &&
             json.find("\"producer_id\": \"mandelbrot\"") != std::string::npos &&

@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cmath>
 #include <fstream>
+#include <map>
 #include <set>
 #include <sstream>
 
@@ -784,6 +785,177 @@ bool ReadRecipeV2(
         recipe.edges.push_back(std::move(edge));
     }
     *outRecipe = std::move(recipe);
+    return true;
+}
+
+bool ReadCompositeNode(
+    const json_min::Value& value,
+    MaterializedColorPipelineCompositeNode* outNode,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Composite node entry must be an object");
+    }
+    MaterializedColorPipelineCompositeNode node;
+    if (!ReadString(value, "id", &node.id, outError) ||
+        !ReadString(value, "function", &node.function, outError) ||
+        !ReadNonNegativeInteger(value, "order", &node.order, outError) ||
+        !ReadString(value, "input_type", &node.input_type, outError) ||
+        !ReadString(value, "output_type", &node.output_type, outError) ||
+        !ReadString(value, "primitive_descriptor_fingerprint", &node.primitive_descriptor_fingerprint, outError)) {
+        return false;
+    }
+    *outNode = std::move(node);
+    return true;
+}
+
+bool ReadCompositeParameterMap(
+    const json_min::Value& value,
+    MaterializedColorPipelineCompositeParameterMap* outMapping,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Composite parameter mapping must be an object");
+    }
+    MaterializedColorPipelineCompositeParameterMap mapping;
+    if (!ReadString(value, "exposed_parameter_id", &mapping.exposed_parameter_id, outError) ||
+        !ReadString(value, "node_id", &mapping.node_id, outError) ||
+        !ReadString(value, "descriptor_parameter_id", &mapping.descriptor_parameter_id, outError) ||
+        !ReadNumber(value, "scale", &mapping.scale, outError) ||
+        !ReadNumber(value, "offset", &mapping.offset, outError) ||
+        !ReadOptionalNumber(value, "min", &mapping.has_min, &mapping.min_value, outError) ||
+        !ReadOptionalNumber(value, "max", &mapping.has_max, &mapping.max_value, outError)) {
+        return false;
+    }
+    if (!std::isfinite(mapping.scale) || !std::isfinite(mapping.offset) ||
+        (mapping.has_min && !std::isfinite(mapping.min_value)) ||
+        (mapping.has_max && !std::isfinite(mapping.max_value)) ||
+        (mapping.has_min && mapping.has_max && mapping.min_value > mapping.max_value)) {
+        return SetError(outError, "Composite parameter mapping has invalid numeric bounds");
+    }
+    *outMapping = std::move(mapping);
+    return true;
+}
+
+bool ReadCompositeFixedParameter(
+    const json_min::Value& value,
+    MaterializedColorPipelineCompositeFixedParameter* outFixed,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Composite fixed parameter must be an object");
+    }
+    MaterializedColorPipelineCompositeFixedParameter fixed;
+    if (!ReadString(value, "node_id", &fixed.node_id, outError) ||
+        !ReadString(value, "descriptor_parameter_id", &fixed.descriptor_parameter_id, outError) ||
+        !ReadString(value, "value_kind", &fixed.value_kind, outError)) {
+        return false;
+    }
+    if (fixed.value_kind == "number") {
+        if (!ReadNumber(value, "number_value", &fixed.number_value, outError) ||
+            !std::isfinite(fixed.number_value)) {
+            return SetError(outError, "Composite fixed numeric parameter must be finite");
+        }
+    } else if (fixed.value_kind == "bool") {
+        if (!ReadBool(value, "bool_value", &fixed.bool_value, outError)) {
+            return false;
+        }
+    } else if (fixed.value_kind == "string") {
+        if (!ReadString(value, "string_value", &fixed.string_value, outError)) {
+            return false;
+        }
+    } else {
+        return SetError(outError, "Composite fixed parameter has unknown value_kind");
+    }
+    *outFixed = std::move(fixed);
+    return true;
+}
+
+bool ReadCompositeFunction(
+    const json_min::Value& value,
+    MaterializedColorPipelineCompositeFunction* outComposite,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Composite function entry must be an object");
+    }
+    MaterializedColorPipelineCompositeFunction composite;
+    if (!ReadString(value, "id", &composite.id, outError) ||
+        !ReadPositiveInteger(value, "version", &composite.version, outError) ||
+        !ReadString(value, "label", &composite.label, outError) ||
+        !ReadString(value, "lane", &composite.lane, outError) ||
+        !ReadString(value, "topology", &composite.topology, outError) ||
+        !ReadString(value, "input_type", &composite.input_type, outError) ||
+        !ReadString(value, "output_type", &composite.output_type, outError) ||
+        !ReadNonNegativeInteger(value, "expanded_row_count", &composite.expanded_row_count, outError) ||
+        !ReadString(value, "metadata_content_hash", &composite.metadata_content_hash, outError)) {
+        return false;
+    }
+    const json_min::Value* params = RequiredField(value, "params", outError);
+    const json_min::Value* nodes = RequiredField(value, "nodes", outError);
+    const json_min::Value* mappings = RequiredField(value, "parameter_mappings", outError);
+    const json_min::Value* fixed = RequiredField(value, "fixed_parameters", outError);
+    if (!params || !params->is_array() || !nodes || !nodes->is_array() ||
+        !mappings || !mappings->is_array() || !fixed || !fixed->is_array()) {
+        return SetError(outError, "Composite params, nodes, mappings, and fixed_parameters must be arrays");
+    }
+    for (const json_min::Value& item : params->as_array()) {
+        MaterializedColorPipelineParam param;
+        if (!ReadParam(item, &param, outError)) return false;
+        composite.params.push_back(std::move(param));
+    }
+    for (const json_min::Value& item : nodes->as_array()) {
+        MaterializedColorPipelineCompositeNode node;
+        if (!ReadCompositeNode(item, &node, outError)) return false;
+        composite.nodes.push_back(std::move(node));
+    }
+    for (const json_min::Value& item : mappings->as_array()) {
+        MaterializedColorPipelineCompositeParameterMap mapping;
+        if (!ReadCompositeParameterMap(item, &mapping, outError)) return false;
+        composite.parameter_mappings.push_back(std::move(mapping));
+    }
+    for (const json_min::Value& item : fixed->as_array()) {
+        MaterializedColorPipelineCompositeFixedParameter fixedParam;
+        if (!ReadCompositeFixedParameter(item, &fixedParam, outError)) return false;
+        composite.fixed_parameters.push_back(std::move(fixedParam));
+    }
+    *outComposite = std::move(composite);
+    return true;
+}
+
+bool ReadCompositeContract(
+    const json_min::Value& value,
+    MaterializedColorPipelineCompositeContract* outContract,
+    std::string* outError) {
+    if (!value.is_object()) {
+        return SetError(outError, "Composite function contract must be an object");
+    }
+    MaterializedColorPipelineCompositeContract contract;
+    if (!ReadString(value, "schema_id", &contract.schema_id, outError) ||
+        !ReadPositiveInteger(value, "version", &contract.version, outError) ||
+        !ReadString(value, "topology", &contract.topology, outError) ||
+        !ReadPositiveInteger(value, "max_fully_expanded_lane_rows", &contract.max_fully_expanded_lane_rows, outError)) {
+        return false;
+    }
+    const json_min::Value* canonical = RequiredField(value, "canonicalization", outError);
+    const json_min::Value* composites = RequiredField(value, "composites", outError);
+    if (!canonical || !canonical->is_object() || !composites || !composites->is_array()) {
+        return SetError(outError, "Composite canonicalization and composites are required");
+    }
+    if (!ReadString(*canonical, "id", &contract.canonicalization.id, outError) ||
+        !ReadBool(*canonical, "legacy_alias_normalization", &contract.canonicalization.legacy_alias_normalization, outError) ||
+        !ReadString(*canonical, "node_order", &contract.canonicalization.node_order, outError) ||
+        !ReadString(*canonical, "parameter_order", &contract.canonicalization.parameter_order, outError) ||
+        !ReadString(*canonical, "typed_value_normalization", &contract.canonicalization.typed_value_normalization, outError) ||
+        !ReadString(*canonical, "default_policy", &contract.canonicalization.default_policy, outError) ||
+        !ReadBool(*canonical, "exclude_display_text", &contract.canonicalization.exclude_display_text, outError) ||
+        !ReadString(*canonical, "binary64_text", &contract.canonicalization.binary64_text, outError) ||
+        !ReadString(*canonical, "hash_algorithm", &contract.canonicalization.hash_algorithm, outError) ||
+        !ReadBool(*canonical, "primitive_descriptor_fingerprints", &contract.canonicalization.primitive_descriptor_fingerprints, outError)) {
+        return false;
+    }
+    for (const json_min::Value& item : composites->as_array()) {
+        MaterializedColorPipelineCompositeFunction composite;
+        if (!ReadCompositeFunction(item, &composite, outError)) return false;
+        contract.composites.push_back(std::move(composite));
+    }
+    *outContract = std::move(contract);
     return true;
 }
 
@@ -1792,6 +1964,111 @@ bool ValidateMaterializedExplainoEntries(
     return true;
 }
 
+const MaterializedColorPipelineParam* FindMaterializedParamByDescriptorId(
+    const MaterializedColorPipelineFunction& function,
+    const std::string& descriptorId) {
+    for (const MaterializedColorPipelineParam& param : function.params) {
+        if (param.descriptor_parameter_id == descriptorId) return &param;
+    }
+    return nullptr;
+}
+
+bool ValidateMaterializedCompositeContract(
+    const MaterializedColorPipelineContract& contract,
+    const std::set<std::string>& functionIds,
+    std::string* outError) {
+    if (!contract.has_composite_function_contract) return true;
+    const MaterializedColorPipelineCompositeContract& compositeContract =
+        contract.composite_function_contract;
+    if (compositeContract.schema_id != "viewer.composite_function_contract.v1" ||
+        compositeContract.version != 1 ||
+        compositeContract.topology != "lane_local_function" ||
+        compositeContract.max_fully_expanded_lane_rows != 8 ||
+        compositeContract.canonicalization.hash_algorithm != "sha256" ||
+        !compositeContract.canonicalization.exclude_display_text ||
+        !compositeContract.canonicalization.primitive_descriptor_fingerprints) {
+        return SetError(outError, "Unsupported or incomplete composite function contract policy");
+    }
+    const MaterializedColorPipelineLane* shapeLane = FindMaterializedColorPipelineLane(contract, "shape");
+    if (!shapeLane) return SetError(outError, "Composite contract requires the Shape lane");
+
+    std::set<std::string> compositeIds;
+    for (const MaterializedColorPipelineCompositeFunction& composite : compositeContract.composites) {
+        if (composite.id.empty() || !compositeIds.insert(composite.id).second ||
+            functionIds.find(composite.id) != functionIds.end()) {
+            return SetError(outError, "Composite function id is empty, duplicated, or collides with a primitive");
+        }
+    }
+    for (const MaterializedColorPipelineCompositeFunction& composite : compositeContract.composites) {
+        if (composite.lane != "shape" || composite.topology != "lane_local_function" ||
+            composite.input_type != "scalar.unit" || composite.output_type != "scalar.unit" ||
+            composite.nodes.empty() || composite.nodes.size() > 8 ||
+            composite.expanded_row_count != static_cast<int>(composite.nodes.size()) ||
+            composite.metadata_content_hash.size() != 64) {
+            return SetError(outError, std::string("Composite function '") + composite.id + "' violates V1 topology");
+        }
+        std::set<std::string> exposedIds;
+        for (const MaterializedColorPipelineParam& param : composite.params) {
+            if (param.descriptor_parameter_id.empty() ||
+                !exposedIds.insert(param.descriptor_parameter_id).second) {
+                return SetError(outError, std::string("Composite function '") + composite.id + "' has duplicate exposed params");
+            }
+        }
+        std::set<std::string> nodeIds;
+        std::map<std::string, const MaterializedColorPipelineFunction*> nodeFunctions;
+        std::string priorType = composite.input_type;
+        for (std::size_t index = 0; index < composite.nodes.size(); ++index) {
+            const MaterializedColorPipelineCompositeNode& node = composite.nodes[index];
+            const MaterializedColorPipelineFunction* primitive =
+                FindMaterializedColorPipelineFunction(*shapeLane, node.function);
+            if (node.id.empty() || !nodeIds.insert(node.id).second ||
+                node.order != static_cast<int>(index) || !primitive ||
+                compositeIds.find(node.function) != compositeIds.end() ||
+                node.primitive_descriptor_fingerprint.size() != 64 ||
+                node.input_type != priorType) {
+                return SetError(outError, std::string("Composite function '") + composite.id + "' has an invalid node chain");
+            }
+            priorType = node.output_type;
+            nodeFunctions[node.id] = primitive;
+        }
+        if (priorType != composite.output_type) {
+            return SetError(outError, std::string("Composite function '") + composite.id + "' output type does not match its node chain");
+        }
+
+        std::set<std::string> mappedExposed;
+        std::set<std::string> ownedTargets;
+        for (const MaterializedColorPipelineCompositeParameterMap& mapping : composite.parameter_mappings) {
+            const auto nodeIt = nodeFunctions.find(mapping.node_id);
+            if (exposedIds.find(mapping.exposed_parameter_id) == exposedIds.end() ||
+                nodeIt == nodeFunctions.end() ||
+                !FindMaterializedParamByDescriptorId(*nodeIt->second, mapping.descriptor_parameter_id) ||
+                !mappedExposed.insert(mapping.exposed_parameter_id).second ||
+                !ownedTargets.insert(mapping.node_id + "/" + mapping.descriptor_parameter_id).second) {
+                return SetError(outError, std::string("Composite function '") + composite.id + "' has an invalid parameter mapping");
+            }
+        }
+        if (mappedExposed != exposedIds) {
+            return SetError(outError, std::string("Composite function '") + composite.id + "' does not map every exposed parameter");
+        }
+        for (const MaterializedColorPipelineCompositeFixedParameter& fixed : composite.fixed_parameters) {
+            const auto nodeIt = nodeFunctions.find(fixed.node_id);
+            if (nodeIt == nodeFunctions.end() ||
+                !FindMaterializedParamByDescriptorId(*nodeIt->second, fixed.descriptor_parameter_id) ||
+                !ownedTargets.insert(fixed.node_id + "/" + fixed.descriptor_parameter_id).second) {
+                return SetError(outError, std::string("Composite function '") + composite.id + "' has an invalid fixed parameter");
+            }
+        }
+        for (const auto& nodeEntry : nodeFunctions) {
+            for (const MaterializedColorPipelineParam& param : nodeEntry.second->params) {
+                if (ownedTargets.find(nodeEntry.first + "/" + param.descriptor_parameter_id) == ownedTargets.end()) {
+                    return SetError(outError, std::string("Composite function '") + composite.id + "' leaves a primitive parameter unowned");
+                }
+            }
+        }
+    }
+    return true;
+}
+
 bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, std::string* outError) {
     std::set<std::string> functionIds;
     std::set<std::string> signalTypeIds;
@@ -1804,6 +2081,7 @@ bool ValidateLoadedContract(const MaterializedColorPipelineContract& contract, s
         ValidateMaterializedCompatibilityAudit(contract, functionIds, outError) &&
         ValidateMaterializedRecipes(contract.recipes, functionIds, outError) &&
         ValidateMaterializedRecipeV2(contract.recipe_v2, contract.recipes, contract.has_recipe_v2, functionIds, outError) &&
+        ValidateMaterializedCompositeContract(contract, functionIds, outError) &&
         ValidateMaterializedRowApplicators(contract.row_applicators, outError) &&
         ValidateMaterializedSdfSourceCapabilities(contract, outError) &&
         ValidateMaterializedExplainoEntries(contract.explaino_entries, outError);
@@ -1853,6 +2131,7 @@ bool LoadColorPipelineMaterializedContractJson(
     const json_min::Value* functionLibrary = RequiredField(parsed.value, "function_library", outError);
     const json_min::Value* compositionContract = RequiredField(parsed.value, "composition_recipe_contract", outError);
     const json_min::Value* explainoContract = RequiredField(parsed.value, "explaino_contract", outError);
+    const json_min::Value* compositeContract = parsed.value.get("composite_function_contract");
     if (!signalTypeRegistry || !functionLibrary || !compositionContract || !explainoContract) {
         return false;
     }
@@ -1947,6 +2226,13 @@ bool LoadColorPipelineMaterializedContractJson(
             return false;
         }
         contract.lanes.push_back(std::move(lane));
+    }
+
+    if (compositeContract) {
+        if (!ReadCompositeContract(*compositeContract, &contract.composite_function_contract, outError)) {
+            return false;
+        }
+        contract.has_composite_function_contract = true;
     }
 
     const json_min::Value* canonicalRecipe = compositionContract->get("canonical_recipe_contract");

@@ -1440,6 +1440,8 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
     Check(parity.lane_count == 4 && parity.function_count == 49 &&
             parity.compatibility_count == 28 && parity.recipe_count == 9 &&
+            parity.composite_function_count == 1 &&
+            parity.composite_max_fully_expanded_lane_rows == 8 &&
             parity.taxonomy_group_count == 30 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
@@ -1660,6 +1662,20 @@ void TestMaterializedUiSaltMetadataCanOwnPublicCatalog() {
         "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_MetadataActive");
     Check(color_pipeline_core::ColorPipelineCatalogAuthorityId() == std::string("materialized_json"),
         "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_Authority");
+    Check(contract.has_composite_function_contract &&
+            contract.composite_function_contract.schema_id == "viewer.composite_function_contract.v1" &&
+            contract.composite_function_contract.composites.size() == 1,
+        "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_CompositeContractLoadsSeparately");
+    const MaterializedColorPipelineCompositeFunction* unitContours =
+        color_pipeline_core::FindActiveColorPipelineCompositeFunction("shape", "unit_contours_v1");
+    Check(color_pipeline_core::IsColorPipelineCompositeFunctionContractActive() &&
+            color_pipeline_core::ColorPipelineCompositeFunctionAuthorityId() == "materialized_json" &&
+            unitContours &&
+            unitContours->nodes.size() == 2 &&
+            unitContours->expanded_row_count == 2 &&
+            unitContours->parameter_mappings.size() == 4 &&
+            unitContours->fixed_parameters.size() == 1,
+        "TestMaterializedUiSaltMetadataCanOwnPublicCatalog_CompositeContractRetainedWithoutCatalogInflation");
 
     const std::vector<ColorPipelineLaneCatalog>& active =
         color_pipeline_core::GetColorPipelineLaneCatalogs();

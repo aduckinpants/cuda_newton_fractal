@@ -155,6 +155,12 @@ if exist ..\docs\ui_salt\generated\color_pipeline_function_library.contract.v1.j
   echo ERROR: UI-Salt materialized contract missing at ..\docs\ui_salt\generated\color_pipeline_function_library.contract.v1.json
   exit /b 1
 )
+if exist ..\docs\ui_salt\generated\color_pipeline_composite_function.contract.v1.json (
+  copy /Y ..\docs\ui_salt\generated\color_pipeline_composite_function.contract.v1.json "%OUTROOT%\ui_salt\generated\color_pipeline_composite_function.contract.v1.json" >NUL
+) else (
+  echo ERROR: UI-Salt composite contract missing at ..\docs\ui_salt\generated\color_pipeline_composite_function.contract.v1.json
+  exit /b 1
+)
 
 if not exist "%OUTROOT%\docs" mkdir "%OUTROOT%\docs"
 if not exist "%OUTROOT%\docs\examples" mkdir "%OUTROOT%\docs\examples"

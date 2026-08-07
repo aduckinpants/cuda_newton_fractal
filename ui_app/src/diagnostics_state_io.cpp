@@ -1624,8 +1624,9 @@ bool ParseColorPipelineDraftParam(const json_min::Value& paramObject,
     return true;
 }
 
-bool ParseColorPipelineDraftRow(const json_min::Value& rowObject,
-    const ColorPipelineLaneCatalog& catalog,
+bool ParseColorPipelineDraftRowWithDescriptor(
+    const json_min::Value& rowObject,
+    const FunctionDescriptor& descriptor,
     ColorPipelineRowState* outRow,
     std::string* outError) {
     if (!outRow) {
@@ -1641,35 +1642,34 @@ bool ParseColorPipelineDraftRow(const json_min::Value& rowObject,
     if (!GetRequiredBool(rowObject, "enabled", &enabled, outError)) return false;
     if (!GetRequiredString(rowObject, "function_id", &functionId, outError)) return false;
     if (!GetRequiredArray(rowObject, "parameter_values", &parameterValues, outError)) return false;
-
-    const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(catalog, functionId);
-    if (!descriptor) {
-        if (outError) *outError = "Unknown advanced color function '" + functionId + "' for lane " + catalog.label;
+    if (functionId != descriptor.id) {
+        if (outError) *outError = "color_pipeline_draft function id does not match its descriptor";
         return false;
     }
 
     ColorPipelineRowState row;
-    if (!BuildColorPipelineRowFromFunctionId(catalog, functionId.c_str(), uiRowId, &row, outError)) {
+    row.ui_row_id = uiRowId;
+    if (!SetColorPipelineRowFunction(&row, descriptor, false)) {
+        if (outError) *outError = "Failed to initialize color_pipeline_draft function '" + functionId + "'";
         return false;
     }
     row.enabled = enabled;
 
-    if (parameterValues->as_array().size() > descriptor->parameters.size()) {
+    if (parameterValues->as_array().size() > descriptor.parameters.size()) {
         if (outError) *outError = "color_pipeline_draft parameter count exceeds descriptor for function '" + functionId + "'";
         return false;
     }
 
-    std::vector<bool> seenParams(descriptor->parameters.size(), false);
+    std::vector<bool> seenParams(descriptor.parameters.size(), false);
     for (const json_min::Value& paramValue : parameterValues->as_array()) {
         if (!paramValue.is_object()) {
             if (outError) *outError = "color_pipeline_draft parameter_values entries must be objects";
             return false;
         }
-
         std::string path;
         if (!GetRequiredString(paramValue, "path", &path, outError)) return false;
         std::size_t paramIndex = 0;
-        if (!FindColorPipelineParamDescriptorIndex(*descriptor, path, &paramIndex)) {
+        if (!FindColorPipelineParamDescriptorIndex(descriptor, path, &paramIndex)) {
             if (outError) *outError = "Unknown color_pipeline_draft parameter path '" + path + "' for function '" + functionId + "'";
             return false;
         }
@@ -1677,28 +1677,44 @@ bool ParseColorPipelineDraftRow(const json_min::Value& rowObject,
             if (outError) *outError = "Duplicate color_pipeline_draft parameter path '" + path + "' for function '" + functionId + "'";
             return false;
         }
-        if (!ParseColorPipelineDraftParam(paramValue, descriptor->parameters[paramIndex], &row.parameter_values[paramIndex], outError)) {
+        if (!ParseColorPipelineDraftParam(
+                paramValue,
+                descriptor.parameters[paramIndex],
+                &row.parameter_values[paramIndex],
+                outError)) {
             return false;
         }
         seenParams[paramIndex] = true;
     }
-
     for (std::size_t index = 0; index < seenParams.size(); ++index) {
         if (!seenParams[index]) {
-            const std::string& missingPath = descriptor->parameters[index].path;
+            const std::string& missingPath = descriptor.parameters[index].path;
             if (missingPath == "palette.blend_weight" ||
                 missingPath == "palette.blend_mode" ||
                 missingPath == "signal.blend_weight" ||
                 missingPath == "signal.boundary_width_px") {
                 continue;
             }
-            if (outError) *outError = "Missing color_pipeline_draft parameter path '" + descriptor->parameters[index].path + "' for function '" + functionId + "'";
+            if (outError) *outError = "Missing color_pipeline_draft parameter path '" + missingPath + "' for function '" + functionId + "'";
             return false;
         }
     }
-
     *outRow = std::move(row);
     return true;
+}
+
+bool ParseColorPipelineDraftRow(const json_min::Value& rowObject,
+    const ColorPipelineLaneCatalog& catalog,
+    ColorPipelineRowState* outRow,
+    std::string* outError) {
+    std::string functionId;
+    if (!GetRequiredString(rowObject, "function_id", &functionId, outError)) return false;
+    const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(catalog, functionId);
+    if (!descriptor) {
+        if (outError) *outError = "Unknown advanced color function '" + functionId + "' for lane " + catalog.label;
+        return false;
+    }
+    return ParseColorPipelineDraftRowWithDescriptor(rowObject, *descriptor, outRow, outError);
 }
 
 bool ParseColorPipelineDraftLane(const json_min::Value& laneObject,
@@ -1747,6 +1763,157 @@ bool ParseColorPipelineDraftLane(const json_min::Value& laneObject,
     }
 
     *outLane = std::move(lane);
+    return true;
+}
+
+struct ParsedColorPipelineCompositeProjection {
+    ColorPipelineCompositeProjectionState projection;
+    std::size_t wrapper_index = 0;
+    ColorPipelineRowState wrapper_row;
+};
+
+bool TryReconstructOptionalColorPipelineCompositeProjection(
+    const json_min::Value& root,
+    ColorPipelineWindowState* ioState) {
+    if (!ioState) return false;
+    const json_min::Value* projectionObject = root.get("color_pipeline_composite_projection");
+    if (!projectionObject) return true;
+    auto flatten = [&](const std::string& reason) {
+        PushColorPipelineValidationMessage(
+            ioState,
+            "Composite projection was flattened to replay-authoritative primitive rows: " + reason);
+        ioState->composite_projections.clear();
+        ioState->composite_application_receipt = {};
+        return true;
+    };
+    if (!projectionObject->is_object()) return flatten("projection object is malformed");
+    std::string schemaId;
+    std::string parseError;
+    if (!GetRequiredString(*projectionObject, "schema_id", &schemaId, &parseError) ||
+        schemaId != "viewer.color_pipeline_composite_projection.v1") {
+        return flatten("projection schema is unsupported");
+    }
+    const json_min::Value* items = nullptr;
+    if (!GetRequiredArray(*projectionObject, "items", &items, &parseError)) {
+        return flatten(parseError);
+    }
+
+    std::vector<ParsedColorPipelineCompositeProjection> parsed;
+    for (const json_min::Value& item : items->as_array()) {
+        if (!item.is_object()) return flatten("projection item is malformed");
+        ParsedColorPipelineCompositeProjection candidate;
+        double wrapperIndexValue = 0.0;
+        double compositeVersionValue = 0.0;
+        std::string compositeId;
+        const json_min::Value* expandedIds = nullptr;
+        const json_min::Value* wrapperRow = nullptr;
+        if (!GetRequiredString(item, "lane_id", &candidate.projection.lane_id, &parseError) ||
+            !GetRequiredNumber(item, "wrapper_index", &wrapperIndexValue, &parseError) ||
+            !GetRequiredString(item, "composite_id", &compositeId, &parseError) ||
+            !GetRequiredNumber(item, "composite_version", &compositeVersionValue, &parseError) ||
+            !GetRequiredString(item, "metadata_content_hash", &candidate.projection.metadata_content_hash, &parseError) ||
+            !GetRequiredArray(item, "expanded_row_ids", &expandedIds, &parseError) ||
+            !GetRequiredObject(item, "wrapper_row", &wrapperRow, &parseError)) {
+            return flatten(parseError);
+        }
+        if (!std::isfinite(wrapperIndexValue) || wrapperIndexValue < 0.0 ||
+            std::floor(wrapperIndexValue) != wrapperIndexValue ||
+            !std::isfinite(compositeVersionValue) || compositeVersionValue <= 0.0 ||
+            std::floor(compositeVersionValue) != compositeVersionValue) {
+            return flatten("projection indices or version are invalid");
+        }
+        candidate.wrapper_index = static_cast<std::size_t>(wrapperIndexValue);
+        candidate.projection.composite_id = compositeId;
+        candidate.projection.composite_version = static_cast<int>(compositeVersionValue);
+        const MaterializedColorPipelineCompositeFunction* composite =
+            color_pipeline_core::FindActiveColorPipelineCompositeFunction(
+                candidate.projection.lane_id,
+                compositeId);
+        if (!composite || composite->version != candidate.projection.composite_version ||
+            composite->metadata_content_hash != candidate.projection.metadata_content_hash) {
+            return flatten("installed composite metadata does not match the saved projection");
+        }
+        if (expandedIds->as_array().size() != composite->nodes.size()) {
+            return flatten("expanded row id count does not match the composite contract");
+        }
+        for (const json_min::Value& value : expandedIds->as_array()) {
+            if (!value.is_number() || !std::isfinite(value.as_number()) ||
+                value.as_number() <= 0.0 || std::floor(value.as_number()) != value.as_number()) {
+                return flatten("expanded row id is invalid");
+            }
+            candidate.projection.expanded_row_ids.push_back(
+                static_cast<std::uint64_t>(value.as_number()));
+        }
+        FunctionDescriptor descriptor;
+        if (!color_pipeline_core::TryBuildColorPipelineCompositeUiDescriptor(
+                *composite,
+                &descriptor,
+                &parseError) ||
+            !ParseColorPipelineDraftRowWithDescriptor(
+                *wrapperRow,
+                descriptor,
+                &candidate.wrapper_row,
+                &parseError)) {
+            return flatten(parseError);
+        }
+        candidate.projection.wrapper_row_id = candidate.wrapper_row.ui_row_id;
+        if (candidate.wrapper_row.ui_row_id >= ioState->next_row_id) {
+            return flatten("wrapper row id is outside the saved row-id authority");
+        }
+        parsed.push_back(std::move(candidate));
+    }
+
+    ColorPipelineWindowState reconstructed = *ioState;
+    std::sort(parsed.begin(), parsed.end(), [](const auto& left, const auto& right) {
+        if (left.projection.lane_id != right.projection.lane_id) {
+            return left.projection.lane_id < right.projection.lane_id;
+        }
+        return left.wrapper_index > right.wrapper_index;
+    });
+    std::string priorLaneId;
+    for (const ParsedColorPipelineCompositeProjection& candidate : parsed) {
+        if (candidate.projection.lane_id == priorLaneId) {
+            return flatten("v1 supports at most one composite wrapper per lane");
+        }
+        priorLaneId = candidate.projection.lane_id;
+        ColorPipelineLaneState* lane = nullptr;
+        for (ColorPipelineLaneState& current : reconstructed.lanes) {
+            if (current.lane_id == candidate.projection.lane_id) {
+                lane = &current;
+                break;
+            }
+        }
+        if (!lane || candidate.wrapper_index + candidate.projection.expanded_row_ids.size() > lane->rows.size()) {
+            return flatten("saved wrapper span is outside the replay-authoritative primitive lane");
+        }
+        for (std::size_t index = 0; index < candidate.projection.expanded_row_ids.size(); ++index) {
+            if (lane->rows[candidate.wrapper_index + index].ui_row_id !=
+                candidate.projection.expanded_row_ids[index]) {
+                return flatten("saved wrapper span row ids do not match the primitive authority");
+            }
+        }
+        lane->rows.erase(
+            lane->rows.begin() + static_cast<std::ptrdiff_t>(candidate.wrapper_index),
+            lane->rows.begin() + static_cast<std::ptrdiff_t>(
+                candidate.wrapper_index + candidate.projection.expanded_row_ids.size()));
+        lane->rows.insert(
+            lane->rows.begin() + static_cast<std::ptrdiff_t>(candidate.wrapper_index),
+            candidate.wrapper_row);
+        reconstructed.composite_projections.push_back(candidate.projection);
+    }
+    std::vector<ColorPipelineLaneState> reexpanded;
+    ColorPipelineCompositeApplicationReceipt receipt;
+    if (!TryExpandColorPipelineCompositeLanes(
+            reconstructed,
+            &reexpanded,
+            &receipt,
+            &parseError) ||
+        !ColorPipelineLaneVectorsEqualForRecipeReceipt(reexpanded, ioState->lanes)) {
+        return flatten(parseError.empty() ? "re-expanded rows do not match primitive replay authority" : parseError);
+    }
+    receipt.application_status = "restored_projection";
+    reconstructed.composite_application_receipt = std::move(receipt);
+    *ioState = std::move(reconstructed);
     return true;
 }
 
@@ -1909,6 +2076,7 @@ bool ParseOptionalColorPipelineDraft(const json_min::Value& root,
         return false;
     }
     parsedState.recipe_provenance_unknown_after_reload = true;
+    TryReconstructOptionalColorPipelineCompositeProjection(root, &parsedState);
 
     if (outColorPipelineWindow) {
         *outColorPipelineWindow = std::move(parsedState);

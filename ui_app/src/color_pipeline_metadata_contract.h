@@ -265,6 +265,74 @@ struct MaterializedColorPipelineRecipeV2 {
     std::string fail_closed_reason;
 };
 
+struct MaterializedColorPipelineCompositeNode {
+    std::string id;
+    std::string function;
+    int order = 0;
+    std::string input_type;
+    std::string output_type;
+    std::string primitive_descriptor_fingerprint;
+};
+
+struct MaterializedColorPipelineCompositeParameterMap {
+    std::string exposed_parameter_id;
+    std::string node_id;
+    std::string descriptor_parameter_id;
+    double scale = 1.0;
+    double offset = 0.0;
+    bool has_min = false;
+    double min_value = 0.0;
+    bool has_max = false;
+    double max_value = 0.0;
+};
+
+struct MaterializedColorPipelineCompositeFixedParameter {
+    std::string node_id;
+    std::string descriptor_parameter_id;
+    std::string value_kind;
+    double number_value = 0.0;
+    bool bool_value = false;
+    std::string string_value;
+};
+
+struct MaterializedColorPipelineCompositeFunction {
+    std::string id;
+    int version = 0;
+    std::string label;
+    std::string lane;
+    std::string topology;
+    std::string input_type;
+    std::string output_type;
+    std::vector<MaterializedColorPipelineParam> params;
+    std::vector<MaterializedColorPipelineCompositeNode> nodes;
+    std::vector<MaterializedColorPipelineCompositeParameterMap> parameter_mappings;
+    std::vector<MaterializedColorPipelineCompositeFixedParameter> fixed_parameters;
+    int expanded_row_count = 0;
+    std::string metadata_content_hash;
+};
+
+struct MaterializedColorPipelineCompositeCanonicalization {
+    std::string id;
+    bool legacy_alias_normalization = false;
+    std::string node_order;
+    std::string parameter_order;
+    std::string typed_value_normalization;
+    std::string default_policy;
+    bool exclude_display_text = false;
+    std::string binary64_text;
+    std::string hash_algorithm;
+    bool primitive_descriptor_fingerprints = false;
+};
+
+struct MaterializedColorPipelineCompositeContract {
+    std::string schema_id;
+    int version = 0;
+    std::string topology;
+    int max_fully_expanded_lane_rows = 0;
+    MaterializedColorPipelineCompositeCanonicalization canonicalization;
+    std::vector<MaterializedColorPipelineCompositeFunction> composites;
+};
+
 struct MaterializedColorPipelineRowApplicator {
     std::string id;
     std::string label;
@@ -320,6 +388,8 @@ struct MaterializedColorPipelineContract {
     std::vector<MaterializedColorPipelineRecipe> recipes;
     bool has_recipe_v2 = false;
     std::vector<MaterializedColorPipelineRecipeV2> recipe_v2;
+    bool has_composite_function_contract = false;
+    MaterializedColorPipelineCompositeContract composite_function_contract;
     std::vector<MaterializedColorPipelineRowApplicator> row_applicators;
     std::vector<MaterializedColorPipelineSdfSourceCapability> sdf_source_capabilities;
     std::vector<MaterializedExplainoContractEntry> explaino_entries;

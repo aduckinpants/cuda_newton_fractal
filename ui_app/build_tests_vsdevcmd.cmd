@@ -326,7 +326,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\src\explaino_seed.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 
@@ -353,7 +353,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\tests\test_color_pipeline_window.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\tests\test_color_pipeline_window.cpp ^
   /Fe:"%TESTROOT%\test_color_pipeline_window.exe"
 if errorlevel 1 exit /b 1
 
@@ -488,7 +488,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp .\src\fractal_parameter_surface_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp .\src\explaino_exploration_advisor.cpp .\src\flashlight_probe.cpp .\src\runtime_walk.cpp .\src\lens_sdf.cpp .\src\sdf_field_signal.cpp .\src\fractal_descriptive_catalog.cpp .\src\fractal_viewport_facts.cpp .\src\headless_modes.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp .\src\fractal_parameter_surface_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp .\src\explaino_exploration_advisor.cpp .\src\flashlight_probe.cpp .\src\runtime_walk.cpp .\src\lens_sdf.cpp .\src\sdf_field_signal.cpp .\src\fractal_descriptive_catalog.cpp .\src\fractal_viewport_facts.cpp .\src\headless_modes.cpp .\src\color_pipeline_metadata_contract.cpp ^
   .\src\file_sha256.cpp .\src\fractal_active_model.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_headless_modes.cpp .\tests\test_flashlight_render_stub.cpp .\tests\test_flashlight_capture_stub.cpp "%GENERIC_SAMPLE_CORE_OBJ%" "%FRACTAL_SAMPLE_CORE_OBJ%" "%SAMPLE_TIER_RESOLVER_OBJ%" ^
   /Fe:"%TESTROOT%\test_headless_modes.exe" ^
@@ -845,7 +845,7 @@ exit /b 0
 
 :focused_test_diagnostics_state_io
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\src\explaino_seed.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
@@ -912,7 +912,7 @@ exit /b 0
 
 :focused_serializer_owner_fast
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\src\explaino_seed.cpp .\src\sdf_pack.cpp .\src\lens_sdf.cpp .\src\sdf_pack_field_producer.cpp .\src\explaino_root_field.cpp .\src\explaino_root_sdf_field.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
@@ -1095,7 +1095,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_color_pipeline_core.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\tests\test_color_pipeline_window.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\tests\test_color_pipeline_window.cpp ^
   /Fe:"%TESTROOT%\test_color_pipeline_window.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
@@ -1125,7 +1125,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_color_pipeline_core.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\tests\test_color_pipeline_window.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\tests\test_color_pipeline_window.cpp ^
   /Fe:"%TESTROOT%\test_color_pipeline_window.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
@@ -1143,7 +1143,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_fractal_family_rules.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
