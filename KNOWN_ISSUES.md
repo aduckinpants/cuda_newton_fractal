@@ -251,3 +251,24 @@ The sweep-mode seed path now has focused headless coverage and a live runtime re
 `tests/test_fractal_runtime_sweep_pause.py::test_runtime_sweep_changes_live_view_and_space_pauses_it` no longer relies on the stale `>1.0` whole-window diff threshold. The live harness waits for a visible non-zero client area and compares against the observed runtime signal.
 
 Residual constraint: the live GUI runtime tests are still Windows-only and require a visible desktop session. That is an environment contract, not an open product bug.
+
+---
+
+## P1 - Parameter scrub and animation controls have overlapping mutation authority
+
+**Status:** open; decision-complete planning draft awaiting blind hostile-review reconciliation
+**Area:** Controls UI / schema binding / render pacing / state IO
+
+Observed failures:
+- Global left/right arrow polling scrubs ExplainO seed even while ordinary numeric/text controls are being edited.
+- Scrubbing is hard-coded to seed despite other numeric controls needing the same focused step behavior.
+- Selecting the generic animation target also activates mutation, so inspecting/changing animation configuration can immediately move the current value.
+- Seed auto-increment and generic parameter animation remain separate frame-loop mutation authorities.
+
+Required direction:
+- Replace the overlapping paths with the provider-backed, focus-owned Parameter Motion campaign.
+- Target selection, quantum, rate, and boundary changes must be inert until explicit step or enable actions.
+- State load replaces motion configuration but always loads stopped.
+- Color Pipeline animation and the external runtime-state API remain deferred.
+
+Planning authority: `docs/notes/parameter_motion_scrub_unification_PHASED_PLAN.md`.

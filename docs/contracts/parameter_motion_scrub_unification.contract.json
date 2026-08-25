@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "contract_id": "parameter_motion_scrub_unification",
+  "feature_id": "parameter_motion_scrub_unification_campaign",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/parameter_motion_scrub_unification_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/parameter_motion_scrub_unification.contract.json",
+    "docs/notes/parameter_motion_scrub_unification_PHASED_PLAN.md",
+    "docs/notes/parameter_motion_external_runtime_interface_DEFERRED.md",
+    "docs/notes/parameter_motion_scrub_unification_BLIND_HOSTILE_REVIEW.md",
+    "docs/contracts/color_pipeline_composite_function_v1.contract.json",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "docs/handoffs",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean rearward-reviewed master head 6958f02",
+    "reported global arrow-key seed scrub focus bug",
+    "reported target-selection and activation coupling",
+    "existing ExplainO seed and generic parameter animation authorities",
+    "normal schema and binding surfaces",
+    "digit-scrub POC behavioral reference",
+    "operator decision to exclude Color Pipeline from v1",
+    "operator decision that state load replaces motion configuration but never resumes motion"
+  ],
+  "forbidden_operator_prompts": [
+    "implement product code in this planning slice",
+    "animate Color Pipeline rows or graph parameters",
+    "add Salticid runtime execution",
+    "add an external state IPC endpoint",
+    "retain global arrow polling as a normal path",
+    "keep parallel seed and generic frame-loop animation authorities",
+    "use a new hand-maintained target option list",
+    "resume motion automatically after state load",
+    "use physical mouse automation",
+    "silently revise the plan in response to the blind review before operator discussion"
+  ],
+  "required_defaults": {
+    "product_mutation_authorized": false,
+    "planning_review_state": "blind_review_required_before_implementation",
+    "motion_activation_authority": "explicit_enabled_toggle",
+    "continuous_motion_authority": "one_provider_backed_runtime_engine",
+    "scrub_keyboard_authority": "focused_scrub_surface_only",
+    "target_inventory_authority": "schema_binding_capability_provider",
+    "color_pipeline_animation_in_scope": false,
+    "state_load_resumes_motion": false,
+    "external_runtime_interface_in_scope": false,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "target_selection_implies_activation": "forbidden",
+    "global_arrow_seed_scrub": "forbidden",
+    "float_only_target_provider": "forbidden",
+    "hidden_dual_motion_authority": "forbidden",
+    "color_pipeline_target_leak": "forbidden",
+    "raw_kernel_params_wire_contract": "forbidden",
+    "automatic_motion_resume_on_load": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/parameter_motion_scrub_unification.contract.json --out-json artifacts/validation/parameter_motion_scrub_unification_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label parameter_motion_plan_sync --log artifacts/logs/parameter_motion_plan_sync.log --out-json artifacts/validation/parameter_motion_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/parameter_motion_scrub_unification_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/parameter_motion_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label parameter_motion_diff_check --log artifacts/logs/parameter_motion_diff_check.log --out-json artifacts/validation/parameter_motion_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/parameter_motion_scrub_unification_PHASED_PLAN.md --out-json artifacts/validation/parameter_motion_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "parameter_motion_contract_valid",
+      "description": "The planning-only Parameter Motion contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/parameter_motion_scrub_unification_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "parameter_motion_plan_sync_ok",
+      "description": "The planning document has synchronized phase and audit state.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/parameter_motion_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "parameter_motion_hostile_audit_ok",
+      "description": "The recorded blind hostile review and local planning audit are complete.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/parameter_motion_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "parameter_motion_diff_check_ok",
+      "description": "The documentation-only diff is structurally clean.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/parameter_motion_diff_check.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

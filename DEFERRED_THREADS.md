@@ -417,3 +417,22 @@ Resume constraints:
 - Do not add a Python or external state-tool runtime dependency to the viewer.
 
 Detailed authority: `docs/notes/model_diagnostics_overlay_capability_campaign_PHASED_PLAN.md`.
+
+## 12. External Runtime-State Interface And Programmable Animation Surface
+
+Status: deferred; design boundary documented.
+
+Current decision:
+- Parameter Motion v1 will expose normal numeric fractal/view controls through a reusable typed capability provider.
+- It will not add IPC, Color Pipeline animation, Salticid execution, timelines, or arbitrary graph control.
+- A later local named-pipe/NDJSON interface may expose coherent versioned runtime snapshots and, after a separate authority campaign, generation-checked transactional patches.
+
+Resume constraints:
+- Ship read-only `describe` and coherent `get_snapshot` before writes.
+- Separate authoritative inputs, derived runtime values, capabilities, and diagnostics.
+- Address stable binding paths and Color Pipeline graph semantic IDs, never raw `KernelParams`, C++ offsets, widget labels, or row positions.
+- Reuse prepare/commit mutation authority and report state/frame generations.
+- Keep the viewer independent of any external client and add no network listener by default.
+- Do not fold this into the Parameter Motion implementation campaign.
+
+Detailed boundary: `docs/notes/parameter_motion_external_runtime_interface_DEFERRED.md`.
