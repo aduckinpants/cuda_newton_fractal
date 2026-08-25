@@ -187,3 +187,37 @@ References:
 - Digit-scrub POC provenance.
 
 No tracked files were modified by the reviewer. This review records findings only; no findings have yet been accepted, rejected, or repaired in the governing plan.
+
+## Second Fresh Blind Review And Reconciliation
+
+Reviewer: fresh read-only subagent `01a03a5b-cee0-7aa3-b9ea-7b56967cdcd8` (`Confucius`)
+Review mode: no inherited task history; revised repo planning artifacts and current code seams only
+Initial verdict: REJECT AS IMPLEMENTATION-READY
+Disposition: all findings reconciled through the operator's standing smallest-extensible-route direction; follow-up clean reread requested
+
+### Findings And Decisions
+
+1. **Canonical semantic target versus multiple presentations (P1).** Combined ExplainO seed has multiple schema presentations backed by one semantic setter. Repaired by moving motion definitions into one canonical target registry and allowing presentation descriptors to reference that target. Presentation visibility is merged dynamically; presentation rows never become duplicate motion targets. Existing widget `step`/UI bounds remain presentation metadata, while motion step/safety/policy belongs to the canonical target.
+2. **Mutator census and cutover order (P1).** The earlier slice order could temporarily permit old and new continuous engines. Repaired by requiring a generated census of normal widgets, automation, Reset All, selectors/defaults, presets, seed actions, state load, capture, sidecars, and playback owners. The new engine remains forced-disabled until retained writers are interlocked and old global/continuous mutators are removed from the normal path.
+3. **Continuous-motion mathematics (P1).** Repaired by declaring continuous motion rate-only and scrub quantum-only; specifying the absolute double accumulator equation; requiring `max_abs_rate * 0.1 <= max_abs_step`; retaining sub-ULP float32 accumulation; and defining invalid/nonpositive frame time as a skipped tick with timing re-anchored and no automatic stop.
+4. **Pacing ownership and settle proof (P1).** Repaired by returning mutation receipts to the existing frame-loop `interactionChanged` aggregator rather than notifying pacing inside the service. Slow/preview proof requires one terminal transition; fast/full-quality proof requires no synthetic transition.
+5. **State v4 ownership and migration (P1).** Repaired by removing descriptor-owned boundary policy from serialized configuration and adding a complete v1-v4 table. Whole-document state load is staged transactionally. Failure preserves prior values/configuration but leaves execution stopped; successful load commits staged values/configuration and always remains stopped.
+6. **Requested versus observed ImGui proof (P1).** Repaired by separating automation requests from widget-observed acknowledgements and requiring observed focus, active item, text-edit ownership, key/pointer dispatch, release, and mutation receipts through the normal queue.
+7. **Existing public parameter descriptor authority (P1).** Repaired by requiring `fractal_parameter_surface_descriptor` motion/animatable reporting to consume the canonical provider, with parity proof before old dropdown authority is removed.
+8. **Checkout/contract truth (P2).** Repaired by describing the snapshot as repository-local pending the planning checkpoint, removing the unrelated Color Pipeline contract from scope, identifying the review head plus reconciliation working tree accurately, and adding a code-quality acceptance assertion.
+9. **POC line provenance (P2).** Corrected the excerpt source range from lines `2961-3140` to `2962-3140`; recorded source hashes remain unchanged.
+
+### Preserved Strengths
+
+- Explicit enable toggle and focus-owned scrub surface.
+- Narrow float/direct and combined-seed v1 scope.
+- No retained pointers or escaped prepare tokens.
+- Per-prepare dynamic availability.
+- Complete Color/camera/integer/operational exclusion.
+- State/capture always stopped.
+- Existing render pacing remains authoritative.
+- External IPC and Color Pipeline animation remain separate deferred campaigns.
+
+### Planning Boundary
+
+The current contract remains intentionally `workflow_only`. A clean planning verdict authorizes creating Slice 0's separate accepted `viewer_first` plan/contract; it does not authorize product mutation under this contract.

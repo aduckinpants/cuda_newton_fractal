@@ -1,144 +1,238 @@
 # Parameter Motion And Focus-Owned Scrub Unification Campaign
 
-Status: planning draft reviewed and rejected as implementation-ready; product mutation is paused pending operator discussion and reconciliation.
+Status: second blind hostile review completed; its findings are reconciled below. Product mutation remains unauthorized under this planning-only contract; reconciliation is complete and Slice 0 requires a new accepted `viewer_first` contract.
 
 ## Current Phase
 
-The fresh blind hostile review is recorded without silent amendment. The current phase is operator discussion of the findings, followed by a bounded reconciliation pass. Implementation must not begin from this draft.
+The second fresh reviewer found no new scope-level showstopper, but rejected the draft on semantic-target identity, mutator cutover, continuous-time math, pacing ownership, state migration, observed-input proof, and descriptor migration. The operator's standing direction to choose the smallest extensible route resolves the product choices: canonical targets may have multiple presentations, continuous motion is rate-only, invalid frame time skips safely, and state loading is transactional and always stopped. The reconciliation reviewer accepted the architecture with mechanical amendments; those amendments and a final clean re-read are complete. Remaining work is checkpoint, receipts, rearward review, and push.
 
 ## Explicit User Asks
 
-- [x] Replace the fragile seed-only arrow scrub with a general mechanism for eligible normal numeric fractal/view parameters.
-- [x] Prevent arrow-key scrubbing while a user edits an ordinary numeric or text control.
-- [x] Separate target selection, scrub quantum, and motion rate from activation so configuration changes never mutate the target value.
-- [x] Replace the weak existing animation controls with one small coherent Parameter Motion panel instead of adding another overlapping system.
-- [x] Keep Color Pipeline row/function animation out of v1 and defer it toward a future programmable Salticid-oriented surface.
-- [x] Reuse the useful behavioral ideas from the digit-scrub POC without importing its browser widget, arbitrary-base model, or source-patching machinery.
-- [x] Define Capture Finding and state-load behavior now: configuration reloads, active motion never restarts automatically, and the loaded state settles once.
-- [x] Preserve a future path to a versioned external runtime-state interface without implementing IPC in this campaign.
-- [x] Review this plan through a fresh blind hostile subagent and discuss findings before implementation.
+- [x] Replace fragile seed-only global arrow scrubbing with focus-owned scrubbing for explicitly eligible normal numeric parameters.
+- [x] Prevent arrow-key mutation while ordinary numeric/text controls, menus, popups, or other widgets own input.
+- [x] Separate target selection, quantum, rate, and policy configuration from explicit stepping or motion enablement.
+- [x] Replace the old Auto-Increment Seed and generic Animate Parameter UI with one coherent Parameter Motion panel.
+- [x] Keep all Color-domain controls out of v1; Color Pipeline is the future animation authority.
+- [x] Preserve useful digit-scrub POC behavior through a repository-local reference snapshot without importing browser/runtime code.
+- [x] Make state load replace motion configuration but always load stopped.
+- [x] Preserve a future versioned external runtime-state interface without implementing IPC here.
+- [x] Prefer the smallest route that remains extensible and does not create parallel authority.
+- [x] Complete a second fresh blind hostile review and reconcile its findings without broadening v1.
 
 ## Phase Checklist
 
-- [x] Phase 0 - Inspect current scrub, animation, binding, state, pacing, and automation seams.
-- [x] Phase 1 - Write the planning campaign and planning-only machine contract.
-- [x] Phase 2 - Record the external runtime-state interface deferment and backlog truth.
-- [x] Phase 3 - Run and record a fresh blind hostile subagent review.
-- [ ] Phase 4 - Discuss findings and revise or accept the plan and implementation slice contracts.
-- [ ] Pause before product mutation.
+- [x] Phase 0 - Inspect current scrub, animation, binding, state, pacing, automation, and competing-mutator seams.
+- [x] Phase 1 - Record the initial campaign and first blind hostile review.
+- [x] Phase 2 - Narrow v1 and resolve first-review ownership, bounds, pacing, state, and test ambiguities.
+- [x] Phase 3 - Check in bounded digit-scrub POC provenance and decisions.
+- [x] Phase 4 - Run a different fresh blind hostile review.
+- [x] Phase 5 - Apply the recorded repairs and complete a clean re-read.
+- [ ] Pause before product mutation and create Slice 0's `viewer_first` contract.
 
-## Scope
+## Scope Lock
 
-This campaign replaces three partially overlapping authorities:
+V1 supports only:
 
-1. the global `ApplyArrowKeySeedScrub` key polling path;
-2. `ApplyExplainoSeedDynamics` and `auto_increment_seed`;
-3. `ApplyParamAnimDynamics` and the hard-coded `param_anim_target` option list.
+- explicitly opted-in direct-linear `float32` parameters;
+- explicitly opted-in direct-linear `float64` parameters;
+- the combined ExplainO seed through its existing semantic setter adapter;
+- one focused scrub target and one continuous motion track;
+- normal fractal/view parameter owners whose values directly affect the current lane.
 
-The replacement is one provider-backed Parameter Motion system for eligible numeric controls on the normal fractal/view binding surface. It owns target discovery, focused scrub actions, continuous motion, boundary handling, state migration, reports, and interaction lifecycle.
+V1 excludes:
 
-### In Scope
+- every Color-domain control, including legacy simple Color controls on the main panel and all Color Pipeline rows/graph parameters;
+- camera center, zoom, rotation, and transformed/high-precision view values;
+- integer, enum, boolean, categorical, and discrete-index controls;
+- render resolution, iteration limits, auto-max iteration, preview/pacing, device, precision, backend, capture, diagnostics, and other operational controls;
+- derived, preset-coupled, or multi-field controls without a dedicated semantic setter adapter;
+- arbitrary root-count/layout selection, although direct-linear scoped root float controls may opt in after setter proof;
+- multiple tracks, timelines, easing, keyframes, recording, and programmable animation;
+- external IPC, Salticid execution, and physical mouse automation.
 
-- Numeric `float32`, `float64`, and integer parameters exposed through normal schema/binding authority.
-- A data-driven eligibility/capability provider.
-- A compact Parameter Motion UI panel.
-- Focus-owned left/right scrub, explicit decrement/increment commands, and bounded horizontal drag.
-- One continuous motion engine with a separate enable toggle.
-- Scoped seed action migration onto the same step provider.
-- State/capture/replay configuration semantics and legacy state migration.
-- Native and published no-mouse regression matrices.
-
-### Explicitly Out Of Scope
-
-- Color Pipeline row/function animation or graph animation.
-- Salticid execution or a programmable animation language.
-- Arbitrary bases, exact rational editing, AST/source patching, or a browser-style per-digit strip.
-- Enum, boolean, device, resolution, backend, capture, diagnostics, or other operational controls unless a later contract explicitly classifies one.
-- Multiple simultaneous motion tracks, timelines, keyframes, curves, easing libraries, MIDI/OSC, or recording.
-- A public external state IPC endpoint.
-- Physical mouse automation.
+This boundary is intentional. A later campaign can add another numeric/storage class only by extending the target court, semantic setter inventory, and public proof matrix.
 
 ## Repo-Grounded Starting Point
 
-- `ApplyArrowKeySeedScrub` polls global left/right key state in `main.cpp`; it does not require a scrub control to own keyboard focus.
-- `ApplyExplainoSeedDynamics` is a separate seed-only runtime path gated by `auto_increment_seed`.
-- `ApplyParamAnimDynamics` is a second runtime path whose non-`none` target is also its activation state.
-- The generic animation path resolves only float bindings and still has a special seed branch.
-- `param_anim_target` is a hand-maintained schema option list, so eligibility is not derived from current lane/binding authority.
-- Existing state capture persists at least the legacy seed-auto-increment fields, while generic motion configuration is not a complete replay contract.
-- The runtime already has interaction/preview pacing, schema binding, visible-control reporting, no-mouse commands, and state/capture seams that this campaign must reuse.
+- `ApplyArrowKeySeedScrub` globally polls left/right key state and does not require scrub focus.
+- `ApplyExplainoSeedDynamics` and `ApplyParamAnimDynamics` are separate frame-loop mutation authorities.
+- A non-`none` generic animation target also acts as activation state.
+- The generic path resolves float bindings and special-cases combined ExplainO seed.
+- The target dropdown is a hand-maintained schema option list.
+- Sweep, runtime walk, sidecar auto-demo, auto-dive, auto-max iteration, state load, manual edits, and seed actions are additional mutation owners that require arbitration.
+- Existing pacing exposes interaction notification plus debounce rather than begin/end generations.
+- State version 3 persists legacy seed auto-increment fields but does not persist generic animation target/rate.
+- The published no-mouse harness cannot currently focus an ImGui item or inject key press/repeat/release through the real input path.
 
 ## Product Invariants
 
-1. Arrow keys never mutate a parameter unless the dedicated scrub surface owns focus and no text/numeric edit is active.
-2. Selecting a target never changes its value.
-3. Changing quantum, rate, direction, or boundary policy never changes its value.
-4. Enabling motion is an explicit command distinct from selecting a target.
-5. Exactly one runtime engine owns continuous parameter motion.
-6. All mutations use the same typed provider and normal authoritative setter path.
-7. A visible Parameter Motion target is writable, active for the current lane, and honestly classified as scrubbable and/or motion-animatable.
-8. A target that becomes inactive or invalid stops motion before another mutation.
-9. State load never restarts motion automatically.
-10. Capture/replay parameter pixels remain authoritative; motion configuration is secondary control state.
-11. The existing interaction preview/debounce path receives begin/update/end lifecycle events and produces one settled full-quality frame.
-12. Color Pipeline remains outside the target catalog in v1.
+1. No parameter mutates unless an explicit step/drag event or enabled continuous-motion tick owns the action.
+2. Selecting a target or changing configuration never mutates parameter value, dirty state, render state, or interaction state.
+3. Left/right arrows mutate only while the dedicated scrub surface owns keyboard focus.
+4. All authoritative mutations use a declared semantic setter class; schema storage type alone is insufficient.
+5. Exactly one normal frame-loop engine owns continuous Parameter Motion.
+6. Parameter Motion never runs concurrently with sweep, runtime walk, sidecar auto-demo, or another exclusive playback owner.
+7. Static descriptor discovery may be cached; dynamic visibility, binding, lane activity, and ownership are checked on every prepare.
+8. Motion stops before lane, authority, target, rate, policy, state-load, capture, or competing-mode transitions.
+9. Every state load replaces configuration and leaves motion disabled.
+10. Capture/replay parameter pixels remain authoritative; motion execution state is never replay authority.
+11. Existing viewer interaction/debounce authority remains the only render-pacing clock.
+12. Every Color-domain control is excluded from v1.
 
-## Authority Model
+## Repository-Local POC Reference
 
-### Parameter Capability Descriptor
+Reference snapshot: `docs/reference/digit_scrub_poc_snapshot/PROVENANCE_AND_DECISIONS.md`.
 
-Introduce a read-only descriptor generated from current schema and binding authority, not a new hand-maintained target enum.
+The planning branch carries this bounded snapshot for its final checkpoint. It records source path, dirty working-tree provenance, source hashes, copied model/tests, focus/drag excerpt, postmortem, and keep/adapt/defer/reject decisions. It is reference-only and has no viewer build/runtime dependency.
 
-Required fields:
+## Configuration Owner
 
-- stable `binding_path`;
-- display label and owning section;
-- owning selector/family visibility predicate;
-- numeric storage kind: `float32`, `float64`, or bounded integer;
-- `binding_resolves`;
-- `writable`;
-- `visible`;
-- `active_for_current_lane`;
-- `scrubbable`;
-- `motion_animatable`;
-- hard and UI bounds where defined;
-- canonical schema step;
-- allowed boundary policies;
-- structured exclusion/fail-closed reason;
-- semantic owner and change-notification route.
+Add host-owned `ParameterMotionState`, separate from `ViewState`, `KernelParams`, renderer inputs, and Color Pipeline state.
 
-These fields are independent. In particular, a metadata flag analogous to `safe_to_scrub` must not double as proof that a runtime binding resolves or that live mutation is authorized.
+Authoritative configuration fields:
 
-### Typed Accessor
+- `target_id`;
+- `quantum_exponent`;
+- `rate_per_second`;
+- `enabled`.
 
-The provider exposes typed, checked operations:
+`boundary_policy` is canonical target metadata, not host configuration and not serialized state.
 
-- `DescribeEligibleTargets(context)`;
-- `ReadNumericValue(binding_path, context)`;
-- `PrepareNumericMutation(binding_path, requested_value, boundary_policy, context)`;
-- `CommitPreparedNumericMutation(prepared, change_source)`.
+Transient fields:
 
-Preparation performs binding lookup, active-lane validation, finite checks, type conversion, and boundary handling before authoritative mutation. Commit must be non-failing after successful preparation and must emit the existing dirty/interacted notification exactly once.
+- double accumulator/current intended value;
+- focused/drag gesture state;
+- drag residual;
+- last tick timestamp;
+- stopped reason;
+- last mutation source;
+- whether capture observed motion before stopping it.
 
-No raw pointer retained across frames is authoritative.
+Only authoritative configuration is serialized. Transient fields reset on construction, load, target/configuration change, and ownership transition.
 
-### Eligibility
+## Schema-Owned Motion Metadata
 
-A target appears in the v1 selector only when all are true:
+Eligibility is explicit opt-in metadata in one canonical `motion_targets` registry owned by the UI schema contract. Absence means ineligible. Ordinary control descriptors may reference a canonical target through `motion_target_ref`; they do not duplicate the target definition.
 
-- normal schema/binding path exists;
-- numeric type is supported;
-- binding resolves in the current context;
-- writable is true;
-- active for the current lane is true;
-- at least one of `scrubbable` or `motion_animatable` is true;
-- owner is not Color Pipeline or an excluded operational domain.
+Canonical target example:
 
-Hidden targets may remain selected in loaded legacy configuration for review, but they are reported unavailable and cannot mutate.
+```json
+{
+  "target_id": "fractal.params.explaino_seed",
+  "label": "ExplainO Seed",
+  "semantic_owner": "explaino_root_authority",
+  "value_domain": "combined_explaino_seed",
+  "setter_id": "explaino_combined_seed_v1",
+  "scrubbable": true,
+  "continuous": true,
+  "base_step": 0.001,
+  "bounds_policy": "finite_linear",
+  "max_abs_rate": 4.0,
+  "max_abs_step": 0.4
+}
+```
+
+Presentation descriptor example:
+
+```json
+{
+  "path": "fractal.params.explaino_seed",
+  "motion_target_ref": "fractal.params.explaino_seed"
+}
+```
+
+Contract rules:
+
+- `target_id` is version-stable and unique in the canonical registry. Legacy target aliases live in one alias table and never appear as new save output.
+- Multiple presentation descriptors may reference one canonical target. Presentation identity, section, visibility, and normal edit widgets remain distinct; they never create duplicate motion targets.
+- V1 `semantic_owner` is the closed enum `fractal_formula | explaino_root_authority`. `color`, `camera`, `render_operational`, `diagnostics`, and unknown owners are forbidden.
+- V1 `value_domain` is `direct_linear | combined_explaino_seed`.
+- V1 `setter_id` is `direct_binding_f32_v1 | direct_binding_f64_v1 | explaino_combined_seed_v1`.
+- The existing descriptor `step`, UI minimum, and UI maximum remain normal widget presentation metadata. Motion `base_step`, `bounds_policy`, `max_abs_rate`, and `max_abs_step` belong only to the canonical target.
+- `hard_clamp` obtains finite hard bounds from the authoritative binding-validation contract, never from UI-only slider bounds. Registry load fails if binding hard bounds are absent or disagree across presentations.
+- `base_step`, `max_abs_rate`, and `max_abs_step` are finite and positive.
+- `bounds_policy` is `hard_clamp` or `finite_linear`.
+- `finite_linear` is permitted only for a reviewed setter with explicit finite `max_abs_rate` and `max_abs_step`.
+- `max_abs_rate * 0.1 <= max_abs_step` is required so every legal clamped continuous tick is also a legal setter step.
+- UI visibility does not imply eligibility, and `scrubbable` does not imply binding or commit authority.
+
+The schema parser rejects unknown fields/enums, duplicate canonical target IDs, dangling presentation refs, conflicting aliases, invalid bounds/policy combinations, unsupported setters, and Color-domain opt-ins.
+
+## Capability Provider
+
+The provider joins static schema metadata with live binding/context authority.
+
+Static inventory, cacheable until schema reload:
+
+- target id, label, section/order;
+- semantic owner and value domain;
+- setter id and numeric storage type;
+- base step and safety limits;
+- declared bounds policy;
+- scrub/continuous capabilities.
+
+Dynamic availability, evaluated on every list render and every mutation prepare:
+
+- at least one presentation descriptor for the canonical target passes its current selector/lane visibility predicate;
+- current root/custom/generated authority predicates;
+- binding resolution and writability;
+- competing owner state;
+- setter-specific preconditions;
+- current finite value;
+- structured unavailable reason.
+
+No raw pointer, ImGui item id, or resolved binding is retained across frames.
+## Mutation Service And Setter Classes
+
+Public operations:
+
+- `DescribeParameterMotionTargets(context)`;
+- `ReadParameterMotionValue(target_id, context)`;
+- `TryApplyParameterMotionDelta(target_id, delta, context, source)`;
+- `TryApplyParameterMotionAbsolute(target_id, value, context, source)`.
+
+Prepare and commit are an indivisible same-thread operation inside each public mutation call. No prepared token escapes the call or frame. Preparation performs canonical-target resolution, presentation-aware dynamic availability, ownership, finite/rate/step, type, and bounds validation. After preparation, commit calls the declared setter and returns a non-failing mutation receipt. The normal frame loop folds that receipt into its existing `interactionChanged` aggregator; the service never calls pacing notification directly. A context transition cannot occur between the two stages.
+
+Setter contracts:
+
+### `direct_binding_f32_v1`
+
+- Reads and writes the authoritative direct-linear float binding through one binding mutation API.
+- Typed result is computed in double, range-checked, converted once, and compared to current float bits/value.
+- If conversion yields no representable change, scrub reports `quantum_below_storage_resolution`; continuous motion retains its double intended-value accumulator until representable or stopped.
+- No parameter-specific side effects are permitted unless the binding mutation API already owns them and the target court proves parity.
+
+### `direct_binding_f64_v1`
+
+- Same contract with double storage and no float narrowing.
+- Transformed camera/log values remain excluded even if represented by doubles.
+
+### `explaino_combined_seed_v1`
+
+- Reads `ExplainoSeedCombined` and commits through `ExplainoSeedSetCombined`.
+- Preserves scoped root-field seed authority where that helper already defines it.
+- Does not imply that every seed-like or root-derived value is eligible.
+
+A setter mismatch fails closed as `unsupported_motion_setter`. After cutover, this service is the only authority for motion-originated writes. Ordinary widgets, Reset All, selectors/defaults, automation edits, state load, presets, and manual actions retain their existing authorities but must stop motion before writing an eligible target.
+
+## Target Court V1
+
+Slice 0 generates a checked-in JSON/Markdown court over every numeric schema descriptor:
+
+- canonical target id, aliases, and every presentation path;
+- storage type;
+- semantic owner;
+- presentation visibility owners and merge result;
+- motion metadata present/absent;
+- setter id;
+- scrub/continuous classification;
+- bounds policy and limits;
+- included/excluded verdict;
+- stable exclusion reason.
+
+Initial eligible candidates are limited to existing direct-linear formula/root float controls plus combined ExplainO seed. Camera, Color, integer, operational, derived, and preset-coupled rows must appear as explicit exclusions. No unexplained numeric descriptor may pass the court.
 
 ## Parameter Motion Panel V1
-
-The old global animation block is removed from the normal UI and replaced with one small panel:
 
 ```text
 Parameter Motion
@@ -146,334 +240,394 @@ Parameter Motion
   Current Value        [focusable scrub surface]
   Quantum              [base step x 10^exponent]
   Step                  [-] [+]
-  Boundary              [Clamp / Wrap / Reflect when supported]
   Motion Enabled       [toggle]
   Motion Rate          [signed value units per second]
 ```
 
-### Stable Control IDs
+Stable control ids:
 
 - `parameter_motion.target.primary`
 - `parameter_motion.value.scrub.primary`
 - `parameter_motion.quantum_exponent.primary`
 - `parameter_motion.step.decrement`
 - `parameter_motion.step.increment`
-- `parameter_motion.boundary_policy.primary`
 - `parameter_motion.enabled.primary`
 - `parameter_motion.rate.primary`
 
+Boundary policy is descriptor-owned and reported but not user-selectable in v1. This removes unsupported wrap/reflect choices and prevents changing policy from becoming another state surface.
+
 ### Target Selection
 
-- Selection changes configuration only.
-- It reads and displays the current authoritative value.
-- It does not enable motion.
-- If the previously selected target is absent on a lane change, configuration remains visible as unavailable while motion is forced off.
-- The dropdown ordering is deterministic: owning section order, schema order, then stable binding path.
+- Changes configuration only and forces `enabled=false` before changing target.
+- Reads/displays current authority after selection.
+- Does not dirty or interact with the frame.
+- An unavailable loaded target remains identifiable in configuration/reporting but cannot mutate.
+- Ordering is deterministic: schema section order, schema row order, target id.
 
 ### Quantum
 
-- Each descriptor supplies a positive canonical base step.
-- `quantum_exponent` is an integer in `[-9, 9]`.
-- Effective scrub quantum is `base_step * 10^quantum_exponent`.
-- Integer targets round the effective quantum away from zero to at least `1`.
-- Nonfinite, zero, or unrepresentable effective quanta fail closed.
-- Changing quantum never applies a step.
+- `quantum_exponent` is integer `[-9, 9]`.
+- Effective quantum is `base_step * 10^quantum_exponent`.
+- Shift multiplies by `10`; Alt multiplies by `0.1`; both together cancel.
+- Nonfinite/zero/excessive deltas fail before mutation.
+- Changing exponent never applies a step.
 
-If a schema control lacks a positive step, the provider derives one deterministically as `max((ui_max-ui_min)/1000, type_epsilon_at_current_value)` and reports `step_source=derived`. This rule is frozen for v1 so target ordering and scrub behavior do not depend on UI frame timing.
+### Focus And Key Ownership
 
-### Focus And Keyboard Ownership
+- Current Value is a dedicated focusable scrub surface, not the ordinary numeric text editor.
+- Left/right steps are dispatched only when that exact stable control id owns focus and no text input, popup, menu, or other active item owns capture.
+- Key repeat uses ImGui's real queued input/repeat behavior.
+- Key release or focus loss ends the scrub gesture.
+- Ordinary numeric editor caret/navigation remains untouched.
 
-- `Current Value` is a dedicated focusable scrub surface, not the ordinary numeric text editor.
-- Left/right key presses step by one effective quantum only while that item owns keyboard focus.
-- ImGui active text/numeric input, menus, popups, or another active item suppress scrub dispatch.
-- Key repeat is permitted only through the scrub surface's own repeat policy.
-- `Shift` multiplies the quantum by `10`; `Alt` multiplies it by `0.1`; both together cancel to `1`.
-- Ordinary numeric controls retain normal caret/navigation behavior and must never dispatch Parameter Motion steps.
-- Loss of focus ends the current gesture and requests one settled render if a mutation occurred.
-
-### Pointer Scrub
+### Pointer Gesture
 
 - Horizontal drag begins only on the scrub surface.
-- Each complete logical drag interval emits an integer step count through the same prepared mutation operation.
-- Residual pixels are gesture-local and never serialized.
-- Vertical movement does not mutate the value.
-- Pointer capture loss ends the gesture safely.
-- Runtime proof uses in-process UI/action events; physical mouse automation remains forbidden.
+- Complete logical intervals convert to integer step counts through the same mutation service.
+- Residual pixels are gesture-local.
+- Vertical movement, hover, and pointer movement without ownership are inert.
+- Capture loss ends the gesture safely.
+- Product tests use in-process ImGui events, never OS mouse automation.
 
-### Boundary Policy
+## Boundary And Timing Mathematics
 
-V1 supports:
+### Scrub and explicit step
 
-- `clamp`: clamp to hard bounds; continuous motion stops when a further tick cannot change the value;
-- `wrap`: wrap over a finite hard range;
-- `reflect`: reflect at finite hard bounds while preserving overshoot direction.
+Scrub is quantum-based. For one or more signed integer steps:
 
-Unbounded mutation is not a user-selectable boundary policy. A descriptor without finite hard bounds may be scrubbed only when it declares an explicit safe local limit; otherwise it fails closed as `finite_motion_bounds_missing`.
+```text
+delta = signed_step_count * base_step * 10^quantum_exponent
+candidate = current_authoritative_value + delta
+```
 
-The target descriptor declares allowed policies. Loading an unsupported policy falls back to `clamp`, stops motion, and reports a migration warning.
+`hard_clamp` clamps `candidate` to finite inclusive binding hard bounds `[lo, hi]`. `finite_linear` requires finite `candidate` and `abs(delta) <= max_abs_step`. A typed candidate equal to current authority is a no-op. Scrub reports `clamp_no_change` or `quantum_below_storage_resolution` as appropriate. No wrap or reflection exists in v1.
 
-### Continuous Motion
+### Continuous motion
 
-- `Motion Rate` is signed authoritative value units per second, not steps per second; this permits direct migration of existing rates.
-- `Motion Enabled` is the only activation authority.
-- The engine uses a double-precision accumulator and commits a typed target value at most once per frame.
-- A zero/nonfinite rate, invalid target, inactive lane, failed binding, or exhausted clamp boundary prevents mutation and disables motion with a reportable reason.
-- Changing target/rate/quantum/boundary while enabled first stops the prior gesture. Configuration changes do not implicitly re-enable motion.
-- The old seed and generic animation runtime functions are removed or reduced to compatibility translation outside the frame loop; they must not remain parallel mutation paths.
+Continuous motion is rate-based only; quantum does not quantize ticks. Quantum remains a scrub/step configuration. Changing it still stops motion before configuration mutation so all panel changes follow one inert rule.
 
-## Interaction And Render Pacing Contract
+On enable:
 
-Every scrub or motion mutation uses one lifecycle:
+```text
+intended_0 = current_authoritative_value
+```
 
-1. `begin` on first committed change;
-2. `update` on subsequent committed changes;
-3. `end` on key release, button completion, drag release/capture loss, motion disable, invalidation, or state load.
+For each valid rendered-frame tick:
 
-The lifecycle marks the viewer as interacting through the existing pacing seam. It must not create a second debounce clock. Ending a mutated gesture requests exactly one settled full-quality render. Selecting/configuring without mutation does not enter interaction or dirty the frame.
-
-## Legacy Seed Actions
-
-Scoped `Prev Seed` / `Next Seed` controls remain where they have clear domain meaning, but they route through the same descriptor and prepared-step authority.
-
-- They use the canonical seed action delta defined by the seed descriptor, not the panel's current target.
-- They do not enable continuous motion.
-- They preserve scoped root-pattern ownership.
-- No direct `ExplainOSeedSetCombined` action branch remains outside the common mutation provider after cutover.
-
-## State, Capture, And Replay Contract
-
-### New State Shape
-
-`state.json` gains an optional `parameter_motion` object:
-
-```json
-{
-  "target_binding_path": "fractal.params.explaino_seed",
-  "quantum_exponent": 0,
-  "rate_per_second": 0.25,
-  "boundary_policy": "clamp",
-  "enabled": false
-}
+```text
+dt_used = min(raw_dt, 0.1)
+tick_delta = rate_per_second * dt_used
+intended_next = intended_previous + tick_delta
 ```
 
 Rules:
 
-- The target's actual numeric value remains in its existing authoritative state field.
-- Saved `enabled` is always `false` for replay authority.
-- `fractal-state.json` and reports may record `was_running_at_capture` as derived review context, never as restart authority.
-- Transient focus, key repeat, drag residual, timing accumulator, interaction generation, and pending settle state are not serialized.
+- `raw_dt` must be finite and positive. Invalid or nonpositive time skips the tick with `invalid_dt_skipped`, leaves the accumulator unchanged, and resets the timing anchor so no lost time is caught up; it does not stop motion.
+- Registry validation requires `max_abs_rate * 0.1 <= max_abs_step`; therefore every legal clamped tick delta is legal.
+- `hard_clamp` clamps `intended_next` to `[lo, hi]`, applies it through the absolute setter, then disables with `clamp_boundary_reached` once the intended value reaches a boundary in the active direction.
+- `finite_linear` requires finite `intended_next`, finite typed conversion, and `abs(tick_delta) <= max_abs_step`; violation disables with a structured reason.
+- Float32 representational no-ops retain the double intended accumulator. The first later representable absolute value commits once; float64 uses the same equation without narrowing.
+- At most one authoritative value commits per rendered frame.
+- Zero or nonfinite rate cannot enable motion.
+- Accumulator resets to current authority on enable and is discarded on any stop. Target/rate/quantum change, manual edit, state load, lane/authority change, and ownership transition stop first, so no old accumulator crosses a context boundary.
 
-### Load Semantics
+## Ownership And Arbitration
 
-Every state load performs this order:
+Parameter Motion is exclusive, not compositional, in v1.
 
-1. end/stop current motion and any scrub gesture;
-2. load authoritative fractal/view parameters;
-3. load or migrate Parameter Motion configuration;
-4. validate target and policy against the loaded lane;
-5. force `enabled=false`;
-6. issue one settled render for the loaded state.
+| Event / owner | Required behavior |
+|---|---|
+| Enable while sweep, runtime walk, or sidecar auto-demo is active | Deny enable with `exclusive_playback_active`. |
+| Start sweep, runtime walk, or sidecar auto-demo while motion is active | Stop/end Parameter Motion first, then start the requested owner. |
+| Auto-dive or auto-max iteration | Their camera/integer targets are excluded from the court; no shared target exists. |
+| Manual widget or automation edit of an eligible target | Stop/end motion first, then apply the edit through its normal authority. |
+| Reset All | Stop/end motion first, reset parameters and motion configuration, remain disabled. |
+| Fractal selector/default or preset application | Stop/end motion before applying defaults/preset; reevaluate target availability and never redirect silently. |
+| Manual sidecar decision/application | Treat as an exclusive writer: stop/end motion before it mutates state. |
+| Prev/Next Seed while motion is active | Stop/end motion, then apply one seed action through `explaino_combined_seed_v1`. |
+| Target/rate/quantum change | Stop/end motion before configuration update; remain disabled. |
+| Lane/root authority change | Stop/end motion; reevaluate target availability; never redirect target silently. |
+| State load | Stop/end immediately before parsing; load leaves disabled even if parsing fails. |
+| Capture Finding | Stop/end, wait for normal settled full-quality frame, capture current value/configuration as stopped. |
+| Application shutdown | Stop without further mutation or settle request. |
 
-Loading a Capture Finding therefore replaces the current scrub configuration, as the operator requested for v1, but never restarts the capture's motion. A future option to preserve the viewer's current motion setup across state load is explicitly deferred.
+No owner may silently pause and later reactivate Parameter Motion.
 
-### Legacy Migration
+## Render Pacing Contract
 
-- A legacy generic animation target maps to its canonical binding path and rate when resolvable.
-- A legacy seed auto-increment configuration maps to the scoped/current seed binding and rate only when no resolvable generic target is present.
-- If both legacy systems claim authority, generic target wins, motion loads disabled, and a structured `multiple_legacy_motion_authorities` warning is reported.
-- Unknown or inactive legacy targets are retained as unavailable configuration text where practical, never silently redirected.
-- Old state files remain loadable.
+This campaign adds no global state/frame generation authority and no second debounce clock.
+
+- Every committed scrub/continuous mutation returns one changed receipt to the normal frame-loop `interactionChanged` aggregator; that aggregator remains the sole caller of existing `NoteViewerInteraction`.
+- Configuration-only/no-op/rejected operations return unchanged receipts and do not notify pacing.
+- While commits continue, existing preview/adaptive pacing may engage.
+- When preview engaged and commits stop, existing debounce policy produces exactly one terminal full-quality transition in the deterministic fixture.
+- When the render stayed full quality and preview never engaged, no synthetic settle transition is required; proof instead shows full-quality mode remained continuous.
+- Fast/no-preview and slow/preview courts observe existing quality-mode/report state after the last mutation. They add no generation id or second debounce clock.
+
+## Public Focus/Input Automation Surface
+
+Before claiming the original arrow-key defect fixed, extend the persistent no-mouse harness with real input-path commands:
+
+- `focus_control(control_id)`;
+- `clear_focus()`;
+- `key_down(key, modifiers)`;
+- `key_up(key, modifiers)`;
+- bounded `key_press` convenience implemented as down/up events;
+- bounded pointer press/move/release against a reported control rectangle for the scrub surface only.
+
+Commands feed the viewer's ImGui input queue and normal frame loop. They must not call the motion service directly.
+
+Automation requests and observed widget receipts are separate. A command is acknowledged only after the normal ImGui frame observes the requested condition.
+
+Request receipt fields:
+
+- command sequence id, requested control id/event, enqueue frame, and timeout frame.
+
+Observed receipt fields:
+
+- acknowledging frame;
+- focused stable control id observed through `IsItemFocused`;
+- active stable control id observed through `IsItemActive`;
+- text-input ownership observed after entering the numeric text-edit subcontrol;
+- popup/menu ownership;
+- key down/repeat/up or pointer press/move/release observed by the owning widget;
+- scrub gesture state;
+- last motion mutation source/result.
+
+Numeric editors must expose stable automation identities for both the outer numeric widget and its text-edit subcontrol. Proof must enter the real text-edit mode, observe text ownership, inject arrows through the normal queue, and show caret/edit behavior without scrub dispatch. Synthetic click-to-button promotion or direct setter calls do not satisfy this rail.
+
+## State, Capture, And Replay V4
+
+Bump emitted `state_version` to `4`; loaders accept versions 1 through 4.
+
+Optional v4 object:
+
+```json
+{
+  "parameter_motion": {
+    "target_id": "fractal.params.explaino_seed",
+    "quantum_exponent": 0,
+    "rate_per_second": 0.25
+  }
+}
+```
+
+`boundary_policy` is descriptor-owned and is not serialized. Execution state is not replay authority; new output omits `enabled`.
+
+### Transactional load rule
+
+State loading stops motion and ends gestures before parsing. It parses and validates the complete document into staged fractal/view and motion objects. No authoritative fractal value or motion configuration is committed until the complete staged document is valid. Commit replaces both staged objects and is non-failing. On failure, prior fractal/view values and prior motion configuration remain, but execution remains disabled and transients are cleared.
+
+### Version and precedence table
+
+| Input | Motion configuration result | Warning/error |
+|---|---|---|
+| v4 valid `parameter_motion` | Replace target, quantum, and rate; remain disabled. | None. |
+| v4 object contains boolean `enabled` | Same as valid v4; ignore requested execution and remain disabled. | `motion_execution_state_ignored`. |
+| v4 missing `parameter_motion` | Reset to target `none`, default quantum `0`, default rate `0.001`; disabled. | None. |
+| v4 malformed/unknown field/bad target type/nonfinite or out-of-contract value | Reject entire staged load; preserve prior values/configuration but stopped. | Exact JSON path error. |
+| v4 has new object plus legacy seed fields | New object wins. | `legacy_motion_fields_ignored`. |
+| v1-v3 has neither legacy seed field | Reset motion configuration to defaults; disabled. | None. |
+| v1-v3 has either/both legacy seed fields | Configure combined ExplainO seed target, quantum `0`, and legacy rate if present, otherwise `0.001`; disabled regardless of legacy bool. | `legacy_seed_motion_migrated`; if legacy bool was true also `motion_execution_state_ignored`. |
+| v1-v3 legacy bool is non-boolean or legacy rate is nonfinite, negative, or exceeds the seed target maximum | Reject entire staged load; preserve prior values/configuration but stopped. | Exact legacy JSON path error. |
+
+No generic animation target/rate migration exists because those fields were not persisted. Actual parameter values remain in existing authoritative state fields. Focus, drag, accumulator, timing, ownership, and pending settle data are never serialized. `fractal-state.json` may report `was_running_before_capture`; it is review-only.
+
+Capture Finding stops motion without changing the current parameter value. If preview had engaged, it waits for the normal settled full-quality frame; otherwise it captures the already-full-quality frame. Replay uses the captured parameter values and stopped configuration.
 
 ## Runtime Reports
 
-The no-mouse report exposes:
+Expose configuration and execution separately:
 
-- configuration target path and label;
-- target availability and exclusion reason;
-- numeric type and current authoritative value;
-- base step, step source, exponent, and effective quantum;
-- requested/effective boundary policy;
-- requested rate;
-- enabled state;
-- stopped reason;
-- gesture state;
-- last mutation source;
-- target state generation and last settled render generation;
-- legacy migration warning when present.
+- target id/label;
+- static inclusion classification;
+- dynamic availability and reason;
+- semantic owner, value domain, setter id, storage type;
+- current authoritative value;
+- base step, exponent, effective quantum;
+- bounds policy and safety limits;
+- configured rate and enabled state;
+- exclusive-owner denial/stopped reason;
+- gesture/focus ownership;
+- last mutation source/result;
+- legacy migration warning;
+- capture `was_running_before_capture` only on review surfaces.
 
-Reports distinguish configuration from execution. They must not claim motion is active merely because a target is selected.
+A selected target never implies active motion in reports.
 
 ## Implementation Slices
 
-### Slice 0 - Baseline And RED Matrix
+Each product slice requires its own checked-in `viewer_first` contract with exact mutation scope, native rails, runtime publish, published no-mouse proof, receipts, and rearward review. This planning contract never authorizes product mutation.
 
-- Freeze current behavior and public control IDs in reports.
-- Add regressions proving the three reported failures: global arrows mutate seed during numeric editing, target selection couples to activation, and target eligibility is a hard-coded list.
-- Inventory every current numeric schema/binding descriptor and classify inclusion/exclusion.
-- Record current state/capture migration examples.
+### Slice 0 - Baseline, RED Regressions, And Target Court
 
-Gate: failures are reproducible and the provider inventory has no unexplained numeric rows.
+- Freeze current seed/global-arrow/animation behavior and state v3 examples.
+- Add RED tests for arrow mutation during numeric editing, target-selection activation, and hard-coded target drift.
+- Generate the complete numeric descriptor inclusion/exclusion court.
+- Freeze conflicting-owner states and public automation limitations.
+- Create Slice 1 contract only after the court is reviewed.
 
-### Slice 1 - Numeric Capability Provider
+Gate: every numeric descriptor has an explained verdict; no product behavior changes.
 
-- Add typed descriptors and deterministic enumeration.
-- Add read/prepare/commit APIs with finite/type/boundary checks.
-- Add a generated audit comparing schema visibility, binding resolution, and eligibility.
-- No UI cutover or continuous motion yet.
+### Slice 1 - Motion Metadata And Typed Mutation Service
 
-Gate: all eligible targets can be read and prepared; every excluded numeric target has a stable reason.
+- Add schema parser/validation for opt-in motion metadata.
+- Add static/dynamic capability provider.
+- Add `direct_binding_f32_v1`, `direct_binding_f64_v1`, and `explaino_combined_seed_v1` services.
+- Add finite, bounds, ULP/no-op, safety-limit, and dynamic-invalidation tests.
+- No UI or frame-loop cutover.
 
-### Slice 2 - Pure Scrub Policy And Widget
+Gate: included targets mutate only through proven semantic setters; excluded targets fail with stable reasons.
 
-- Add deterministic quantum, modifier, boundary, key-repeat, and drag-step policy helpers.
-- Add the focus-owned scrub surface and explicit step commands behind an internal feature switch.
-- Prove ordinary text/numeric editing suppresses scrub.
-- Wire interaction begin/update/end without removing old animation yet.
+### Slice 2 - Real Focus/Input Harness And Scrub Surface
 
-Gate: direct UI action tests prove no mutation without scrub ownership and exactly one mutation per prepared step.
+- Add ImGui focus/key/pointer automation commands and report identity.
+- Add pure quantum/gesture policy.
+- Add focus-owned scrub surface and explicit step buttons behind an internal rollout switch.
+- Prove ordinary numeric edit, popup/menu, focus loss, repeat, and drag capture behavior through the public frame/input path.
 
-### Slice 3 - Unified Continuous Motion Engine
+Gate: the original arrow-key regression is provably impossible without direct helper bypass.
 
-- Add the one runtime motion engine and double accumulator.
-- Route motion through the typed provider and existing pacing lifecycle.
-- Prove target/rate/config changes are inert until explicitly enabled.
-- Prove lane changes and clamp exhaustion stop safely.
+### Slice 3 - Mutator Census, Legacy Cutover, And Locked Continuous Engine
 
-Gate: representative float32, float64, and integer targets animate deterministically with one mutation authority.
+- Generate a source/behavior census for every eligible-target writer: normal widgets, automation edits, Reset All, selector/default application, presets, Prev/Next Seed, state load, capture, sweep, runtime walk, sidecar decisions/auto-demo, and legacy frame-loop engines.
+- Add host-owned `ParameterMotionState` and the continuous engine behind a forced-disabled internal rollout lock.
+- Interlock every retained eligible-target writer so it stops motion before mutation.
+- Remove old seed/generic continuous frame-loop mutators and global arrow polling from the normal path before the new engine may enable.
+- Implement exact `dt`, absolute accumulator, stop, no-op, and exclusive-owner rules.
+- Return mutation receipts to existing pacing aggregation; test fast/no-preview and slow/preview fixtures.
 
-### Slice 4 - UI And Action Cutover
+Gate: source audit shows no competing continuous owner, every retained writer is interlocked, and only then may the internal engine enable in tests.
 
-- Replace old Auto-Increment Seed / Animate Parameter controls with Parameter Motion.
-- Remove the hard-coded target option list.
-- Migrate scoped seed actions to common step authority.
-- Remove global arrow polling and parallel per-frame animation calls.
-- Keep one bounded kill switch only if required for rollout, with explicit report authority and removal milestone.
+### Slice 4 - UI And Public Authority Cutover
 
-Gate: source scan and runtime reports show no normal-path dual motion authority.
+- Replace Auto-Increment Seed / Animate Parameter UI with Parameter Motion.
+- Replace hard-coded target options with the canonical provider.
+- Route Prev/Next Seed through the semantic seed setter.
+- Rebase `fractal_parameter_surface_descriptor` animatable/motion reporting on the canonical provider; remove its old dropdown-derived authority.
+- Enable the new engine only through the public panel after the Slice 3 cutover gate.
+- Retain no fallback unless a separately reported, expiring rollout switch is justified by a concrete regression.
 
-### Slice 5 - State/Capture Migration
+Gate: UI, public parameter descriptor, source audit, and runtime report show one canonical target inventory and one normal motion authority.
 
-- Add the optional state object and legacy loader translation.
-- Update Capture Finding review sidecar.
-- Prove all loads stop motion and settle once.
-- Prove old states load cleanly and new states round-trip configuration without resuming.
+### Slice 5 - State V4, Capture, And Replay
 
-Gate: capture/replay pixels remain deterministic and configuration truth is honest.
+- Implement exact v4 and v1-3 migration rules.
+- Update state/capture/review reports.
+- Prove capture while running stops first and replay matches pixels.
+- Prove missing/malformed/new-plus-legacy precedence.
 
-### Slice 6 - Published Runtime Sweep And Hardening
+Gate: all loads are stopped and deterministic; no invented generic migration.
+
+### Slice 6 - Published Runtime Matrix And Hardening
 
 - Publish once.
-- Run data-driven no-mouse target sweeps across representative families and numeric types.
-- Exercise the actual focus/action command surface, not direct helper calls.
-- Hostile-review schema/provider drift, dead controls, action bypasses, pacing bypasses, and state restart hazards.
-- Remove temporary rollout switch if all gates are green; otherwise report explicit fallback authority and stop.
+- Sweep representative direct float32, direct float64, combined seed, dynamic-invalidation, and excluded-domain targets.
+- Exercise actual focus/key/pointer paths.
+- Re-run competing-owner, state, capture/replay, and pacing rails.
+- Hostile review for dead controls, hidden lists, setter bypass, Color leakage, and dual frame-loop owners.
 
-Gate: the old three defects are impossible through the public runtime paths, and all visible controls are consumed or intentionally unavailable.
+Gate: public runtime proves the three original defects closed and no new ownership ambiguity.
 
 ## Test Plan
 
 ### Native
 
-- Provider tests for deterministic inventory, supported numeric types, current-lane activation, stable exclusion reasons, and no Color Pipeline entries.
-- Prepare/commit tests for finite values, hard bounds, clamp/wrap/reflect, integer rounding, float precision, and stale-context rejection.
-- Pure scrub-policy tests for quantum derivation, modifiers, key repeat, drag residual, and boundary transitions.
-- UI tests proving focus ownership, text-edit suppression, configuration non-mutation, and stable control IDs.
-- Motion tests proving one engine, signed rates, accumulator behavior, lane invalidation, and interaction lifecycle.
-- State tests for new round-trip, legacy migrations, conflicting legacy authority, malformed config, and forced stopped load.
-- Source/registry audit proving no hand-maintained target dropdown and no direct global seed-arrow mutation path remain.
+- Canonical target registry validation, alias/presentation merge court, closed owners/domains/setters, metadata ownership, and Color exclusion.
+- Generated target and mutator courts with zero unexplained numeric descriptors or eligible-target writers.
+- Setter parity for direct float32/float64 and combined seed.
+- Dynamic visibility/root-authority invalidation on every prepare.
+- Hard clamp, finite-linear cross-field limits, scrub quantum, rate-only continuous equations, ULP no-op, valid/invalid/stalled `dt`, absolute accumulator/reset, and nonfinite handling.
+- Arbitration tests for manual/automation edit, Reset All, selector/default/preset application, seed action, sidecar decisions, exclusive playbacks, state load, capture, lane/authority change, and shutdown.
+- State versions 1/2/3/4 across every row of the migration table, including transactional whole-document failure and stopped state.
+- Public parameter descriptor parity against the canonical provider.
+- Source audit proving no global arrow scrub, hard-coded target list, uninterlocked writer, or parallel frame-loop mutator remains after cutover.
 
 ### Runtime / No Mouse
 
-- Launch the published viewer and use persistent in-process commands.
-- Focus the scrub surface, issue left/right actions, and prove exactly the selected target changes.
-- Focus an ordinary numeric text editor, issue left/right keys, and prove no motion target changes.
-- Change target, quantum, rate, and policy; prove frame and target value remain unchanged.
-- Enable motion; prove values and frames advance and adaptive preview engages when timing requires it.
-- Disable/end; prove one settled full-quality render.
-- Change fractal lane while active; prove motion stops before mutation of an inactive binding.
-- Exercise at least seed double authority, a float formula parameter, an integer iteration parameter if classified eligible, and one root-field scoped control.
-- Capture Finding, reload, and prove configuration reloads stopped with matching replay pixels.
-- Prove Color Pipeline controls are absent from the target catalog.
+- Focus scrub surface and inject real key down/repeat/up; selected target changes.
+- Focus ordinary numeric editor and inject arrows; caret/edit behavior occurs and no motion target changes.
+- Open popup/menu and prove scrub suppression.
+- Change target, exponent, and rate; prove target/frame/dirty/interacted state unchanged.
+- Enable/disable continuous motion in fast/no-preview and slow/preview fixtures; require a terminal transition only when preview actually engaged.
+- Activate each exclusive playback and prove deterministic stop/denial.
+- Change dynamic root authority and prove target invalidates before mutation.
+- Capture while running, reload, and prove stopped configuration plus pixel replay parity.
+- Prove every Color-domain and operational target is absent with stable exclusion reason.
 
 ### Performance
 
-- The provider inventory is rebuilt only when schema/lane authority changes, not every frame.
-- Motion commits at most one value per frame.
-- Compare idle and enabled-motion frame timing against the pre-slice baseline.
-- No performance claim without median/tail evidence; timing noise does not relax correctness.
+- Static inventory builds only on schema reload.
+- Dynamic availability checks are bounded and occur on list render/prepare.
+- At most one motion commit per frame.
+- Record idle-panel and active-motion median/tail timing; no improvement claim is required.
 
 ## Risks And Stop Rules
 
-1. Binding drift: stop if schema and runtime binding cannot share stable parameter identity.
-2. Dual authority: stop if old and new frame-loop mutators coexist on the normal path.
-3. Hidden mutation: stop if any configuration operation changes a target or dirty generation.
-4. Focus ambiguity: stop if the harness cannot prove ordinary numeric editing owns arrows exclusively.
-5. Type narrowing: stop if float64/double targets are forced through float-only bindings.
-6. Boundary ambiguity: fail closed rather than infer unsafe unbounded motion.
-7. Pacing bypass: stop if motion changes frames without the normal interaction lifecycle.
-8. State surprise: stop if load can reactivate motion or preserve stale gesture state.
-9. Scope creep: defer Color Pipeline and external IPC rather than weakening v1.
+1. Stop if schema metadata and binding authority cannot share stable target identity.
+2. Stop if an included target lacks an exact semantic setter/value domain.
+3. Stop if public input automation cannot prove real ImGui focus ownership.
+4. Stop if another automatic owner can write the same target concurrently.
+5. Stop if state load or capture can reactivate motion.
+6. Stop if Color, camera, integer, operational, or transformed targets leak into v1.
+7. Stop rather than add wrap/reflect, generic source patching, or global generations incidentally.
 
 ## Deferred Follow-Ups
 
-- Programmable Color Pipeline animation through a future Salticid/graph surface.
-- Multiple tracks, timelines, keyframes, modulation graphs, and recipe-local animation.
-- Per-digit strip UI, exact rational/base editing, nonlinear scrub profiles, and source patching.
-- External runtime-state named-pipe API; see `parameter_motion_external_runtime_interface_DEFERRED.md`.
+- Color Pipeline/Salticid programmable animation.
+- Camera/transformed and integer motion setter classes.
+- Wrap, reflect, and richer boundary policies.
+- Multiple tracks, timelines, keyframes, modulation, and recording.
+- Per-digit strip, arbitrary bases, exact rational editing, and source patching.
+- External runtime-state named-pipe API: `docs/notes/parameter_motion_external_runtime_interface_DEFERRED.md`.
 - Preserve-current-motion-configuration option during state load.
-- Operational-control motion classes and explicit unbounded policies.
 
 ## Proof Ledger
 
-- [x] Existing seed scrub, seed dynamics, generic animation, schema, state, and report seams inspected.
-- [x] Digit-scrub POC concepts reviewed and bounded for viewer use.
-- [x] State/capture semantics locked at planning level.
-- [x] Color Pipeline and external runtime API boundaries recorded.
-- [x] Fresh blind hostile subagent review recorded.
-- [ ] Findings discussed with the operator and plan revised or accepted.
-- [x] Contract validation passed.
-- [x] Phased-plan sync passed.
-- [x] Hostile-audit validation passed.
-- [x] Code-quality baseline passed.
-- [x] Diff check passed.
+- [x] Current motion and competing-owner seams inspected.
+- [x] First blind hostile review recorded.
+- [x] Narrowed v1 decisions incorporated.
+- [x] Repository-local digit-scrub POC reference snapshot and decision map prepared for the planning checkpoint.
+- [x] Second fresh blind hostile review recorded.
+- [x] Unambiguous findings repaired and clean re-read complete.
+- [x] Contract validation passed after final review.
+- [x] Plan sync passed after final review.
+- [x] Hostile-audit validation passed after final review.
+- [x] Code-quality baseline and diff check passed.
 
 ## Hostile Audit
 
 - Status: complete
 
-The blind planning audit is complete. Its verdict rejected implementation readiness, and its findings await operator reconciliation; product implementation remains paused.
+Review questions:
 
-The reviewer must assume this plan recreates the old authority bug until disproven. It must inspect:
-
-- whether eligibility is actually data-driven or merely another list;
-- whether focus ownership can be proved through public UI events;
-- whether a selected target can still imply activation;
-- whether float64, integer, scoped root, and legacy seed paths remain truthful;
-- whether state load can accidentally reactivate execution;
-- whether pacing receives exact lifecycle events;
-- whether old action controls bypass the provider;
-- whether Color Pipeline or operational controls leak into v1;
-- whether compatibility creates permanent dual authority;
-- whether the planned test matrix tests public paths rather than helpers.
+- Is the opt-in metadata owner explicit and non-duplicative?
+- Can every included value be mutated through an authoritative semantic setter without narrowing or mirror drift?
+- Does the arbitration matrix cover every competing owner?
+- Can public no-mouse events prove actual ImGui focus/key ownership?
+- Are clamp, finite-linear, accumulator, and stalled-frame rules exact?
+- Are pacing claims limited to existing authority?
+- Are state v4 and legacy precedence exact and stopped?
+- Are all Color/camera/integer/operational domains excluded?
+- Can another implementation path recreate dual authority?
 
 ## Audit Passes
 
-- [x] Blind pass 1 by a fresh subagent found one contract-state observation, eight implementation-blocking authority/specification gaps, and two bounded documentation ambiguities.
-- [x] Evidence-fidelity pass confirmed the planning-only contract is an intentional gate and the reviewer's dirty-checkout rearward result is not evidence that clean base HEAD was unproven.
-- [x] Clean re-read after review-record corrections confirmed the substantive P1/P2 findings are recorded, no silent design amendment was made, and product mutation remains paused.
+- [x] First blind review rejected the broad draft and identified setter, arbitration, input-harness, bounds, pacing, state, Color, and provenance gaps.
+- [x] Reconciliation pass narrowed v1 and repaired each first-review category in planning.
+- [x] Second fresh blind review found semantic-target, cutover, timing, pacing, state, input-proof, descriptor, contract, and provenance gaps.
+- [x] Final clean re-read confirmed the repaired state; no additional real defect found.
 
 ## Audit Findings
 
-- [x] Finding set recorded in `docs/notes/parameter_motion_scrub_unification_BLIND_HOSTILE_REVIEW.md` without silent plan revision.
-- [x] Review precision finding: the P0 planning-contract observation is an expected implementation gate, not a reason to turn this documentation contract into a product contract.
-- [x] Review precision finding: the cited `blocked_unproven` artifact was generated against the dirty in-progress planning checkout; clean base HEAD 6958f02 had passed rearward review at session start.
-- [ ] Reconcile capability metadata ownership and authoritative setter/value-domain classes.
-- [ ] Reconcile competing automatic mutators, dynamic availability, and actual ImGui focus/key automation.
-- [ ] Reconcile exact boundary/accumulator/pacing/state-version semantics.
-- [ ] Clarify the Color-domain exclusion and check in digit-scrub POC provenance/decision mapping.
+- [x] First-review findings are preserved in `docs/notes/parameter_motion_scrub_unification_BLIND_HOSTILE_REVIEW.md`.
+- [x] First-review reconciliation decisions are encoded in this revision and the repository-local POC snapshot.
+- [x] Second-review findings are recorded and reconciled through canonical targets, complete writer cutover, rate-only exact math, central pacing receipts, transactional state rules, observed ImGui receipts, descriptor migration, and provenance repair.
+- [x] Workflow finding: an intermediate scripted contract edit emitted malformed newline text; the contract was restored immediately, re-locked through `viewer_host_revise_contract.py`, and final JSON/schema/diff validation is green.
+- [x] Final clean re-read of the repaired state and reconciliation review found no additional real issue.
 
-## Planning Slice Closeout
+## Planning Closeout
 
-This planning slice ends after the blind review is recorded, validation passes, the artifacts are checkpointed and pushed, and the operator has a concrete findings summary for discussion.
+This planning campaign closes only after the second fresh review is recorded, unambiguous findings are repaired, validators pass, and the branch is checkpointed/pushed/rearward-`ok`.
 
-Product implementation is not authorized by this draft. Preplanned implementation slices exist above, but their execution is paused until the blind findings are reconciled and the implementation contract is explicitly accepted or revised.
+Product implementation remains unauthorized. Slice 0 is the next preplanned product slice, but it requires a new accepted `viewer_first` contract after this planning closeout.

@@ -5,11 +5,11 @@
   "workflow_type": "workflow_only",
   "plan_path": "docs/notes/parameter_motion_scrub_unification_PHASED_PLAN.md",
   "allowed_mutation_scope": [
+    "docs/reference/digit_scrub_poc_snapshot",
     "docs/contracts/parameter_motion_scrub_unification.contract.json",
     "docs/notes/parameter_motion_scrub_unification_PHASED_PLAN.md",
     "docs/notes/parameter_motion_external_runtime_interface_DEFERRED.md",
     "docs/notes/parameter_motion_scrub_unification_BLIND_HOSTILE_REVIEW.md",
-    "docs/contracts/color_pipeline_composite_function_v1.contract.json",
     "DEFERRED_THREADS.md",
     "KNOWN_ISSUES.md",
     "spec_intake/_STATUS.md",
@@ -18,14 +18,18 @@
     "artifacts"
   ],
   "required_operator_inputs": [
-    "clean rearward-reviewed master head 6958f02",
+    "clean rearward-reviewed planning base 6958f02, review head f0307da, and the planning reconciliation working tree that this slice will checkpoint",
     "reported global arrow-key seed scrub focus bug",
     "reported target-selection and activation coupling",
     "existing ExplainO seed and generic parameter animation authorities",
     "normal schema and binding surfaces",
-    "digit-scrub POC behavioral reference",
+    "repository-local digit-scrub POC snapshot and decision map at docs/reference/digit_scrub_poc_snapshot",
     "operator decision to exclude Color Pipeline from v1",
-    "operator decision that state load replaces motion configuration but never resumes motion"
+    "operator decision that state load replaces motion configuration but never restarts motion",
+    "operator decision to prefer a narrower explicit v1 over inferred all-numeric support",
+    "operator decision that canonical semantic targets may have multiple UI presentations without becoming duplicate targets",
+    "operator decision that v1 continuous motion is rate-based while quantum applies only to scrub and explicit steps",
+    "operator decision that malformed state load is transactional, preserves prior values/configuration, and still leaves motion stopped"
   ],
   "forbidden_operator_prompts": [
     "implement product code in this planning slice",
@@ -35,31 +39,57 @@
     "retain global arrow polling as a normal path",
     "keep parallel seed and generic frame-loop animation authorities",
     "use a new hand-maintained target option list",
-    "resume motion automatically after state load",
+    "restart motion automatically after state load",
     "use physical mouse automation",
-    "silently revise the plan in response to the blind review before operator discussion"
+    "silently choose a product-semantic answer when the second blind review identifies genuine operator ambiguity"
   ],
   "required_defaults": {
     "product_mutation_authorized": false,
-    "planning_review_state": "blind_review_required_before_implementation",
+    "planning_review_state": "accepted_planning_spec_slice0_viewer_first_contract_required",
     "motion_activation_authority": "explicit_enabled_toggle",
     "continuous_motion_authority": "one_provider_backed_runtime_engine",
     "scrub_keyboard_authority": "focused_scrub_surface_only",
-    "target_inventory_authority": "schema_binding_capability_provider",
+    "target_inventory_authority": "canonical_ui_schema_motion_target_registry_plus_presentation_refs_plus_live_binding_provider",
+    "configuration_owner": "host_parameter_motion_state",
+    "v1_setter_classes": [
+      "direct_binding_f32_v1",
+      "direct_binding_f64_v1",
+      "explaino_combined_seed_v1"
+    ],
+    "v1_boundary_policies": [
+      "hard_clamp",
+      "finite_linear"
+    ],
+    "competing_playback_policy": "exclusive_stop_or_deny",
+    "state_output_version": 4,
     "color_pipeline_animation_in_scope": false,
     "state_load_resumes_motion": false,
     "external_runtime_interface_in_scope": false,
-    "physical_mouse_automation": false
+    "physical_mouse_automation": false,
+    "semantic_target_presentation_policy": "one_canonical_target_may_have_multiple_ui_presentations",
+    "continuous_motion_math": "rate_only_absolute_double_accumulator",
+    "invalid_frame_time_policy": "skip_tick_reset_timing_anchor_keep_motion_enabled",
+    "pacing_notification_authority": "normal_frame_interaction_changed_aggregator",
+    "state_load_transaction": "stage_complete_document_then_nonfailing_commit_or_preserve_prior_config_stopped",
+    "boundary_policy_storage": "canonical_target_metadata_only_not_serialized",
+    "public_parameter_descriptor_authority": "canonical_motion_capability_provider"
   },
   "forbidden_defaults": {
     "target_selection_implies_activation": "forbidden",
     "global_arrow_seed_scrub": "forbidden",
-    "float_only_target_provider": "forbidden",
+    "implicit_all_numeric_target_inclusion": "forbidden",
+    "color_camera_integer_operational_targets": "forbidden_in_v1",
+    "wrap_or_reflect_boundary": "forbidden_in_v1",
+    "concurrent_automatic_mutation_owner": "forbidden",
     "hidden_dual_motion_authority": "forbidden",
     "color_pipeline_target_leak": "forbidden",
     "raw_kernel_params_wire_contract": "forbidden",
-    "automatic_motion_resume_on_load": "forbidden",
-    "physical_mouse_automation": "forbidden"
+    "automatic_motion_restart_on_load": "forbidden",
+    "physical_mouse_automation": "forbidden",
+    "duplicate_semantic_target_per_presentation": "forbidden",
+    "motion_service_direct_pacing_notification": "forbidden",
+    "partial_state_load_commit": "forbidden",
+    "requested_only_imgui_proof": "forbidden"
   },
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/parameter_motion_scrub_unification.contract.json --out-json artifacts/validation/parameter_motion_scrub_unification_contract.json",
@@ -100,6 +130,14 @@
       "artifact_path": "artifacts/validation/parameter_motion_diff_check.json",
       "json_path": "ok",
       "equals": true
+    },
+    {
+      "assertion_id": "parameter_motion_code_quality_no_critical",
+      "description": "The planning closeout code-quality audit reports no critical findings and passes its ratchet command.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/parameter_motion_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
     }
   ]
 }
