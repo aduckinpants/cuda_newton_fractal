@@ -14,7 +14,7 @@ The fresh blind hostile review is recorded without silent amendment. The current
 - [x] Replace the weak existing animation controls with one small coherent Parameter Motion panel instead of adding another overlapping system.
 - [x] Keep Color Pipeline row/function animation out of v1 and defer it toward a future programmable Salticid-oriented surface.
 - [x] Reuse the useful behavioral ideas from the digit-scrub POC without importing its browser widget, arbitrary-base model, or source-patching machinery.
-- [x] Define Capture Finding and state-load behavior now: configuration reloads, active motion never resumes automatically, and the loaded state settles once.
+- [x] Define Capture Finding and state-load behavior now: configuration reloads, active motion never restarts automatically, and the loaded state settles once.
 - [x] Preserve a future path to a versioned external runtime-state interface without implementing IPC in this campaign.
 - [x] Review this plan through a fresh blind hostile subagent and discuss findings before implementation.
 
@@ -78,7 +78,7 @@ The replacement is one provider-backed Parameter Motion system for eligible nume
 6. All mutations use the same typed provider and normal authoritative setter path.
 7. A visible Parameter Motion target is writable, active for the current lane, and honestly classified as scrubbable and/or motion-animatable.
 8. A target that becomes inactive or invalid stops motion before another mutation.
-9. State load never resumes motion automatically.
+9. State load never restarts motion automatically.
 10. Capture/replay parameter pixels remain authoritative; motion configuration is secondary control state.
 11. The existing interaction preview/debounce path receives begin/update/end lifecycle events and produces one settled full-quality frame.
 12. Color Pipeline remains outside the target catalog in v1.
@@ -260,7 +260,7 @@ Rules:
 
 - The target's actual numeric value remains in its existing authoritative state field.
 - Saved `enabled` is always `false` for replay authority.
-- `fractal-state.json` and reports may record `was_running_at_capture` as derived review context, never as resume authority.
+- `fractal-state.json` and reports may record `was_running_at_capture` as derived review context, never as restart authority.
 - Transient focus, key repeat, drag residual, timing accumulator, interaction generation, and pending settle state are not serialized.
 
 ### Load Semantics
@@ -274,7 +274,7 @@ Every state load performs this order:
 5. force `enabled=false`;
 6. issue one settled render for the loaded state.
 
-Loading a Capture Finding therefore replaces the current scrub configuration, as the operator requested for v1, but never resumes the capture's motion. A future option to preserve the viewer's current motion setup across state load is explicitly deferred.
+Loading a Capture Finding therefore replaces the current scrub configuration, as the operator requested for v1, but never restarts the capture's motion. A future option to preserve the viewer's current motion setup across state load is explicitly deferred.
 
 ### Legacy Migration
 
@@ -365,7 +365,7 @@ Gate: capture/replay pixels remain deterministic and configuration truth is hone
 - Publish once.
 - Run data-driven no-mouse target sweeps across representative families and numeric types.
 - Exercise the actual focus/action command surface, not direct helper calls.
-- Hostile-review schema/provider drift, dead controls, action bypasses, pacing bypasses, and state resume hazards.
+- Hostile-review schema/provider drift, dead controls, action bypasses, pacing bypasses, and state restart hazards.
 - Remove temporary rollout switch if all gates are green; otherwise report explicit fallback authority and stop.
 
 Gate: the old three defects are impossible through the public runtime paths, and all visible controls are consumed or intentionally unavailable.
@@ -411,7 +411,7 @@ Gate: the old three defects are impossible through the public runtime paths, and
 5. Type narrowing: stop if float64/double targets are forced through float-only bindings.
 6. Boundary ambiguity: fail closed rather than infer unsafe unbounded motion.
 7. Pacing bypass: stop if motion changes frames without the normal interaction lifecycle.
-8. State surprise: stop if load can resume motion or preserve stale gesture state.
+8. State surprise: stop if load can reactivate motion or preserve stale gesture state.
 9. Scope creep: defer Color Pipeline and external IPC rather than weakening v1.
 
 ## Deferred Follow-Ups
@@ -449,7 +449,7 @@ The reviewer must assume this plan recreates the old authority bug until disprov
 - whether focus ownership can be proved through public UI events;
 - whether a selected target can still imply activation;
 - whether float64, integer, scoped root, and legacy seed paths remain truthful;
-- whether state load can accidentally resume execution;
+- whether state load can accidentally reactivate execution;
 - whether pacing receives exact lifecycle events;
 - whether old action controls bypass the provider;
 - whether Color Pipeline or operational controls leak into v1;
@@ -477,8 +477,3 @@ The reviewer must assume this plan recreates the old authority bug until disprov
 This planning slice ends after the blind review is recorded, validation passes, the artifacts are checkpointed and pushed, and the operator has a concrete findings summary for discussion.
 
 Product implementation is not authorized by this draft. Preplanned implementation slices exist above, but their execution is paused until the blind findings are reconciled and the implementation contract is explicitly accepted or revised.
-
-
-
-
-
