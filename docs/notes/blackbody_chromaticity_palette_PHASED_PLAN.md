@@ -1,6 +1,6 @@
 # Black Body Chromaticity Palette Campaign
 
-Status: planning reconciliation on `codex/blackbody-chromaticity-palette` from clean merged base `3e6dc8d`. Parameter Motion remains paused. This umbrella plan sequences bounded child slices; the current contract is planning-only and authorizes no product mutation.
+Status: Slice A is closed and pushed at `9b9ec78`; Slice B runtime Palette plan/contract bootstrap is active. Parameter Motion remains paused. This umbrella plan sequences bounded child slices; each child contract controls its own product mutation.
 
 ## Explicit User Asks
 
@@ -13,8 +13,7 @@ Status: planning reconciliation on `codex/blackbody-chromaticity-palette` from c
 
 ## Current Phase
 
-Planning reconciliation. Parameter Motion is merged and pushed as paused documentation. A fresh blind review rejected the first campaign-spanning contract because it mixed uncheckpointed planning, reference, runtime, and closure work and left display, CUDA storage, non-default replay, compatibility, evidence, and performance authority ambiguous. Those findings are resolved below. The planning-only surface is checkpointed; next open Slice A under a fresh contract.
-
+Slice A closed the reproducible reference/LUT substrate at `9b9ec78` after its RED court required 1024 rather than 512 entries. Slice B runtime Palette plan/contract is now checked in for a separate viewer-first run. Slice C remains preplanned and unopened.
 ## Phase Checklist
 
 - [x] Merge and push accepted Parameter Motion planning without activating implementation.
@@ -23,7 +22,7 @@ Planning reconciliation. Parameter Motion is merged and pushed as paused documen
 - [x] Run a fresh blind hostile review.
 - [x] Reconcile its findings into bounded child slices.
 - [x] Validate and checkpoint this planning-only contract.
-- [ ] Slice A - reference data, deterministic generator, LUT, and independent numerical court.
+- [x] Slice A - reference data, deterministic generator, LUT, and independent numerical court.
 - [ ] Slice B - append-only runtime Palette, CUDA parity, state/capture, and non-default published replay.
 - [ ] Slice C - graph recipe, visual/occupancy evidence, interleaved performance, preservation, hardening, and closure.
 - [ ] Stop for replan before additional palettes, color management, graph UI, SDF growth, or Parameter Motion implementation.
@@ -239,8 +238,8 @@ Acceptance:
 | Campaign branch | complete | `codex/blackbody-chromaticity-palette` |
 | Initial contract | rejected | blind review found workflow and authority gaps |
 | Reconciled umbrella plan | complete | checkpoint 8ca6482; bounded Slice A/B/C contracts defined |
-| Slice A | pending | child plan/contract not opened |
-| Slice B | pending | child plan/contract not opened |
+| Slice A | complete | `9b9ec78`, validation/contract receipts, rearward `ok`, pushed |
+| Slice B | ready | child plan/contract bootstrapped; implementation not started |
 | Slice C | pending | child plan/contract not opened |
 
 ## Action Hostile Review

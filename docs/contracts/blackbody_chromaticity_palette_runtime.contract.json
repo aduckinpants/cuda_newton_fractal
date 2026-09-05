@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "contract_id": "blackbody_chromaticity_palette_runtime",
+  "feature_id": "blackbody_chromaticity_palette_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/blackbody_chromaticity_palette_runtime_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/reference/blackbody_chromaticity",
+    "docs/ui_salt",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "tests",
+    "tools",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean pushed Slice A head 9b9ec78e00944a5e2f227069a3ae6d35bf89b912",
+    "generated 1024-entry reciprocal-temperature LUT and metadata",
+    "current typed UI-Salt Color Pipeline authority",
+    "current CPU CUDA direct and SDF postprocess palette evaluator paths",
+    "public no-mouse Color Pipeline set capture and replay path"
+  ],
+  "forbidden_operator_prompts": [
+    "add Black Body Thermal Ridges recipe",
+    "add a new Shape Source Grading function or adapter",
+    "change display transfer or claim displayed CIE fidelity",
+    "run spectral integration per pixel",
+    "persist derived LUT cache coordinates",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "accepted_base_head": "9b9ec78e00944a5e2f227069a3ae6d35bf89b912",
+    "active_slice": "runtime_palette",
+    "palette_id": "blackbody_palette_v1",
+    "palette_enum_value": 9,
+    "input_type": "scalar.unit",
+    "output_type": "color.linear_rgb",
+    "temperature_0_k": 1600,
+    "temperature_1_k": 12000,
+    "temperature_mapping": "reciprocal_temperature",
+    "lut_entry_count": 1024,
+    "cuda_parity_max_channel_error": 0.000002,
+    "non_default_replay_temperature_0_k": 2400,
+    "non_default_replay_temperature_1_k": 18000,
+    "non_default_replay_mapping": "linear_kelvin",
+    "runtime_publish_required": true,
+    "published_runtime_proof_required": true,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "recipe_mutation": "forbidden",
+    "implicit_adapter": "forbidden",
+    "runtime_spectral_integration": "forbidden",
+    "display_encoded_srgb": "forbidden",
+    "persisted_derived_cache": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/blackbody_chromaticity_palette_runtime.contract.json --out-json artifacts/validation/blackbody_runtime_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_runtime_plan_sync --log artifacts/logs/blackbody_runtime_plan_sync.log --out-json artifacts/validation/blackbody_runtime_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/blackbody_chromaticity_palette_runtime_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/blackbody_runtime_code_quality.json",
+    "py -3.14 -m pytest tests/test_ui_salt_materializer.py -q --junitxml artifacts/pytest/blackbody_runtime_materializer.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_runtime_native --log artifacts/logs/blackbody_runtime_native.log --out-json artifacts/validation/blackbody_runtime_native.json --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_runtime_publish --log artifacts/logs/blackbody_runtime_publish.log --out-json artifacts/validation/blackbody_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_blackbody_palette.py -q --junitxml artifacts/pytest/blackbody_runtime_published.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/blackbody_chromaticity_palette_runtime_PHASED_PLAN.md --out-json artifacts/validation/blackbody_runtime_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_runtime_diff_check --log artifacts/logs/blackbody_runtime_diff_check.log --out-json artifacts/validation/blackbody_runtime_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "Slice B contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_runtime_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "materializer_ok",
+      "description": "Typed metadata and route court materialize and reject invalid routes.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/blackbody_runtime_materializer.junit.xml",
+      "test_nodeid": "tests/test_ui_salt_materializer.py::test_blackbody_palette_v1_materializes_typed_runtime_contract"
+    },
+    {
+      "assertion_id": "native_ok",
+      "description": "Full native court including the dedicated NVCC sampling kernel passes.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_runtime_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_publish_ok",
+      "description": "Published viewer contains the Black Body Palette.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_runtime_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "published_non_default_replay_ok",
+      "description": "Public no-mouse controls and non-default capture replay are deterministic.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/blackbody_runtime_published.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_blackbody_palette.py::test_blackbody_palette_non_default_capture_replay_no_mouse"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Slice B hostile audit closes after repair and clean re-read.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_runtime_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "diff_check_ok",
+      "description": "Slice B diff is structurally clean.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_runtime_diff_check.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
