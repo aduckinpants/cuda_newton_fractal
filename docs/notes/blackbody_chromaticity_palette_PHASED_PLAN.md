@@ -13,7 +13,7 @@ Status: planning reconciliation on `codex/blackbody-chromaticity-palette` from c
 
 ## Current Phase
 
-Planning reconciliation. Parameter Motion is merged and pushed as paused documentation. A fresh blind review rejected the first campaign-spanning contract because it mixed uncheckpointed planning, reference, runtime, and closure work and left display, CUDA storage, non-default replay, compatibility, evidence, and performance authority ambiguous. Those findings are resolved below. Next: checkpoint this planning-only surface, then open Slice A under a fresh contract.
+Planning reconciliation. Parameter Motion is merged and pushed as paused documentation. A fresh blind review rejected the first campaign-spanning contract because it mixed uncheckpointed planning, reference, runtime, and closure work and left display, CUDA storage, non-default replay, compatibility, evidence, and performance authority ambiguous. Those findings are resolved below. The planning-only surface is checkpointed; next open Slice A under a fresh contract.
 
 ## Phase Checklist
 
@@ -22,7 +22,7 @@ Planning reconciliation. Parameter Motion is merged and pushed as paused documen
 - [x] Record approved reference, runtime, recipe, and proof semantics.
 - [x] Run a fresh blind hostile review.
 - [x] Reconcile its findings into bounded child slices.
-- [ ] Validate and checkpoint this planning-only contract.
+- [x] Validate and checkpoint this planning-only contract.
 - [ ] Slice A - reference data, deterministic generator, LUT, and independent numerical court.
 - [ ] Slice B - append-only runtime Palette, CUDA parity, state/capture, and non-default published replay.
 - [ ] Slice C - graph recipe, visual/occupancy evidence, interleaved performance, preservation, hardening, and closure.
@@ -238,7 +238,7 @@ Acceptance:
 | Parameter Motion merge | complete | `master` and `origin/master` at paused planning head `3e6dc8d` |
 | Campaign branch | complete | `codex/blackbody-chromaticity-palette` |
 | Initial contract | rejected | blind review found workflow and authority gaps |
-| Reconciled umbrella plan | complete | bounded Slice A/B/C contracts defined |
+| Reconciled umbrella plan | complete | checkpoint 8ca6482; bounded Slice A/B/C contracts defined |
 | Slice A | pending | child plan/contract not opened |
 | Slice B | pending | child plan/contract not opened |
 | Slice C | pending | child plan/contract not opened |
@@ -275,6 +275,7 @@ Acceptance:
 - [x] Timing lacked inputs/noise rules; both are fixed.
 - [x] Scope was broad; this contract is narrow and child contracts must enumerate files.
 - [x] LUT proof was self-referential; independent xy witnesses are mandatory.
+- [x] The initial two-file bootstrap used raw apply_patch before the new contract existed; all subsequent revisions used the guarded patch wrapper, and each child contract must be created and locked before its product mutations.
 
 ## Stop Point
 
