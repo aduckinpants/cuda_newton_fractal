@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "contract_id": "blackbody_chromaticity_palette_planning",
+  "feature_id": "blackbody_chromaticity_palette_campaign",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/blackbody_chromaticity_palette_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/blackbody_chromaticity_palette.contract.json",
+    "docs/notes/blackbody_chromaticity_palette_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "approved Black Body palette and recipe direction",
+    "clean merged base 3e6dc8d with Parameter Motion explicitly paused",
+    "accepted two-round external feedback",
+    "fresh blind hostile review of the initial campaign-spanning contract",
+    "operator request for one autonomous goal with repo-mandated bounded slice checkpoints"
+  ],
+  "forbidden_operator_prompts": [
+    "mutate product, generator, runtime, metadata, state, recipe, or tests under this planning-only contract",
+    "claim physical temperature or displayed chromaticity fidelity",
+    "activate Parameter Motion implementation",
+    "collapse the reference, runtime, and qualification work into one uncheckpointed slice",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "accepted_base_head": "3e6dc8d29bae519e7655c157938d952f8f6c55ca",
+    "active_slice": "planning_reconciliation",
+    "product_mutation_authorized": false,
+    "child_slice_count": 3,
+    "next_slice": "reference_and_lut",
+    "palette_id": "blackbody_palette_v1",
+    "palette_enum_value": 9,
+    "recipe_id": "blackbody_thermal_ridges",
+    "state_json_replay_authority": true,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "product_mutation": "forbidden",
+    "campaign_spanning_uncheckpointed_contract": "forbidden",
+    "display_colorimetry_claim": "forbidden",
+    "parameter_motion_activation": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/blackbody_chromaticity_palette.contract.json --out-json artifacts/validation/blackbody_chromaticity_palette_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_plan_sync --log artifacts/logs/blackbody_plan_sync.log --out-json artifacts/validation/blackbody_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/blackbody_chromaticity_palette_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/blackbody_chromaticity_palette_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/blackbody_chromaticity_palette_PHASED_PLAN.md --out-json artifacts/validation/blackbody_chromaticity_palette_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_diff_check --log artifacts/logs/blackbody_diff_check.log --out-json artifacts/validation/blackbody_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "Planning reconciliation contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_chromaticity_palette_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "plan_sync_ok",
+      "description": "Umbrella campaign phase and audit status are synchronized.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "Planning-only checkpoint does not violate the code-quality baseline.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_chromaticity_palette_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Blind-review findings are reconciled into explicit bounded child contracts.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_chromaticity_palette_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "diff_check_ok",
+      "description": "Planning-only diff is structurally clean.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_diff_check.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
