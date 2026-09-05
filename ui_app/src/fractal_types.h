@@ -83,6 +83,7 @@ enum class ColorPalette : int {
     diverging_signed_palette_v1 = 6,
     inside_outside_two_tone_v1 = 7,
     gradient_three_stop_v1 = 8,
+    blackbody_palette_v1 = 9,
 };
 
 enum class ColorGradingPreset : int {
@@ -191,6 +192,11 @@ enum class ColorPaletteBlendMode : int {
     normal = 0,
 };
 
+enum class BlackbodyTemperatureMapping : int {
+    reciprocal_temperature = 0,
+    linear_kelvin = 1,
+};
+
 struct ColorPipelinePaletteRuntimeParams {
     float cycle_scale{1.0f};
     float saturation{1.0f};
@@ -226,6 +232,12 @@ struct ColorPipelinePaletteRuntimeParams {
     float high_g{0.64f};
     float high_b{0.08f};
     float midpoint{0.5f};
+    float blackbody_temperature_0_k{1600.0f};
+    float blackbody_temperature_1_k{12000.0f};
+    BlackbodyTemperatureMapping blackbody_temperature_mapping{BlackbodyTemperatureMapping::reciprocal_temperature};
+    float blackbody_lut_x0{521.9387755102041f};
+    float blackbody_lut_x1{974.2857142857143f};
+    float blackbody_lut_dx{452.34693877551024f};
     float blend_weight{1.0f};
     ColorPaletteBlendMode blend_mode{ColorPaletteBlendMode::normal};
 };

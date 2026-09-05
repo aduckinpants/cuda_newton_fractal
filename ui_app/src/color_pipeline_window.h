@@ -1,5 +1,6 @@
 #pragma once
 
+#include "blackbody_palette_lut.h"
 #include "color_pipeline_core.h"
 #include "color_pipeline_recipe_capabilities.h"
 #include "enum_id_utils.h"
@@ -2090,6 +2091,11 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
         return path == "palette.cycle_scale" || path == "palette.saturation" ||
             path == "palette.blend_weight" || path == "palette.blend_mode";
     }
+    if (functionId == "blackbody_palette_v1") {
+        return path == "palette.temperature_0_k" || path == "palette.temperature_1_k" ||
+            path == "palette.temperature_mapping" || path == "palette.blend_weight" ||
+            path == "palette.blend_mode";
+    }
     if (functionId == "contrast_lift") {
         return path == "grade.exposure" || path == "grade.saturation";
     }
@@ -2612,7 +2618,8 @@ inline bool IsSupportedColorPipelinePaletteStackFunctionId(const std::string& fu
         functionId == "explaino_cmap" ||
         functionId == "diverging_signed_palette_v1" ||
         functionId == "inside_outside_two_tone_v1" ||
-        functionId == "gradient_three_stop_v1";
+        functionId == "gradient_three_stop_v1" ||
+        functionId == "blackbody_palette_v1";
 }
 
 inline bool ColorPipelinePaletteRuntimeParamsEqual(
@@ -2635,6 +2642,9 @@ inline bool ColorPipelinePaletteRuntimeParamsEqual(
         left.mid_r == right.mid_r && left.mid_g == right.mid_g && left.mid_b == right.mid_b &&
         left.high_r == right.high_r && left.high_g == right.high_g && left.high_b == right.high_b &&
         left.midpoint == right.midpoint &&
+        left.blackbody_temperature_0_k == right.blackbody_temperature_0_k &&
+        left.blackbody_temperature_1_k == right.blackbody_temperature_1_k &&
+        left.blackbody_temperature_mapping == right.blackbody_temperature_mapping &&
         left.blend_weight == right.blend_weight &&
         left.blend_mode == right.blend_mode;
 }
@@ -3010,6 +3020,22 @@ inline bool TryBuildColorPipelinePaletteStackEntryFromRow(
         entry.params.mid_r=static_cast<float>(mr); entry.params.mid_g=static_cast<float>(mg); entry.params.mid_b=static_cast<float>(mb);
         entry.params.high_r=static_cast<float>(hr); entry.params.high_g=static_cast<float>(hg); entry.params.high_b=static_cast<float>(hb);
         entry.params.midpoint=static_cast<float>(midpoint);
+    } else if (row.function_id == "blackbody_palette_v1") {
+        double temperature0 = 0.0;
+        double temperature1 = 0.0;
+        std::string mappingId;
+        if (!TryGetColorPipelineParamNumber(row, "palette.temperature_0_k", &temperature0, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.temperature_1_k", &temperature1, outError) ||
+            !TryGetColorPipelineParamEnum(row, "palette.temperature_mapping", &mappingId, outError) ||
+            !ValidateColorPipelineParamRange("palette.temperature_0_k", temperature0, 800.0, 40000.0, outError) ||
+            !ValidateColorPipelineParamRange("palette.temperature_1_k", temperature1, 800.0, 40000.0, outError) ||
+            !TryParseBlackbodyTemperatureMappingId(mappingId, &entry.params.blackbody_temperature_mapping)) {
+            if (outError && outError->empty()) *outError = "Unknown Black Body temperature mapping";
+            return false;
+        }
+        entry.params.blackbody_temperature_0_k = static_cast<float>(temperature0);
+        entry.params.blackbody_temperature_1_k = static_cast<float>(temperature1);
+        RebuildBlackbodyPaletteRuntimeCache(&entry.params);
     }
 
     *outEntry = entry;
@@ -3061,6 +3087,13 @@ inline bool ImportSupportedColorPipelineParamsFromPaletteStackEntry(
     if (ioRow->function_id == "inside_outside_two_tone_v1") {
         return SetColorPipelineParamNumber(ioRow, "palette.outside_r", paletteEntry.params.outside_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.outside_g", paletteEntry.params.outside_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.outside_b", paletteEntry.params.outside_b, outError) &&
             SetColorPipelineParamNumber(ioRow, "palette.inside_r", paletteEntry.params.inside_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.inside_g", paletteEntry.params.inside_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.inside_b", paletteEntry.params.inside_b, outError);
+    }
+    if (ioRow->function_id == "blackbody_palette_v1") {
+        const char* mappingId = BlackbodyTemperatureMappingId(paletteEntry.params.blackbody_temperature_mapping);
+        return mappingId &&
+            SetColorPipelineParamNumber(ioRow, "palette.temperature_0_k", paletteEntry.params.blackbody_temperature_0_k, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.temperature_1_k", paletteEntry.params.blackbody_temperature_1_k, outError) &&
+            SetColorPipelineParamEnum(ioRow, "palette.temperature_mapping", mappingId, outError);
     }
     if (ioRow->function_id == "gradient_three_stop_v1") {
         return SetColorPipelineParamNumber(ioRow, "palette.low_r", paletteEntry.params.low_r, outError) && SetColorPipelineParamNumber(ioRow, "palette.low_g", paletteEntry.params.low_g, outError) && SetColorPipelineParamNumber(ioRow, "palette.low_b", paletteEntry.params.low_b, outError) &&

@@ -65,7 +65,7 @@
     "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_runtime_plan_sync --log artifacts/logs/blackbody_runtime_plan_sync.log --out-json artifacts/validation/blackbody_runtime_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/blackbody_chromaticity_palette_runtime_PHASED_PLAN.md",
     "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/blackbody_runtime_code_quality.json",
     "py -3.14 -m pytest tests/test_ui_salt_materializer.py -q --junitxml artifacts/pytest/blackbody_runtime_materializer.junit.xml",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_runtime_native --log artifacts/logs/blackbody_runtime_native.log --out-json artifacts/validation/blackbody_runtime_native.json --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_runtime_native_retry --log artifacts/logs/blackbody_runtime_native_retry.log --out-json artifacts/validation/blackbody_runtime_native_retry.json --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app/build_tests_vsdevcmd.cmd",
     "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_runtime_publish --log artifacts/logs/blackbody_runtime_publish.log --out-json artifacts/validation/blackbody_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
     "py -3.14 -m pytest tests/test_fractal_runtime_blackbody_palette.py -q --junitxml artifacts/pytest/blackbody_runtime_published.junit.xml",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/blackbody_chromaticity_palette_runtime_PHASED_PLAN.md --out-json artifacts/validation/blackbody_runtime_hostile_audit.json",
@@ -91,7 +91,7 @@
       "assertion_id": "native_ok",
       "description": "Full native court including the dedicated NVCC sampling kernel passes.",
       "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/blackbody_runtime_native.json",
+      "artifact_path": "artifacts/validation/blackbody_runtime_native_retry.json",
       "json_path": "exit_code",
       "equals": 0
     },

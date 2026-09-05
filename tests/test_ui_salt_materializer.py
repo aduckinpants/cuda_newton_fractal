@@ -906,7 +906,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     ]
     assert len(lanes["source"]["functions"]) == 15
     assert len(lanes["shape"]["functions"]) == 15
-    assert len(lanes["palette"]["functions"]) == 9
+    assert len(lanes["palette"]["functions"]) == 10
     assert len(lanes["grading"]["functions"]) == 10
     signal_kinds = {fn["id"]: fn.get("signal_kind") for fn in lanes["source"]["functions"]}
     assert signal_kinds["root_phase"] == "phase"
@@ -990,11 +990,11 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
     assert all(item["sample_step_param"] == "signal.sdf_sample_step" for item in sdf_capabilities)
     assert all(item["field_downsample_param"] == "signal.sdf_field_downsample" for item in sdf_capabilities)
     assert all(item["supported_applicators"] == ["none", "sdf_boundary_band", "sdf_inside", "sdf_outside"] for item in sdf_capabilities)
-    assert len(actual["composition_recipe_contract"]["compatibility"]) == 28
+    assert len(actual["composition_recipe_contract"]["compatibility"]) == 34
     compat_overrides = actual["composition_recipe_contract"]["compat_overrides"]
     compatibility_audit = actual["composition_recipe_contract"]["compatibility_audit"]
-    assert len(compat_overrides) == 7
-    assert len(compatibility_audit) == 28
+    assert len(compat_overrides) == 9
+    assert len(compatibility_audit) == 34
     audit_by_key = {
         (row["source"], row["palette"], row["grading"]): row
         for row in compatibility_audit
@@ -1047,6 +1047,15 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "phase_orbit_repeat",
         "smooth_escape_invert_gradient_levels",
         "smooth_escape_gradient",
+        "smooth_escape_blackbody",
+        "root_proximity_blackbody",
+        "sdf_boundary_band_blackbody",
+        "lens_field_v2_blackbody",
+        "root_log_proximity_blackbody",
+        "sdf_curvature_blackbody",
+        "phase_orbit_blackbody_bad",
+        "root_index_blackbody_bad",
+        "root_log_proximity_identity_blackbody_bad",
         "root_repeat_heatmap_bad",
         "phase_root_palette_bad",
         "sdf_signed_distance_phase_palette_bad",
@@ -1428,7 +1437,7 @@ def test_current_function_library_has_complete_canonical_typed_ports(tmp_path):
         for lane in payload["function_library"]["lanes"]
         for function in lane["functions"]
     }
-    assert len(functions) == 49
+    assert len(functions) == 50
     assert not [
         f"{lane_id}.{function_id}"
         for (lane_id, function_id), function in functions.items()
@@ -1445,14 +1454,16 @@ def test_current_function_library_has_complete_canonical_typed_ports(tmp_path):
         )
 
     audit = payload["composition_recipe_contract"]["compatibility_audit"]
-    assert sum(row["classification"] == "typed_resolved" for row in audit) == 21
-    assert sum(row["classification"] == "runtime_legacy_override" for row in audit) == 7
+    assert sum(row["classification"] == "typed_resolved" for row in audit) == 25
+    assert sum(row["classification"] == "runtime_legacy_override" for row in audit) == 9
     assert {
         row["override_id"]
         for row in audit
         if row["classification"] == "runtime_legacy_override"
     } == {
         "recipe_root_log_proximity_signed_unit_map_heatmap",
+        "blackbody_root_log_proximity_signed_unit_map",
+        "blackbody_sdf_curvature_signed_unit_map",
         "legacy_sdf_signed_distance_heatmap_contrast_lift",
         "legacy_sdf_signed_distance_explaino_cmap_contrast_lift",
         "legacy_sdf_inside_outside_heatmap_contrast_lift",
@@ -1481,7 +1492,7 @@ def test_current_compatibility_audit_classifies_all_exact_routes(tmp_path):
         for row in audit
         if row["classification"] == "typed_resolved"
     }
-    assert len(typed_routes) == 21
+    assert len(typed_routes) == 25
     assert {
         ("smooth_escape_ramp", "explaino_cmap", "contrast_lift"),
         ("banded_signal", "banded_heatmap", "band_finish"),
@@ -1489,6 +1500,10 @@ def test_current_compatibility_audit_classifies_all_exact_routes(tmp_path):
         ("escape_magnitude", "explaino_cmap", "contrast_lift"),
         ("orbit_stripe", "phase_wheel_palette", "phase_finish"),
         ("root_proximity", "explaino_cmap", "contrast_lift"),
+        ("smooth_escape_ramp", "blackbody_palette_v1", "contrast_lift"),
+        ("root_proximity", "blackbody_palette_v1", "contrast_lift"),
+        ("sdf_boundary_band", "blackbody_palette_v1", "contrast_lift"),
+        ("lens_field_v2_distance", "blackbody_palette_v1", "contrast_lift"),
         ("root_index", "joy_root_palette", "basin_default"),
         ("sdf_boundary_band", "heatmap", "contrast_lift"),
         ("sdf_boundary_band", "explaino_cmap", "contrast_lift"),
@@ -1503,6 +1518,8 @@ def test_current_compatibility_audit_classifies_all_exact_routes(tmp_path):
     }
     assert specialized == {
         "recipe_root_log_proximity_signed_unit_map_heatmap",
+        "blackbody_root_log_proximity_signed_unit_map",
+        "blackbody_sdf_curvature_signed_unit_map",
         "legacy_sdf_signed_distance_heatmap_contrast_lift",
         "legacy_sdf_signed_distance_explaino_cmap_contrast_lift",
         "legacy_sdf_inside_outside_heatmap_contrast_lift",
@@ -1547,7 +1564,7 @@ def test_low_risk_function_batch_has_locked_typed_inventory(tmp_path):
         ("grading", "levels_gamma_v1"): ("color.linear_rgb", "color.linear_rgb", ["grade.black_point", "grade.white_point", "grade.gamma"]),
         ("grading", "hue_rotate_v1"): ("color.linear_rgb", "color.linear_rgb", ["grade.hue_turns"]),
     }
-    assert len(functions) == 49
+    assert len(functions) == 50
     for key, (input_type, output_type, parameter_ids) in expected.items():
         function = functions[key]
         assert [param["descriptor_parameter_id"] for param in function["params"]] == parameter_ids
@@ -1756,3 +1773,68 @@ def test_composite_function_contract_rejects_invalid_v1_shapes(tmp_path):
         )
         assert proc.returncode == 2, (slug, proc.stdout, proc.stderr)
         assert "Traceback" not in proc.stderr, (slug, proc.stderr)
+
+
+def test_blackbody_palette_v1_materializes_typed_runtime_contract(tmp_path):
+    out = tmp_path / "materialized.json"
+    proc = subprocess.run(
+        [sys.executable, str(TOOL), "--ui-salt", str(COLOR_PIPELINE_UI_SALT), "--out", str(out)],
+        cwd=str(REPO_ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    functions = {
+        (lane["id"], function["id"]): function
+        for lane in payload["function_library"]["lanes"]
+        for function in lane["functions"]
+    }
+    blackbody = functions[("palette", "blackbody_palette_v1")]
+    assert blackbody["runtime_backed"] is True
+    assert blackbody["ports"] == [
+        {"direction": "input", "id": "signal", "type": "scalar.unit"},
+        {
+            "direction": "output",
+            "id": "color",
+            "type": "color.linear_rgb",
+            "canonical": True,
+        },
+    ]
+    assert [param["descriptor_parameter_id"] for param in blackbody["params"]] == [
+        "palette.temperature_0_k",
+        "palette.temperature_1_k",
+        "palette.temperature_mapping",
+        "palette.blend_weight",
+        "palette.blend_mode",
+    ]
+    params = {param["descriptor_parameter_id"]: param for param in blackbody["params"]}
+    assert (params["palette.temperature_0_k"]["min"], params["palette.temperature_0_k"]["max"], params["palette.temperature_0_k"]["step"], params["palette.temperature_0_k"]["default"]) == (800.0, 40000.0, 50.0, 1600.0)
+    assert (params["palette.temperature_1_k"]["min"], params["palette.temperature_1_k"]["max"], params["palette.temperature_1_k"]["step"], params["palette.temperature_1_k"]["default"]) == (800.0, 40000.0, 50.0, 12000.0)
+    assert params["palette.temperature_mapping"]["options"] == [
+        "reciprocal_temperature",
+        "linear_kelvin",
+    ]
+    assert params["palette.temperature_mapping"]["default"] == "reciprocal_temperature"
+
+    routes = {
+        (row["source"], row["shape"], row["palette"]): row
+        for row in payload["color_pipeline_resolution_audit"]["cases"]
+    }
+    for source, shape in [
+        ("smooth_escape_ramp", "identity"),
+        ("root_proximity", "identity"),
+        ("sdf_boundary_band", "identity"),
+        ("lens_field_v2_distance", "identity"),
+        ("root_log_proximity_v1", "signed_unit_map_v1"),
+        ("sdf_curvature", "signed_unit_map_v1"),
+    ]:
+        assert routes[(source, shape, "blackbody_palette_v1")]["status"] == "resolved"
+    for source, shape in [
+        ("phase_orbit", "identity"),
+        ("root_index", "identity"),
+        ("root_log_proximity_v1", "identity"),
+    ]:
+        assert routes[(source, shape, "blackbody_palette_v1")]["status"] == "fail_closed"

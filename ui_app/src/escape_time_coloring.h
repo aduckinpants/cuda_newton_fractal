@@ -1,6 +1,7 @@
 #pragma once
 
 #include "basin_coloring.h"
+#include "blackbody_palette_lut.h"
 #include "explaino_seed_curve.h"
 #include "fractal_family_rules.h"
 #include "fractal_types.h"
@@ -1747,6 +1748,10 @@ ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleColorPipelinePaletteRowRgb(
         const EscapeTimeColorRgb from = lower ? low : mid;
         const EscapeTimeColorRgb to = lower ? mid : high;
         return {EscapeTimeColorLerp(from.r, to.r, t), EscapeTimeColorLerp(from.g, to.g, t), EscapeTimeColorLerp(from.b, to.b, t)};
+    }
+    if (palette == ColorPalette::blackbody_palette_v1) {
+        const BlackbodyPaletteLutRgb rgb = SampleBlackbodyPaletteRuntime(signalValue, paletteParams);
+        return {rgb.r, rgb.g, rgb.b};
     }
     if (palette == ColorPalette::banded_escape) {
         const int bandCount = params.color_iteration_band_count < 2 ? 2 : params.color_iteration_band_count;

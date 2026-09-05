@@ -2706,6 +2706,81 @@
                 "canonical": true
               }
             ]
+          },
+          {
+            "id": "blackbody_palette_v1",
+            "label": "Black Body",
+            "description": "Map a unit scalar through a reproducible black-body chromaticity LUT in linear RGB.",
+            "taxonomy_group": "palette_physical",
+            "runtime_backed": true,
+            "input_kind": "scalar",
+            "output_kind": "scalar",
+            "params": [
+              {
+                "descriptor_parameter_id": "palette.temperature_0_k",
+                "path": "palette.temperature_0_k",
+                "type": "float",
+                "label": "Temperature 0 (K)",
+                "min": 800.0,
+                "max": 40000.0,
+                "step": 50.0,
+                "default": 1600.0
+              },
+              {
+                "descriptor_parameter_id": "palette.temperature_1_k",
+                "path": "palette.temperature_1_k",
+                "type": "float",
+                "label": "Temperature 1 (K)",
+                "min": 800.0,
+                "max": 40000.0,
+                "step": 50.0,
+                "default": 12000.0
+              },
+              {
+                "descriptor_parameter_id": "palette.temperature_mapping",
+                "path": "palette.temperature_mapping",
+                "type": "enum",
+                "label": "Temperature Mapping",
+                "default": "reciprocal_temperature",
+                "options": [
+                  "reciprocal_temperature",
+                  "linear_kelvin"
+                ]
+              },
+              {
+                "descriptor_parameter_id": "palette.blend_weight",
+                "path": "palette.blend_weight",
+                "type": "float",
+                "label": "Blend Weight",
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01,
+                "default": 1.0
+              },
+              {
+                "descriptor_parameter_id": "palette.blend_mode",
+                "path": "palette.blend_mode",
+                "type": "enum",
+                "label": "Blend Mode",
+                "default": "normal",
+                "options": [
+                  "normal"
+                ]
+              }
+            ],
+            "ports": [
+              {
+                "direction": "input",
+                "id": "signal",
+                "type": "scalar.unit"
+              },
+              {
+                "direction": "output",
+                "id": "color",
+                "type": "color.linear_rgb",
+                "canonical": true
+              }
+            ]
           }
         ]
       },
@@ -3476,6 +3551,60 @@
         "palette": "gradient_three_stop_v1",
         "signal": "smooth_escape_ramp",
         "palette_runtime": "gradient_three_stop_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "smooth_escape_ramp",
+        "palette": "blackbody_palette_v1",
+        "signal": "smooth_escape_ramp",
+        "palette_runtime": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "root_proximity",
+        "palette": "blackbody_palette_v1",
+        "signal": "root_proximity",
+        "palette_runtime": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "root_log_proximity_v1",
+        "palette": "blackbody_palette_v1",
+        "signal": "root_log_proximity_v1",
+        "palette_runtime": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_boundary_band",
+        "palette": "blackbody_palette_v1",
+        "signal": "sdf_boundary_band",
+        "palette_runtime": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "sdf_curvature",
+        "palette": "blackbody_palette_v1",
+        "signal": "sdf_curvature",
+        "palette_runtime": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "reason": "supported_runtime_bridge"
+      },
+      {
+        "source": "lens_field_v2_distance",
+        "palette": "blackbody_palette_v1",
+        "signal": "lens_field_v2_distance",
+        "palette_runtime": "blackbody_palette_v1",
         "grading": "contrast_lift",
         "mode": "smooth_escape",
         "reason": "supported_runtime_bridge"
@@ -4664,6 +4793,26 @@
         "proof": "curated_recipe_qualification"
       },
       {
+        "id": "blackbody_root_log_proximity_signed_unit_map",
+        "source": "root_log_proximity_v1",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_window::PrepareColorPipelineApplication",
+        "reason": "root log proximity reaches Black Body only after explicit signed_unit_map_v1 normalization",
+        "proof": "blackbody_runtime_contract"
+      },
+      {
+        "id": "blackbody_sdf_curvature_signed_unit_map",
+        "source": "sdf_curvature",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "classification": "runtime_legacy_override",
+        "owner_seam": "color_pipeline_window::PrepareColorPipelineApplication",
+        "reason": "SDF curvature reaches Black Body only after explicit signed_unit_map_v1 normalization",
+        "proof": "blackbody_runtime_contract"
+      },
+      {
         "id": "legacy_sdf_signed_distance_heatmap_contrast_lift",
         "source": "sdf_signed_distance",
         "palette": "heatmap",
@@ -5002,6 +5151,66 @@
         "mode": "smooth_escape",
         "classification": "typed_resolved",
         "route_case_id": "smooth_escape_gradient",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "smooth_escape_ramp",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "typed_resolved",
+        "route_case_id": "smooth_escape_blackbody",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "root_proximity",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "typed_resolved",
+        "route_case_id": "root_proximity_blackbody",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "root_log_proximity_v1",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "blackbody_root_log_proximity_signed_unit_map",
+        "reason": "root log proximity reaches Black Body only after explicit signed_unit_map_v1 normalization"
+      },
+      {
+        "source": "sdf_boundary_band",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "typed_resolved",
+        "route_case_id": "sdf_boundary_band_blackbody",
+        "override_id": "",
+        "reason": "typed resolver route covers this compatibility row"
+      },
+      {
+        "source": "sdf_curvature",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "runtime_legacy_override",
+        "route_case_id": "",
+        "override_id": "blackbody_sdf_curvature_signed_unit_map",
+        "reason": "SDF curvature reaches Black Body only after explicit signed_unit_map_v1 normalization"
+      },
+      {
+        "source": "lens_field_v2_distance",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "mode": "smooth_escape",
+        "classification": "typed_resolved",
+        "route_case_id": "lens_field_v2_blackbody",
         "override_id": "",
         "reason": "typed resolver route covers this compatibility row"
       }
@@ -6790,6 +6999,453 @@
           }
         ],
         "fail_closed_reason": ""
+      },
+      {
+        "id": "smooth_escape_blackbody",
+        "source": "smooth_escape_ramp",
+        "shape": "identity",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "smooth_escape_ramp",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "blackbody_palette_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "blackbody_palette_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_proximity_blackbody",
+        "source": "root_proximity",
+        "shape": "identity",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_proximity",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "blackbody_palette_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "blackbody_palette_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_boundary_band_blackbody",
+        "source": "sdf_boundary_band",
+        "shape": "identity",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_boundary_band",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "blackbody_palette_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "blackbody_palette_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "lens_field_v2_blackbody",
+        "source": "lens_field_v2_distance",
+        "shape": "identity",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "lens_field_v2_distance",
+            "to_function": "identity",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "identity",
+            "to_function": "blackbody_palette_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "blackbody_palette_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "root_log_proximity_blackbody",
+        "source": "root_log_proximity_v1",
+        "shape": "signed_unit_map_v1",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_log_proximity_v1",
+            "to_function": "signed_unit_map_v1",
+            "from_type": "scalar.signed",
+            "to_type": "scalar.signed",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "signed_unit_map_v1",
+            "to_function": "blackbody_palette_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "blackbody_palette_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "sdf_curvature_blackbody",
+        "source": "sdf_curvature",
+        "shape": "signed_unit_map_v1",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "resolved",
+        "status": "resolved",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "sdf_curvature",
+            "to_function": "signed_unit_map_v1",
+            "from_type": "scalar.signed",
+            "to_type": "scalar.signed",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "signed_unit_map_v1",
+            "to_function": "blackbody_palette_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "blackbody_palette_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "phase_orbit_blackbody_bad",
+        "source": "phase_orbit",
+        "shape": "identity",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "fail_closed",
+        "status": "fail_closed",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [
+          "phase cannot enter the unit-domain Black Body palette"
+        ],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "phase_orbit",
+            "to_function": "identity",
+            "from_type": "phase.turns",
+            "to_type": "phase.turns",
+            "output_type": "phase.turns",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": "phase cannot enter the unit-domain Black Body palette"
+      },
+      {
+        "id": "root_index_blackbody_bad",
+        "source": "root_index",
+        "shape": "identity",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "fail_closed",
+        "status": "fail_closed",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [
+          "root category cannot enter the unit-domain Black Body palette"
+        ],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_index",
+            "to_function": "identity",
+            "from_type": "category.root_index",
+            "to_type": "category.root_index",
+            "output_type": "category.root_index",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": "root category cannot enter the unit-domain Black Body palette"
+      },
+      {
+        "id": "root_log_proximity_identity_blackbody_bad",
+        "source": "root_log_proximity_v1",
+        "shape": "identity",
+        "palette": "blackbody_palette_v1",
+        "grading": "contrast_lift",
+        "expected_status": "fail_closed",
+        "status": "fail_closed",
+        "allow_lossy": false,
+        "allow_visible_default": false,
+        "explicit_adapter_consent": false,
+        "diagnostic_adapter_consent": false,
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "policy_blockers": [
+          "signed root proximity requires explicit signed-unit shaping before the Black Body palette"
+        ],
+        "route_edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "root_log_proximity_v1",
+            "to_function": "identity",
+            "from_type": "scalar.signed",
+            "to_type": "scalar.signed",
+            "output_type": "scalar.signed",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0
+          }
+        ],
+        "fail_closed_reason": "signed root proximity requires explicit signed-unit shaping before the Black Body palette"
       },
       {
         "id": "root_repeat_heatmap_bad",

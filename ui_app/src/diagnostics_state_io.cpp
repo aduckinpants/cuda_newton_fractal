@@ -1203,6 +1203,8 @@ bool ParseColorPaletteStackEntry(const json_min::Value& entryValue,
     double midR=entry.params.mid_r, midG=entry.params.mid_g, midB=entry.params.mid_b;
     double highR=entry.params.high_r, highG=entry.params.high_g, highB=entry.params.high_b;
     double midpoint=entry.params.midpoint;
+    double blackbodyTemperature0=entry.params.blackbody_temperature_0_k;
+    double blackbodyTemperature1=entry.params.blackbody_temperature_1_k;
     double blendWeight = entry.params.blend_weight;
     if (!GetOptionalNumber(entryValue, "cycle_scale", &cycleScale, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "saturation", &saturation, nullptr, outError) ||
@@ -1221,7 +1223,15 @@ bool ParseColorPaletteStackEntry(const json_min::Value& entryValue,
         !GetOptionalNumber(entryValue, "mid_r", &midR, nullptr, outError) || !GetOptionalNumber(entryValue, "mid_g", &midG, nullptr, outError) || !GetOptionalNumber(entryValue, "mid_b", &midB, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "high_r", &highR, nullptr, outError) || !GetOptionalNumber(entryValue, "high_g", &highG, nullptr, outError) || !GetOptionalNumber(entryValue, "high_b", &highB, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "midpoint", &midpoint, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "blackbody_temperature_0_k", &blackbodyTemperature0, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "blackbody_temperature_1_k", &blackbodyTemperature1, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "blend_weight", &blendWeight, nullptr, outError)) {
+        return false;
+    }
+    std::string blackbodyMappingId = "reciprocal_temperature";
+    TryGetOptionalString(entryValue, "blackbody_temperature_mapping", &blackbodyMappingId);
+    if (!TryParseBlackbodyTemperatureMappingId(blackbodyMappingId, &entry.params.blackbody_temperature_mapping)) {
+        if (outError) *outError = std::string("Unknown color_palette_stack blackbody_temperature_mapping: " ) + blackbodyMappingId;
         return false;
     }
     std::string blendModeId = "normal";
@@ -1247,6 +1257,11 @@ bool ParseColorPaletteStackEntry(const json_min::Value& entryValue,
     entry.params.mid_r=static_cast<float>(midR); entry.params.mid_g=static_cast<float>(midG); entry.params.mid_b=static_cast<float>(midB);
     entry.params.high_r=static_cast<float>(highR); entry.params.high_g=static_cast<float>(highG); entry.params.high_b=static_cast<float>(highB);
     entry.params.midpoint=static_cast<float>(midpoint);
+    entry.params.blackbody_temperature_0_k=static_cast<float>(blackbodyTemperature0);
+    entry.params.blackbody_temperature_1_k=static_cast<float>(blackbodyTemperature1);
+    if (entry.palette == ColorPalette::blackbody_palette_v1) {
+        RebuildBlackbodyPaletteRuntimeCache(&entry.params);
+    }
     entry.params.blend_weight = static_cast<float>(blendWeight);
     *outEntry = entry;
     return true;

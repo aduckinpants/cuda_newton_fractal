@@ -521,6 +521,8 @@ inline const char* AdvancedColorPaletteFunctionId(ColorPalette value) {
         return "inside_outside_two_tone_v1";
     case ColorPalette::gradient_three_stop_v1:
         return "gradient_three_stop_v1";
+    case ColorPalette::blackbody_palette_v1:
+        return "blackbody_palette_v1";
     }
     return nullptr;
 }
@@ -560,6 +562,10 @@ inline bool TryParseAdvancedColorPaletteFunctionId(const std::string& functionId
     }
     if (functionId == "gradient_three_stop_v1") {
         if (outValue) *outValue = ColorPalette::gradient_three_stop_v1;
+        return true;
+    }
+    if (functionId == "blackbody_palette_v1") {
+        if (outValue) *outValue = ColorPalette::blackbody_palette_v1;
         return true;
     }
     return false;
@@ -969,6 +975,18 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineExpandedPaletteFunction
                 MakeColorPipelinePaletteBlendWeightParam(),
                 MakeColorPipelinePaletteBlendModeParam(),
             }),
+        MakeColorPipelineFunction(
+            "blackbody_palette_v1",
+            "Black Body",
+            "Map a unit scalar through a reproducible black-body chromaticity LUT in linear RGB.",
+            "palette_physical",
+            {
+                MakeColorPipelineFloatParam("palette.temperature_0_k", "Temperature 0 (K)", "Temperature mapped from signal zero.", 800.0, 40000.0, 50.0, 1600.0),
+                MakeColorPipelineFloatParam("palette.temperature_1_k", "Temperature 1 (K)", "Temperature mapped from signal one.", 800.0, 40000.0, 50.0, 12000.0),
+                MakeColorPipelineEnumParam("palette.temperature_mapping", "Temperature Mapping", "Choose reciprocal-temperature or linear-Kelvin signal mapping.", {{"reciprocal_temperature", "Reciprocal Temperature", ""}, {"linear_kelvin", "Linear Kelvin", ""}}, "reciprocal_temperature"),
+                MakeColorPipelinePaletteBlendWeightParam(),
+                MakeColorPipelinePaletteBlendModeParam(),
+            }),
     };
 }
 
@@ -1247,7 +1265,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "joy_root_palette" ||
             functionId == "diverging_signed_palette_v1" ||
             functionId == "inside_outside_two_tone_v1" ||
-            functionId == "gradient_three_stop_v1";
+            functionId == "gradient_three_stop_v1" ||
+            functionId == "blackbody_palette_v1";
     }
     if (std::string(laneId) == "grading") {
         return functionId == "contrast_lift" ||
@@ -1927,7 +1946,7 @@ inline bool TrySuggestHardcodedColorPipelineCompanionFunction(
         if (function == "inside_outside_two_tone_v1") {
             return SetColorPipelineCompanionSuggestion("source", "sdf_inside_outside", outCompanionLaneId, outCompanionFunctionId);
         }
-        if (function == "gradient_three_stop_v1") {
+        if (function == "gradient_three_stop_v1" || function == "blackbody_palette_v1") {
             return SetColorPipelineCompanionSuggestion("source", "smooth_escape_ramp", outCompanionLaneId, outCompanionFunctionId);
         }
     }
@@ -3088,6 +3107,20 @@ inline bool TryBuildHardcodedColorPipelineSelectionFromLaneIds(
         *outMode = ColoringMode::smooth_escape;
         return true;
     }
+    const bool blackbodySource =
+        std::strcmp(sourceFunctionId, "smooth_escape_ramp") == 0 ||
+        std::strcmp(sourceFunctionId, "root_proximity") == 0 ||
+        std::strcmp(sourceFunctionId, "root_log_proximity_v1") == 0 ||
+        std::strcmp(sourceFunctionId, "sdf_boundary_band") == 0 ||
+        std::strcmp(sourceFunctionId, "sdf_curvature") == 0 ||
+        std::strcmp(sourceFunctionId, "lens_field_v2_distance") == 0;
+    if (blackbodySource && std::strcmp(paletteFunctionId, "blackbody_palette_v1") == 0) {
+        ColorSignal signal = ColorSignal::smooth_escape;
+        if (!TryParseAdvancedColorSignalFunctionId(sourceFunctionId, &signal)) return false;
+        *outPipeline = {signal, ColorPalette::blackbody_palette_v1, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
     if (std::strcmp(sourceFunctionId, "root_index") == 0 && std::strcmp(paletteFunctionId, "root_classic_palette") == 0) {
         *outPipeline = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
         *outMode = ColoringMode::root_basin;
@@ -3615,6 +3648,18 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         isEscapeLikeMode) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_log_proximity_v1";
         if (outPaletteFunctionId) *outPaletteFunctionId = "diverging_signed_palette_v1";
+        return true;
+    }
+    const bool blackbodySignal =
+        pipeline.signal == ColorSignal::smooth_escape ||
+        pipeline.signal == ColorSignal::root_proximity ||
+        pipeline.signal == ColorSignal::root_log_proximity_v1 ||
+        pipeline.signal == ColorSignal::sdf_boundary_band ||
+        pipeline.signal == ColorSignal::sdf_curvature ||
+        pipeline.signal == ColorSignal::lens_field_v2_distance;
+    if (blackbodySignal && pipeline.palette == ColorPalette::blackbody_palette_v1 && isEscapeLikeMode) {
+        if (outSourceFunctionId) *outSourceFunctionId = AdvancedColorSignalFunctionId(pipeline.signal);
+        if (outPaletteFunctionId) *outPaletteFunctionId = "blackbody_palette_v1";
         return true;
     }
     if (pipeline.signal == ColorSignal::smooth_escape &&

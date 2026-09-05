@@ -406,6 +406,9 @@ void WriteColorPaletteStackJson(std::ostringstream& js, const KernelParams& para
         js << "        \"high_g\": " << static_cast<double>(entry.params.high_g) << ",\n";
         js << "        \"high_b\": " << static_cast<double>(entry.params.high_b) << ",\n";
         js << "        \"midpoint\": " << static_cast<double>(entry.params.midpoint) << ",\n";
+        js << "        \"blackbody_temperature_0_k\": " << static_cast<double>(entry.params.blackbody_temperature_0_k) << ",\n";
+        js << "        \"blackbody_temperature_1_k\": " << static_cast<double>(entry.params.blackbody_temperature_1_k) << ",\n";
+        js << "        \"blackbody_temperature_mapping\": \"" << BlackbodyTemperatureMappingId(entry.params.blackbody_temperature_mapping) << "\",\n";
         js << "        \"blend_weight\": " << static_cast<double>(entry.params.blend_weight) << ",\n";
         js << "        \"blend_mode\": \"" << ColorPaletteBlendModeId(entry.params.blend_mode) << "\"\n";
         js << "      }" << (index + 1 < count ? "," : "") << "\n";
@@ -842,6 +845,9 @@ void WriteFindingPaletteRowsJson(std::ostringstream& js, const KernelParams& par
         js << "        \"mid_r\": " << static_cast<double>(entry.params.mid_r) << ",\n"; js << "        \"mid_g\": " << static_cast<double>(entry.params.mid_g) << ",\n"; js << "        \"mid_b\": " << static_cast<double>(entry.params.mid_b) << ",\n";
         js << "        \"high_r\": " << static_cast<double>(entry.params.high_r) << ",\n"; js << "        \"high_g\": " << static_cast<double>(entry.params.high_g) << ",\n"; js << "        \"high_b\": " << static_cast<double>(entry.params.high_b) << ",\n";
         js << "        \"midpoint\": " << static_cast<double>(entry.params.midpoint) << ",\n";
+        js << "        \"blackbody_temperature_0_k\": " << static_cast<double>(entry.params.blackbody_temperature_0_k) << ",\n";
+        js << "        \"blackbody_temperature_1_k\": " << static_cast<double>(entry.params.blackbody_temperature_1_k) << ",\n";
+        js << "        \"blackbody_temperature_mapping\": \"" << BlackbodyTemperatureMappingId(entry.params.blackbody_temperature_mapping) << "\",\n";
         js << "        \"blend_weight\": " << static_cast<double>(entry.params.blend_weight) << "\n";
         js << "      }" << (index + 1 < count ? "," : "") << "\n";
     }

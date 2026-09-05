@@ -133,6 +133,7 @@ if /I "%FOCUSED_TEST%"=="test_color_pipeline_loaded_draft" call :focused_test_co
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_field_groups" call :focused_test_color_pipeline_sdf_field_groups & exit /b
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess" call :focused_test_color_pipeline_sdf_postprocess & exit /b
 if /I "%FOCUSED_TEST%"=="test_color_pipeline_sdf_postprocess_cuda" call :focused_test_color_pipeline_sdf_postprocess_cuda & exit /b
+if /I "%FOCUSED_TEST%"=="test_blackbody_palette_cuda" call :focused_test_blackbody_palette_cuda & exit /b
 if /I "%FOCUSED_TEST%"=="test_escape_time_coloring" call :focused_test_escape_time_coloring & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_parameter_surface_descriptor" call :focused_test_fractal_parameter_surface_descriptor & exit /b
 if /I "%FOCUSED_TEST%"=="test_fractal_preset_core" call :focused_test_fractal_preset_core & exit /b
@@ -187,6 +188,15 @@ call :run_test "%TESTROOT%\test_param_anim_generic.exe" || exit /b 1
 exit /b 0
 
 :full_build_start
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  %CUDA_GENCODE_FLAGS% ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\tests\test_blackbody_palette_cuda.cu ^
+  -o "%TESTROOT%\test_blackbody_palette_cuda.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_blackbody_palette_cuda.exe" || exit /b 1
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /I. /I.\src ^
   .\src\json_min.cpp .\src\color_pipeline_metadata_contract.cpp .\src\viewer_ui_automation_report.cpp .\src\explaino_seed.cpp .\tests\test_viewer_ui_automation_report.cpp ^
   /Fe:"%TESTROOT%\test_viewer_ui_automation_report.exe" ^
@@ -1079,6 +1089,17 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_color_pipeline_sdf_postprocess_cuda.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_color_pipeline_sdf_postprocess_cuda.exe" || exit /b 1
+exit /b 0
+
+:focused_test_blackbody_palette_cuda
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  %CUDA_GENCODE_FLAGS% ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\tests\test_blackbody_palette_cuda.cu ^
+  -o "%TESTROOT%\test_blackbody_palette_cuda.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_blackbody_palette_cuda.exe" || exit /b 1
 exit /b 0
 
 :focused_test_escape_time_coloring

@@ -4,6 +4,8 @@
 #include "../src/fractal_family_rules.h"
 
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <limits>
 
@@ -194,6 +196,93 @@ bool SourceSignalSignaturesDiffer(
 }
 
 } // namespace
+
+
+
+static bool NearlyEqualRgb(EscapeTimeColorRgb left, EscapeTimeColorRgb right, float epsilon = 2.0e-6f) {
+    return NearlyEqual(left.r, right.r, epsilon) &&
+        NearlyEqual(left.g, right.g, epsilon) &&
+        NearlyEqual(left.b, right.b, epsilon);
+}
+
+static void TestBlackbodyPaletteRuntimeContract() {
+    KernelParams params{};
+    ColorPipelinePaletteRuntimeParams palette{};
+    RebuildBlackbodyPaletteRuntimeCache(&palette);
+
+    if (static_cast<int>(ColorPalette::blackbody_palette_v1) != 9 ||
+        std::string(ColorPaletteId(ColorPalette::blackbody_palette_v1)) != "blackbody_palette_v1") {
+        std::cerr << "Black Body palette enum/id contract must remain append-only\n";
+        std::exit(1);
+    }
+    if (!NearlyEqual(BlackbodyPaletteLutCoordinateForTemperature(800.0f), 0.0f, 1.0e-5f) ||
+        !NearlyEqual(BlackbodyPaletteLutCoordinateForTemperature(40000.0f), 1023.0f, 1.0e-3f)) {
+        std::cerr << "Black Body reciprocal LUT coordinates must preserve contract endpoints\n";
+        std::exit(1);
+    }
+    for (int index = 0; index < BLACKBODY_PALETTE_LUT_V1_ENTRY_COUNT; ++index) {
+        const float q = static_cast<float>(index) / static_cast<float>(BLACKBODY_PALETTE_LUT_V1_ENTRY_COUNT - 1);
+        const float reciprocal = (1.0f - q) / 800.0f + q / 40000.0f;
+        const float temperature = 1.0f / reciprocal;
+        if (!NearlyEqual(BlackbodyPaletteLutCoordinateForTemperature(temperature), static_cast<float>(index), 2.0e-3f)) {
+            std::cerr << "Black Body generator/runtime reciprocal coordinate identity drifted at index " << index << "\n";
+            std::exit(1);
+        }
+    }
+
+    std::uint32_t state = 0x9e3779b9u;
+    for (int sample = 0; sample < 512; ++sample) {
+        state = state * 1664525u + 1013904223u;
+        const float t0 = 800.0f + static_cast<float>(state & 0xffffu) / 65535.0f * 39200.0f;
+        state = state * 1664525u + 1013904223u;
+        const float t1 = 800.0f + static_cast<float>(state & 0xffffu) / 65535.0f * 39200.0f;
+        state = state * 1664525u + 1013904223u;
+        const float u = static_cast<float>(state & 0xffffu) / 65535.0f;
+        for (BlackbodyTemperatureMapping mapping : {BlackbodyTemperatureMapping::reciprocal_temperature, BlackbodyTemperatureMapping::linear_kelvin}) {
+            palette.blackbody_temperature_0_k = t0;
+            palette.blackbody_temperature_1_k = t1;
+            palette.blackbody_temperature_mapping = mapping;
+            RebuildBlackbodyPaletteRuntimeCache(&palette);
+            const EscapeTimeColorRgb forward = SampleColorPipelinePaletteRowRgb(u, true, params, ColorPalette::blackbody_palette_v1, palette);
+            palette.blackbody_temperature_0_k = t1;
+            palette.blackbody_temperature_1_k = t0;
+            RebuildBlackbodyPaletteRuntimeCache(&palette);
+            const EscapeTimeColorRgb reverse = SampleColorPipelinePaletteRowRgb(1.0f - u, true, params, ColorPalette::blackbody_palette_v1, palette);
+            if (!NearlyEqualRgb(forward, reverse, 3.0e-6f)) {
+                std::cerr << "Black Body reversal symmetry failed\n";
+                std::exit(1);
+            }
+        }
+    }
+
+    palette.blackbody_temperature_0_k = 6500.0f;
+    palette.blackbody_temperature_1_k = 6500.0f;
+    palette.blackbody_temperature_mapping = BlackbodyTemperatureMapping::reciprocal_temperature;
+    RebuildBlackbodyPaletteRuntimeCache(&palette);
+    const EscapeTimeColorRgb constantA = SampleColorPipelinePaletteRowRgb(0.0f, true, params, ColorPalette::blackbody_palette_v1, palette);
+    const EscapeTimeColorRgb constantB = SampleColorPipelinePaletteRowRgb(0.731f, true, params, ColorPalette::blackbody_palette_v1, palette);
+    if (!NearlyEqualRgb(constantA, constantB)) {
+        std::cerr << "Equal Black Body endpoints must produce a constant palette\n";
+        std::exit(1);
+    }
+
+    palette.blackbody_temperature_0_k = 2400.0f;
+    palette.blackbody_temperature_1_k = 18000.0f;
+    palette.blackbody_temperature_mapping = BlackbodyTemperatureMapping::reciprocal_temperature;
+    RebuildBlackbodyPaletteRuntimeCache(&palette);
+    const EscapeTimeColorRgb reciprocalStart = SampleColorPipelinePaletteRowRgb(0.0f, true, params, ColorPalette::blackbody_palette_v1, palette);
+    const EscapeTimeColorRgb reciprocalEnd = SampleColorPipelinePaletteRowRgb(1.0f, true, params, ColorPalette::blackbody_palette_v1, palette);
+    const EscapeTimeColorRgb reciprocalMiddle = SampleColorPipelinePaletteRowRgb(0.5f, true, params, ColorPalette::blackbody_palette_v1, palette);
+    palette.blackbody_temperature_mapping = BlackbodyTemperatureMapping::linear_kelvin;
+    RebuildBlackbodyPaletteRuntimeCache(&palette);
+    const EscapeTimeColorRgb linearStart = SampleColorPipelinePaletteRowRgb(0.0f, true, params, ColorPalette::blackbody_palette_v1, palette);
+    const EscapeTimeColorRgb linearEnd = SampleColorPipelinePaletteRowRgb(1.0f, true, params, ColorPalette::blackbody_palette_v1, palette);
+    const EscapeTimeColorRgb linearMiddle = SampleColorPipelinePaletteRowRgb(0.5f, true, params, ColorPalette::blackbody_palette_v1, palette);
+    if (!NearlyEqualRgb(reciprocalStart, linearStart) || !NearlyEqualRgb(reciprocalEnd, linearEnd) || NearlyEqualRgb(reciprocalMiddle, linearMiddle, 1.0e-4f)) {
+        std::cerr << "Black Body mappings must share endpoints and differ in the interior\n";
+        std::exit(1);
+    }
+}
 
 int main() {
     KernelParams params{};
@@ -2042,6 +2131,8 @@ int main() {
             return 1;
         }
     }
+
+    TestBlackbodyPaletteRuntimeContract();
 
     std::cout << "test_escape_time_coloring: all passed\n";
     return 0;

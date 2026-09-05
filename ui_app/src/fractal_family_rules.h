@@ -1177,6 +1177,19 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline
         if (outMode) *outMode = ColoringMode::phase;
         return true;
     }
+    const bool isBlackbodySignal =
+        pipeline.signal == ColorSignal::smooth_escape ||
+        pipeline.signal == ColorSignal::root_proximity ||
+        pipeline.signal == ColorSignal::root_log_proximity_v1 ||
+        pipeline.signal == ColorSignal::sdf_boundary_band ||
+        pipeline.signal == ColorSignal::sdf_curvature ||
+        pipeline.signal == ColorSignal::lens_field_v2_distance;
+    if (isBlackbodySignal &&
+        pipeline.palette == ColorPalette::blackbody_palette_v1 &&
+        isEscapeLikeGrading) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
     const bool isSdfHeatmapSignal =
         pipeline.signal == ColorSignal::sdf_signed_distance ||
         pipeline.signal == ColorSignal::sdf_inside_outside ||

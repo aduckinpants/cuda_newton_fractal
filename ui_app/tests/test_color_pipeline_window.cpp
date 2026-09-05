@@ -1892,6 +1892,69 @@ void TestLowRiskFunctionBatchApplyAndValidation() {
         "TestLowRiskFunctionBatchApplyAndValidation_InvalidLevelsDoesNotMutateLive");
 }
 
+
+
+void TestBlackbodyPaletteApplyAndCacheRefresh() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestBlackbodyPaletteApplyAndCacheRefresh_SyncsBaseline");
+    Check(SelectColorPipelineLaneFunction(&state, 2, "blackbody_palette_v1"),
+        "TestBlackbodyPaletteApplyAndCacheRefresh_SelectsPalette");
+    ColorPipelineRowState& row = state.lanes[2].rows[0];
+    Check(SetRowNumber(row, "palette.temperature_0_k", 2400.0) &&
+            SetRowNumber(row, "palette.temperature_1_k", 18000.0) &&
+            SetRowEnum(row, "palette.temperature_mapping", "linear_kelvin"),
+        "TestBlackbodyPaletteApplyAndCacheRefresh_SetsNonDefaultValues");
+    const ColorPipelineDraftApplyState blackbodyApplyState =
+        DescribeColorPipelineDraftApplyState(state, FractalType::newton, &params);
+    if (blackbodyApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
+        std::fprintf(stderr, "Black Body apply-state rejection: %s\n", blackbodyApplyState.message.c_str());
+    }
+    bool changed = false;
+    const bool applied = ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed);
+    if (!applied) {
+        for (const std::string& message : state.validation_messages) {
+            std::fprintf(stderr, "Black Body apply validation: %s\n", message.c_str());
+        }
+    }
+    Check(applied && changed,
+        "TestBlackbodyPaletteApplyAndCacheRefresh_Applies");
+    const ColorPipelinePaletteRuntimeParams first = params.color_palette_stack[0].params;
+    Check(params.color_palette_stack_count == 1 &&
+            params.color_palette_stack[0].palette == ColorPalette::blackbody_palette_v1 &&
+            Near(first.blackbody_temperature_0_k, 2400.0) &&
+            Near(first.blackbody_temperature_1_k, 18000.0) &&
+            first.blackbody_temperature_mapping == BlackbodyTemperatureMapping::linear_kelvin &&
+            Near(first.blackbody_lut_dx, first.blackbody_lut_x1 - first.blackbody_lut_x0),
+        "TestBlackbodyPaletteApplyAndCacheRefresh_WritesAuthorityAndDerivedCache");
+
+    Check(SetRowNumber(state.lanes[2].rows[0], "palette.temperature_0_k", 3200.0),
+        "TestBlackbodyPaletteApplyAndCacheRefresh_ChangesOnlyT0");
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed &&
+            params.color_palette_stack[0].params.blackbody_lut_x0 != first.blackbody_lut_x0 &&
+            params.color_palette_stack[0].params.blackbody_lut_x1 == first.blackbody_lut_x1,
+        "TestBlackbodyPaletteApplyAndCacheRefresh_T0InvalidatesOnlyOwningCoordinate");
+    const float linearDx = params.color_palette_stack[0].params.blackbody_lut_dx;
+    Check(SetRowEnum(state.lanes[2].rows[0], "palette.temperature_mapping", "reciprocal_temperature"),
+        "TestBlackbodyPaletteApplyAndCacheRefresh_ChangesMapping");
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed &&
+            params.color_palette_stack[0].params.blackbody_temperature_mapping == BlackbodyTemperatureMapping::reciprocal_temperature &&
+            Near(params.color_palette_stack[0].params.blackbody_lut_dx, linearDx),
+        "TestBlackbodyPaletteApplyAndCacheRefresh_MappingChangesWithoutCorruptingEndpointCache");
+
+    ColorPipelineWindowState imported{};
+    Check(SyncColorPipelineWindowFromLiveState(&imported, FractalType::newton, &params),
+        "TestBlackbodyPaletteApplyAndCacheRefresh_ImportsLiveState");
+    const ColorPipelineRowState& importedRow = imported.lanes[2].rows[0];
+    Check(RowNumber(importedRow, "palette.temperature_0_k", 3200.0) &&
+            RowNumber(importedRow, "palette.temperature_1_k", 18000.0) &&
+            RowEnum(importedRow, "palette.temperature_mapping", "reciprocal_temperature"),
+        "TestBlackbodyPaletteApplyAndCacheRefresh_RoundTripsVisibleParams");
+}
+
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -1966,6 +2029,7 @@ int main() {
     TestFloatIdentityPreservesAdjacentBinary32Edits();
     TestFloatAuthoringUsesBinary32RoundTripText();
     TestLowRiskFunctionBatchApplyAndValidation();
+    TestBlackbodyPaletteApplyAndCacheRefresh();
     TestWindowUtilityContracts();
 
     std::printf("test_color_pipeline_window: passed=%d failed=%d\n", g_passed, g_failed);

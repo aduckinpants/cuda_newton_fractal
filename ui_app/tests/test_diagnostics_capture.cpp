@@ -881,6 +881,41 @@ void TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority() {
         "finding fractal-state sidecar omits unrelated Magnet controls for ExplainO Root SDF captures");
 }
 
+
+void TestFindingFractalStateSidecarIncludesBlackbodyPaletteAuthority() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+
+    view.fractal_type = FractalType::julia;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = {
+        ColorSignal::smooth_escape,
+        ColorPalette::blackbody_palette_v1,
+        ColorGradingPreset::escape_default};
+    params.color_palette_stack_count = 1;
+    params.color_palette_stack[0].palette = ColorPalette::blackbody_palette_v1;
+    params.color_palette_stack[0].params.blackbody_temperature_0_k = 2400.0f;
+    params.color_palette_stack[0].params.blackbody_temperature_1_k = 18000.0f;
+    params.color_palette_stack[0].params.blackbody_temperature_mapping =
+        BlackbodyTemperatureMapping::linear_kelvin;
+    RebuildBlackbodyPaletteRuntimeCache(&params.color_palette_stack[0].params);
+
+    const std::string json = BuildFindingFractalStateJson(
+        view, params, render, stats, nullptr, nullptr);
+    Check(json.find("\"palette\": \"blackbody_palette_v1\"") != std::string::npos &&
+          json.find("\"blackbody_temperature_0_k\": 2400") != std::string::npos &&
+          json.find("\"blackbody_temperature_1_k\": 18000") != std::string::npos &&
+          json.find("\"blackbody_temperature_mapping\": \"linear_kelvin\"") != std::string::npos,
+        "finding fractal-state sidecar records authoritative Black Body palette values");
+    Check(json.find("blackbody_lut_x0") == std::string::npos &&
+          json.find("blackbody_lut_x1") == std::string::npos &&
+          json.find("blackbody_lut_dx") == std::string::npos,
+        "finding fractal-state sidecar omits derived Black Body LUT cache values");
+}
+
 } // namespace
 
 int main() {
@@ -899,6 +934,7 @@ int main() {
     TestFindingFractalStateSidecarIncludesExplainoActiveControls();
     TestFindingFractalStateSidecarIncludesExplainoRootSdfAuthority();
     TestFindingFractalStateSidecarIncludesActiveRootFieldAlias();
+    TestFindingFractalStateSidecarIncludesBlackbodyPaletteAuthority();
 
     if (g_failed != 0) {
         std::cerr << "test_diagnostics_capture: " << g_failed << " failed\n";

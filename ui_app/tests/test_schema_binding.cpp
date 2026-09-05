@@ -2648,7 +2648,7 @@ int main() {
         const ColorPipelineLaneCatalog* corePaletteCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
         if (!corePaletteCatalog ||
             corePaletteCatalog->default_function_id != std::string("heatmap") ||
-            corePaletteCatalog->functions.size() != 9 ||
+            corePaletteCatalog->functions.size() != 10 ||
             corePaletteCatalog->functions[0].id != "heatmap" ||
             corePaletteCatalog->functions[1].id != "phase_wheel_palette" ||
             corePaletteCatalog->functions[2].id != "banded_heatmap" ||
@@ -2657,8 +2657,20 @@ int main() {
             corePaletteCatalog->functions[5].id != "joy_root_palette" ||
             corePaletteCatalog->functions[6].id != "diverging_signed_palette_v1" ||
             corePaletteCatalog->functions[7].id != "inside_outside_two_tone_v1" ||
-            corePaletteCatalog->functions[8].id != "gradient_three_stop_v1") {
+            corePaletteCatalog->functions[8].id != "gradient_three_stop_v1" ||
+            corePaletteCatalog->functions[9].id != "blackbody_palette_v1") {
             std::cerr << "Expected the extracted advanced color core to expose the complete shipped Palette catalog in materialized order\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreBlackbodyDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "blackbody_palette_v1");
+        if (!coreBlackbodyDescriptor ||
+            coreBlackbodyDescriptor->parameters.size() != 5 ||
+            coreBlackbodyDescriptor->parameters[0].path != "palette.temperature_0_k" ||
+            coreBlackbodyDescriptor->parameters[1].path != "palette.temperature_1_k" ||
+            coreBlackbodyDescriptor->parameters[2].path != "palette.temperature_mapping" ||
+            coreBlackbodyDescriptor->parameters[3].path != "palette.blend_weight" ||
+            coreBlackbodyDescriptor->parameters[4].path != "palette.blend_mode") {
+            std::cerr << "Expected blackbody_palette_v1 to expose stable temperature, mapping, and blend parameter paths\n";
             return 1;
         }
         const FunctionDescriptor* coreExplainoCmapDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "explaino_cmap");
@@ -3138,7 +3150,7 @@ int main() {
         }
         const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
         if (!paletteCatalog ||
-            paletteCatalog->functions.size() != 9 ||
+            paletteCatalog->functions.size() != 10 ||
             paletteCatalog->functions[0].id != "heatmap" ||
             paletteCatalog->functions[1].id != "phase_wheel_palette" ||
             paletteCatalog->functions[2].id != "banded_heatmap" ||
@@ -3147,8 +3159,29 @@ int main() {
             paletteCatalog->functions[5].id != "joy_root_palette" ||
             paletteCatalog->functions[6].id != "diverging_signed_palette_v1" ||
             paletteCatalog->functions[7].id != "inside_outside_two_tone_v1" ||
-            paletteCatalog->functions[8].id != "gradient_three_stop_v1") {
+            paletteCatalog->functions[8].id != "gradient_three_stop_v1" ||
+            paletteCatalog->functions[9].id != "blackbody_palette_v1") {
             std::cerr << "Expected the shipped Palette catalog to expose the complete materialized runtime-backed function set\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "blackbody_palette_v1") ||
+            windowState.lanes[2].rows[0].parameter_values.size() != 5 ||
+            windowState.lanes[2].rows[0].parameter_values[0].path != "palette.temperature_0_k" ||
+            windowState.lanes[2].rows[0].parameter_values[1].path != "palette.temperature_1_k" ||
+            windowState.lanes[2].rows[0].parameter_values[2].path != "palette.temperature_mapping" ||
+            windowState.lanes[2].rows[0].parameter_values[3].path != "palette.blend_weight" ||
+            windowState.lanes[2].rows[0].parameter_values[4].path != "palette.blend_mode") {
+            std::cerr << "Expected the shipped Palette lane to expose Black Body authority controls\n";
+            return 1;
+        }
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
+            visibleParamIndexes.size() != 5 ||
+            visibleParamIndexes[0] != 0 ||
+            visibleParamIndexes[1] != 1 ||
+            visibleParamIndexes[2] != 2 ||
+            visibleParamIndexes[3] != 3 ||
+            visibleParamIndexes[4] != 4) {
+            std::cerr << "Expected Black Body temperature, mapping, and blend parameters to be live-renderable\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||

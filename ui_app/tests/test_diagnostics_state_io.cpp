@@ -6432,6 +6432,97 @@ int main() {
       }
     }
 
+
+
+    {
+        ViewState view{};
+        view.fractal_type = FractalType::julia;
+        KernelParams params{};
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = {
+            ColorSignal::smooth_escape,
+            ColorPalette::blackbody_palette_v1,
+            ColorGradingPreset::escape_default};
+        params.color_palette_stack_count = 1;
+        params.color_palette_stack[0].palette = ColorPalette::blackbody_palette_v1;
+        params.color_palette_stack[0].params.blackbody_temperature_0_k = 2400.0f;
+        params.color_palette_stack[0].params.blackbody_temperature_1_k = 18000.0f;
+        params.color_palette_stack[0].params.blackbody_temperature_mapping =
+            BlackbodyTemperatureMapping::linear_kelvin;
+        RebuildBlackbodyPaletteRuntimeCache(&params.color_palette_stack[0].params);
+
+        RenderSettings render{};
+        render.resolution = {2, 2};
+        RenderStats stats{};
+        const std::vector<std::uint32_t> rgba(4, 0xff123456u);
+        const std::filesystem::path captureDir = tempRoot / "blackbody_palette_roundtrip";
+        std::filesystem::remove_all(captureDir);
+        DiagnosticsCaptureResult capture{};
+        std::string error;
+        if (!CaptureDiagnosticsBundleToDir(
+                captureDir.string(),
+                view,
+                params,
+                render,
+                stats,
+                rgba.data(),
+                rgba.size(),
+                &capture,
+                &error)) {
+            std::cerr << "Expected Black Body state capture to succeed: " << error << "\n";
+            return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson) ||
+            stateJson.find("\"palette\": \"blackbody_palette_v1\"") == std::string::npos ||
+            stateJson.find("\"blackbody_temperature_0_k\": 2400") == std::string::npos ||
+            stateJson.find("\"blackbody_temperature_1_k\": 18000") == std::string::npos ||
+            stateJson.find("\"blackbody_temperature_mapping\": \"linear_kelvin\"") == std::string::npos ||
+            stateJson.find("blackbody_lut_x0") != std::string::npos ||
+            stateJson.find("blackbody_lut_x1") != std::string::npos ||
+            stateJson.find("blackbody_lut_dx") != std::string::npos) {
+            std::cerr << "Expected state.json to persist Black Body authority without derived LUT cache values\n";
+            return 1;
+        }
+
+        ViewState loadedView{};
+        KernelParams loadedParams{};
+        RenderSettings loadedRender{};
+        if (!LoadDiagnosticsStateJson(
+                stateJson,
+                &loadedView,
+                &loadedParams,
+                &loadedRender,
+                &error) ||
+            loadedParams.color_palette_stack_count != 1 ||
+            loadedParams.color_palette_stack[0].palette != ColorPalette::blackbody_palette_v1 ||
+            !NearlyEqual(loadedParams.color_palette_stack[0].params.blackbody_temperature_0_k, 2400.0, 1.0e-6) ||
+            !NearlyEqual(loadedParams.color_palette_stack[0].params.blackbody_temperature_1_k, 18000.0, 1.0e-6) ||
+            loadedParams.color_palette_stack[0].params.blackbody_temperature_mapping !=
+                BlackbodyTemperatureMapping::linear_kelvin) {
+            std::cerr << "Expected non-default Black Body state to round-trip: " << error << "\n";
+            return 1;
+        }
+        const ColorPipelinePaletteRuntimeParams& loadedPalette =
+            loadedParams.color_palette_stack[0].params;
+        if (!NearlyEqual(
+                loadedPalette.blackbody_lut_x0,
+                BlackbodyPaletteLutCoordinateForTemperature(2400.0f),
+                1.0e-4) ||
+            !NearlyEqual(
+                loadedPalette.blackbody_lut_x1,
+                BlackbodyPaletteLutCoordinateForTemperature(18000.0f),
+                1.0e-4) ||
+            !NearlyEqual(
+                loadedPalette.blackbody_lut_dx,
+                loadedPalette.blackbody_lut_x1 - loadedPalette.blackbody_lut_x0,
+                1.0e-4)) {
+            std::cerr << "Expected Black Body load to rebuild derived LUT cache values\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_diagnostics_state_io: all passed\n";
     return 0;
 }

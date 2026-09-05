@@ -429,9 +429,9 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*shape, "log_compress") &&
             HasFunction(*shape, "smoothstep_range") && HasFunction(*shape, "signed_unit_map_v1"),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctions");
-    Check(palette->default_function_id == std::string("heatmap") && palette->functions.size() == 9 &&
+    Check(palette->default_function_id == std::string("heatmap") && palette->functions.size() == 10 &&
             HasFunction(*palette, "explaino_cmap") && HasFunction(*palette, "root_classic_palette") &&
-            HasFunction(*palette, "joy_root_palette"),
+            HasFunction(*palette, "joy_root_palette") && HasFunction(*palette, "blackbody_palette_v1"),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctions");
     Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 10 &&
             HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default") && HasFunction(*grading, "neutral_finish") && HasFunction(*grading, "tone_map_finish") && HasFunction(*grading, "grade_glow") && HasFunction(*grading, "balance_void_grade"),
@@ -470,7 +470,7 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             "phase_repeat_v1",
             "phase_mirror_v1"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
-    Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette", "diverging_signed_palette_v1", "inside_outside_two_tone_v1", "gradient_three_stop_v1"}),
+    Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette", "diverging_signed_palette_v1", "inside_outside_two_tone_v1", "gradient_three_stop_v1", "blackbody_palette_v1"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctionOrder");
     Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default", "neutral_finish", "tone_map_finish", "grade_glow", "balance_void_grade", "levels_gamma_v1", "hue_rotate_v1"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradingFunctionOrder");
@@ -1188,11 +1188,11 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
 
     Check(contract.lanes.size() == color_pipeline_core::GetColorPipelineLaneCatalogs().size(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_LaneCount");
-    Check(contract.compatibility.size() == 28,
+    Check(contract.compatibility.size() == 34,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityCount");
-    Check(contract.compat_overrides.size() == 7,
+    Check(contract.compat_overrides.size() == 9,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatOverrideCount");
-    Check(contract.compatibility_audit.size() == 28,
+    Check(contract.compatibility_audit.size() == 34,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
     Check(contract.recipes.size() == 9, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.has_recipe_v2, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Present");
@@ -1235,7 +1235,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
                 contract.edge_links[2].id == "palette_to_grading",
             "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_EdgeLinkOrder");
     }
-    Check(contract.resolution_cases.size() == 29,
+    Check(contract.resolution_cases.size() == 38,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ResolutionCaseCount");
     const MaterializedColorPipelineCompatibilityAudit* smoothAudit =
         FindCompatibilityAudit(contract, "smooth_escape_ramp", "heatmap", "contrast_lift");
@@ -1438,11 +1438,11 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     }
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
-    Check(parity.lane_count == 4 && parity.function_count == 49 &&
-            parity.compatibility_count == 28 && parity.recipe_count == 9 &&
+    Check(parity.lane_count == 4 && parity.function_count == 50 &&
+            parity.compatibility_count == 34 && parity.recipe_count == 9 &&
             parity.composite_function_count == 1 &&
             parity.composite_max_fully_expanded_lane_rows == 8 &&
-            parity.taxonomy_group_count == 30 && parity.unsupported_pair_count > 0,
+            parity.taxonomy_group_count == 31 && parity.unsupported_pair_count > 0,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportCounts");
 
     const std::vector<ColorPipelineLaneCatalog>& catalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
@@ -1770,7 +1770,7 @@ void TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup() {
     Check(color_pipeline_core::IsColorPipelineCompatibilityDiagnosticsActive() &&
             color_pipeline_core::ColorPipelineCompatibilityDiagnosticsAuthorityId() == std::string("materialized_json_diagnostic"),
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_DiagnosticsActive");
-    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 28,
+    Check(color_pipeline_core::CountActiveColorPipelineCompatibilityRows() == 34,
         "TestMaterializedUiSaltMetadataCanOwnCompatibilityLookup_Count");
 
     color_pipeline_core::ColorPipelineCompatibilityRouteExplanation smoothExplanation;
@@ -2682,7 +2682,8 @@ void TestLowRiskFunctionBatchRuntimeOwners() {
         "TestLowRiskFunctionBatchRuntimeOwners_ShapeEnumsAppendOnly");
     Check(static_cast<int>(ColorPalette::diverging_signed_palette_v1) == 6 &&
             static_cast<int>(ColorPalette::inside_outside_two_tone_v1) == 7 &&
-            static_cast<int>(ColorPalette::gradient_three_stop_v1) == 8,
+            static_cast<int>(ColorPalette::gradient_three_stop_v1) == 8 &&
+            static_cast<int>(ColorPalette::blackbody_palette_v1) == 9,
         "TestLowRiskFunctionBatchRuntimeOwners_PaletteEnumsAppendOnly");
     Check(static_cast<int>(ColorGradingPreset::levels_gamma_v1) == 8 &&
             static_cast<int>(ColorGradingPreset::hue_rotate_v1) == 9,

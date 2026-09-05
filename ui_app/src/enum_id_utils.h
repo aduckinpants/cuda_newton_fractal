@@ -135,6 +135,7 @@ inline constexpr EnumIdPair<ColorPalette> kColorPaletteIds[] = {
     {ColorPalette::diverging_signed_palette_v1, "diverging_signed_palette_v1"},
     {ColorPalette::inside_outside_two_tone_v1, "inside_outside_two_tone_v1"},
     {ColorPalette::gradient_three_stop_v1, "gradient_three_stop_v1"},
+    {ColorPalette::blackbody_palette_v1, "blackbody_palette_v1"},
 };
 
 inline constexpr EnumIdPair<ColorGradingPreset> kColorGradingPresetIds[] = {
@@ -368,6 +369,26 @@ inline const char* ColorPaletteId(ColorPalette value) {
 
 inline bool TryParseColorPaletteId(std::string_view id, ColorPalette* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kColorPaletteIds, outValue);
+}
+
+inline const char* BlackbodyTemperatureMappingId(BlackbodyTemperatureMapping value) {
+    switch (value) {
+    case BlackbodyTemperatureMapping::reciprocal_temperature: return "reciprocal_temperature";
+    case BlackbodyTemperatureMapping::linear_kelvin: return "linear_kelvin";
+    }
+    return nullptr;
+}
+
+inline bool TryParseBlackbodyTemperatureMappingId(std::string_view id, BlackbodyTemperatureMapping* outValue) {
+    if (id == "reciprocal_temperature") {
+        if (outValue) *outValue = BlackbodyTemperatureMapping::reciprocal_temperature;
+        return true;
+    }
+    if (id == "linear_kelvin") {
+        if (outValue) *outValue = BlackbodyTemperatureMapping::linear_kelvin;
+        return true;
+    }
+    return false;
 }
 
 inline const char* ColorGradingPresetId(ColorGradingPreset value) {

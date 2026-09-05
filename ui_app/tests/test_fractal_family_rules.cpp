@@ -842,6 +842,16 @@ int main() {
             std::cerr << "balance_void_grade should stay available to escape-time Explaino tuples without widening into ExplainO-BalanceVoid family work\n";
             return 1;
         }
+        const ColorPipelineSelection blackbodySmooth = {
+            ColorSignal::smooth_escape,
+            ColorPalette::blackbody_palette_v1,
+            ColorGradingPreset::escape_default};
+        if (!TryMirroredColoringModeForPipeline(blackbodySmooth, &mirroredMode) ||
+            mirroredMode != ColoringMode::smooth_escape ||
+            !IsColorPipelineAllowedForFractal(FractalType::newton, blackbodySmooth)) {
+            std::cerr << "Black Body unit-scalar tuples should use the shared smooth-escape family gate\n";
+            return 1;
+        }
     }
 
     {
