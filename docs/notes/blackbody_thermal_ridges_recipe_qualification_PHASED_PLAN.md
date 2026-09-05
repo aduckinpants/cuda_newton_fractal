@@ -186,7 +186,7 @@ No production C++ source change is expected. Any required production mutation tr
 | --- | --- | --- |
 | Slice A | complete | `9b9ec78`, pushed, rearward `ok` |
 | Slice B | complete | `0437e6c`, pushed, rearward `ok` |
-| Slice C bootstrap | pending | child plan/contract not committed or locked |
+| Slice C bootstrap | complete | `3db7ed3`; plan/contract committed under docs-only authority |
 | Preservation baseline | pending | pre-recipe evidence not frozen |
 | Recipe metadata | pending | no `blackbody_thermal_ridges` recipe exists |
 | Visual/qualification/performance | pending | required artifacts absent |
@@ -194,18 +194,20 @@ No production C++ source change is expected. Any required production mutation tr
 
 ## Hostile Audit
 
-- Status: pending
+- Status: complete
 - Required posture: assume attractive output can hide recipe bypass, stale metadata, source collapse, wrong sampler evidence, replay drift, or misleading timing.
+- Scope: planning/bootstrap audit only. Product mutation reopens this audit under the locked Slice C checkpoint.
 
 ## Audit Passes
 
-- [open] Pass 1 - inspect baseline freeze, graph-only authority, semantic ids, exact recipe overrides, and generated metadata freshness.
-- [open] Pass 2 - inspect strip provenance, audition invariance, occupancy/sensitivity math, capture/replay authority, and interleaved timing methodology.
-- [open] Pass 3 - clean re-read after any repairs; rerun native/published evidence and inspect final diff/closure truth.
+- [x] Pass 1 - planning review locked baseline freeze, graph-only authority, semantic ids, exact recipe overrides, and generated metadata freshness before mutation.
+- [x] Pass 2 - planning review found strip and timing authority needed stronger boundaries; the plan now requires actual host-runtime sampler export and one persistent interleaved process per size.
+- [x] Pass 3 - clean re-read of the repaired planning state confirmed bounded product surfaces, fixed thresholds, durable artifacts, and an explicit campaign stop boundary.
 
 ## Audit Findings
 
-- [ ] No findings recorded yet.
+- [x] Test-only strip generation could have silently sampled the Python reference instead of shipped host arithmetic; evidence now originates from the shared host runtime sampler and records its identity/hash.
+- [x] Sequential baseline-then-palette timing could confuse clock drift with palette cost; the performance court now alternates pairs in one persistent process per size.
 
 ## Stop Point
 
