@@ -63,7 +63,7 @@ This viewer-first slice adds the graph recipe, freezes/verifies existing recipe 
 
 In scope:
 
-- One CIE/Planck generator and one generated 512-entry RGB LUT.
+- One CIE/Planck generator and one generated 1024-entry RGB LUT.
 - One append-only Palette: `blackbody_palette_v1` / `Black Body`.
 - Two Kelvin endpoints and one mapping enum.
 - One recipe: `blackbody_thermal_ridges` / `Black Body Thermal Ridges`.
@@ -124,7 +124,7 @@ The LUT and Palette output are internal `color.linear_rgb`. The current viewer u
 
 ### LUT Artifact
 
-- 512 float32 RGB entries, uniform in reciprocal temperature from 800 through 40000 K.
+- 1024 float32 RGB entries, uniform in reciprocal temperature from 800 through 40000 K. The original 512-entry draft failed its own dense error bound at the peak-normalization crossover; 1024 is the smallest conventional table size with useful margin.
 - Generated initializer/header and JSON metadata are checked in and byte-freshness tested.
 - Metadata records generator version, source hashes, constants, matrix, endpoints, neutral-lift count/max/temperature, and witnesses at 800, 1600, 3000, 6500, 12000, and 40000 K.
 - Witnesses include XYZ, xy, pre-gamut RGB, lift, final RGB, and LUT RGB.
@@ -134,7 +134,7 @@ The LUT and Palette output are internal `color.linear_rgb`. The current viewer u
 
 ```text
 q(T) = ((1/T) - (1/800)) / ((1/40000) - (1/800))
-x(T) = 511*q(T)
+x(T) = 1023*q(T)
 ```
 
 Append `ColorPalette::blackbody_palette_v1 = 9`. Function id `blackbody_palette_v1`, label `Black Body`, typed `scalar.unit -> color.linear_rgb`.
@@ -147,7 +147,7 @@ Append `ColorPalette::blackbody_palette_v1 = 9`. Function id `blackbody_palette_
 
 Equal/reversed endpoints are valid. Finite input clamps to `[0,1]`; nonfinite becomes zero. Materialization derives non-persisted `x0=x(T0)`, `x1=x(T1)`, and `dx=x1-x0`. State stores only endpoints/mapping; every row rebuild, load, endpoint edit, and mapping edit reconstructs the cache.
 
-Reciprocal mode evaluates `x=fma(u,dx,x0)` with no Kelvin or reciprocal. Linear mode evaluates `T=lerp(T0,T1,u)` then `x=x(T)`. Clamp x, guard entry 511, otherwise manually floor and interpolate two entries.
+Reciprocal mode evaluates `x=fma(u,dx,x0)` with no Kelvin or reciprocal. Linear mode evaluates `T=lerp(T0,T1,u)` then `x=x(T)`. Clamp x, guard entry 1023, otherwise manually floor and interpolate two entries.
 
 ### CUDA LUT Ownership
 
@@ -189,7 +189,7 @@ It uses existing `recipe_v2_graph` Resolve/Prepare/Commit only. No id switch, di
 ### Numerical And Backend
 
 - Source checksum/domain and deterministic byte freshness.
-- `q(800)=0`, `q(40000)=1`, monotonicity, and `q(T_i) ~= i/511`.
+- `q(800)=0`, `q(40000)=1`, monotonicity, and `q(T_i) ~= i/1023`.
 - 4096 temperatures compare interpolated LUT output to the complete float64 pipeline; max channel error `<=0.002`.
 - Independent xy witnesses and a linear-RGB-not-sRGB guard.
 - Deterministic reversal, equal-endpoint, and mapping-endpoint metamorphic cases.

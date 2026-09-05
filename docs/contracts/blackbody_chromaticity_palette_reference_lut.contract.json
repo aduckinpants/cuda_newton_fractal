@@ -5,6 +5,7 @@
   "workflow_type": "headless_only",
   "plan_path": "docs/notes/blackbody_chromaticity_palette_reference_lut_PHASED_PLAN.md",
   "allowed_mutation_scope": [
+    ".gitattributes",
     "docs/contracts",
     "docs/notes",
     "docs/reference",
@@ -36,7 +37,7 @@
     "planck_c2_m_k": 0.01438776877,
     "temperature_min_k": 800,
     "temperature_max_k": 40000,
-    "lut_entry_count": 512,
+    "lut_entry_count": 1024,
     "lut_spacing": "reciprocal_temperature",
     "lut_value_type": "float32_internal_linear_rgb",
     "max_interpolation_channel_error": 0.002,
