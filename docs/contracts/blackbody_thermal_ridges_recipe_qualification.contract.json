@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "contract_id": "blackbody_thermal_ridges_recipe_qualification",
+  "feature_id": "blackbody_chromaticity_palette_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/blackbody_thermal_ridges_recipe_qualification_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/ui_salt",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "tests",
+    "tools",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "clean pushed Slice B head 0437e6ced13def14d51f5035dd7f9c16e2b55ab8",
+    "blackbody_palette_v1 runtime and generated 1024-entry LUT",
+    "current recipe_v2_graph Resolve Prepare Commit authority",
+    "public no-mouse recipe selector Apply capture and replay path",
+    "existing color_source_measurement runtime report"
+  ],
+  "forbidden_operator_prompts": [
+    "add another recipe palette shape source grading adapter or fractal lane",
+    "add a C++ recipe id switch or direct tuple reconstruction",
+    "change the locked recipe after audition",
+    "claim physical temperature displayed CIE fidelity or performance improvement",
+    "use physical mouse automation",
+    "resume Parameter Motion SDF growth graph UI or color management"
+  ],
+  "required_defaults": {
+    "accepted_base_head": "0437e6ced13def14d51f5035dd7f9c16e2b55ab8",
+    "active_slice": "recipe_and_qualification",
+    "recipe_id": "blackbody_thermal_ridges",
+    "recipe_version": 1,
+    "recipe_label": "Black Body Thermal Ridges",
+    "source_id": "smooth_escape_ramp",
+    "source_node_id": "source.escape_signal",
+    "shape_id": "mirror_repeat",
+    "shape_node_id": "shape.thermal_ridges",
+    "shape_frequency": 4,
+    "shape_phase": 0,
+    "palette_id": "blackbody_palette_v1",
+    "palette_node_id": "palette.blackbody",
+    "temperature_0_k": 1600,
+    "temperature_1_k": 12000,
+    "temperature_mapping": "reciprocal_temperature",
+    "grading_id": "contrast_lift",
+    "grading_node_id": "grading.thermal_finish",
+    "application_authority": "recipe_v2_graph",
+    "fallback_active": false,
+    "evidence_resolution": [
+      1024,
+      768
+    ],
+    "performance_resolutions": [
+      [
+        1024,
+        768
+      ],
+      [
+        2048,
+        1536
+      ]
+    ],
+    "performance_warmup_pairs": 5,
+    "performance_measured_pairs": 20,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "production_cpp_mutation": "forbidden_without_contract_revision",
+    "direct_recipe_tuple": "forbidden",
+    "hidden_adapter": "forbidden",
+    "audition_changes_locked_recipe": "forbidden",
+    "display_colorimetry_claim": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/blackbody_thermal_ridges_recipe_qualification.contract.json --out-json artifacts/validation/blackbody_thermal_ridges_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_recipe_plan_sync --log artifacts/logs/blackbody_recipe_plan_sync.log --out-json artifacts/validation/blackbody_recipe_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/blackbody_thermal_ridges_recipe_qualification_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/blackbody_recipe_code_quality.json",
+    "py -3.14 -m pytest tests/test_ui_salt_materializer.py -q --junitxml artifacts/pytest/blackbody_recipe_materializer.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_recipe_native --log artifacts/logs/blackbody_recipe_native.log --out-json artifacts/validation/blackbody_recipe_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_recipe_publish --log artifacts/logs/blackbody_recipe_publish.log --out-json artifacts/validation/blackbody_recipe_publish.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_blackbody_thermal_ridges.py -q --junitxml artifacts/pytest/blackbody_recipe_published.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/blackbody_thermal_ridges_recipe_qualification_PHASED_PLAN.md --out-json artifacts/validation/blackbody_recipe_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_recipe_diff_check --log artifacts/logs/blackbody_recipe_diff_check.log --out-json artifacts/validation/blackbody_recipe_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "Slice C contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_thermal_ridges_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "materializer_recipe_ok",
+      "description": "The exact graph-authoritative Black Body Thermal Ridges recipe materializes.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/blackbody_recipe_materializer.junit.xml",
+      "test_nodeid": "tests/test_ui_salt_materializer.py::test_blackbody_thermal_ridges_recipe_materializes_exact_graph"
+    },
+    {
+      "assertion_id": "native_ok",
+      "description": "Full native court including Black Body host CUDA evidence passes.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_recipe_native.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "runtime_publish_ok",
+      "description": "Published viewer contains the graph recipe.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_recipe_publish.json",
+      "json_path": "exit_code",
+      "equals": 0
+    },
+    {
+      "assertion_id": "public_recipe_replay_ok",
+      "description": "Public Apply qualification capture and replay pass.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/blackbody_recipe_published.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_blackbody_thermal_ridges.py::test_blackbody_thermal_ridges_public_apply_capture_replay_and_evidence"
+    },
+    {
+      "assertion_id": "interleaved_performance_ok",
+      "description": "Interleaved performance court meets the locked thresholds.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/blackbody_recipe_published.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_blackbody_thermal_ridges.py::test_blackbody_palette_interleaved_performance"
+    },
+    {
+      "assertion_id": "qualification_artifact_ok",
+      "description": "Qualification artifact records a passing classification.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/blackbody_chromaticity_palette/qualification/blackbody_qualification.json",
+      "json_path": "classification",
+      "equals": "passed"
+    },
+    {
+      "assertion_id": "performance_artifact_ok",
+      "description": "Performance artifact records a proven classification.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/blackbody_chromaticity_palette/performance/blackbody_performance.json",
+      "json_path": "classification",
+      "equals": "proven"
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Slice C hostile audit closes after repair and clean re-read.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_recipe_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "diff_check_ok",
+      "description": "Slice C diff is structurally clean.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_recipe_diff_check.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

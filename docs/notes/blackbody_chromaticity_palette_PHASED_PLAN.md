@@ -1,6 +1,6 @@
 # Black Body Chromaticity Palette Campaign
 
-Status: Slice A is closed and pushed at `9b9ec78`; Slice B runtime Palette plan/contract bootstrap is active. Parameter Motion remains paused. This umbrella plan sequences bounded child slices; each child contract controls its own product mutation.
+Status: Slices A and B are closed and pushed at `9b9ec78` and `0437e6c`; Slice C recipe/qualification plan/contract bootstrap is active. Parameter Motion remains paused. This umbrella plan sequences bounded child slices; each child contract controls its own product mutation.
 
 ## Explicit User Asks
 
@@ -13,7 +13,8 @@ Status: Slice A is closed and pushed at `9b9ec78`; Slice B runtime Palette plan/
 
 ## Current Phase
 
-Slice A closed the reproducible reference/LUT substrate at `9b9ec78` after its RED court required 1024 rather than 512 entries. Slice B runtime Palette plan/contract is now checked in for a separate viewer-first run. Slice C remains preplanned and unopened.
+Slice A closed the reproducible reference/LUT substrate at `9b9ec78`. Slice B closed the standalone typed runtime Palette at `0437e6c` with exact CPU/CUDA parity and published non-default replay. Slice C is now being bootstrapped as the final graph recipe, evidence, performance, and closure slice.
+
 ## Phase Checklist
 
 - [x] Merge and push accepted Parameter Motion planning without activating implementation.
@@ -23,7 +24,7 @@ Slice A closed the reproducible reference/LUT substrate at `9b9ec78` after its R
 - [x] Reconcile its findings into bounded child slices.
 - [x] Validate and checkpoint this planning-only contract.
 - [x] Slice A - reference data, deterministic generator, LUT, and independent numerical court.
-- [ ] Slice B - append-only runtime Palette, CUDA parity, state/capture, and non-default published replay.
+- [x] Slice B - append-only runtime Palette, CUDA parity, state/capture, and non-default published replay.
 - [ ] Slice C - graph recipe, visual/occupancy evidence, interleaved performance, preservation, hardening, and closure.
 - [ ] Stop for replan before additional palettes, color management, graph UI, SDF growth, or Parameter Motion implementation.
 
@@ -239,8 +240,8 @@ Acceptance:
 | Initial contract | rejected | blind review found workflow and authority gaps |
 | Reconciled umbrella plan | complete | checkpoint 8ca6482; bounded Slice A/B/C contracts defined |
 | Slice A | complete | `9b9ec78`, validation/contract receipts, rearward `ok`, pushed |
-| Slice B | ready | child plan/contract bootstrapped; implementation not started |
-| Slice C | pending | child plan/contract not opened |
+| Slice B | complete | `0437e6c`, validation/contract receipts, rearward `ok`, pushed |
+| Slice C | bootstrap | child plan/contract being checked in before product mutation |
 
 ## Action Hostile Review
 
