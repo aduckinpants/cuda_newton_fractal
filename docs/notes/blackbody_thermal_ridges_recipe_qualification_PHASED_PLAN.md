@@ -1,6 +1,6 @@
 # Black Body Thermal Ridges Recipe Qualification Slice
 
-Status: complete at the final Slice C checkpoint. Machine receipts, committed-HEAD rearward review, and push follow this checked-in closure state.
+Status: complete with a narrow post-checkpoint contract-proof binding repair. Product implementation and all qualification thresholds remain unchanged.
 
 ## Explicit User Asks
 
@@ -223,6 +223,7 @@ No other production C++ source change is permitted. Any further production mutat
 - [x] The predeclared +10% high-temperature endpoint perturbation produced only `0.00790` mean absolute normalized RGB change because black-body chromaticity compresses at high kelvin. A bounded audition fixed the witness at +20% (`12000 -> 14400`), which produces `0.01122` without changing the recipe default or the locked `0.01` qualification threshold.
 - [x] The first recipe test incorrectly compared the 1024x768 float32 qualification frame with Capture Finding output. Capture Finding intentionally promotes to 4096x3072 `standard`/float64; the repaired court instead proves two archived-state replays agree and their pixels are exactly equal to the archived `frame.png`.
 - [x] Frozen graph-receipt equality was brittle to equivalent float32 values serialized with different decimal widths (`1.14999997616` versus `1.149999976158142`). Preservation now canonicalizes only floating receipt leaves to nine decimal places; structure, ids, topology, booleans, enums, and committed frame/row evidence remain exact.
+- [x] The first committed contract bound qualification/performance secondary JSON directly, but validation receipts index command-primary evidence and therefore left those assertions unprovable. The repair binds each claim to the exact published JUnit case that creates and asserts the durable JSON artifact; no product code or qualification threshold changed.
 ## Stop Point
 
 After this slice closes: `Preplanned sliced work is exhausted; stop for replan before more product mutation.`

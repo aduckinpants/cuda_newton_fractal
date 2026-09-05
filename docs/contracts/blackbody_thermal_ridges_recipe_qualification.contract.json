@@ -141,19 +141,17 @@
     },
     {
       "assertion_id": "qualification_artifact_ok",
-      "description": "Qualification artifact records a passing classification.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/blackbody_chromaticity_palette/qualification/blackbody_qualification.json",
-      "json_path": "classification",
-      "equals": "passed"
+      "description": "The published-runtime qualification test writes the durable qualification artifact and asserts its passing gates.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/blackbody_recipe_published.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_blackbody_thermal_ridges.py::test_blackbody_thermal_ridges_public_apply_capture_replay_and_evidence"
     },
     {
       "assertion_id": "performance_artifact_ok",
-      "description": "Performance artifact records a proven classification.",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/blackbody_chromaticity_palette/performance/blackbody_performance.json",
-      "json_path": "classification",
-      "equals": "proven"
+      "description": "The CUDA-event performance test writes the durable performance artifact and asserts its proven classification.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/blackbody_recipe_published.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_blackbody_thermal_ridges.py::test_blackbody_palette_interleaved_performance"
     },
     {
       "assertion_id": "hostile_audit_ok",
