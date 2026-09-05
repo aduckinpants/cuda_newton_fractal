@@ -5,8 +5,8 @@
   "workflow_type": "workflow_only",
   "plan_path": "docs/notes/blackbody_chromaticity_palette_PHASED_PLAN.md",
   "allowed_mutation_scope": [
-    "docs/contracts/blackbody_chromaticity_palette.contract.json",
-    "docs/notes/blackbody_chromaticity_palette_PHASED_PLAN.md",
+    "docs/contracts",
+    "docs/notes",
     "HANDOFF_LOG.md",
     "artifacts"
   ],
@@ -34,7 +34,8 @@
     "palette_enum_value": 9,
     "recipe_id": "blackbody_thermal_ridges",
     "state_json_replay_authority": true,
-    "physical_mouse_automation": false
+    "physical_mouse_automation": false,
+    "child_plan_contract_bootstrap_authorized": true
   },
   "forbidden_defaults": {
     "product_mutation": "forbidden",

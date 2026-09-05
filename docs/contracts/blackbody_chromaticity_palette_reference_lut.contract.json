@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "contract_id": "blackbody_chromaticity_palette_reference_lut",
+  "feature_id": "blackbody_chromaticity_palette_campaign",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/blackbody_chromaticity_palette_reference_lut_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/reference",
+    "tools",
+    "tests",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "closed umbrella planning checkpoint 9ac0529",
+    "official CIE 1931 2-degree observer source and metadata",
+    "exact Planck matrix gamut LUT and numerical proof contract",
+    "blind review requirement for independent witnesses and bounded checkpoints"
+  ],
+  "forbidden_operator_prompts": [
+    "change viewer or runtime behavior",
+    "edit ui_app source or tests",
+    "add ColorPalette enum or UI-Salt metadata",
+    "publish the viewer",
+    "claim displayed chromaticity fidelity",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "product_runtime_mutation_authorized": false,
+    "cie_csv_sha256": "fa663e3535a7e0763a745993a1f0a192eb0275ac46ad2d1befd7626841e713c1",
+    "cie_wavelength_min_nm": 360,
+    "cie_wavelength_max_nm": 830,
+    "cie_wavelength_step_nm": 1,
+    "planck_c2_m_k": 0.01438776877,
+    "temperature_min_k": 800,
+    "temperature_max_k": 40000,
+    "lut_entry_count": 512,
+    "lut_spacing": "reciprocal_temperature",
+    "lut_value_type": "float32_internal_linear_rgb",
+    "max_interpolation_channel_error": 0.002,
+    "next_slice": "runtime_palette"
+  },
+  "forbidden_defaults": {
+    "display_encoded_srgb_lut": "forbidden",
+    "runtime_spectral_integration": "forbidden",
+    "self_referential_only_proof": "forbidden",
+    "viewer_runtime_mutation": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/blackbody_chromaticity_palette_reference_lut.contract.json --out-json artifacts/validation/blackbody_reference_lut_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_reference_plan_sync --log artifacts/logs/blackbody_reference_plan_sync.log --out-json artifacts/validation/blackbody_reference_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/blackbody_chromaticity_palette_reference_lut_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/blackbody_reference_code_quality.json",
+    "py -3.14 -m pytest tests/test_blackbody_palette_generator.py -q --junitxml artifacts/pytest/blackbody_reference_lut.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/blackbody_chromaticity_palette_reference_lut_PHASED_PLAN.md --out-json artifacts/validation/blackbody_reference_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label blackbody_reference_diff_check --log artifacts/logs/blackbody_reference_diff_check.log --out-json artifacts/validation/blackbody_reference_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "Slice A contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_reference_lut_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "checked_lut_fresh",
+      "description": "Temporary generation byte-matches checked-in LUT and metadata.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/blackbody_reference_lut.junit.xml",
+      "test_nodeid": "tests/test_blackbody_palette_generator.py::test_checked_in_blackbody_lut_is_fresh"
+    },
+    {
+      "assertion_id": "reference_accuracy_ok",
+      "description": "Coordinate independent xy linear RGB and 4096-point accuracy court passes.",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/blackbody_reference_lut.junit.xml",
+      "test_nodeid": "tests/test_blackbody_palette_generator.py::test_blackbody_lut_reference_accuracy_and_independent_witnesses"
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "Generator preserves code-quality baseline.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_reference_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Slice A hostile audit closes after repair and clean re-read.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_reference_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "diff_check_ok",
+      "description": "Slice A diff is structurally clean.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/blackbody_reference_diff_check.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
