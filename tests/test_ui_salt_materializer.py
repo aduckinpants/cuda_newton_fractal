@@ -1117,6 +1117,7 @@ def test_checked_in_color_pipeline_contract_is_fresh(tmp_path):
         "root_glow",
         "curvature_relief",
         "lens_topography",
+        "blackbody_thermal_ridges",
     ]
     recipe_by_id = {recipe["id"]: recipe for recipe in recipe_v2}
     for recipe in recipe_v2:
@@ -1838,3 +1839,71 @@ def test_blackbody_palette_v1_materializes_typed_runtime_contract(tmp_path):
         ("root_log_proximity_v1", "identity"),
     ]:
         assert routes[(source, shape, "blackbody_palette_v1")]["status"] == "fail_closed"
+
+
+def test_blackbody_thermal_ridges_recipe_materializes_exact_graph(tmp_path):
+    out = tmp_path / "materialized.json"
+    proc = subprocess.run(
+        [sys.executable, str(TOOL), "--ui-salt", str(COLOR_PIPELINE_UI_SALT), "--out", str(out)],
+        cwd=str(REPO_ROOT),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    recipe = next(
+        item
+        for item in payload["composition_recipe_contract"]["recipe_v2"]
+        if item["id"] == "blackbody_thermal_ridges"
+    )
+    assert recipe["recipe_version"] == 1
+    assert recipe["label"] == "Black Body Thermal Ridges"
+    assert recipe["live_authority"] == "recipe_v2_graph"
+    assert recipe["status"] == "resolved"
+    assert recipe["fail_closed_reason"] == ""
+    assert recipe["chosen_adapters"] == []
+    assert recipe["source_fold"] == {
+        "operation": "ordered_destination_weighted_lerp",
+        "source_nodes": ["source.escape_signal"],
+        "fold_nodes": [],
+        "fold_edges": [],
+        "output_node": "source.escape_signal",
+        "first_source_blend": 1.0,
+    }
+    assert [(node["id"], node["lane"], node["function"]) for node in recipe["nodes"]] == [
+        ("source.escape_signal", "source", "smooth_escape_ramp"),
+        ("shape.thermal_ridges", "shape", "mirror_repeat"),
+        ("palette.blackbody", "palette", "blackbody_palette_v1"),
+        ("grading.thermal_finish", "grading", "contrast_lift"),
+    ]
+    overrides = {
+        (node["id"], item["descriptor_parameter_id"]): (
+            item.get("number_value")
+            if item["value_kind"] == "number"
+            else item.get("string_value")
+        )
+        for node in recipe["nodes"]
+        for item in node.get("parameter_overrides", [])
+    }
+    assert overrides == {
+        ("source.escape_signal", "signal.bias"): 0.0,
+        ("source.escape_signal", "signal.scale"): 1.0,
+        ("shape.thermal_ridges", "shape.frequency"): 4.0,
+        ("shape.thermal_ridges", "shape.phase"): 0.0,
+        ("palette.blackbody", "palette.temperature_0_k"): 1600.0,
+        ("palette.blackbody", "palette.temperature_1_k"): 12000.0,
+        ("palette.blackbody", "palette.temperature_mapping"): "reciprocal_temperature",
+        ("grading.thermal_finish", "grade.exposure"): 1.0,
+        ("grading.thermal_finish", "grade.saturation"): 1.0,
+    }
+    assert [
+        (edge["edge_id"], edge["from_node"], edge["to_node"], edge["status"])
+        for edge in recipe["edges"]
+    ] == [
+        ("source_to_shape", "source.escape_signal", "shape.thermal_ridges", "direct"),
+        ("shape_to_palette", "shape.thermal_ridges", "palette.blackbody", "direct"),
+        ("palette_to_grading", "palette.blackbody", "grading.thermal_finish", "direct"),
+    ]
+    assert len(recipe["metadata_content_hash"]) == 64
+    int(recipe["metadata_content_hash"], 16)

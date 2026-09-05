@@ -166,8 +166,8 @@ void ValidateRecipes(
     report->recipe_count = static_cast<int>(contract.recipes.size());
     const std::vector<MaterializedColorPipelineRecipe>& hardcoded =
         color_pipeline_core::GetHardcodedColorPipelineRecipes();
-    if (contract.recipes.size() != hardcoded.size()) {
-        AddError(report, "recipe count mismatch");
+    if (contract.recipes.size() < hardcoded.size()) {
+        AddError(report, "materialized recipe catalog is missing hardcoded fallback recipes");
         return;
     }
     for (std::size_t recipeIndex = 0; recipeIndex < hardcoded.size(); ++recipeIndex) {

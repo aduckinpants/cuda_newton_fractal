@@ -332,5 +332,16 @@ recipe_param(recipe="lens_topography", node_id="source.lens_response", descripto
 recipe_param(recipe="lens_topography", node_id="source.lens_response", descriptor_parameter_id="signal.sign_contrast", value=0.65)
 recipe_param(recipe="lens_topography", node_id="palette.heatmap", descriptor_parameter_id="palette.cycle_scale", value=1.4)
 
+recipe(id="blackbody_thermal_ridges", version=1, label="Black Body Thermal Ridges", source="smooth_escape_ramp", source_node_id="source.escape_signal", source_blend=1.0, shape="mirror_repeat", shape_node_id="shape.thermal_ridges", palette="blackbody_palette_v1", palette_node_id="palette.blackbody", grading="contrast_lift", grading_node_id="grading.thermal_finish")
+recipe_param(recipe="blackbody_thermal_ridges", node_id="source.escape_signal", descriptor_parameter_id="signal.scale", value=1.0)
+recipe_param(recipe="blackbody_thermal_ridges", node_id="source.escape_signal", descriptor_parameter_id="signal.bias", value=0.0)
+recipe_param(recipe="blackbody_thermal_ridges", node_id="shape.thermal_ridges", descriptor_parameter_id="shape.frequency", value=4.0)
+recipe_param(recipe="blackbody_thermal_ridges", node_id="shape.thermal_ridges", descriptor_parameter_id="shape.phase", value=0.0)
+recipe_param(recipe="blackbody_thermal_ridges", node_id="palette.blackbody", descriptor_parameter_id="palette.temperature_0_k", value=1600.0)
+recipe_param(recipe="blackbody_thermal_ridges", node_id="palette.blackbody", descriptor_parameter_id="palette.temperature_1_k", value=12000.0)
+recipe_param(recipe="blackbody_thermal_ridges", node_id="palette.blackbody", descriptor_parameter_id="palette.temperature_mapping", value="reciprocal_temperature")
+recipe_param(recipe="blackbody_thermal_ridges", node_id="grading.thermal_finish", descriptor_parameter_id="grade.exposure", value=1.0)
+recipe_param(recipe="blackbody_thermal_ridges", node_id="grading.thermal_finish", descriptor_parameter_id="grade.saturation", value=1.0)
+
 explaino_contract(id="color_pipeline.explaino_cmap", hypothesis_space="color_pipeline_source_signal", authority="palette_row", lens="source_signal_to_explaino_cmap", invariant="runtime_backed_fail_closed_palette_mapping", proof="color_pipeline_metadata_parity", fallback="fail_closed", product_facing=False, diagnostic=True)
 explaino_contract(id="color_pipeline.balance_void_grade", hypothesis_space="color_pipeline_grading_manifold", authority="grading_row", lens="source_signal_to_balance_void_manifold", invariant="dedicated_runtime_owner_fields", proof="color_pipeline_metadata_parity", fallback="fail_closed", product_facing=False, diagnostic=True)

@@ -2084,13 +2084,14 @@ inline bool ValidateMaterializedColorPipelineRecipes(
     const std::vector<MaterializedColorPipelineRecipe>& recipes,
     std::string* outError) {
     const std::vector<MaterializedColorPipelineRecipe>& hardcoded = GetHardcodedColorPipelineRecipes();
-    if (recipes.size() != hardcoded.size()) {
+    if (recipes.size() < hardcoded.size()) {
         return SetColorPipelineMetadataCatalogError(
             outError,
-            "Materialized recipe count does not preserve the hardcoded recipe presets");
+            "Materialized recipes do not preserve every hardcoded fallback preset");
     }
-    for (std::size_t recipeIndex = 0; recipeIndex < hardcoded.size(); ++recipeIndex) {
-        if (!MaterializedColorPipelineRecipeMatchesHardcoded(recipes[recipeIndex], hardcoded[recipeIndex])) {
+    for (std::size_t recipeIndex = 0; recipeIndex < recipes.size(); ++recipeIndex) {
+        if (recipeIndex < hardcoded.size() &&
+            !MaterializedColorPipelineRecipeMatchesHardcoded(recipes[recipeIndex], hardcoded[recipeIndex])) {
             return SetColorPipelineMetadataCatalogError(
                 outError,
                 std::string("Materialized recipe does not preserve hardcoded preset '") +

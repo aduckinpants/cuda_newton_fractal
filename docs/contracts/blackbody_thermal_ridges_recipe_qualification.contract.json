@@ -8,6 +8,9 @@
     "docs/contracts",
     "docs/notes",
     "docs/ui_salt",
+    "ui_app/src/main.cpp",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_metadata_parity.cpp",
     "ui_app/tests",
     "ui_app/build_tests_vsdevcmd.cmd",
     "tests",
@@ -65,12 +68,14 @@
         1536
       ]
     ],
+    "performance_authority": "cuda_event_actual_device_palette_evaluator",
     "performance_warmup_pairs": 5,
     "performance_measured_pairs": 20,
+    "published_runtime_performance_claim": "none",
     "physical_mouse_automation": false
   },
   "forbidden_defaults": {
-    "production_cpp_mutation": "forbidden_without_contract_revision",
+    "production_cpp_mutation": "only automation-report source-measurement generalization in ui_app/src/main.cpp plus generic materialized recipe append acceptance and parity reporting in ui_app/src/color_pipeline_core.h and ui_app/src/color_pipeline_metadata_parity.cpp are permitted",
     "direct_recipe_tuple": "forbidden",
     "hidden_adapter": "forbidden",
     "audition_changes_locked_recipe": "forbidden",

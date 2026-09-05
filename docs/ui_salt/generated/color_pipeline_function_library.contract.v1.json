@@ -3791,6 +3791,21 @@
         "grading": "contrast_lift",
         "grading_node_id": "grading.contrast_lift",
         "fail_closed_reason": ""
+      },
+      {
+        "id": "blackbody_thermal_ridges",
+        "version": 1,
+        "label": "Black Body Thermal Ridges",
+        "source": "smooth_escape_ramp",
+        "source_node_id": "source.escape_signal",
+        "source_blend": 1.0,
+        "shape": "mirror_repeat",
+        "shape_node_id": "shape.thermal_ridges",
+        "palette": "blackbody_palette_v1",
+        "palette_node_id": "palette.blackbody",
+        "grading": "contrast_lift",
+        "grading_node_id": "grading.thermal_finish",
+        "fail_closed_reason": ""
       }
     ],
     "recipe_v2": [
@@ -4772,6 +4787,161 @@
             "adapter_cost": 0,
             "from_node": "palette.heatmap",
             "to_node": "grading.contrast_lift"
+          }
+        ],
+        "chosen_adapters": [],
+        "adapter_hops": 0,
+        "adapter_cost": 0,
+        "tie_break_rule": "exact_identity_safe_non_lossy_lower_cost_fewer_hops_declaration_order",
+        "fail_closed_reason": ""
+      },
+      {
+        "id": "blackbody_thermal_ridges",
+        "recipe_version": 1,
+        "canonicalization_id": "viewer.recipe_canonicalization.v1",
+        "metadata_content_hash": "f8c1fd1f9664355c00120efe4cfb79df8d72527adeefbd67197ab8cdc0bde427",
+        "label": "Black Body Thermal Ridges",
+        "source_recipe_id": "blackbody_thermal_ridges",
+        "ui_projection": "linear_color_stack",
+        "shadow_only": false,
+        "live_authority": "recipe_v2_graph",
+        "status": "resolved",
+        "nodes": [
+          {
+            "id": "source.escape_signal",
+            "lane": "source",
+            "function": "smooth_escape_ramp",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "signal.bias",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.0
+              },
+              {
+                "descriptor_parameter_id": "signal.scale",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.0
+              }
+            ]
+          },
+          {
+            "id": "shape.thermal_ridges",
+            "lane": "shape",
+            "function": "mirror_repeat",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "shape.frequency",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 4.0
+              },
+              {
+                "descriptor_parameter_id": "shape.phase",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 0.0
+              }
+            ]
+          },
+          {
+            "id": "palette.blackbody",
+            "lane": "palette",
+            "function": "blackbody_palette_v1",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "palette.temperature_0_k",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1600.0
+              },
+              {
+                "descriptor_parameter_id": "palette.temperature_1_k",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 12000.0
+              },
+              {
+                "descriptor_parameter_id": "palette.temperature_mapping",
+                "type": "enum",
+                "value_kind": "string",
+                "string_value": "reciprocal_temperature"
+              }
+            ]
+          },
+          {
+            "id": "grading.thermal_finish",
+            "lane": "grading",
+            "function": "contrast_lift",
+            "parameter_overrides": [
+              {
+                "descriptor_parameter_id": "grade.exposure",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.0
+              },
+              {
+                "descriptor_parameter_id": "grade.saturation",
+                "type": "float",
+                "value_kind": "number",
+                "number_value": 1.0
+              }
+            ]
+          }
+        ],
+        "source_fold": {
+          "operation": "ordered_destination_weighted_lerp",
+          "source_nodes": [
+            "source.escape_signal"
+          ],
+          "fold_nodes": [],
+          "fold_edges": [],
+          "output_node": "source.escape_signal",
+          "first_source_blend": 1.0
+        },
+        "edges": [
+          {
+            "edge_id": "source_to_shape",
+            "from_function": "smooth_escape_ramp",
+            "to_function": "mirror_repeat",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "scalar.unit",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "source.escape_signal",
+            "to_node": "shape.thermal_ridges"
+          },
+          {
+            "edge_id": "shape_to_palette",
+            "from_function": "mirror_repeat",
+            "to_function": "blackbody_palette_v1",
+            "from_type": "scalar.unit",
+            "to_type": "scalar.unit",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "shape.thermal_ridges",
+            "to_node": "palette.blackbody"
+          },
+          {
+            "edge_id": "palette_to_grading",
+            "from_function": "blackbody_palette_v1",
+            "to_function": "contrast_lift",
+            "from_type": "color.linear_rgb",
+            "to_type": "color.linear_rgb",
+            "output_type": "color.linear_rgb",
+            "status": "direct",
+            "adapters": [],
+            "adapter_hops": 0,
+            "adapter_cost": 0,
+            "from_node": "palette.blackbody",
+            "to_node": "grading.thermal_finish"
           }
         ],
         "chosen_adapters": [],

@@ -749,16 +749,10 @@ static int FirstNonSdfSourceRowIndex(const KernelParams& params, ColorSignal* ou
     return -1;
 }
 
-static int FindColorSourceStackRowIndex(
-    const KernelParams& params,
-    ColorSignal requestedSignal) {
-    const int sourceStackCount = ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count);
-    for (int index = 0; index < sourceStackCount; ++index) {
-        if (params.color_source_stack[index].signal == requestedSignal) {
-            return index;
-        }
-    }
-    return -1;
+static bool IsRootPatternMeasurementSignal(ColorSignal signal) {
+    return signal == ColorSignal::root_phase ||
+        signal == ColorSignal::root_proximity ||
+        signal == ColorSignal::root_log_proximity_v1;
 }
 
 static std::string UnsupportedSourceForProducerMessage(FractalType fractalType, const KernelParams& params) {
@@ -1490,19 +1484,30 @@ static void DispatchRenderFrame(
     uint8_t* maskPtr = nullptr;
     const bool colorPipelineNeedsSdf = ColorPipelineUsesSdfSource(params);
     const bool mixedSourceStack = ColorPipelineSourceStackIsMixed(params);
-    const int colorSourceMeasurementRowIndex = collectColorSourceMeasurement
-        ? FindColorSourceStackRowIndex(params, ColorSignal::root_log_proximity_v1)
-        : -1;
     const int activeSourceStackCount =
         ClampColorPipelineSourceStackCountForMain(params.color_source_stack_count);
+    const ColorSignal colorSourceMeasurementSignal = activeSourceStackCount == 1
+        ? params.color_source_stack[0].signal
+        : ColorSignal::smooth_escape;
+    const int colorSourceMeasurementRowIndex =
+        collectColorSourceMeasurement &&
+        activeSourceStackCount == 1 &&
+        !IsColorPipelineSdfSourceSignal(colorSourceMeasurementSignal)
+            ? 0
+            : -1;
     const bool colorSourceMeasurementEligible =
         colorSourceMeasurementRowIndex == 0 && activeSourceStackCount == 1;
-    if (colorSourceMeasurementRowIndex >= 0 && !colorSourceMeasurementEligible) {
+    if (collectColorSourceMeasurement && !colorSourceMeasurementEligible) {
         lensSdfProbe.color_source_measurement.requested = true;
-        lensSdfProbe.color_source_measurement.source_id = "root_log_proximity_v1";
+        const char* sourceId = activeSourceStackCount == 1
+            ? ColorSignalId(colorSourceMeasurementSignal)
+            : nullptr;
+        lensSdfProbe.color_source_measurement.source_id = sourceId ? sourceId : "none";
         lensSdfProbe.color_source_measurement.row_index = colorSourceMeasurementRowIndex;
         lensSdfProbe.color_source_measurement.error =
-            "color_source_measurement_requires_single_active_source_row";
+            activeSourceStackCount == 1
+                ? "color_source_measurement_requires_renderer_backed_non_sdf_source"
+                : "color_source_measurement_requires_single_active_source_row";
     }
     const bool sourceSignalSidecarNeeded =
         mixedSourceStack || colorSourceMeasurementEligible;
@@ -1645,12 +1650,14 @@ static void DispatchRenderFrame(
                 BuildViewerUiAutomationColorSourceMeasurementProbe(
                     measuredRow,
                     static_cast<std::size_t>(sourceSignalFrame.width) *
-                        static_cast<std::size_t>(sourceSignalFrame.height),
+                    static_cast<std::size_t>(sourceSignalFrame.height),
                     params,
                     colorSourceMeasurementRowIndex,
-                    "root_log_proximity_v1");
+                    ColorSignalId(colorSourceMeasurementSignal));
             ViewerUiAutomationColorSourceMeasurementProbe& measurement =
                 lensSdfProbe.color_source_measurement;
+            measurement.root_pattern_ref = "none";
+            measurement.root_pattern_hash = 0;
             const char* producerId = FractalTypeId(view.fractal_type);
             measurement.producer_id = producerId ? producerId : "unknown";
             measurement.fractal_precision_tier =
@@ -1662,16 +1669,18 @@ static void DispatchRenderFrame(
             measurement.color_metric_narrowing =
                 measurement.fractal_precision_tier == "float64"
                     ? "fractal_coordinate_to_float32" : "none";
-            const ColorPipelineSourceStackEntry& measuredEntry =
-                params.color_source_stack[colorSourceMeasurementRowIndex];
-            const char* patternRefId =
-                ExplainoRootPatternRefId(measuredEntry.params.root_pattern_ref);
-            measurement.root_pattern_ref =
-                patternRefId ? patternRefId : "dynamics_root_field";
-            for (const ViewerUiAutomationRootPatternProbe& pattern : lensSdfProbe.root_patterns) {
-                if (pattern.ref == measurement.root_pattern_ref) {
-                    measurement.root_pattern_hash = pattern.effective_root_hash;
-                    break;
+            if (IsRootPatternMeasurementSignal(colorSourceMeasurementSignal)) {
+                const ColorPipelineSourceStackEntry& measuredEntry =
+                    params.color_source_stack[colorSourceMeasurementRowIndex];
+                const char* patternRefId =
+                    ExplainoRootPatternRefId(measuredEntry.params.root_pattern_ref);
+                measurement.root_pattern_ref =
+                    patternRefId ? patternRefId : "dynamics_root_field";
+                for (const ViewerUiAutomationRootPatternProbe& pattern : lensSdfProbe.root_patterns) {
+                    if (pattern.ref == measurement.root_pattern_ref) {
+                        measurement.root_pattern_hash = pattern.effective_root_hash;
+                        break;
+                    }
                 }
             }
         }

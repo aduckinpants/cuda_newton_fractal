@@ -1,6 +1,6 @@
 # Black Body Chromaticity Palette Campaign
 
-Status: Slices A and B are closed and pushed at `9b9ec78` and `0437e6c`; Slice C recipe/qualification plan/contract bootstrap is active. Parameter Motion remains paused. This umbrella plan sequences bounded child slices; each child contract controls its own product mutation.
+Status: complete. Slices A and B are closed and pushed at `9b9ec78` and `0437e6c`; Slice C closes the Black Body campaign in the current checkpoint. Parameter Motion remains paused.
 
 ## Explicit User Asks
 
@@ -9,11 +9,11 @@ Status: Slices A and B are closed and pushed at `9b9ec78` and `0437e6c`; Slice C
 - [done] Specify a typed Palette function and one graph-authoritative curated recipe.
 - [done] Vendor official CIE observer data and make LUT generation reproducible.
 - [done] Incorporate both external review rounds and the fresh blind hostile review without widening the product.
-- [deferred-to-child-slices] Implement, prove, checkpoint, and push the palette and recipe through the bounded contracts below.
+- [done] Implement, prove, checkpoint, and push the palette and recipe through the bounded contracts below.
 
 ## Current Phase
 
-Slice A closed the reproducible reference/LUT substrate at `9b9ec78`. Slice B closed the standalone typed runtime Palette at `0437e6c` with exact CPU/CUDA parity and published non-default replay. Slice C is now being bootstrapped as the final graph recipe, evidence, performance, and closure slice.
+Slice A closed the reproducible reference/LUT substrate at `9b9ec78`. Slice B closed the standalone typed runtime Palette at `0437e6c` with exact CPU/CUDA parity and published non-default replay. Slice C adds and qualifies the metadata-only `blackbody_thermal_ridges` graph recipe, preserves all nine prior recipes, and closes the campaign.
 
 ## Phase Checklist
 
@@ -25,8 +25,8 @@ Slice A closed the reproducible reference/LUT substrate at `9b9ec78`. Slice B cl
 - [x] Validate and checkpoint this planning-only contract.
 - [x] Slice A - reference data, deterministic generator, LUT, and independent numerical court.
 - [x] Slice B - append-only runtime Palette, CUDA parity, state/capture, and non-default published replay.
-- [ ] Slice C - graph recipe, visual/occupancy evidence, interleaved performance, preservation, hardening, and closure.
-- [ ] Stop for replan before additional palettes, color management, graph UI, SDF growth, or Parameter Motion implementation.
+- [x] Slice C - graph recipe, visual/occupancy evidence, interleaved performance, preservation, hardening, and closure.
+- [x] Stop for replan before additional palettes, color management, graph UI, SDF growth, or Parameter Motion implementation.
 
 ## Campaign Slice Contracts
 
@@ -217,15 +217,14 @@ Strips sample the actual host runtime Palette and independently catch LUT collap
 
 ## Performance Contract
 
-- Fixed Mandelbrot state, CUDA direct renderer, f32, full quality.
-- 1024x768 and 2048x1536.
-- One persistent published process per size.
-- Five alternating Heatmap/Black Body warm-up pairs, then twenty measured pairs.
-- Artifact records runtime hash, device/driver/runtime identity when reported, state/receipt hashes, all samples, medians, MADs, p95s, and paired deltas.
-- Renderer timing excludes UI/capture/startup.
+- Exact 1024x768 and 2048x1536 row-major scalar workloads.
+- One CUDA process invokes the actual device Heatmap control and mirror-repeat/Black Body candidate evaluators.
+- Five alternating warm-up pairs, then twenty measured pairs, with 32 kernel repeats per sample.
+- CUDA events isolate device shape/palette evaluation; allocation, input generation, process startup, UI, reports, and capture are excluded.
+- Artifact records device/driver/runtime identity, all samples, medians, MADs, paired deltas, and threshold classifications.
+- The published viewer separately proves selector/Apply and replay behavior. No viewer FPS or performance-improvement claim is authorized.
 
 Acceptance:
-
 - Heatmap pre/post medians differ by no more than `max(5%,0.25 ms)`.
 - Black Body paired median overhead `<=1.5 ms` at 1024 and `<=6 ms` at 2048.
 - Paired MAD `<=max(0.25 ms,20% of overhead budget)`. One fresh-process rerun is allowed; a second noisy result is `unproven` and blocks closure.
@@ -241,7 +240,7 @@ Acceptance:
 | Reconciled umbrella plan | complete | checkpoint 8ca6482; bounded Slice A/B/C contracts defined |
 | Slice A | complete | `9b9ec78`, validation/contract receipts, rearward `ok`, pushed |
 | Slice B | complete | `0437e6c`, validation/contract receipts, rearward `ok`, pushed |
-| Slice C | bootstrap | child plan/contract being checked in before product mutation |
+| Slice C | complete at current checkpoint | metadata-only graph recipe; qualification `passed`; preservation `passed`; CUDA performance `proven`; full native and published-runtime rails green |
 
 ## Action Hostile Review
 

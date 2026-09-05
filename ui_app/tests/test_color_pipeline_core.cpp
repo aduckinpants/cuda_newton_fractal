@@ -1194,9 +1194,9 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatOverrideCount");
     Check(contract.compatibility_audit.size() == 34,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_CompatibilityAuditCount");
-    Check(contract.recipes.size() == 9, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
+    Check(contract.recipes.size() == 10, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeCount");
     Check(contract.has_recipe_v2, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Present");
-    Check(contract.recipe_v2.size() == 9, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Count");
+    Check(contract.recipe_v2.size() == 10, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RecipeV2Count");
     Check(contract.row_applicators.size() == 4, "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_RowApplicatorCount");
     Check(contract.sdf_source_capabilities.size() == 6,
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_SdfSourceCapabilityCount");
@@ -1439,7 +1439,7 @@ void TestMaterializedUiSaltMetadataShadowsCurrentCatalog() {
     Check(parity.ok && parity.errors.empty(),
         "TestMaterializedUiSaltMetadataShadowsCurrentCatalog_ReusableParityReportOk");
     Check(parity.lane_count == 4 && parity.function_count == 50 &&
-            parity.compatibility_count == 34 && parity.recipe_count == 9 &&
+            parity.compatibility_count == 34 && parity.recipe_count == 10 &&
             parity.composite_function_count == 1 &&
             parity.composite_max_fully_expanded_lane_rows == 8 &&
             parity.taxonomy_group_count == 31 && parity.unsupported_pair_count > 0,
@@ -2109,8 +2109,34 @@ void TestMaterializedUiSaltMetadataCanOwnRecipeExpansion() {
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_MetadataActive");
     Check(color_pipeline_core::ColorPipelineRecipeExpansionAuthorityId() == std::string("recipe_v2_graph"),
         "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Authority");
-    Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes(),
-        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_Count");
+    Check(color_pipeline_core::CountActiveColorPipelineRecipes() == color_pipeline_core::CountHardcodedColorPipelineRecipes() + 1,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_AppendOnlyMetadataCount");
+    Check(color_pipeline_core::FindHardcodedColorPipelineRecipe("blackbody_thermal_ridges") == nullptr,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_NewRecipeAbsentFromFallback");
+    const MaterializedColorPipelineRecipe* blackbodyRecipe =
+        color_pipeline_core::FindActiveColorPipelineRecipe("blackbody_thermal_ridges");
+    Check(blackbodyRecipe != nullptr,
+        "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_NewMetadataRecipeActive");
+    if (blackbodyRecipe) {
+        Check(blackbodyRecipe->source == "smooth_escape_ramp" &&
+                blackbodyRecipe->shape == "mirror_repeat" &&
+                blackbodyRecipe->palette == "blackbody_palette_v1" &&
+                blackbodyRecipe->grading == "contrast_lift",
+            "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_NewMetadataRecipeTuple");
+        std::vector<ColorPipelineLaneState> blackbodyLanes;
+        error.clear();
+        Check(color_pipeline_core::TryBuildColorPipelineRecipeLanes(
+                blackbodyRecipe->id,
+                &blackbodyLanes,
+                &error),
+            (std::string("TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_NewMetadataRecipeBuilds: ") + error).c_str());
+        Check(blackbodyLanes.size() == 4 &&
+                blackbodyLanes[0].rows[0].function_id == "smooth_escape_ramp" &&
+                blackbodyLanes[1].rows[0].function_id == "mirror_repeat" &&
+                blackbodyLanes[2].rows[0].function_id == "blackbody_palette_v1" &&
+                blackbodyLanes[3].rows[0].function_id == "contrast_lift",
+            "TestMaterializedUiSaltMetadataCanOwnRecipeExpansion_NewMetadataRecipeLanes");
+    }
 
     for (const MaterializedColorPipelineRecipe& expectedRecipe : hardcodedRecipes) {
         const MaterializedColorPipelineRecipe* actualRecipe =
