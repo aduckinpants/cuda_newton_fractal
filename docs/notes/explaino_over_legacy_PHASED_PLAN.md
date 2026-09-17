@@ -1,6 +1,6 @@
 # ExplainO over Legacy Campaign
 
-Status: planning content and validation complete; checkpoint and master integration remain. Product implementation is paused. The imported proposal is design input; this checked-in plan is the repo-grounded implementation authority for a future goal.
+Status: complete and merged to `master` at `4b86909`. Product implementation is paused. The imported proposal is design input; this checked-in plan is the repo-grounded implementation authority for a future goal.
 
 ## Explicit User Asks
 
@@ -13,7 +13,7 @@ Status: planning content and validation complete; checkpoint and master integrat
 
 ## Current Phase
 
-Planning-only integration on branch `codex/explaino-over-legacy-planning` from merged Black Body head `d63d602`. The historical evaluator and named source fixtures are not in the imported bundle, so Slice 0 is a hard evidence gate. No product behavior is authorized by this contract.
+Planning-only integration is closed on `master` at `4b86909` after starting from merged Black Body head `d63d602`. The historical evaluator and named source fixtures are not in the imported bundle, so Slice 0 remains a hard evidence gate. No product behavior was changed or authorized by this contract.
 
 ## Phase Checklist
 
@@ -24,7 +24,7 @@ Planning-only integration on branch `codex/explaino-over-legacy-planning` from m
 - [x] Record blocking inputs and reusable local substrates.
 - [x] Define bounded future slices and mandatory pause points.
 - [x] Complete hostile audit and planning validation.
-- [ ] Checkpoint, write receipts, rearward-review, merge to `master`, and push.
+- [x] Checkpoint, write receipts, rearward-review, merge to `master`, and push.
 - [x] Stop paused before Slice 0 recovery or product work.
 
 ## Proposal Classification
@@ -289,6 +289,7 @@ The audit must challenge:
 | Proof | Status | Evidence |
 |---|---|---|
 | Black Body merge | complete | `master` and `origin/master` at `d63d602`; merged-head rearward review `ok` |
+| Planning merge | complete | planning head `4b86909` fast-forwarded to `master`, pushed to `origin/master`, and rearward-reviewed `ok` |
 | Proposal import | complete | `docs/notes/EXPLAINO_OVER_LEGACY_PROPOSAL.md` |
 | Local source review | complete | findings above tied to current evaluator, seed, evidence, catalog, state, capture, and Color Pipeline seams |
 | Historical fixtures | blocked input | S1-S3 and named images were not supplied with the proposal |
@@ -300,6 +301,6 @@ The audit must challenge:
 
 ## Stop Condition
 
-This branch stops after proposal, local review, and future slices are validated, checkpointed, merged, and pushed. No enum, evaluator, UI, state schema, runtime, test executable, or published viewer behavior changes here.
+This planning campaign is closed after the proposal, local review, and future slices were validated, checkpointed, merged, and pushed. No enum, evaluator, UI, state schema, runtime, test executable, or published viewer behavior changed.
 
-After merge, implementation begins at Slice 0 only after explicit operator authorization and after the historical evidence is supplied or located. Until then the repo remains intentionally paused.
+The next authorized work begins at Slice 0 only after explicit operator authorization and after the historical evidence is supplied or located. Until then the repo remains intentionally paused.
