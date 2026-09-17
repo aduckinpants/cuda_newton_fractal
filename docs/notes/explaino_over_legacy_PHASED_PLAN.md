@@ -242,7 +242,7 @@ Do not assign a calendar estimate until Slice 0 measures recovery quality. Even 
 
 ## Priority and Defer Boundary
 
-When engine work resumes, start Slice 0 before Parameter Motion implementation and before other paused discretionary product work. The checked-in Parameter Motion plan remains valid but paused; it is neither superseded nor partially activated.
+The next authorized engine campaign starts at Slice 0 before Parameter Motion implementation and before other paused discretionary product work. The checked-in Parameter Motion plan remains valid but paused; it is neither superseded nor partially activated.
 
 Still deferred:
 
@@ -302,4 +302,4 @@ The audit must challenge:
 
 This branch stops after proposal, local review, and future slices are validated, checkpointed, merged, and pushed. No enum, evaluator, UI, state schema, runtime, test executable, or published viewer behavior changes here.
 
-After merge, implementation begins at Slice 0 only when the operator resumes the campaign and supplies or locates the historical evidence. Until then the repo remains intentionally paused.
+After merge, implementation begins at Slice 0 only after explicit operator authorization and after the historical evidence is supplied or located. Until then the repo remains intentionally paused.
