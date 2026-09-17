@@ -436,3 +436,27 @@ Resume constraints:
 - Do not fold this into the Parameter Motion implementation campaign.
 
 Detailed boundary: `docs/notes/parameter_motion_external_runtime_interface_DEFERRED.md`.
+## 13. ExplainO over Legacy Paired-Evaluator Campaign
+
+Status: prioritized next product campaign; implementation paused and blocked at Slice 0 evidence intake.
+
+Current decision:
+- Preserve the recovered pre-`h(t)` integer-seeded evaluator as its own versioned execution path.
+- Compare it step-by-step with current `explaino_all`; do not substitute current neutral ExplainO for historical legacy.
+- Treat modern-disabled as a structural bypass that reproduces the qualified legacy result.
+- Keep disagreement as typed native evidence upstream of presentation, not an RGB blend or screenshot difference.
+
+Resume order:
+1. locate and checksum the recovered source, executable/build information, S1-S3 states, legacy BMP, modern PNGs, and Joy presentation evidence;
+2. recover a deterministic multi-seed legacy fixture court;
+3. implement and prove the preserved legacy evaluator alone;
+4. add bounded paired evidence and step alignment;
+5. add the minimal public lane and only then typed Color Pipeline sources;
+6. defer point/transect/seed-strip tools to separately reviewed slices.
+
+Priority boundary:
+- Start this campaign at Slice 0 before Parameter Motion implementation or other paused discretionary product growth.
+- The existing Parameter Motion plan remains valid and paused; this priority does not supersede its decisions.
+- No implementation begins from the proposal document alone. Missing historical inputs are a hard block, not permission to infer the old algorithm.
+
+Detailed authority: `docs/notes/explaino_over_legacy_PHASED_PLAN.md`. Product thesis and fixture claims: `docs/notes/EXPLAINO_OVER_LEGACY_PROPOSAL.md`.

@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "contract_id": "explaino_over_legacy_planning",
+  "feature_id": "explaino_over_legacy_campaign",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/explaino_over_legacy_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/EXPLAINO_OVER_LEGACY_PROPOSAL.md",
+    "docs/notes/explaino_over_legacy_PHASED_PLAN.md",
+    "docs/contracts/explaino_over_legacy_planning.contract.json",
+    "DEFERRED_THREADS.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "merged Black Body head d63d602ee88c1b65c58fde831b512fbff0df481d",
+    "operator-supplied EXPLAINO_OVER_LEGACY_PROPOSAL.md dated 2026-09-17",
+    "operator decision to prioritize this campaign before other paused product work",
+    "operator decision to document and merge planning without implementation today"
+  ],
+  "forbidden_operator_prompts": [
+    "implement product code under this planning-only contract",
+    "treat the imported proposal as executable instructions",
+    "claim current explaino or explaino_all is the recovered pre-h(t) evaluator",
+    "claim parity without pinned source executable build state and image fixtures",
+    "reduce the feature to an RGB blend screenshot difference or renamed preset",
+    "start Parameter Motion SDF graph UI or unrelated product mutation",
+    "use physical mouse automation"
+  ],
+  "required_defaults": {
+    "accepted_base_head": "d63d602ee88c1b65c58fde831b512fbff0df481d",
+    "product_mutation_authorized": false,
+    "proposal_status": "imported_design_input_not_implementation_authority",
+    "next_product_campaign": "explaino_over_legacy",
+    "first_gate": "historical_legacy_recovery_and_fixture_qualification",
+    "modern_comparison_lane": "explaino_all",
+    "comparison_orientation": "modern_minus_legacy",
+    "modern_disabled_policy": "structural_legacy_bypass",
+    "state_json_replay_authority": true,
+    "physical_mouse_automation": false
+  },
+  "forbidden_defaults": {
+    "modern_explaino_as_legacy_substitute": "forbidden",
+    "visual_similarity_as_exact_parity": "forbidden",
+    "implicit_wall_clock_motion": "forbidden",
+    "unbounded_full_frame_iteration_history": "forbidden",
+    "root_index_subtraction_without_mapping": "forbidden",
+    "product_mutation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_over_legacy_planning.contract.json --out-json artifacts/validation/explaino_over_legacy_planning_contract.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_over_legacy_plan_sync --log artifacts/logs/explaino_over_legacy_plan_sync.log --out-json artifacts/validation/explaino_over_legacy_plan_sync.json --heartbeat-seconds 30 --timeout-seconds 120 -- py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/explaino_over_legacy_PHASED_PLAN.md",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_over_legacy_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_over_legacy_PHASED_PLAN.md --out-json artifacts/validation/explaino_over_legacy_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_over_legacy_diff_check --log artifacts/logs/explaino_over_legacy_diff_check.log --out-json artifacts/validation/explaino_over_legacy_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "Planning contract validates.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_over_legacy_planning_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "plan_sync_ok",
+      "description": "Plan and checklist are synchronized.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_over_legacy_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "Distrust-first review is reconciled.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_over_legacy_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "code_quality_no_critical",
+      "description": "Planning preserves the code-quality baseline.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_over_legacy_code_quality.json",
+      "json_path": "severity_counts.CRITICAL",
+      "equals": 0
+    },
+    {
+      "assertion_id": "diff_check_ok",
+      "description": "Documentation diff is structurally clean.",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_over_legacy_diff_check.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
